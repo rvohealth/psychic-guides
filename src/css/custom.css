@@ -1,0 +1,222 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-background-color: #eeeded;
+  --ifm-heading-color: #ff47f1;
+  --ifm-heading-font-weight: 300;
+  --ifm-color-primary: #ff1ad3;
+  --ifm-color-primary-dark: #29784c;
+  --ifm-color-primary-darker: #277148;
+  --ifm-color-primary-darkest: #205d3b;
+  --ifm-color-primary-light: #33925d;
+  --ifm-color-primary-lighter: #359962;
+  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-code-font-size: 95%;
+  --ifm-h1-font-size: 70px;
+  --ifm-navbar-link-color: rgb(251, 67, 233);
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-background-color: #030313 !important;
+  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+body {
+  font-size: 20px;
+}
+
+h1 {
+  font-size: 60px;
+  font-weight: 200;
+  margin-bottom: 100px !important;
+}
+
+.navbar {
+  background: var(--ifm-background-color);
+  border-bottom: none !important;
+  box-shadow: none;
+}
+
+.theme-doc-sidebar-container {
+  font-size: 16px;
+}
+
+.theme-doc-sidebar-container a {
+  color: #282828;
+}
+
+.docSidebarContainer_node_modules-\@docusaurus-theme-classic-lib-theme-DocRoot-Layout-Sidebar-styles-module {
+  border-right: none !important;
+}
+
+.theme-code-block {
+  border-radius: 20px !important;
+  margin-top: 100px !important;
+  margin-bottom: 100px !important;
+}
+
+.theme-code-block pre {
+  background: #0e0928 !important;
+  padding: 20px;
+  border-radius: 20px !important;
+  font-size: 18px;
+}
+
+.theme-doc-markdown {
+  margin-top: 100px;
+}
+
+.pagination-nav__link {
+  border: none;
+  background: rgb(240, 239, 242);
+  padding-top: 30px;
+}
+
+.pagination-nav__sublabel {
+  opacity: 0;
+}
+
+.pagination-nav__label {
+  color: rgb(100, 45, 235);
+}
+
+.pagination-nav__link--next .pagination-nav__label::after,
+.pagination-nav__link--prev .pagination-nav__label::before {
+  display: none;
+}
+
+.app-hero {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  width: 100vw;
+  min-height: 140vh;
+  padding-bottom: 100px;
+  text-align: center;
+  background: #020016;
+  font-size: 20px;
+  color: rgb(48, 48, 48);
+  z-index: 10000;
+  top: -100px;
+
+  background: rgb(20, 0, 36);
+  background: linear-gradient(#140024, #250441 66.83%, #5f0050);
+}
+
+.app-hero .icon {
+  margin-top: 20px;
+  font-size: 40px;
+  color: rgb(255, 0, 214);
+}
+
+.app-hero .above-night-sky {
+  position: relative;
+  z-index: 1;
+}
+
+.app-hero h1 {
+  margin-top: calc(50vh - 80px);
+  font-weight: 400;
+  font-size: 140px;
+  margin-bottom: 20px;
+}
+
+.app-hero .subtext {
+  max-width: 600px;
+  display: inline-block;
+  margin-bottom: 20px;
+  font-size: 26px;
+}
+
+.app-hero .subtext-container {
+  padding: 32px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.app-hero .subtext-container,
+.app-hero .subtext-container a {
+  color: white;
+}
+
+.app-hero .subtext-container a {
+  font-weight: 600;
+}
+
+.logo h1,
+.logo h2 {
+  display: inline-block;
+  -webkit-text-stroke-width: 3px;
+  -webkit-text-stroke-color: #f204ff;
+  color: #005c05;
+  padding: 10px 5px;
+  border-radius: 4px;
+  font-weight: 400;
+  font-size: 100px;
+
+  -webkit-text-stroke-color: #04ebff;
+  -webkit-text-stroke-color: #ff334c;
+  text-shadow: #e904ff 0px 0px 30px;
+  text-shadow: rgba(255, 4, 98, 0.13) 0px 0px 30px;
+  text-shadow: rgba(163, 0, 61, 0.12) 0px 0px 30px;
+  color: #f106ff;
+}
+
+.logo h1.small,
+.logo h2.small {
+  text-shadow: none !important;
+  -webkit-text-stroke-color: none !important;
+}
+
+.right-sidebar-item {
+  /* position: fixed; */
+  position: absolute;
+  right: 0;
+  background: #9e0dff;
+  color: #25fffc;
+  width: 20%;
+  margin-right: 25px;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.right-sidebar-item pre {
+  font-size: 16px;
+}
+
+@media (max-width: 1500px) {
+  .right-sidebar-item {
+    width: 15%;
+  }
+}
+
+.theme-doc-footer,
+.pagination-nav,
+.theme-doc-breadcrumbs,
+.footer {
+  display: none;
+}
+
+.theme-code-block {
+  margin: 30px 0;
+  box-shadow: none !important;
+}
+
+.right-sidebar-item {
+  margin-top: 80px;
+  margin-bottom: 57px;
+}

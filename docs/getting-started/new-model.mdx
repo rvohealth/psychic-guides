@@ -1,0 +1,78 @@
+---
+sidebar_position: 9
+---
+
+import RightSidebarItem from "@site/src/components/ui/right-sidebar-item"
+
+# new model
+
+Examining our existing app structure, we will see that both a model and migration have already been added to the project structure. The user comes pre-filled with some helpful methods for encrypting and verifying passwords.
+
+```ts
+// app/models/user.ts
+
+import { Dream, BeforeCreate, BeforeUpdate, Column, Validates, Hash } from 'psychic'
+import { DateTime } from 'luxon'
+
+export default class User extends Dream {
+  public readonly get table() {
+    return 'users' as const
+  }
+
+  public id: number
+  public name: string
+  public createdAt: DateTime
+  public updatedAt: DateTime
+
+  @Validates('contains', '@')
+  @Validates('presence')
+  public email: string
+
+  @Validates('length', { min: 4, max: 18 })
+  public passwordDigest: string
+
+  @Virtual()
+  public password?: string | null
+
+  @BeforeCreate()
+  @BeforeUpdate()
+  public async hashPass() {
+    if (this.password) this.password_digest = await Hash.gen(this.password)
+    this.password = undefined
+  }
+
+  public async checkPassword(password: string) {
+    if (!this.password_digest) return false
+    return await Hash.check(password, this.password_digest)
+  }
+}
+```
+
+However, since we originally set out to create a new model, not examine the existing one, let's go ahead and generate one using the cli.
+
+```bash
+yarn psy g:model todo user:belongs_to content:string
+```
+
+Running this generates a new todo model for us, automatically adding on all of the columns we specified in our generator command, including our belongs_to association to the user model.
+
+```ts
+import { DateTime } from 'luxon'
+import { dream, Column, BelongsTo } from 'dream'
+import User from './user'
+
+export default class Todo extends Dream {
+  public readonly get table() {
+    return 'todos' as const
+  }
+
+  public id: number
+  public userId: number
+  public content: string
+  public createdAt: DateTime
+  public updatedAt: DateTime
+
+  @BelongsTo(() => User)
+  public user: User
+}
+```

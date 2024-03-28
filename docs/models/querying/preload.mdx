@@ -1,0 +1,30 @@
+---
+sidebar_position: 8
+---
+
+# preload
+
+The preload method allows you to side-load other associations while executing a query.
+
+```ts
+const users = await User.preload('posts', 'comments').all()
+const firstComments = users[0].posts[0].comments
+```
+
+If one needs to gain access to multiple resources, the last argument can always be an array, like so:
+
+```ts
+const users = await User.preload('posts', [
+  'comments',
+  'ratings',
+  'images',
+]).all()
+```
+
+Multiple preload statements can be chained together to successfully sideload all of your associations:
+
+```ts
+const users = await User.preload('posts', ['comments', 'ratings'])
+  .preload('comments', 'ratings', 'images', ['credits', 'curators'])
+  .all()
+```

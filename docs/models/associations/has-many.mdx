@@ -1,0 +1,21 @@
+---
+sidebar_position: 3
+---
+
+# has many
+
+Similar to has one, but returning an array of records, rather than a single record (which makes much more sense in the case of `User` and `Post` models). Like the Has one relationship, it assumes the foreign key to be on opposite model.
+
+```ts
+export default class User extends Dream {
+  public readonly get table() {
+    return 'users' as const
+  }
+
+  public id: number
+  public content: string | null
+
+  @HasMany(() => Post)
+  public posts: Post[]
+}
+```

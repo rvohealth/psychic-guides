@@ -1,0 +1,20 @@
+---
+sidebar_position: 7
+---
+
+import RightSidebarItem from "@site/src/components/ui/right-sidebar-item"
+
+# new route
+
+Next, let's make sure we have a route defined for this new method in our routes file.
+
+```ts
+// conf/routes.ts
+
+import { PsychicRouter } from 'psychic'
+
+export default (r: PsychicRouter) => {
+  ...
+  r.get('/helloworld', 'todos#helloworld')
+}
+```

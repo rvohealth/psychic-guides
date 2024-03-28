@@ -1,0 +1,11 @@
+---
+sidebar_position: 6
+---
+
+# order
+
+The order method allows you to pass both a field and a direction, and will order the resulting query to those specifications.
+
+```ts
+const users = await User.order('createdAt', 'asc').all()
+```

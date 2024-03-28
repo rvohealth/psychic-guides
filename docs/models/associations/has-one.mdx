@@ -1,0 +1,22 @@
+---
+sidebar_position: 2
+---
+
+# has one
+
+Has one associations allow us to express a singular inverse of the belongs to statement. This means that if the `Post` class were to belong to `User`, then the user could potentially have one post (though they would more-than-likely have many instead).
+
+```ts
+
+export default class User extends Dream {
+  public readonly get table() {
+    return 'users' as const
+  }
+
+  public id: number
+  public content: string | null
+
+  @HasOne(() => Post)
+  public post: Post
+}
+```

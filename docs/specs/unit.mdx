@@ -1,0 +1,25 @@
+---
+sidebar_position: 1
+---
+
+# unit
+
+Unit specs are meant for testing strictly your backend components in isolation. They do not launch your server or front end. The config for them is located in `spec/unit/jest.config.js`
+
+```ts
+import { PsychicServer } from 'psychic'
+import * as request from 'supertest'
+const server = new PsychicServer()
+
+describe('GET /ping', () => {
+  beforeAll(async () => {
+    await server.boot()
+  })
+
+  it('returns 200 response code', async () => {
+    request.agent(server.app).get('/ping').expect(200)
+  })
+})
+```
+
+TODO: finish this

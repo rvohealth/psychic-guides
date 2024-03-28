@@ -1,0 +1,76 @@
+---
+sidebar_position: 2
+---
+
+import RightSidebarItem from "@site/src/components/ui/right-sidebar-item"
+
+# resources
+
+You can also use resourceful routing as shorthand to quickly model standard http routes for one of your underlying models, like so:
+
+<RightSidebarItem>
+  <pre style={{ backgroundColor: "transparent" }}>
+    {`
+GET     /users      users#index
+POST    /users      users#create
+GET     /users/:id  users#show
+PUT     /users/:id  users#update
+PATCH   /users/:id  users#update
+DELETE  /users/:id  users#destroy
+`}
+  </pre>
+</RightSidebarItem>
+```ts // conf/routes.ts
+
+import { PsychicRouter } from "psychic"
+
+export default (r: PsychicRouter) => {
+  r.resources("user")
+}
+```
+
+You can use resourceful routes, but restrict the routes to only a collection, like so:
+
+<RightSidebarItem>
+  <pre style={{ backgroundColor: "transparent" }}>
+    {`
+GET     /users  users#index
+POST    /users  users#create
+`}
+  </pre>
+</RightSidebarItem>
+```ts
+
+// conf/routes.ts
+
+import { PsychicRouter } from "psychic"
+
+export default (r: PsychicRouter) => {
+  r.resources("user", { only: ["create", "index"] })
+  // same as:
+  r.resources("user", { except: ["show", "update", "destroy"] })
+}
+```
+
+Additionally, use the resource method to do the same, but with a singularized route endpoint. This is generally done when you do not need to pass an id to identify the resource, such as when the resource will always belong to the authenticated user.
+
+<RightSidebarItem>
+  <pre style={{ backgroundColor: "transparent" }}>
+    {`
+GET     /users  users#index
+POST    /users  users#create
+`}
+  </pre>
+</RightSidebarItem>
+```ts
+
+// conf/routes.ts
+
+import { PsychicRouter } from "psychic"
+
+export default (r: PsychicRouter) => {
+  r.resource('user')
+}
+``
+
+`

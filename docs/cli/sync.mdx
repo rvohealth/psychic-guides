@@ -1,0 +1,27 @@
+---
+sidebar_position: 5
+---
+
+# sync
+
+In order to provide type completion to both Kysely and Psychic, we must introspect your files to generate some types. Considering, there are a few more steps to getting set up than would be necessary in a conventional ORM. This is generally done for you (such as when you run migrations), but can also be done manually.
+
+```bash
+# syncs everything
+yarn psy sync
+
+# introspect database and generate schema
+yarn psy sync:schema
+
+# introspect your models and build an association index
+yarn psy sync:associations
+
+# syncs your api routes to your client folder
+psy sync:client:routes
+
+# syncs your serialization structure to the client app as a schema.ts file
+psy sync:client:schema
+
+# syncs both your api routes and your serialization schema to your client folder
+psy sync:client
+```

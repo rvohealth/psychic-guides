@@ -1,0 +1,19 @@
+---
+sidebar_position: 1
+---
+
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
+# generating
+
+The easiest way to generate a model is by using the psychic cli.
+
+```bash
+yarn psy g:dream todo user:belongs_to content:string type:enum:todo_types:one_time,recurring
+```
+
+If you know you will be needing endpoints exposed for the resource, you can additionally use the resource generator provided by psychic to also generate a controller and serializer. You will still need to add routes manually, and will definitely need to modify the generated code to tighten the wrenches authorization-wise, params-wise, etc...
+
+```bash
+yarn psy g:resource /api/v1/todos Todo user:belongs_to content:string type:enum:todo_types:one_time,recurring
+```

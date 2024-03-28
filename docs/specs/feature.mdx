@@ -1,0 +1,22 @@
+---
+sidebar_position: 2
+---
+
+# feature
+
+Contrary to unit specs, feature specs will launch your front end and back end servers, driving them with puppeteer.
+
+```ts
+describe('users index page', () => {
+  beforeEach(async () => {
+    await User.create({ email: 'hello@world.com' })
+  })
+
+  it('accepts the request', async () => {
+    await page.goto('http://localhost:3000/users')
+    await expect(page).toMatchTextContent('hello@world.com')
+  })
+})
+```
+
+TODO: finish this

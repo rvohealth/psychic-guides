@@ -1,0 +1,53 @@
+---
+sidebar_position: 6
+---
+
+# single table inheritance
+
+Single table inheritance allows one to have model inheritance supported at the database level by using a type field to capture the class name. Doing this automatically applies default scopes to the class ensuring that the type restriction is always applied.
+
+Because Psychic provides model indexing for nested namespaces, we recommend you follow a Base model pattern, as shown below:
+
+```ts
+// models/Pet.ts
+export default class Pet exteds Dream {
+  @BelongsTo(() => User)
+  public user: User
+  public userId: number
+}
+
+// models/Pet/Cat.ts
+@Sti(Pet)
+export default class Cat extends Pet {
+}
+
+// models/Pet/NonCat.ts
+@Sti(Pet)
+export default class NonCat extends Pet {
+}
+...
+```
+
+On a corresponding model, you can define a has one or has many relationship with the STI models like so:
+
+```ts
+import Pet from './Pet'
+import Cat from './Pet/Cat'
+import NonCat from './Pet/NonCat'
+
+class User extends Dream {
+  ...
+  @HasMany(() => [Cat, NonCat])
+  public pets: Pet[]
+}
+```
+
+Now you can easily load your models from the corresponding model like so:
+
+```ts
+const user = await User.first()
+await user.load('pets')
+
+user.pets
+// [Cat{}, Cat{}, NonCat{}, etc...]
+```

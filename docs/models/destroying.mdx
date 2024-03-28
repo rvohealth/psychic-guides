@@ -1,0 +1,26 @@
+---
+sidebar_position: 4
+---
+
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
+# destroying
+
+To destroy a model, simply call the #destroy method on the instance.
+
+```ts
+import User from 'app/models/user'
+
+const user = await User.first()
+await user.destroy()
+```
+
+Destroying can also be done from the query builder for bulk deletion (though it should be known, this will not trigger model hooks like `BeforeSave`, `AfterCreate`, etc...).
+
+```ts
+await user.update({ email: 'how@yadoin.biz' })
+import User from 'app/models/user'
+import { ops } from 'psychic'
+
+await User.where({ email: ops.like('%y@%') }).destroyAll()
+```

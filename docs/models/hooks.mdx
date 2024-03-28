@@ -1,0 +1,265 @@
+---
+sidebar_position: 7
+---
+
+# hooks
+
+## before create
+
+BeforeCreate hooks are run whenever a new record is being saved to the database. A decorator pattern is leveraged, so no arguments need to be passed to the hook, it simply needs to live above the property, like so:
+
+```ts
+export default class Post extends Dream {
+  public readonly get table() {
+    return 'posts' as const
+  }
+
+  public id: number
+  public content: string | null
+  ...
+
+  @BeforeCreate()
+  public async hashPassword() {
+    if (this.password)
+      this.password_digest = await Hash.gen(this.password)
+    this.password = undefined
+  }
+}
+```
+
+## before update
+
+BeforeUpdate hooks are run whenever an existing (meanin, previously-saved) record is updated, and can be leveraged like so:
+
+```ts
+export default class Post extends Dream {
+  public readonly get table() {
+    return 'posts' as const
+  }
+
+  public id: number
+  public content: string | null
+  ...
+
+  @BeforeUpdate()
+  public async doSomething() {
+    // ... do whatever you want here!
+  }
+}
+```
+
+## before save
+
+BeforeSave hooks are run whenever either an existing OR new record is written to the DB, and can be leveraged like so:
+
+```ts
+export default class Post extends Dream {
+  public readonly get table() {
+    return 'posts' as const
+  }
+
+  public id: number
+  public content: string | null
+  ...
+
+  @BeforeSave()
+  public async doSomething() {
+    // ... do whatever you want here!
+  }
+}
+```
+
+## before destroy
+
+BeforeDestroy hooks are run whenever either an existing record is destroyed from the DB, and can be leveraged like so:
+
+```ts
+export default class Post extends Dream {
+  public readonly get table() {
+    return 'posts' as const
+  }
+
+  public id: number
+  public content: string | null
+  ...
+
+  @BeforeDestroy()
+  public async doSomething() {
+    // ... do whatever you want here!
+  }
+}
+```
+
+## after create
+
+AfterCreate hooks are run after a new record is saved to the database. A decorator pattern is leveraged, so no arguments need to be passed to the hook, it simply needs to live above the property, like so:
+
+```ts
+export default class Post extends Dream {
+  public readonly get table() {
+    return 'posts' as const
+  }
+
+  public id: number
+  public content: string | null
+  ...
+
+  @AfterCreate()
+  public async hashPassword() {
+    if (this.password)
+      this.password_digest = await Hash.gen(this.password)
+    this.password = undefined
+  }
+}
+```
+
+## after update
+
+AfterUpdate hooks are run whenever an existing (meanin, previously-saved) record has been updated, and can be leveraged like so:
+
+```ts
+export default class Post extends Dream {
+  public readonly get table() {
+    return 'posts' as const
+  }
+
+  public id: number
+  public content: string | null
+  ...
+
+  @AfterUpdate()
+  public async doSomething() {
+    // ... do whatever you want here!
+  }
+}
+```
+
+## after save
+
+AfterSave hooks are run whenever either an existing OR new record has been written to the DB, and can be leveraged like so:
+
+```ts
+export default class Post extends Dream {
+  public readonly get table() {
+    return 'posts' as const
+  }
+
+  public id: number
+  public content: string | null
+  ...
+
+  @AfterSave()
+  public async doSomething() {
+    // ... do whatever you want here!
+  }
+}
+```
+
+## after destroy
+
+AfterDestroy hooks are run whenever either an existing record has been destroyed from the DB, and can be leveraged like so:
+
+```ts
+export default class Post extends Dream {
+  public readonly get table() {
+    return 'posts' as const
+  }
+
+  public id: number
+  public content: string | null
+  ...
+
+  @AfterDestroy()
+  public async doSomething() {
+    // ... do whatever you want here!
+  }
+}
+```
+
+## commit hooks
+
+In contrast to ordinary after hooks (like AfterCreate, AfterUpdate, etc...), we have commit variants. Our implementation is similar to the approach taken by Ruby on Rails, whereby our commit hooks are bound to an existing transaction if it exists, and will wait until after the commit has been made at the transaction level to run your callback.
+
+### after create commit
+
+AfterCreateCommit hooks are run after a new record is saved to the database and the transaction is committed.
+
+```ts
+export default class Post extends Dream {
+  public readonly get table() {
+    return 'posts' as const
+  }
+
+  public id: number
+  public content: string | null
+  ...
+
+  @AfterCreateCommit()
+  public async yourThing() {
+    // ... your code
+  }
+}
+```
+
+### after update commit
+
+AfterUpdateCommit hooks are run whenever an existing (meanin, previously-saved) record has been updated and the encapsulating transaction has been committed, and can be leveraged like so:
+
+```ts
+export default class Post extends Dream {
+  public readonly get table() {
+    return 'posts' as const
+  }
+
+  public id: number
+  public content: string | null
+  ...
+
+  @AfterUpdateCommit()
+  public async doSomething() {
+    // ... do whatever you want here!
+  }
+}
+```
+
+### after save commit
+
+AfterSaveCommit hooks are run whenever either an existing OR new record has been written to the DB and the encapsulating transaction has been committed, and can be leveraged like so:
+
+```ts
+export default class Post extends Dream {
+  public readonly get table() {
+    return 'posts' as const
+  }
+
+  public id: number
+  public content: string | null
+  ...
+
+  @AfterSaveCommit()
+  public async doSomething() {
+    // ... do whatever you want here!
+  }
+}
+```
+
+### after destroy commit
+
+AfterDestroyCommit hooks are run whenever an existing record has been destroyed from the DB and the transaction has been committed, and can be leveraged like so:
+
+```ts
+export default class Post extends Dream {
+  public readonly get table() {
+    return 'posts' as const
+  }
+
+  public id: number
+  public content: string | null
+  ...
+
+  @AfterDestroyCommit()
+  public async doSomething() {
+    // ... do whatever you want here!
+  }
+}
+```

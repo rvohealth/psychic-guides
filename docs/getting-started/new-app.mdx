@@ -1,0 +1,68 @@
+---
+sidebar_position: 3
+---
+
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
+# new app
+
+Once the psychic cli is installed globally, you can use it to create a new psychic app locally. To
+do so, open your terminal and type the following in a directory of your choosing:
+
+<Tabs>
+  <TabItem value="basic" label="basic" default>
+    ```bash
+    cd ~/Sites # or another folder of your choosing
+
+    # provision a new psychic app with:
+    #   * no redis bindings
+    #   * no websocket bindings
+    #   * a new psychic backend (built on express) serving as a JSON api delivery system
+    #   * a new react frontend to connect to your backend
+    #   * a ts-jest testing integration plugged into your psychic server to run unit tests against your endpoints
+    #   * a jest-puppeteer testing integration support to allow you to drive end-to-end specs that run accross your
+    #   *   front end.
+    psy new myapp
+    ```
+
+  </TabItem>
+
+  <TabItem value="api-only" label="api-only">
+    ```bash
+    cd ~/Sites # or another folder of your choosing
+
+    # provision a new psychic app with:
+    #   * no redis bindings
+    #   * no websocket bindings
+    #   * no client app
+    #   * a new psychic backend (built on express) serving as a JSON api delivery system
+    #   * a ts-jest testing integration plugged into your psychic server to run unit tests against your endpoints
+    psy new myapp --api
+    ```
+
+  </TabItem>
+
+  <TabItem value="ws" label="ws">
+    ```bash
+    cd ~/Sites # or another folder of your choosing
+
+    # provision a new psychic app with websockets enabled.
+    # this will enable websockets using the socket.io package.
+    psy new myapp --ws
+    ```
+
+  </TabItem>
+
+  <TabItem value="redis" label="redis">
+    ```bash
+    cd ~/Sites # or another folder of your choosing
+
+    # provision a new psychic app with redis enabled.
+    # this will create automatic bindings via the node-redis
+    # package.
+    psy new myapp --redis
+    ```
+
+  </TabItem>
+</Tabs>

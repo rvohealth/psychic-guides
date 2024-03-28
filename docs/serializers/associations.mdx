@@ -1,0 +1,24 @@
+---
+sidebar_position: 3
+---
+
+# associations
+
+Like models, serializers also have a concept of association chaining, which allows you to express rich domains without getting tied in knots
+
+```ts
+import { Attribute, DreamSerializer } from '@rvohealth/dream'
+
+export default class UserSerializer<
+  DataType extends User,
+> extends DreamSerializer<DataType> {
+  @RendersMany(() => Pet)
+  public pets: Pet[]
+}
+```
+
+TODO: finish this page
+
+## renders many
+
+## renders one

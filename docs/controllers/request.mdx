@@ -1,0 +1,35 @@
+---
+sidebar_position: 2
+---
+
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
+# request
+
+Any controller extending the PsychicController class will automatically contain references to the request and response objects, since they are coupled to the controller upon instantiation of the class.
+
+```ts
+import { PsychicController, Params } from 'psychic'
+
+export default class HowyadoinsController extends PsychicController {
+  public async create() {
+    console.log(this.req)
+    // returns an express request object
+
+    console.log(this.req)
+    // returns an express response object
+  }
+}
+```
+
+the req and res properties on your controller point directly to express request and response objects. Considering, if you are quite familiar with express, you will easily be able to leverage the `req` and `res` properties to do things you would normally do in express, like:
+
+```ts
+import { PsychicController, Params } from 'psychic'
+
+export default class HowyadoinsController extends PsychicController {
+  public async create() {
+    this.res.json({ how: 'yadoin' })
+  }
+}
+```

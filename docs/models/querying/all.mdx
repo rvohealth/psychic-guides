@@ -1,0 +1,12 @@
+---
+sidebar_position: 12
+---
+
+# all
+
+The all method returns all records matching the given conditions. If none are passed, it will return all records in the table.
+
+```ts
+const someUsers = await User.where(id: [1, 2, 3]).all()
+const allUsers = await User.all()
+```

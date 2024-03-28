@@ -1,0 +1,25 @@
+---
+sidebar_position: 1
+---
+
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
+# generating
+
+To generate a controller, use the provided cli tool as demonstrated below:
+
+```bash
+yarn psy g:controller howyadoins create update destroy
+```
+
+This will spit out the followig:
+
+```ts
+import { PsychicController, Params } from 'psychic'
+
+export default class HowyadoinsController extends PsychicController {
+  public async create() {}
+  public async update() {}
+  public async destroy() {}
+}
+```

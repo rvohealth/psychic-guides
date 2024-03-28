@@ -1,0 +1,25 @@
+---
+sidebar_position: 1
+---
+
+# generators
+
+Psychic provides several generators for quickly building scaffolding for your app.
+
+```ts
+# generate migration
+psy g:migration create-users
+
+# generate a model and migration
+psy g:model user email:string
+
+# generate a controller
+psy g:controller users create update destroy
+
+# generate a serializer
+psy g:serializer user email:string id:string
+
+# generate a model, migration, controller, and serializer, and,
+# provided your app is not api-only, a client api module
+psy g:resource api/v1/users user email:string
+```

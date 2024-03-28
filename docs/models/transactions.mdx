@@ -1,0 +1,17 @@
+---
+sidebar_position: 5
+---
+
+# transactions
+
+Transactions can be built using any model class, but typcally would be done from the base Dream class, like so:
+
+```ts
+...
+
+await ApplicationModel.transaction(async txn => {
+  const user = await User.txn(txn).create({ ... })
+  await Post.txn(txn).create({ user })
+  const post = await Post.txn(txn).first()
+})
+```

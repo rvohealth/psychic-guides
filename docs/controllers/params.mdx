@@ -1,0 +1,28 @@
+---
+sidebar_position: 3
+---
+
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
+# params
+
+Though you can go through conventional methods to collect request parameters from express, Psychic provides a helpful shortcut for accessing any param, regardless of where it came from, by using the following:
+
+<RightSidebarItem>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET /howyadoins?chalupas=delicious
+`}
+  </pre>
+</RightSidebarItem>
+```ts import {(PsychicController, Params)} from 'psychic'
+
+export default class HowyadoinsController extends PsychicController {
+  public async create() {
+    console.log(this.params)
+    // { chalupas: 'delicious' }
+  }
+}
+``
+
+`

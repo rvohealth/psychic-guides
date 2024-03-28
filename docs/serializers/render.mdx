@@ -1,0 +1,36 @@
+---
+sidebar_position: 4
+---
+
+# render
+
+From within a controller, one can use a serializer to restrict attributes, like so:
+
+```ts
+  public myMethod() {
+    const stuff = await Stuff.first()
+    this.ok(new StuffSerializer(stuff).render())
+  }
+```
+
+## implicit rendering
+
+When a psychic controller receives either a dream model or an array of dream models as an argument to the `ok` method, it will automatically infer the serializer by calling the record(s) serializer. This means that, given a model with a serializer getter established (like so:)
+
+```ts
+class Stuff extends ApplicationModel {
+  ...
+  public get serializer() {
+    return StuffSerializer<any>
+  }
+}
+```
+
+the controller will implicitly render the model using it's serializer.
+
+```ts
+  public myMethod() {
+    const stuffs = await Stuff.all()
+    this.ok(stuffs)
+  }
+```

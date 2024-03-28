@@ -1,0 +1,17 @@
+---
+sidebar_position: 4
+---
+
+# websockets
+
+2 configuration files are provided for configuring your websockets layer. the `conf/ws/start.ts` file will be run whenever your server starts up. Conversely, the `conf/ws/connect.ts` file will be run whenever a user connects via websocket to your system.
+
+```ts
+// conf/ws/start.ts
+
+import { Server as SocketServer } from "socket.io"
+
+// this is called once per each express boot
+
+export default async (server: SocketServer) => {}
+```

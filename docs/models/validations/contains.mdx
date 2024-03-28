@@ -1,0 +1,20 @@
+---
+sidebar_position: 2
+---
+
+# contains
+
+Use the contains validator to ensure a certain format is met against your model before saving.
+
+```ts
+export default class User extends Dream {
+  public readonly get table() {
+    return 'users' as const
+  }
+
+  public id: string
+
+  @Validates('contains', '@')
+  public email: string
+}
+```

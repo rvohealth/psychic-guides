@@ -1,0 +1,15 @@
+---
+sidebar_position: 11
+---
+
+# pluck
+
+The pluck method returns raw objects containing just the attributes specified. If only one attribute is passed, it is returned as a flattened array.
+
+```ts
+await User.pluck('id')
+// ['123', '456']
+
+await User.pluck('id', 'email')
+// [['123', 'fred@flinstone.biz'], ['456', 'willlmmaaaaaaa@flinstone.biz']]
+```

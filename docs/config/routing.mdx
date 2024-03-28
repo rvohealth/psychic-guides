@@ -1,0 +1,22 @@
+---
+sidebar_position: 3
+---
+
+# routing
+
+In addition to configuration for building your express app, a separate configuration file is provided to configure the routing mechanism provided by psychic. This file is located at `conf/routes.ts`.
+
+```ts
+// conf/routes.ts
+import { PsychicRouter } from "psychic"
+
+export default (r: PsychicRouter) => {
+  r.namespace("api", (r) => {
+    r.get("ping", "users#ping") // points to the app/controllers/api/users.ts file’s ping method
+
+    r.namespace("v1", (r) => {
+      r.get("ping", "users#ping") // points to the app/controllers/api/v1/users.ts file’s ping method
+    })
+  })
+}
+```

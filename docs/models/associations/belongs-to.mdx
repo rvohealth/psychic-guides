@@ -1,0 +1,72 @@
+---
+sidebar_position: 1
+---
+
+import Tabs from '@theme/Tabs'
+import TabItem from '@theme/TabItem'
+
+# belongs to
+
+Belongs to associations are to be used when the model in question is related to another model, and contains a foreign key to that model within its table. An example of a belongs to would be in the case of a `User` and `Post` model, where a `User` can write many `Post`s, and each `Post` would contain a field (called a foreign key) which points back to the id field of a `User` who owns it. In this context, we would say that the `Post` belongs to the `User`.
+
+<Tabs>
+  <TabItem value="basic" label="basic" default>
+    ```ts
+    export default class Post extends Dream {
+      public readonly get table() {
+        return 'posts' as const
+      }
+
+      public id: number
+      public content: string | null
+
+      @BelongsTo(() => User)
+      public user: User
+      public userId: number
+    }
+
+    ```
+
+  </TabItem>
+
+  <TabItem value="foreign-key" label="foreign key">
+    ```ts
+    export default class Post extends Dream {
+      public readonly get table() {
+        return 'posts' as const
+      }
+
+      public id: number
+      public content: string | null
+
+      // this expects the Post model to have a field 'myUserId',
+      // which will point to the 'id' field on the User model
+      @BelongsTo(() => User, { foreignKey: 'myUserId' })
+      public user: User
+      public myUserId: number
+    }
+    ```
+
+  </TabItem>
+
+  <TabItem value="primary-key-override" label="primary key override">
+    ```ts
+    export default class Post extends Dream {
+      public readonly get table() {
+        return 'posts' as const
+      }
+
+      public id: number
+      public content: string | null
+
+      // this expects the Post model to have a field 'userId',
+      // which will point to the 'uuid' field on the User model
+      @BelongsTo(() => User, { primaryKeyOverride: 'uuid' })
+      public user: User
+      public userId: number
+    }
+    ```
+
+  </TabItem>
+</Tabs>
+````

@@ -1,0 +1,23 @@
+---
+sidebar_position: 3
+---
+
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
+# updating
+
+To update a record that already exists, you can use a combination of attribute setters and the `#save` method on your models to trigger updates.
+
+```ts
+import User from 'app/models/user'
+const user = await User.first()
+
+user.email = 'how@yadoin.biz'
+await user.save()
+```
+
+To achieve this in one line, you can call the `#update` method.
+
+```ts
+await user.update({ email: 'how@yadoin.biz' })
+```
