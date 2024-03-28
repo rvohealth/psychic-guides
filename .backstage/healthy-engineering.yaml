@@ -1,0 +1,9 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: psychic-guides
+  description: a repo containing the guides for the psychic web framework
+spec:
+  type: service # can be one of: service, library, website, iac-pipeline
+  lifecycle: production # can be one of: experimental, production, deprecated
+  owner: unassigned # your existing tech team in Backstage, i.e. team-developer-platforms
