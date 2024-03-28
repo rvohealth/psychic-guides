@@ -1,16 +1,16 @@
-import clsx from "clsx";
-import Link from "@docusaurus/Link";
-import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
-import Layout from "@theme/Layout";
-import HomepageFeatures from "@site/src/components/HomepageFeatures";
-import { IoChevronDownCircle as ChevronDownIcon } from "react-icons/io5";
-import Heading from "@theme/Heading";
-import Logo from "../components/logo";
+import clsx from 'clsx'
+import Link from '@docusaurus/Link'
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext'
+import Layout from '@theme/Layout'
+import HomepageFeatures from '@site/src/components/HomepageFeatures'
+import { IoChevronDownCircle as ChevronDownIcon } from 'react-icons/io5'
+import Heading from '@theme/Heading'
+import Logo from '../components/logo'
 
-import styles from "./index.module.css";
+import styles from './index.module.css'
 
 function HomepageHeader() {
-  const { siteConfig } = useDocusaurusContext();
+  const { siteConfig } = useDocusaurusContext()
   return (
     <div className="app-hero">
       <div className="above-night-sky">
@@ -24,21 +24,16 @@ function HomepageHeader() {
 
             <nav>
               <Link to="/docs/intro">guides</Link>
-              <br />
-              <Link to="/api">API documentation</Link>
             </nav>
           </div>
         </div>
-        <a href="#docs-content">
-          <ChevronDownIcon className="icon" />
-        </a>
       </div>
     </div>
-  );
+  )
 }
 
 export default function Home(): JSX.Element {
-  const { siteConfig } = useDocusaurusContext();
+  const { siteConfig } = useDocusaurusContext()
   return (
     <Layout
       title={`Hello from ${siteConfig.title}`}
@@ -47,5 +42,5 @@ export default function Home(): JSX.Element {
       <HomepageHeader />
       <main></main>
     </Layout>
-  );
+  )
 }
