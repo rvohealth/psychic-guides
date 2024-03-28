@@ -27,7 +27,7 @@ export default (r: PsychicRouter) => {
 ```
 
 In addition, Psychic provides a full-force typescript/node/postgres driven ORM that runs on top of
-[Kysely](NEED_LINK). Modeled after the active record provided by Ruby on Rails, Dream
+[Kysely](https://kysely.dev). Modeled after the active record provided by Ruby on Rails, Dream
 provides a full suite of powerful features with a robust typing system to aid you in your code
 journeys.
 
