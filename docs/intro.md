@@ -6,7 +6,7 @@ sidebar_position: 1
 
 Psychic is a node/typescript MVC-based web framework built on top of&nbsp;
 [expressjs](https://expressjs.com) and
-[dream ORM](https://github.com/@rvohealth/dream). It provides a light wrapper around
+[dream ORM](https://github.com/rvohealth/dream). It provides a light wrapper around
 express, gifting you a custom routing mechanism which allows one to compose routes much like
 they would in Ruby on Rails, Laravel, pheonix, or most other popular MVC-based web frameworks,
 and then uses express to direct the defined routes to controller methods.
