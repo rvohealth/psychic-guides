@@ -11,6 +11,8 @@ Date fields in the database are returned as CalendarDate objects. CalendarDate p
 ## Creating a CalendarDate
 
 ```typescript
+import { CalendarDate } from '@rvohealth/dream'
+
 // relative to today
 CalendarDate.today()
 CalendarDate.today({ zone: 'America/Chicago' })
