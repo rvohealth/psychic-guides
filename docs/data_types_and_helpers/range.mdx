@@ -1,0 +1,52 @@
+---
+sidebar_position: 1
+---
+
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
+# range
+
+Range is used in combination with `where` clauses in Dream.
+
+## range supports start, end, or start and end values
+
+```typescript
+import { range } from '@rvohealth/dream'
+
+// search Recipes with a rating of at least 3
+await Recipe.where({ rating: range(3) }).count()
+
+// search Recipes with a rating of at least 2 or less
+await Recipe.where({ rating: range(null, 2) }).count()
+
+// search Recipes with a rating between 2 and 4, inclusive
+await Recipe.where({ rating: range(2, 4) }).count()
+```
+
+## range supports CalendarDate, DateTime, and number values
+
+```typescript
+import { range } from '@rvohealth/dream'
+
+await user
+  .associationQuery('pets')
+  .where({
+    adoptedOn: range(
+      CalendarDate.today().minus({ months: 2 }),
+      CalendarDate.today().minus({ month: 1 })
+    ),
+  })
+  .order({ adoptedOn: 'desc' })
+  .all()
+
+await user
+  .associationQuery('pets')
+  .where({
+    adoptedOn: range(
+      DateTime.now().minus({ months: 2 }),
+      DateTime.now().minus({ month: 1 })
+    ),
+  })
+  .order({ adoptedOn: 'desc' })
+  .all()
+```
