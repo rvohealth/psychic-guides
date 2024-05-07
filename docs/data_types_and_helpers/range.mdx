@@ -16,7 +16,7 @@ import { range } from '@rvohealth/dream'
 // search Recipes with a rating of at least 3
 await Recipe.where({ rating: range(3) }).count()
 
-// search Recipes with a rating of at least 2 or less
+// search Recipes with a rating of 2 or less
 await Recipe.where({ rating: range(null, 2) }).count()
 
 // search Recipes with a rating between 2 and 4, inclusive
