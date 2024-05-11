@@ -1,0 +1,37 @@
+# selfWhere
+
+`selfWhere` adds a `where` clause to an association between a column on the associated model and a column on this model.
+
+For example, suppose we have an ArtExhibit, and that each day, we want to feature a different Artwork within that exhibit. Every day, we update the `featuredPosition` on the ArtExhibit. The `featuredArtwork` is the Artwork with that `position`.
+
+```typescript
+const exhibits = await ArtExhibit.preload('featuredArtwork`).all()
+// each exhibit now has its `featureArtwork` loaded and ready to serialize, etc.
+
+export default class ArtExhibit extends ApplicationModel {
+  // ...
+
+  public featuredPosition: DreamColumn<ArtExhibit, 'featuredPosition'>
+
+  @HasMany(() => Artwork)
+  public artworks: Artwork[]
+
+  @HasOne(() => Artwork, {
+    selfWhere: {
+      position: 'featuredPosition',
+    },
+  })
+  public featuredArtwork: Artwork
+}
+
+export default class Artwork extends ApplicationModel {
+  // ...
+
+  @Sortable({ scope: 'artExhibit' })
+  public position: DreamColumn<Artwork, 'position'>
+
+  @BelongsTo(() => ArtExhibit)
+  public artExhibit: ArtExhibit
+  public artExhibitId: DreamColumn<Artwork, 'artExhibitId'>
+}
+```

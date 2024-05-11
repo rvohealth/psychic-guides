@@ -1,0 +1,32 @@
+# selfWhereNot
+
+`selfWhereNot` adds a `whereNot` clause to an association between a column on the associated model and a column on this model.
+
+For example, the below `siblings` association matches all EdgeNodes attached to the same GraphNode that are not the current EdgeNode:
+
+```typescript
+const siblingEdgeNodes = await edgeNode.load('siblings').execute()
+// siblingEdgeNodes is all of edgeNode's siblings
+
+export default class EdgeNode extends ApplicationModel {
+  // ...
+
+  @BelongsTo(() => GraphNode, { foreignKey: 'nodeId' })
+  public node: DreamColumn<GraphNode, 'node'>
+  public nodeId: DreamColumn<GraphNode, 'nodeId'>
+
+  @HasMany(() => EdgeNode, {
+    through: 'node',
+    source: 'edgeNodes',
+    selfWhereNot: { id: 'id' },
+  })
+  public siblings: EdgeNode[]
+}
+
+export default class GraphNode extends ApplicationModel {
+  // ...
+
+  @HasMany(() => EdgeNode, { foreignKey: 'nodeId' })
+  public edgeNodes: EdgeNode[]
+}
+```

@@ -1,0 +1,12 @@
+# Sortable
+
+```
+export default class EdgeNode extends ApplicationModel {
+  // ...
+
+  @Sortable({ scope: 'node' })
+  public position: DreamColumn<EdgeNode, 'position'>
+
+  @Sortable({ scope: ['edge', 'node'] })
+  public multiScopedPosition: DreamColumn<EdgeNode, 'multiScopedPosition'>
+```

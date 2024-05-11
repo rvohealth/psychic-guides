@@ -8,7 +8,7 @@ both HasOne and HasMany associations have recursively-nested `through` support b
 
 ```ts
 export default class CommentReply extends Dream {
-  public readonly get table() {
+  public get table() {
     return 'comment_replies' as const
   }
 
@@ -18,7 +18,7 @@ export default class CommentReply extends Dream {
   @BelongsTo(() => Comment)
   public comment: Comment
 
-  @HasOne(() => User, { through: 'comment', throughClass: () => Comment })
+  @HasOne(() => User, { through: 'comment' })
   public user: User
 }
 ```
