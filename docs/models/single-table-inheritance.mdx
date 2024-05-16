@@ -37,7 +37,7 @@ import NonCat from './Pet/NonCat'
 
 class User extends Dream {
   ...
-  @HasMany(() => [Cat, NonCat])
+  @HasMany(() => [Cat, NonCat], { polymorphic: true })
   public pets: Pet[]
 }
 ```
@@ -45,8 +45,7 @@ class User extends Dream {
 Now you can easily load your models from the corresponding model like so:
 
 ```ts
-const user = await User.first()
-await user.load('pets')
+const user = await User.preload('pets').first()
 
 user.pets
 // [Cat{}, Cat{}, NonCat{}, etc...]

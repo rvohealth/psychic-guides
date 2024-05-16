@@ -21,3 +21,9 @@ To achieve this in one line, you can call the `#update` method.
 ```ts
 await user.update({ email: 'how@yadoin.biz' })
 ```
+
+Additionally, you can perform bulk updates like so:
+
+```ts
+await User.where({ email: ops.ilike('%chalupatowne%') }).update({ email: '' })
+```

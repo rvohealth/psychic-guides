@@ -2,20 +2,32 @@
 sidebar_position: 3
 ---
 
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
 # routing
 
 In addition to configuration for building your express app, a separate configuration file is provided to configure the routing mechanism provided by psychic. This file is located at `conf/routes.ts`.
 
+<RightSidebarItem>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET    api/v1/pets      Api/V1/Pets#index
+POST   api/v1/pets      Api/V1/Pets#create
+GET    api/v1/pets/:id  Api/V1/Pets#show
+PUT    api/v1/pets/:id  Api/V1/Pets#update
+PATCH  api/v1/pets/:id  Api/V1/Pets#update
+DELETE api/v1/pets/:id  Api/V1/Pets#destroy
+`}
+  </pre>
+</RightSidebarItem>
+
 ```ts
 // conf/routes.ts
-import { PsychicRouter } from "psychic"
-
+import { PsychicRouter } from 'psychic'
 export default (r: PsychicRouter) => {
-  r.namespace("api", (r) => {
-    r.get("ping", "users#ping") // points to the app/controllers/api/users.ts file’s ping method
-
-    r.namespace("v1", (r) => {
-      r.get("ping", "users#ping") // points to the app/controllers/api/v1/users.ts file’s ping method
+  r.namespace('api', (r) => {
+    r.namespace('v1', (r) => {
+      r.resources('pets')
     })
   })
 }

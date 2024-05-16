@@ -4,23 +4,29 @@ sidebar_position: 5
 
 # redis
 
-Additionally, a redis configuration is passed to connect to the underlying redis library.
+Redis can be configured in `conf/app.ts`, like so:
 
 ```ts
-// conf/redis.ts
+// conf/app.ts
 
-export default async () => {
-  const user = process.env.REDIS_USER || undefined
-  const password = process.env.REDIS_PASSWORD || undefined
-  const host = process.env.REDIS_HOST || "localhost"
-  const port = process.env.REDIS_PORT || ""
-  // const protocol = process.env.REDIS_PROTOCOL || 'redis'
+...
 
-  return {
-    user,
-    password,
-    host,
-    port,
-  }
-}
+  // redis background job credentials
+  psy.setRedisBackgroundJobCredentials({
+    username: process.env.BACKGROUND_JOBS_REDIS_USER,
+    password: process.env.BACKGROUND_JOBS_REDIS_PASSWORD,
+    host: process.env.BACKGROUND_JOBS_REDIS_HOST,
+    port: process.env.BACKGROUND_JOBS_REDIS_PORT,
+    secure: process.env.BACKGROUND_JOBS_REDIS_USE_SSL === '1',
+  })
+
+  // redis websocket credentials
+  psy.setRedisWsCredentials({
+    username: process.env.WS_REDIS_USER,
+    password: process.env.WS_REDIS_PASSWORD,
+    host: process.env.WS_REDIS_HOST,
+    port: process.env.WS_REDIS_PORT,
+    secure: process.env.WS_REDIS_USE_SSL === '1',
+  })
+
 ```

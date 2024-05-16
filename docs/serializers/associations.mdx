@@ -6,6 +6,8 @@ sidebar_position: 3
 
 Like models, serializers also have a concept of association chaining, which allows you to express rich domains without getting tied in knots
 
+## renders many
+
 ```ts
 import { Attribute, DreamSerializer } from '@rvohealth/dream'
 
@@ -17,8 +19,22 @@ export default class UserSerializer<
 }
 ```
 
-TODO: finish this page
+RendersMany will expect an array to be present at its field. Usually, this will be done by preloading on your model before serialization, like so:
 
-## renders many
+```ts
+const user = await User.preload('pets').first()
+this.ok(user)
+```
 
 ## renders one
+
+```ts
+import { Attribute, DreamSerializer } from '@rvohealth/dream'
+
+export default class UserSerializer<
+  DataType extends User,
+> extends DreamSerializer<DataType> {
+  @RendersOne(() => Pet)
+  public pet: Pet
+}
+```
