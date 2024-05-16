@@ -4,7 +4,7 @@ sidebar_position: 8
 
 # preload
 
-The preload method allows you to side-load other associations while executing a query.
+The preload method enables you to side-load other associations while executing a query.
 
 ```ts
 const users = await User.preload('posts', 'comments').all()

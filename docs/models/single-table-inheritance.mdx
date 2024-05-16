@@ -4,13 +4,13 @@ sidebar_position: 6
 
 # single table inheritance
 
-Single table inheritance allows one to have model inheritance supported at the database level by using a type field to capture the class name. Doing this automatically applies default scopes to the class ensuring that the type restriction is always applied.
+Single table inheritance enables model inheritance support at the database level by using a type field to capture the class name. Doing this automatically applies default scopes to the class ensuring that the type restriction is always applied.
 
 Because Psychic provides model indexing for nested namespaces, we recommend you follow a Base model pattern, as shown below:
 
 ```ts
 // models/Pet.ts
-export default class Pet exteds Dream {
+export default class Pet extends Dream {
   @BelongsTo(() => User)
   public user: User
   public userId: number
