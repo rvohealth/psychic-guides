@@ -1,0 +1,15 @@
+# pluckEachThrough
+
+The `pluckEachThrough` method is similar to `pluckThrough`, but does the pluck in batches of 1000 to prevent you from bringing too much data into local memory:
+
+```ts
+await User.query().pluckEachThrough(
+  'pets',
+  'favoriteTreats',
+  { treatName: 'catnip' },
+  ['favoriteTreats.id', 'favoriteTreats.treatName'],
+  (arr) => {
+    // do something with plucked array
+  }
+)
+```

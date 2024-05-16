@@ -1,0 +1,50 @@
+---
+sidebar_position: 9
+---
+
+# dirty
+
+In an ORM ecosystem, it is often necessary to determine if a record has any changes to be saved or not. Dream provides powerful methods for introspecting the changing state of your model
+
+## isDirty
+
+The `isDirty` will return true or false, depending on if a record has changes
+
+```ts
+const user = await User.first()
+console.log(user.isDirty) // false
+
+user.email = 'new@email'
+console.log(user.isDirty) // true
+```
+
+## changes
+
+For more verbose information on what has changed, you can also call the `changes` method, which will give you an in-depth explanation of the changes for each field
+
+```ts
+const user = await User.first()
+user.email = 'new@email'
+
+console.log(user.changes())
+// {
+//   email: {
+//     was: 'how@yadoin',
+//     now: 'new@email',
+//   },
+// }
+```
+
+## changedAttributes
+
+To retrieve only the changed attributes and their values, you can use `changedAttributes`
+
+```ts
+const user = await User.first()
+user.email = 'new@email'
+
+console.log(user.changedAttributes())
+// {
+//   email: 'new@email',
+// }
+```

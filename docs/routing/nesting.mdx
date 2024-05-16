@@ -2,29 +2,27 @@
 sidebar_position: 3
 ---
 
-import RightSidebarItem from "@site/src/components/ui/right-sidebar-item"
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
 
 # nesting
 
 Passing a third argument to our resources method, we can create edge routes against our resource, like so:
 
 <RightSidebarItem>
-  <pre style={{ backgroundColor: "transparent" }}>
+  <pre style={{ backgroundColor: 'transparent' }}>
     {`
 POST /users    users#create
 GET  /users/hi users#hi
 `}
   </pre>
 </RightSidebarItem>
-```ts // conf/routes.ts
 
-import { PsychicRouter } from "psychic"
+```ts // conf/routes.ts
+import { PsychicRouter } from 'psychic'
 
 export default (r: PsychicRouter) => {
-  r.resources('users', { only: ['create'] }, r => {
+  r.resources('users', { only: ['create'] }, (r) => {
     r.get('hi', 'users#hi')
   })
 }
-``
-
-`
+```

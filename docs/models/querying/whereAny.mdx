@@ -1,0 +1,12 @@
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
+# whereAny
+
+The `whereAny` method can be used to union two or more clauses together, like so:
+
+```ts
+await User.whereAny([
+  { email: ops.ilike('%burpcollaborator%') },
+  { name: ops.ilike('%Untitled%') },
+]).all()
+```

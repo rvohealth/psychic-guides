@@ -2,30 +2,28 @@
 sidebar_position: 4
 ---
 
-import RightSidebarItem from "@site/src/components/ui/right-sidebar-item"
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
 
 # namespacing
 
-You can also use namespacing to reflect folder and uri structures at once. The following example would require the respective users controller to be located at `app/controllers/api/v1/users.ts`
+You can also use namespacing to reflect folder and uri structures at once. The following example would require the respective users controller to be located at `app/controllers/Api/V1/UsersController.ts`
 
 <RightSidebarItem>
-  <pre style={{ backgroundColor: "transparent" }}>
+  <pre style={{ backgroundColor: 'transparent' }}>
     {`
 GET api/v1/hi api/v1/users#hi
 `}
   </pre>
 </RightSidebarItem>
-```ts // conf/routes.ts
 
-import { PsychicRouter } from "psychic"
+```ts // conf/routes.ts
+import { PsychicRouter } from 'psychic'
 
 export default (r: PsychicRouter) => {
-  r.namespace('api', r => {
-    r.namespace('v1', r => {
+  r.namespace('api', (r) => {
+    r.namespace('v1', (r) => {
       r.get('hi', 'users#hi')
     })
   })
 }
-``
-
-`
+```
