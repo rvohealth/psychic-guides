@@ -2,38 +2,16 @@
 sidebar_position: 0
 ---
 
+# overview
+
 You're probably tired of hearing it by now, but our querying paradigm was also modeled loosly after the Ruby on Rails querying patterns. We wanted to expose a querying interface which could tap into Kysely's type intelligence to expose beautiful autocomplete magic, but wanted to include the ability to use powerful rails-like features, such as joins and includes to enable the type intelligence to extend to associations against your models.
 
 ```ts
-// models/User.ts
-
-export default class User extends Dream {
-  public readonly get table() {
-    return 'users' as const
-  }
-
-  public id: number
-  public email: string | null
-
-  @HasMany(() => Post)
-  public posts: Post[]
-}
-
-export default class Post extends Dream {
-  public id: number
-  public content: string | null
-
-  @BelongsTo(() => User)
-  public user: User
-}
-
-const users = await User
-  .joins('posts')
+const users = await User.joins('posts')
   .where({
     posts: {
-      content: ops.ilike('howyadoin')
-    }
+      content: ops.ilike('howyadoin'),
+    },
   })
   .all()
 ```
-

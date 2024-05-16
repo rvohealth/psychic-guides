@@ -27,26 +27,3 @@ export default class NonCat extends Pet {
 }
 ...
 ```
-
-On a corresponding model, you can define a has one or has many relationship with the STI models like so:
-
-```ts
-import Pet from './Pet'
-import Cat from './Pet/Cat'
-import NonCat from './Pet/NonCat'
-
-class User extends Dream {
-  ...
-  @HasMany(() => [Cat, NonCat], { polymorphic: true })
-  public pets: Pet[]
-}
-```
-
-Now you can easily load your models from the corresponding model like so:
-
-```ts
-const user = await User.preload('pets').first()
-
-user.pets
-// [Cat{}, Cat{}, NonCat{}, etc...]
-```

@@ -1,0 +1,8 @@
+# pluckThrough
+
+The `pluckThrough` method enables you to drill through associations to get to the final columns to pluck.
+
+```ts
+await User.pluckThrough('pets', 'collars', ['id', 'color'])
+// [['123', 'blue'], ['456', 'pink']]
+```
