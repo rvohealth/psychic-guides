@@ -20,17 +20,20 @@ When a psychic controller receives either a dream model or an array of dream mod
 ```ts
 class Stuff extends ApplicationModel {
   ...
-  public get serializer() {
-    return StuffSerializer<any>
+  public get serializers() {
+    return {
+      default: StuffSerializer<any>,
+      summary: StuffSummarySerializer<any>,
+    }
   }
 }
 ```
 
-the controller will implicitly render the model using it's serializer.
+The controller will implicitly render the model using it's `summary` serializer.
 
 ```ts
   public myMethod() {
     const stuffs = await Stuff.all()
-    this.ok(stuffs)
+    this.ok(stuffs, { serializer: 'summary' })
   }
 ```

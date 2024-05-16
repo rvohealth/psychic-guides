@@ -4,8 +4,33 @@ sidebar_position: 6
 
 # polymorphism
 
-Polymorphism is blah blah finish me
+Polymorphism allows you to specify more than one model class for the same association slot, like so:
 
 ```ts
 // TODO: add example and finish polymorphism docs
+
+// models/Pet.ts
+export default class Pet exteds Dream {
+  @BelongsTo(() => User)
+  public user: User
+  public userId: number
+}
+
+// models/Pet/Cat.ts
+@Sti(Pet)
+export default class Cat extends Pet {
+}
+
+// models/Pet/NonCat.ts
+@Sti(Pet)
+export default class NonCat extends Pet {
+}
+
+class Collar extends Dream {
+  ...
+  @BelongsTo(() => [Cat, NonCat], { polymorphic: true })
+  public pet: Pet
+  public petId: DreamColumn<Collar, 'petId'>
+  public petType: DreamColumn<Collar, 'petType'>
+}
 ```

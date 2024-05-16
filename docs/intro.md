@@ -17,12 +17,58 @@ and then uses express to direct the defined routes to controller methods.
 import { PsychicRouter } from 'psychic'
 
 export default (r: PsychicRouter) => {
-  r.get('/', 'welcome#index')
+  r.get('', 'Welcome#index')
   r.namespace('api', (r) => {
     r.namespace('v1', (r) => {
-      r.resources('users', { only: ['create', 'index'] })
+      r.resources('ingredients')
     })
   })
+}
+```
+
+Once those routes are defined, we can add a controller to match:
+
+```ts
+// controllers/Api/V1/IngredientsController.ts
+export default class ApiV1IngredientsController extends AuthedController {
+  public async create() {
+    const ingredient = await Ingredient.create(this.ingredientParams)
+    this.created(ingredient.id)
+  }
+
+  public async index() {
+    const ingredients = await Ingredient.all()
+    this.ok(ingredients)
+  }
+
+  public async show() {
+    const ingredient = await Ingredient.preload(['nutrition', 'macros']).find(
+      this.castParam('id', 'bigint')
+    )
+    if (!ingredient) return this.notFound()
+
+    this.ok(ingredient)
+  }
+
+  public async update() {
+    const ingredient = await Ingredient.find(this.castParam('id', 'bigint'))
+    if (!ingredient) return this.notFound()
+
+    await ingredient.update(this.ingredientParams)
+    this.noContent()
+  }
+
+  public async destroy() {
+    const ingredient = await Ingredient.find(this.castParam('id', 'bigint'))
+    if (!ingredient) return this.notFound()
+
+    await ingredient.destroy()
+    this.noContent()
+  }
+
+  private get ingredientParams() {
+    return this.paramsFor(Ingredient)
+  }
 }
 ```
 
@@ -67,3 +113,5 @@ export default class User extends Dream {
   }
 }
 ```
+
+Psychic also bootstraps your app with a fully functioning repl, as well as bindings to jest which allow you to cover endpoint testing, unit testing, and even feature testing (for those who are using a client integration).

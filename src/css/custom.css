@@ -55,8 +55,10 @@ h1 {
   font-size: 16px;
 }
 
-.theme-doc-sidebar-container a {
-  color: #282828;
+html[data-theme='light'] {
+  .theme-doc-sidebar-container a {
+    color: #282828;
+  }
 }
 
 .docSidebarContainer_node_modules-\@docusaurus-theme-classic-lib-theme-DocRoot-Layout-Sidebar-styles-module {
@@ -78,6 +80,14 @@ h1 {
 
 .theme-doc-markdown {
   margin-top: 0px;
+}
+
+:root {
+  @media (min-width: 997px) {
+    .docItemCol_node_modules-\@docusaurus-theme-classic-lib-theme-DocItem-Layout-styles-module {
+      max-width: 65% !important;
+    }
+  }
 }
 
 .pagination-nav__link {
@@ -188,8 +198,8 @@ h1 {
   right: 0;
   background: #9e0dff;
   color: #25fffc;
-  width: 20%;
-  margin-right: 25px;
+  width: 25%;
+  margin-right: 3%;
   padding: 12px;
   border-radius: 10px;
 }

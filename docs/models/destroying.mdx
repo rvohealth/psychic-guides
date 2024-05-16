@@ -22,5 +22,5 @@ await user.update({ email: 'how@yadoin.biz' })
 import User from 'app/models/user'
 import { ops } from 'psychic'
 
-await User.where({ email: ops.like('%y@%') }).destroyAll()
+await User.where({ email: ops.like('%y@%') }).destroy()
 ```

@@ -4,14 +4,41 @@ sidebar_position: 4
 
 # websockets
 
-2 configuration files are provided for configuring your websockets layer. the `conf/ws/start.ts` file will be run whenever your server starts up. Conversely, the `conf/ws/connect.ts` file will be run whenever a user connects via websocket to your system.
+Websockets can be configured using `conf/app.ts`. Under the hood, psychic uses a redis integration to provide distributed websocket system support, and drives the websocket integration using socket.io. To integrate, open `conf/app.ts` and tap into the `ws:start` and `ws:connect` hooks, like so:
 
 ```ts
-// conf/ws/start.ts
+// conf/app.ts
+  ...
 
-import { Server as SocketServer } from "socket.io"
+  psy.on('ws:start', () => {
+    // this is called when the server is first started
+  })
 
-// this is called once per each express boot
+  psy.on('ws:connect', async socket => {
+    // this is called for each connection to a user
+    const auth = socket.handshake.auth
+    const token = auth.token as string
+    const userId = Encrypt.decode(token)
+    const user = await User.find(userId)
 
-export default async (server: SocketServer) => {}
+    if (user) {
+      await Ws.register(socket.id, user.id)
+    }
+  })
+```
+
+Calling Ws.regsiter persists a key in redis which associates that socket id with that user id (and a `user` prefix). If you need to use a different redis prefix, you can always specify that as a third argument to register, like so:
+
+```ts
+await Ws.register(socket.id, user.id, 'admin-user')
+```
+
+Now, you can safely call `Ws#emit` from anywhere in your application and emit to the user, like so:
+
+```ts
+await new Ws(appRoutes, { redisPrefix: 'admin-user' }).emit(
+  'some/ws/route',
+  user.id,
+  { message: 'hello world' }
+)
 ```

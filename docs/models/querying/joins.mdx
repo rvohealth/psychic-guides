@@ -20,12 +20,9 @@ const users = await User.joins('posts', { category: 'travel' }).all()
 
 ```ts
 // A where statement on both `posts` and `comments`
-const users = await User.joins(
-    'posts', 
-    { category: 'travel' }, 
-    'comments', 
-    { flagged: true }
-  ).all()
+const users = await User.joins('posts', { category: 'travel' }, 'comments', {
+  flagged: true,
+}).all()
 
 // A where statement on just `comments`
 const users = await User.joins('posts', 'comments', { flagged: true }).all()
