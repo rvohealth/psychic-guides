@@ -1,8 +1,4 @@
 {
   "label": "data types / helpers",
-  "position": 10,
-  "link": {
-    "type": "generated-index",
-    "description": "Data types and helpers"
-  }
+  "position": 10
 }

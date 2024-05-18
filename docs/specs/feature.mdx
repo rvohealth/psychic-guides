@@ -4,19 +4,52 @@ sidebar_position: 2
 
 # feature
 
-Contrary to unit specs, feature specs will launch your front end and back end servers, driving them with puppeteer.
+Contrary to unit specs, feature specs will launch your front end and back end servers, driving them with [jest-playwright](https://github.com/playwright-community/jest-playwright).
 
 ```ts
-describe('users index page', () => {
+describe('ingredients index page', () => {
   beforeEach(async () => {
-    await User.create({ email: 'hello@world.com' })
+    await createIngredient({ name: 'Cabbage', ... })
   })
 
   it('accepts the request', async () => {
-    await page.goto('http://localhost:3000/users')
-    await expect(page).toMatchTextContent('hello@world.com')
+    await visit('http://localhost:3000/ingredients')
+    await expectContent('Cabbage')
   })
 })
 ```
 
-TODO: finish this
+Psychic doesn't know much about your UI, so it doesn't provide many feature spec helpers for you out of the box (aside from those provided by playwright directly), but it does include a few in your app when it is first generated:
+
+```bash
+├── spec
+│   ├── features
+│   │   ├── attachFile.ts
+│   │   ├── clickButton.ts
+│   │   ├── clickLink.ts
+│   │   ├── clickSelector.ts
+│   │   ├── expectContent.ts
+│   │   ├── expectLink.ts
+│   │   ├── expectNoContent.ts
+│   │   ├── expectNoSelector.ts
+│   │   ├── expectSelector.ts
+│   │   ├── fillInput.ts
+│   │   ├── sleep.ts
+│   │   ├── toggle.ts
+│   │   ├── uncheck.ts
+│   │   ├── visit.ts
+```
+
+These helpers are for the most part general purpose, but may need to be tweaked depending on the UI framework you are using.
+
+between each spec run, the database will be truncated to ensure a clean slate. Similar to unit specs, this is set up in the `spec/features/setup/hooks.ts` file:
+
+```ts
+// api/spec/features/setup/hooks.ts
+
+import { truncate } from '@rvohealth/dream/spec-helpers'
+
+beforeEach(async () => {
+  await truncate()
+})
+```

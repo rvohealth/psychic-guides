@@ -9,19 +9,10 @@ sidebar_position: 7
 BeforeCreate hooks are run whenever a new record is being saved to the database. A decorator pattern is leveraged, so no arguments need to be passed to the hook, it simply needs to live above the property, like so:
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public id: number
-  public content: string | null
-  ...
-
+export default class User extends Dream {
   @BeforeCreate()
   public async hashPassword() {
-    if (this.password)
-      this.password_digest = await Hash.gen(this.password)
+    if (this.password) this.passwordDigest = await Hash.gen(this.password)
     this.password = undefined
   }
 }
