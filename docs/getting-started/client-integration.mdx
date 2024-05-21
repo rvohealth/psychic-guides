@@ -41,12 +41,12 @@ export default class UsersAPI {
     return apiCall('api.v1.signup.POST').send({ body })
   }
 
-  public static signin(body: Partial<User>) {
+  public static signin(body: { email: string; password: string }) {
     return apiCall('api.v1.signin.POST').send({ body })
   }
 
-  public static me(body: Partial<User>) {
-    return apiCall('api.v1.users.me.GET').send({ body })
+  public static me() {
+    return apiCall('api.v1.users.me.GET').send()
   }
 }
 ```
@@ -63,7 +63,7 @@ import fillInput from '../helpers/fillInput'
 import visit from '../helpers/visit'
 
 describe('visitor visits the signup page', () => {
-  it('allows visitor to fill form and sign up, and then use that form to log in', async () => {
+  it('allows visitor to fill sign up for a new account and then log in with the same credentials', async () => {
     await visit('/signup')
     await fillInput('#email', 'hello@world')
     await fillInput('#password', 'mypassword')

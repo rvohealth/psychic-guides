@@ -13,7 +13,7 @@ describe('ingredients index page', () => {
   })
 
   it('accepts the request', async () => {
-    await visit('http://localhost:3000/ingredients')
+    await visit('/ingredients')
     await expectContent('Cabbage')
   })
 })

@@ -1,9 +1,19 @@
 ---
-sidebar_position: 2
+sidebar_position: 1
 ---
 
 # querying
 
-Once your database connection is configured, you are able to import it and begin making queries to your db using [kysely](https://kysely.dev) as your database driver! This means rather than write raw queries, you will have Kysely to help you build queries and provide helpful typescript autocomplete power at a low level.
+Once your database connection is configured, you are able to import it and begin making queries to your db using [kysely](https://kysely.dev) as your database driver. This means rather than write raw queries, you will have Kysely to help you build queries and provide helpful typescript autocomplete power at a low level.
 
-TODO: finish this
+```ts
+import db from '../db'
+
+db().selectAll('users').where('email', 'ilike', '%burpcollaborator%').execute()
+```
+
+You can additionally turn any query built in dream to a kysely query by calling `#toKysely`, like so:
+
+```ts
+await User.where({ email: ops.ilike('%burpcollaborator%') }).toKysely('select')
+```
