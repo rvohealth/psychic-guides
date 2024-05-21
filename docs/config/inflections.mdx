@@ -1,0 +1,36 @@
+---
+sidebar_position: 6
+---
+
+# inflections
+
+The `conf/inflections.ts` file enables the developer to adjust pluralization rules for certain words. This can be useful for handling irregular words, since otherwise our generators and some of our lookup mechanisms will guess incorrectly at the pluralization or depluralization of a word.
+
+```ts
+// conf/inflections.ts
+
+import pluralize from 'pluralize'
+
+export default () => {
+  pluralize.addUncountableRule('ct')
+  pluralize.addUncountableRule('cc')
+  pluralize.addUncountableRule('c')
+  pluralize.addUncountableRule('doz')
+  pluralize.addUncountableRule('fl oz')
+  pluralize.addUncountableRule('gal')
+  pluralize.addUncountableRule('g')
+  pluralize.addUncountableRule('kg')
+  pluralize.addUncountableRule('l')
+  pluralize.addUncountableRule('ml')
+  pluralize.addUncountableRule('oz')
+  pluralize.addUncountableRule('pkg')
+  pluralize.addUncountableRule('qt')
+  pluralize.addUncountableRule('oz')
+  pluralize.addUncountableRule('gal')
+  pluralize.addUncountableRule('series')
+  pluralize.addUncountableRule('broccoli')
+  pluralize.addIrregularRule('cherry', 'cherries')
+}
+```
+
+Under the hood, we are using the [pluralize](https://www.npmjs.com/package/pluralize) package, which provides an extensive API for customizing pluralization rules if you are interested in learning more.
