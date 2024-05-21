@@ -82,12 +82,8 @@ html[data-theme='light'] {
   margin-top: 0px;
 }
 
-body {
-  @media (min-width: 997px) {
-    .docItemCol_node_modules-\@docusaurus-theme-classic-lib-theme-DocItem-Layout-styles-module {
-      max-width: 65% !important;
-    }
-  }
+main > .container > .row > .col {
+  max-width: 65% !important;
 }
 
 .pagination-nav__link {
