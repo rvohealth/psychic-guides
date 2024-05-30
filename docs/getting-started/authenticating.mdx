@@ -213,12 +213,16 @@ import { Encrypt } from '@rvohealth/psychic'
 import User from '../../../../../src/app/models/User'
 import { UpdateableProperties } from '@rvohealth/dream'
 import createUser from '../../../../factories/UserFactory'
-import send from '@rvohealth/psychic/spec-helpers/send'
+import { specRequest as request } from '@rvohealth/psychic/spec-helpers'
 
 describe('ApiV1AuthController', () => {
+  beforeEach(async () => {
+    await request.init()
+  })
+
   describe('POST /api/v1/signup', () => {
     function subject(params: UpdateableProperties<User>, expectedStatus: number) {
-      return send.post('/api/v1/signup', expectedStatus, { data: params })
+      return request.post('/api/v1/signup', expectedStatus, { data: params })
     }
 
     it('creates a user', async () => {
@@ -237,7 +241,7 @@ describe('ApiV1AuthController', () => {
     })
 
     function subject(email: string, password: string, expectedStatus: number) {
-      return send.post('/api/v1/signin', expectedStatus, { data: { email, password } })
+      return request.post('/api/v1/signin', expectedStatus, { data: { email, password } })
     }
 
     it('signs in a user', async () => {
@@ -261,18 +265,18 @@ and our `UsersController.spec.ts` file:
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { PsychicServer } from '@rvohealth/psychic'
 import createUser from '../../../../factories/UserFactory'
-import send from '@rvohealth/psychic/spec-helpers/send'
+import { specRequest as request } from '@rvohealth/psychic/spec-helpers'
 
 const server = new PsychicServer()
 
 describe('ApiV1UsersController', () => {
   beforeEach(async () => {
-    await server.boot()
+    await request.init()
   })
 
   describe('GET /api/v1/users/me', () => {
     async function getSession() {
-      return await send.session('/api/v1/signin', { email: 'how@yadoin', password: 'password' }, 204)
+      return await request.session('/api/v1/signin', { email: 'how@yadoin', password: 'password' }, 204)
     }
 
     it('returns 204 with an authed user', async () => {
@@ -283,7 +287,7 @@ describe('ApiV1UsersController', () => {
 
     it('returns 401 with no authed user', async () => {
       await createUser({ email: 'how@yadoin', password: 'password' })
-      await send.get('/api/v1/users/me', 401)
+      await request.get('/api/v1/users/me', 401)
     })
   })
 })
