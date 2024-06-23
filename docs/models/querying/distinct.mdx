@@ -1,9 +1,0 @@
-# distinct
-
-The distinct method returns all unique records matching the given distinct field
-
-```ts
-const count = await User.joins('ratings', { body: 'I liked it' })
-  .distinct('body')
-  .count()
-```
