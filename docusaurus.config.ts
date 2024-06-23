@@ -16,7 +16,7 @@ const config: Config = {
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'rvohealth', // Usually your GitHub org/user name.
-  projectName: 'psychic guides', // Usually your repo name.
+  projectName: 'psychic-guides', // Usually your repo name.
   deploymentBranch: 'gh-pages',
   trailingSlash: false,
 
