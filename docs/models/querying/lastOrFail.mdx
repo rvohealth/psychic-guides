@@ -1,0 +1,10 @@
+# lastOrFail
+
+The `lastOrFail` method returns the last record found in the given table. If no record is found, a `RecordNotFound` exception is raised.
+
+```ts
+const user = await User.lastOrFail()
+// User{id=9000}
+```
+
+If lastOrFail is called within a request cycle and the `RecordNotFound` exception is not handled manually, Psychic will automatically throw a 404.
