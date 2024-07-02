@@ -1,0 +1,408 @@
+---
+sidebar_position: 3
+---
+
+# has associations
+
+## Overview
+
+"Has" associations are associations in which the foreign key is located on the associated model, and are usually met on the other side with a `@BelongsTo` association. There are two types of "Has" associations supported by Dream:
+
+* `HasMany`
+* `HasOne`
+
+## HasMany
+
+In a HasMany relationship, your base model can potentially point to many different child relationships.
+
+```ts
+class User extends ApplicationModel {
+  ...
+  @HasMany(() => Pet)
+  public pets: Pet[]
+}
+
+class Pet extends ApplicationModel {
+  ...
+  @BelongsTo(() => User)
+  public user: User[]
+  public userId: DreamColumn<Pet, 'userId'>
+}
+```
+
+In the above example, we see that `Pet` has a `@BelongsTo` association pointing to `User`. This means that the `Pet` is able to belong to a single `User`, but a `User` can have many `Pet`s. This is established through the `userId` foreign key on the `Pet` model.
+
+## HasOne
+
+Complementary to `@HasMany`, we have the `@HasOne` association, which is almost identical to the `@HasMany`, except it should only be used in cases where you only plan on having one record attached, i.e.:
+
+```ts
+class User extends ApplicationModel {
+  ...
+  @HasOne(() => UserSettings)
+  public userSettings: UserSettings | null
+}
+
+class UserSettings extends ApplicationModel {
+  ...
+  @BelongsTo(() => User)
+  public user: User[]
+  public userId: DreamColumn<UserSettings, 'userId'>
+}
+```
+
+In this case, we have an identical pattern established, except that we are using `@HasOne` in place of `@HasMany`, establishing that their will only be one `UserSettings` record for each `User` record.
+
+## ForeignKey
+
+When defining a HasOne/HasMany association, the foreign key is automatically assumed to be the singularized (depluralized) version of the base model's table name. This means that for the following model, `userId` will be the expected foreign key on both `UserSettings` and `Pet` models.
+
+```ts
+class User extends ApplicationModel {
+  ...
+  @HasOne(() => UserSettings)
+  public userSettings: UserSettings | null
+
+  @HasMany(() => Pet)
+  public pets: Pet[]
+}
+```
+
+To customize the foreign key, you can pass an additional `foreigkKey` option to explicitly specify the foreign key, in the event that it does not line up neatly with the model's table name.
+
+```ts
+class User extends ApplicationModel {
+  ...
+  @HasOne(() => UserSettings, { foreignKey: 'userUuid' })
+  public userSettings: UserSettings | null
+}
+```
+
+## Where
+
+Sometimes it is necessary to further-narrow the scope of your association using a where statement. This can be done by passing an additional `where` argument to your association, like so:
+
+```ts
+class User extends ApplicationModel {
+  ...
+  @HasOne(() => Pet, { where: { favorite: true } })
+  public favoritePet: Pet | null
+}
+```
+
+In some cases, dynamic values will need to be permitted for the provided where statements. In these cases, you can leverage required where clauses to enforce the where clause to be present any time an association is loaded. If utilized, an exception will be raised if you attempt to load this association without passing the required where statements.
+
+```ts
+class User extends ApplicationModel {
+  ...
+  @HasOne(() => Pet, { where: { species: DreamConst.required } })
+  public favoritePet: Pet | null
+}
+
+const user = await User
+  .preload('favoritePet', { species: 'cat' })
+  .firstOrFail()
+
+user.favoritePet
+// Pet{ species: 'cat' }
+```
+
+Additionally, you can defer the passed arguments to a higher level by leveraging our `passthrough` support, like so:
+
+```ts
+class User extends ApplicationModel {
+  ...
+  @HasOne(() => LocalizedText, { where: { locale: DreamConst.passthrough } })
+  public currentLocalizedText: LocalizedText | null
+}
+
+const user = await User
+  .passthrough({ locale: 'en-US' })
+  .preload('currentLocalizedText')
+  .firstOrFail()
+
+user.currentLocalizedText
+// LocalizedText{ locale: 'en-US' }
+```
+
+## WhereNot
+
+Similar to `where`, a `whereNot` statement can be provided to filter records:
+
+```ts
+class User extends ApplicationModel {
+  ...
+  @HasMany(() => LocalizedText, { whereNot: { deletedAt: null } })
+  public deletedLocalizedTexts: LocalizedText[]
+}
+```
+
+## Order
+
+When an association is defined with an `order`, that ordering is automatically applied whenever `loading` or [`preloading`](../../querying/preload) models. Association `order` supports the same options as query [`order`](../../querying/order).
+
+```typescript
+export default class GraphNode extends ApplicationModel {
+  // ...
+
+  public name: string
+
+  ///////////////////////////////////////////
+  // order built into the join association //
+  ///////////////////////////////////////////
+  @HasMany(() => EdgeNode, { foreignKey: 'nodeId', order: 'position' })
+  public orderedEdgeNodes: EdgeNode[]
+
+  @HasMany(() => GraphEdge, { through: 'orderedEdgeNodes' })
+  public edges: GraphEdge[]
+
+  //////////////////////////////////////////////
+  // order applied to the through association //
+  //////////////////////////////////////////////
+  @HasMany(() => EdgeNode, { foreignKey: 'nodeId' })
+  public edgeNodes: EdgeNode[]
+
+  @HasMany(() => GraphEdge, {
+    through: 'edgeNodes',
+    order: 'weight',
+    source: 'edge', // since `edgesOrderedByWeight` does not correspond to an
+    // association on EdgeNode, we explicitly specify the EdgeNode association
+    // to use as the source of the models to instantiate
+  })
+  public edgesOrderedByWeight: GraphEdge[]
+}
+
+export default class EdgeNode extends ApplicationModel {
+  // ...
+
+  @Sortable({ scope: 'node' })
+  public position: DreamColumn<EdgeNode, 'position'>
+
+  @BelongsTo(() => GraphEdge, { foreignKey: 'edgeId' })
+  public edge: GraphEdge
+  public edgeId: DreamColumn<EdgeNode, 'edgeId'>
+
+  @BelongsTo(() => GraphNode, { foreignKey: 'nodeId' })
+  public node: GraphNode
+  public nodeId: DreamColumn<EdgeNode, 'nodeId'>
+}
+
+export default class GraphEdge extends ApplicationModel {
+  // ...
+  public weight: DreamColumn<GraphEdge, 'weight'>
+}
+```
+
+## Dependent
+
+In most cases, cascade deleting for associations can be set up at the database level by simply defining the relationship with a cascade option at the migration level, like so:
+
+```ts
+export async function up(db: Kysely<any>): Promise<void> {
+  await db.schema
+    .createTable('pets')
+    ...
+    .addColumn(
+      'user_id',
+      'bigint',
+      col => col
+        .references('users.id')
+        .onDelete('cascade')
+    )
+    ...
+}
+```
+
+However, in the case of polymorphic relationships, this type of cascading is not possible, since the foreign key of a polymorphic association can point to many other tables. To fix this problem, you can set a `dependent` option at the association level, like so:
+
+```ts
+class Rating extends ApplicationModel {
+  @BelongsTo(() => [Composition, Post], {
+    polymorphic: true,
+    dependent: 'destroy',
+  })
+  public rateable: Composition | Post
+  public rateableId: DreamColumn<Rating, 'rateableId'>
+  public rateableType: DreamColumn<Rating, 'rateableType'>
+}
+```
+
+In the above example, any time a `Composition` or `Post` model is destroyed, cascade deletions will apply to any related ratings, causing them to be removed from the database.
+
+## Distinct
+
+If you want to avoid picking up duplicate records with the same value for a certain field, you can use the `distinct` argument to filter those duplicates out, like so:
+
+```ts
+class User extends ApplicationModel {
+  @HasMany(() => Pet, { distinct: 'name' })
+  public petsWithUniqueNames: Pet[]
+}
+```
+
+## PreloadThroughColumns
+
+`preloadThroughColumns` provides a mechanism to load columns from a join table without explicitly loading that table.
+
+In the following example, the loaded Lesson models will have access to the `percentComplete` attribute even though it is stored on the join model:
+
+```typescript
+const lessons = this.currentUser.load('lessons').all()
+console.log(lesson.preloadedThroughColumns.percentComplete)
+
+export default class User extends ApplicationModel {
+  // ...
+
+  @HasMany(() => UserLesson)
+  public userLessons: UserLesson[]
+
+  @HasMany(() => Lesson, {
+    through: 'userLessons',
+    preloadThroughColumns: ['percentComplete'],
+  })
+  public lessons: Lesson[]
+}
+
+export default class UserLesson extends ApplicationModel {
+  // ...
+
+  public percentComplete: DreamColumn<Lesson, 'percentComplete'>
+
+  @HasMany(() => Lesson)
+  public lessons: Lesson[]
+}
+
+export default class Lesson extends ApplicationModel {
+  // ...
+
+  public preloadedThroughColumns: {
+    percentComplete?: DreamColumn<UserLesson, 'percentComplete'>
+  } = {}
+}
+```
+
+`preloadThroughColumns` also provide a mechanism to alias the preloaded columns to other names. In the following example, the `id` from the UserLesson join model is mapped to `userLessonId` in `preloadedThroughColumns`:
+
+```typescript
+const lessons = this.currentUser.load('lessons').all()
+console.log(lesson.preloadedThroughColumns.userLessonId)
+console.log(lesson.preloadedThroughColumns.percentComplete)
+
+export default class User extends ApplicationModel {
+  // ...
+
+  @HasMany(() => UserLesson)
+  public userLessons: UserLesson[]
+
+  @HasMany(() => Lesson, {
+    through: 'userLessons',
+    preloadThroughColumns: {
+      id: 'userLessonId',
+      percentComplete: 'percentComplete',
+    },
+  })
+  public lessons: Lesson[]
+}
+
+export default class UserLesson extends ApplicationModel {
+  // ...
+
+  public percentComplete: DreamColumn<Lesson, 'percentComplete'>
+
+  @HasMany(() => Lesson)
+  public lessons: Lesson[]
+}
+
+export default class Lesson extends ApplicationModel {
+  // ...
+
+  public preloadedThroughColumns: {
+    userLessonId?: DreamColumn<UserLesson, 'id'>
+    percentComplete?: DreamColumn<UserLesson, 'percentComplete'>
+  } = {}
+}
+```
+
+## PrimaryKeyOverride
+
+In some cases, you may find it necessary to change the primary key being used on the base model when loading a HasOne/HasMany association. By default, dream will use the `id` field as the primary key of the model, but this can be customized on a per-association basis if needed using the `primaryKeyOverride` option:
+
+```ts
+class User extends ApplicationModel {
+  HasMany(() => Pet, { primaryKeyOverride: 'uuid' })
+  public pets: Pet[]
+}
+```
+
+In the above example, any time the `pets` association is loaded, it will automatically compare the `userId` field on the `Pet` model to the `uuid` field on the `User` model.
+
+## SelfWhere
+
+`selfWhere` adds a `where` clause to an association between a column on the associated model and a column on this model.
+
+For example, suppose we have an ArtExhibit, and that each day, we want to feature a different Artwork within that exhibit. Every day, we update the `featuredPosition` on the ArtExhibit. The `featuredArtwork` is the Artwork with that `position`.
+
+```typescript
+const exhibits = await ArtExhibit.preload('featuredArtwork`).all()
+// each exhibit now has its `featureArtwork` loaded and ready to serialize, etc.
+
+export default class ArtExhibit extends ApplicationModel {
+  // ...
+
+  public featuredPosition: DreamColumn<ArtExhibit, 'featuredPosition'>
+
+  @HasMany(() => Artwork)
+  public artworks: Artwork[]
+
+  @HasOne(() => Artwork, {
+    selfWhere: {
+      position: 'featuredPosition',
+    },
+  })
+  public featuredArtwork: Artwork
+}
+
+export default class Artwork extends ApplicationModel {
+  // ...
+
+  @Sortable({ scope: 'artExhibit' })
+  public position: DreamColumn<Artwork, 'position'>
+
+  @BelongsTo(() => ArtExhibit)
+  public artExhibit: ArtExhibit
+  public artExhibitId: DreamColumn<Artwork, 'artExhibitId'>
+}
+```
+
+## SelfWhereNot
+
+`selfWhereNot` adds a `whereNot` clause to an association between a column on the associated model and a column on this model.
+
+For example, the below `siblings` association matches all EdgeNodes attached to the same GraphNode that are not the current EdgeNode:
+
+```typescript
+const siblingEdgeNodes = await edgeNode.load('siblings').execute()
+// siblingEdgeNodes is all of edgeNode's siblings
+
+export default class EdgeNode extends ApplicationModel {
+  // ...
+
+  @BelongsTo(() => GraphNode, { foreignKey: 'nodeId' })
+  public node: DreamColumn<GraphNode, 'node'>
+  public nodeId: DreamColumn<GraphNode, 'nodeId'>
+
+  @HasMany(() => EdgeNode, {
+    through: 'node',
+    source: 'edgeNodes',
+    selfWhereNot: { id: 'id' },
+  })
+  public siblings: EdgeNode[]
+}
+
+export default class GraphNode extends ApplicationModel {
+  // ...
+
+  @HasMany(() => EdgeNode, { foreignKey: 'nodeId' })
+  public edgeNodes: EdgeNode[]
+}
+```
