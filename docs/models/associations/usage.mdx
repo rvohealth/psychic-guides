@@ -1,0 +1,110 @@
+---
+sidebar_position: 7
+---
+
+# usage
+
+Dream provides many useful tools for accessing and manipulating associations. Leveraging these powerful tools will enable you to easily bring forward complex, nested relationships throughout your app without ever manually writing a single line of sql yourself.
+
+## loading
+
+With associations already created in the database, there are several ways to access them. The most common way to do this would be to leverage the `preload` method, which will enable you to load an association onto your record as you are loading the record itself, like so:
+
+```ts
+const user = await User.preload('posts').execute()
+user.posts
+// [Post{}, Post{}, ...]
+```
+
+Additionally, you can retroactively load associations onto an instance using the `load` method:
+
+```ts
+let user = await User.firstOrFail()
+user = await user.load('posts').execute()
+user.posts
+// [Post{}, Post{}, ...]
+```
+
+When loading and preloading, additional where statements can be passed in, and many associations can be chained together:
+
+```ts
+let user = await User.firstOrFail()
+user = await user.load('posts', { body: null }).load('pets').execute()
+user.posts
+// [Post{ body: null }, Post{ body: null }, ...]
+
+user.pets
+// [Cat{}, Dog{}]
+```
+
+In addition to loading associations onto an existing instance, you can also construct a new query targeting your association using `associationQuery`:
+
+```ts
+const posts = await user.associationQuery('posts').all()
+// [Post{}, Post{}, ...]
+```
+
+Using associationQuery, you can add additional statements to your query before loading, like so:
+
+```ts
+const posts = await user
+  .associationQuery('posts')
+  .where({ body: null })
+  .joins('comments', { body: null })
+  .all()
+
+// [Post{ body: null }, Post{ body: null }, ...]
+```
+
+## creating
+
+Dream provides some helpful tools for saving associations. One of the simplest and most common ways of saving `BelongsTo` associations is to attach them directly to their parent while saving it, like so:
+
+```ts
+const user = await User.firstOrFail()
+const post = await Post.create({ user })
+```
+
+This approach will automatically connect the `userId` field on the new `Post` model to the primary key field of the `User` model. This approach will also work with STI or polymorphic BelongsTo associations, since Dream is smart enough to autoset type fields in both cases.
+
+> Note: This approach will not work for `HasOne` or `HasMany` associations.
+
+Additionally, Dream provides the `createAssociation` method for creating associations, which can be used like so:
+
+```ts
+await user.createAssociation('posts', { body: 'hello world' })
+```
+
+## updating
+
+Updating associations can happen in a multitude of ways. If the instance has already been loaded and attached to another instance, it can be saved just the same as it's parent, using the standard tools provided to all dream instances, like so:
+
+```ts
+const user = await User.preload('userSettings').firstOrFail()
+await user.userSettings.update({ active: true })
+```
+
+Additionally, you can leverage `updateAssociation` to update associations which haven't been loaded yet:
+
+```ts
+await user.updateAssociation('userSettings', { active: true })
+```
+
+> NOTE: in the case of HasMany associations, calling `updateAssociation` will apply to all discovered associations.
+
+## destroying
+
+Dream also provides helpful tools for destroying associated records. The most commonly used tool is `destroyAssociation`, a method which will destroy all associated records, and return the number of records deleted:
+
+```ts
+await user.destroyAssociation('posts')
+// 3
+```
+
+Additionally, one can call `destroy` during query building, like so:
+
+```ts
+await User.where({ email: ops.ilike('%burpcollaborator%') }).destroy()
+```
+
+Additionally, one is free to set up cascade deletion, either at the `db` level (which is preferred), or else by leveraging [dependent: 'cascade'](/docs/models/associations/has-one-and-has-many#dependent) at the association level (though usually, this would only be done for polymorphic relationships, since cascade deleting at the DB level will not work in those cases.)
