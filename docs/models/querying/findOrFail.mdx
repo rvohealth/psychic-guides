@@ -1,0 +1,10 @@
+# findOrFail
+
+`findOrFail`, similar to `find`, will look up a record by it's primary key. However, if that record is not found, a `RecordNotFound` exception will be raised, rather than returning `null`.
+
+```ts
+const user = await User.findOrFail(123)
+// User{id: 123}
+```
+
+If findOrFail is called within a request cycle and the `RecordNotFound` exception is not handled manually, Psychic will automatically throw a 404.

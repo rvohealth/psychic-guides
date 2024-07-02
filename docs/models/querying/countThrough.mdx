@@ -1,0 +1,24 @@
+# countThrough
+
+The `countThrough` method returns a count of the table for a given association, enabling you to count associated records with ease:
+
+```ts
+await User.countThrough('posts') // 900
+```
+
+Similar to `preload`, `joins`, and others, a chain of association names can be passed, enabling you to count deeply nested associations:
+
+```ts
+await User.countThrough('posts', 'comments') // 12000
+```
+
+When chaining associations, where clauses can also be passed to limit the scope of the count, like so:
+
+```ts
+await User.countThrough(
+  'posts',
+  'comments',
+  { rating: ops.greaterThan(3) }
+)
+// 80
+```
