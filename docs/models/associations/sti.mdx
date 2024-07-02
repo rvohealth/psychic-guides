@@ -4,8 +4,70 @@ sidebar_position: 5
 
 # single table inheritance
 
-STI is blah blah finish me
+Single Table Inheritance, or "STI" for short, is a design pattern which enables a single table to reflect multiple unique models, all of which inherit from a base model. In order for STI to work, a `type` field _must_ be present on the STI model, like so:
 
 ```ts
-// TODO: add example and finish polymorphism docs
+export async function up(db: Kysely<any>): Promise<void> {
+  await db.schema
+    .createTable('pets')
+    ...
+    .addColumn('type', 'varchar(255)', col => col.notNull())
+    ...
+    .execute()
+}
+```
+
+If desired, you can also use enums to enforce only specific types, like so:
+
+```ts
+export async function up(db: Kysely<any>): Promise<void> {
+  await db.schema.createType('pet_types_enum').asEnum(['Cat', 'Dog']).execute()
+  await db.schema
+    .createTable('pets')
+    ...
+    .addColumn('type', sql`pet_types_enum`, col => col.notNull())
+    ...
+    .execute()
+}
+```
+
+Additionally, you will need to leverage the STI decorator on your child models, like so:
+
+```ts
+class Pet extends ApplicationModel {
+  ...
+  public type: DreamColumn<Pet, 'type'>
+  ...
+}
+
+@STI(Pet)
+class Cat extends Pet {}
+
+@STI(Pet)
+class Dog extends Pet {}
+```
+
+Whenever an STI model is persisted to the database, the `type` field will automaticlly be populated with the class name of the STI model:
+
+```ts
+const cat = await Cat.create()
+cat.type
+// 'Cat'
+
+const dog = await Dog.create()
+dog.type
+// 'Dog'
+```
+
+Additionally, whenever running queries against an STI model, the `type` field will automatically by added to your query:
+
+```ts
+await Pet.all()
+// [Cat{}, Dog{}, ...]
+
+await Cat.all()
+// [Cat{}, Cat{}, ...]
+
+await Dog.all()
+// [Dog{}, Dog{}, ...]
 ```

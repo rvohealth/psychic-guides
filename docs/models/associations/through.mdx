@@ -4,21 +4,49 @@ sidebar_position: 4
 
 # through
 
-both HasOne and HasMany associations have recursively-nested `through` support built-in, enabling you to bring nested associations out of their nested context and into the parent model's domain.
+Both HasOne and HasMany associations have recursively-nested `through` support built-in, enabling you to bring nested associations out of their nested context and into the parent model's domain:
 
 ```ts
 export default class CommentReply extends Dream {
-  public get table() {
-    return 'comment_replies' as const
-  }
-
-  public id: number
-  public content: string | null
-
   @BelongsTo(() => Comment)
   public comment: Comment
 
   @HasOne(() => User, { through: 'comment' })
   public user: User
+}
+```
+
+## Traveling through other "through" associations
+
+Dream permits you to travel through other "through" associations, which can simplify modeling:
+
+```ts
+class User extends ApplicationModel {
+  @HasMany(() => Pet)
+  public pets: Pet[]
+
+  @HasMany(() => Collar, { through: 'pets' })
+  public collars: Collar[]
+
+  @HasMany(() => NameTag, { through: 'collars' })
+  public nameTags: NameTag[]
+}
+
+const user = await User.preload('nameTags').firstOrFail()
+user.nameTags
+// [NameTag{}, NameTag{}, ...]
+```
+
+## Source
+
+In some cases, the association name on the base model may be different than the association name on the child model. In these cases, you can specify which association name to travel through on the associated model by specifying the `source` option:
+
+```ts
+class User extends ApplicationModel {
+  @HasMany(() => Pet)
+  public pets: Pet[]
+
+  @HasMany(() => Collar, { through: 'pets', source: 'collars' })
+  public petCollars: Collar[]
 }
 ```
