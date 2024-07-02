@@ -1,0 +1,10 @@
+# firstOrFail
+
+The `firstOrFail` method returns the first record found in the given table. If no records exist, a `RecordNotFound` exception is raised.
+
+```ts
+const user = await User.firstOrFail()
+// User{id=1}
+```
+
+If firstOrFail is called within a request cycle and the `RecordNotFound` exception is not handled manually, Psychic will automatically throw a 404.
