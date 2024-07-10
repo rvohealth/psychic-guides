@@ -139,7 +139,7 @@ class User extends ApplicationModel {
 
 ## Order
 
-When an association is defined with an `order`, that ordering is automatically applied whenever `loading` or [`preloading`](../../querying/preload) models. Association `order` supports the same options as query [`order`](../../querying/order).
+When an association is defined with an `order`, that ordering is automatically applied whenever `loading` or [`preloading`](/docs/models/querying/preload) models. Association `order` supports the same options as query [`order`](/docs/models/querying/order).
 
 ```typescript
 export default class GraphNode extends ApplicationModel {
@@ -206,8 +206,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       'user_id',
       'bigint',
       col => col
-        .references('users.id')
-        .onDelete('cascade')
+        .references('users.id').onDelete('cascade')
     )
     ...
 }
