@@ -150,7 +150,7 @@ await post
 
 Psychic can easily act as a standalone JSON web delivery system, but it also encourages certain paradigms which enable the developer to still write end-to-end tests, as well as a rich tooling system for composing unit tests. Psychic was designed with a `BDD` philosophy in mind, which means that our system _must_ provide adequate tooling for spec'ing out our entire app.
 
-As most in the javascript world are comfortable with [jest](NEED_LINK), we have built our tooling to rest comfortably on top of it, allowing you to bring in custom jest plugins of your choice without any trouble from the framework. We do, however, provide some useful jest extensions to make your life easier when spec'ing in Dream and Psychic.
+As most in the javascript world are comfortable with [jest](https://jestjs.io), we have built our tooling to rest comfortably on top of it, allowing you to bring in custom jest plugins of your choice without any trouble from the framework. We do, however, provide some useful jest extensions to make your life easier when spec'ing in Dream and Psychic.
 
 ### Unit specs
 
