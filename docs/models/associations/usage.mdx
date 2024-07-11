@@ -92,6 +92,12 @@ await user.updateAssociation('userSettings', { active: true })
 
 > NOTE: in the case of HasMany associations, calling `updateAssociation` will apply to all discovered associations.
 
+Additional where clauses can be applied during update, like so:
+
+```ts
+await user.updateAssociation('userSettings', { active: true }, { where: { userId: [1, 2, 3] }})
+```
+
 ## destroying
 
 Dream also provides helpful tools for destroying associated records. The most commonly used tool is `destroyAssociation`, a method which will destroy all associated records, and return the number of records deleted:
@@ -101,10 +107,18 @@ await user.destroyAssociation('posts')
 // 3
 ```
 
-Additionally, one can call `destroy` during query building, like so:
+You can pass an additional where clause while destroying associations, like so:
 
 ```ts
-await User.where({ email: ops.ilike('%burpcollaborator%') }).destroy()
+await user.destroyAssociation('posts', { where: { body: null } })
+// 3
+```
+
+If you would like to bypass cascading on `dependent: "destroy"` child associations, you can pass `cascade: false` like so:
+
+```ts
+await user.destroyAssociation('posts', { cascade: false })
+// 3
 ```
 
 Additionally, one is free to set up cascade deletion, either at the `db` level (which is preferred), or else by leveraging [dependent: 'cascade'](/docs/models/associations/has-one-and-has-many#dependent) at the association level (though usually, this would only be done for polymorphic relationships, since cascade deleting at the DB level will not work in those cases.)
