@@ -5,7 +5,9 @@ sidebar_position: 1
 import Tabs from '@theme/Tabs'
 import TabItem from '@theme/TabItem'
 
-# belongs to
+# belongs to associations
+
+## Overview
 
 Belongs to associations are to be used when the model in question is related to another model, and contains a foreign key to that model within its table. An example of a belongs to would be in the case of a `User` and `Post` model, where a `User` can write many `Post`s, and each `Post` would contain a field (called a foreign key) which points back to the id field of a `User` who owns it. In this context, we would say that the `Post` belongs to the `User`.
 
@@ -18,7 +20,8 @@ export default class Post extends Dream {
 }
 ```
 
-## Optional
+## Options
+### Optional
 
 BelongsTo associations are required by default (and should have a corresponding not-null declaration on the foreign key column). To make an association optional, pass the `optional: true` option (and ensure that the column allows null values).
 
@@ -31,7 +34,7 @@ export default class Post extends Dream {
 }
 ```
 
-## Foreign key
+### Foreign key
 
 By default, the foreign key is derived from the association name. E.g., in the example below, the
 default foreign key would be `userId`. This can be overridden by including an explicit
@@ -52,7 +55,7 @@ export default class Post extends Dream {
 }
 ```
 
-## Primary key override
+### Primary key override
 
 By default, the column that the foreign key points to is returned by the `primaryKey` getter
 (and defaults to `id`). For associations that point to something other than the primary key,
