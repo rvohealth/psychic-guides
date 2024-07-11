@@ -10,3 +10,34 @@ export default class EdgeNode extends ApplicationModel {
   @Sortable({ scope: ['edge', 'node'] })
   public multiScopedPosition: DreamColumn<EdgeNode, 'multiScopedPosition'>
 ```
+
+## Unique constraint
+
+It's a good idea to apply a unique constraint to the sortable column; however,
+`Sortable` is incompatible with unique indexes, so you need to add a deferrable
+unique constraint, instead.
+
+```ts
+import { Kysely } from 'kysely'
+import addDeferrableUniqueConstraint from '../../../src/db/migration-helpers/addDeferrableUniqueConstraint'
+import dropConstraint from '../../../src/db/migration-helpers/dropConstraint'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function up(db: Kysely<any>): Promise<void> {
+  await addDeferrableUniqueConstraint(
+    'graph_edge_nodes_uniq_on_edge_id_node_id_position',
+    'graph_edge_nodes',
+    ['edge_id', 'node_id', 'position'],
+    db
+  )
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function down(db: Kysely<any>): Promise<void> {
+  await dropConstraint(
+    'graph_edge_nodes_uniq_on_edge_id_node_id_position',
+    'graph_edge_nodes',
+    db
+  )
+}
+```
