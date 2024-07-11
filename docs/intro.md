@@ -78,7 +78,7 @@ As you can already see above, a powerful ORM is clearly at work to keep our code
 
 ## Dream
 
-At the heart of any web application is a database, with, at least generally speaking, a tightly-defined set of table schemas to guard the integrity of it's data. Dream follows the conventional [Active Record](https://en.wikipedia.org/wiki/Active_record_pattern) practices for modeling data, but provides a very powerful TypeScript-driven set of features to unleash powerful autocomplete mechanisms that make even the most dense applications possible to navigate.
+At the heart of any web application is a database, with, at least generally speaking, a tightly-defined set of table schemas to guard the integrity of its data. Dream follows the conventional [Active Record](https://en.wikipedia.org/wiki/Active_record_pattern) practices for modeling data, but provides a very powerful TypeScript-driven set of features to unleash powerful autocomplete mechanisms that make even the most dense applications possible to navigate.
 
 ```ts
 import { Dream, BeforeCreate, BeforeUpdate, Column, Validates, Hash } from '@rvohealth/psychic'
