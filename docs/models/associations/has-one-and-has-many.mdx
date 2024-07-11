@@ -53,7 +53,9 @@ class UserSettings extends ApplicationModel {
 
 In this case, we have an identical pattern established, except that we are using `@HasOne` in place of `@HasMany`, establishing that their will only be one `UserSettings` record for each `User` record.
 
-## ForeignKey
+## Options
+
+### ForeignKey
 
 When defining a HasOne/HasMany association, the foreign key is automatically assumed to be the singularized (depluralized) version of the base model's table name. This means that for the following model, `userId` will be the expected foreign key on both `UserSettings` and `Pet` models.
 
@@ -78,7 +80,7 @@ class User extends ApplicationModel {
 }
 ```
 
-## Where
+### Where
 
 Sometimes it is necessary to further-narrow the scope of your association using a where statement. This can be done by passing an additional `where` argument to your association, like so:
 
@@ -125,7 +127,7 @@ user.currentLocalizedText
 // LocalizedText{ locale: 'en-US' }
 ```
 
-## WhereNot
+### WhereNot
 
 Similar to `where`, a `whereNot` statement can be provided to filter records:
 
@@ -137,7 +139,7 @@ class User extends ApplicationModel {
 }
 ```
 
-## Order
+### Order
 
 When an association is defined with an `order`, that ordering is automatically applied whenever `loading` or [`preloading`](/docs/models/querying/preload) models. Association `order` supports the same options as query [`order`](/docs/models/querying/order).
 
@@ -193,7 +195,7 @@ export default class GraphEdge extends ApplicationModel {
 }
 ```
 
-## Dependent
+### Dependent
 
 In most cases, cascade deleting for associations can be set up at the database level by simply defining the relationship with a cascade option at the migration level, like so:
 
@@ -228,7 +230,7 @@ class Rating extends ApplicationModel {
 
 In the above example, any time a `Composition` or `Post` model is destroyed, cascade deletions will apply to any related ratings, causing them to be removed from the database.
 
-## Distinct
+### Distinct
 
 If you want to avoid picking up duplicate records with the same value for a certain field, you can use the `distinct` argument to filter those duplicates out, like so:
 
@@ -239,7 +241,7 @@ class User extends ApplicationModel {
 }
 ```
 
-## PreloadThroughColumns
+### PreloadThroughColumns
 
 `preloadThroughColumns` provides a mechanism to load columns from a join table without explicitly loading that table.
 
@@ -322,7 +324,7 @@ export default class Lesson extends ApplicationModel {
 }
 ```
 
-## PrimaryKeyOverride
+### PrimaryKeyOverride
 
 In some cases, you may find it necessary to change the primary key being used on the base model when loading a HasOne/HasMany association. By default, dream will use the `id` field as the primary key of the model, but this can be customized on a per-association basis if needed using the `primaryKeyOverride` option:
 
@@ -335,7 +337,7 @@ class User extends ApplicationModel {
 
 In the above example, any time the `pets` association is loaded, it will automatically compare the `userId` field on the `Pet` model to the `uuid` field on the `User` model.
 
-## SelfWhere
+### SelfWhere
 
 `selfWhere` adds a `where` clause to an association between a column on the associated model and a column on this model.
 
@@ -373,7 +375,7 @@ export default class Artwork extends ApplicationModel {
 }
 ```
 
-## SelfWhereNot
+### SelfWhereNot
 
 `selfWhereNot` adds a `whereNot` clause to an association between a column on the associated model and a column on this model.
 
