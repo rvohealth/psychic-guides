@@ -6,6 +6,8 @@ sidebar_position: 8
 
 The scoping system will be familiar to those coming from the Ruby on Rails camp, but for those who are new to this, our design was inspired by the Ruby on Rails scope pattern, and can be used to elegantly capture recurring query behavior into partialized functions which can then be applied to your quieries, enabling your complex statements to be replaced with beautiful business logic.
 
+All scope functions receive a `Query<ClassName>` (where `ClassName` is the name of the Dream class defining the Scope) instance and return a clone of that instance (usually by calling `where` on that instance).
+
 ```ts
 export default class Post extends Dream {
   public readonly get table() {
@@ -16,7 +18,7 @@ export default class Post extends Dream {
   ...
 
   @Scope()
-  public static withFunnyName(query: any) {
+  public static withFunnyName(query: Query<Post>) {
     return query.where({ name: 'Chalupas jr' })
   }
 }
@@ -38,7 +40,7 @@ export default class Post extends Dream {
   ...
 
   @Scope({ default: true })
-  public static hideDeleted(query: any) {
+  public static hideDeleted(query: Query<Post>) {
     return query.where({ deletedAt: null })
   }
 }
