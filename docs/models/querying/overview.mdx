@@ -4,14 +4,50 @@ sidebar_position: 0
 
 # overview
 
-You're probably tired of hearing it by now, but our querying paradigm was also modeled loosly after the Ruby on Rails querying patterns. We wanted to expose a querying interface which could tap into Kysely's type intelligence to expose beautiful autocomplete magic, but wanted to include the ability to use powerful rails-like features, such as joins and includes to enable the type intelligence to extend to associations against your models.
+Dream exposes a powerful, type-driven query building engine to make talking to your database a friendly experience. All fields on your model can be leveraged as elements of your query, and associations can be joined and preloaded to simplify database interactions.
 
 ```ts
-const users = await User.joins('posts')
-  .where({
-    posts: {
-      content: ops.ilike('howyadoin'),
-    },
-  })
+const users = await User
+  .joins('posts', { content: ops.ilike('howyadoin') })
   .all()
 ```
+
+A range of methods can be used to drill queries down to a selective grouping:
+
+```ts
+await User.where({ email: null }).first()
+await User.where({ email: null }).limit(10).all()
+await User.where({ email: null }).count()
+await User.pluck('email')
+```
+
+:::tip
+The query building engine provided by Dream provides an enormous API. We recommend you poke around to get a feel for what is possible within Dream.
+
+#### Executing methods
+
+Executing methods are those that will actually cause a query to run. Prior to one of these methods being called, the query is being built up for execution. Executing the query will cause an sql query to compile with the given parameters and summon the matching records from the database.
+
+* To learn about retreiving all records from the database, see the [all guide](/docs/models/querying/all)
+* To learn about retreiving selective records from the database, see the [find](/docs/models/querying/find), [findBy](/docs/models/querying/findBy), [findEach](/docs/models/querying/findEach), [findOrFailBy](/docs/models/querying/findOrFailBy), and [findOrFail](/docs/models/querying/findOrFail) guides
+* To learn about retreiving the first record from the database, see the [first guide](/docs/models/querying/first), as well as the [firstOrFail guide](/docs/models/querying/firstOrFail)
+* To learn about retreiving the last record from the database, see the [last guide](/docs/models/querying/last), as well as the [lastOrFail guide](/docs/models/querying/lastOrFail)
+* To learn about counting records, see the [count guide](/docs/models/querying/count), as well as the [countThrough guide](/docs/models/querying/countThrough)
+* To learn about determining if a record exists, see the [exists guide](/docs/models/querying/exists)
+* To learn about getting the max value from a given table, see the [max guide](/docs/models/querying/max), as well as the [maxThrough guide](/docs/models/querying/maxThrough)
+* To learn about getting the min value from a given table, see the [min guide](/docs/models/querying/min), as well as the [minThrough guide](/docs/models/querying/minThrough)
+* To learn about plucking values, see the [pluck](/docs/models/querying/pluck), [pluckThrough](/docs/models/querying/pluckThrough), and [pluckEachThrough](/docs/models/querying/pluckEachThrough) guides
+
+#### Query building methods
+
+Query building methods are those that do not execute a query, but instead modify the query to contain new statements, which will then be executed upon executing using one of the above executing statements.
+
+* To learn about retreiving distinct records, see the [distinct guide](/docs/models/querying/distinct)
+* To learn about joining associated records, see the [joins guide](/docs/models/querying/joins)
+* To learn about limiting records, see the [limit guide](/docs/models/querying/limit)
+* To learn about offsetting records, see the [offset guide](/docs/models/querying/offset)
+* To learn about ordering records, see the [order guide](/docs/models/querying/order)
+* To learn about preloading associated records, see the [preload guide](/docs/models/querying/preload)
+* To learn about passthrough data, see the [passthrough guide](/docs/models/querying/passthrough)
+:::
+

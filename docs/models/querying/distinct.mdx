@@ -3,6 +3,12 @@
 The distinct method returns all unique records matching the given distinct field
 
 ```ts
+const count = await User.distinct('body').count()
+```
+
+You can also use other query building methods to build up a query prior to executing.
+
+```ts
 const count = await User.joins('ratings', { body: 'I liked it' })
   .distinct('body')
   .count()

@@ -8,3 +8,7 @@ The findBy method Allows you to pass custom attributes to locate a record by. If
 const user = await User.findBy({ email: 'abc' })
 // User{email: 'abc'}
 ```
+
+:::tip
+In some cases, [findOrFailBy](/docs/models/querying/findOrFailBy) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.
+:::

@@ -1,0 +1,64 @@
+---
+sidebar_position: 4
+---
+
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
+# exception handling
+
+Certain errors within the Dream/Psychic ecosystem are automatically recognized by psychic, and handled with intuitive response codes automatically for you:
+
+## castParam
+
+In a controller, calling `this.castParam` with an invalid param passed will raise an exception which will cause Psychic to automatically raise a 400 error response, yielding an object with errors. In the following code, the call to `castParam` will raise a `400` unless the param for `id` is both passed, and a valid uuid.
+
+```ts
+class PostsController extends PsychicController {
+  public async show() {
+    const post = await this.currentUser
+      .associationQuery('posts')
+      .find(this.castParam('id', 'uuid'))
+  }
+}
+```
+
+## paramsFor
+
+Similar to `castParam`, `paramsFor` will raise a 400 exception if any of the params provided matching one of the model attributes is invalid.
+
+```ts
+class PostsController extends PsychicController {
+  public async create() {
+    const post = await this.currentUser
+      .createAssociation('posts', this.paramsFor(Post))
+  }
+}
+```
+
+## failable lookups
+
+Certain methods in dream will cause a `RecordNotFound` exception to be thrown. If this exception is unhandled by your application code, it will automatically cause Psychic to raise a 404.
+
+```ts
+class PostsController extends PsychicController {
+  public async update() {
+    const post = await this.currentUser
+      .associationQuery('posts')
+      .findOrFail(this.castParam('id', 'bigint'))
+    // this will raise a 404 if no record is found
+  }
+}
+```
+
+There are many failable lookup methods within dream, and taking advantage of them in your controllers can often save you an annoying manual step. Here are the other failable lookup methods that will case a 404 to be thrown:
+
+* [firstOrFail](/docs/models/querying/firstOrFail)
+* [lastOrFail](/docs/models/querying/lastOrFail)
+* [findOrFail](/docs/models/querying/findOrFail)
+* [findOrFailBy](/docs/models/querying/findOrFailBy)
+
+
+## validation failures
+
+Setting up [validations](/docs/models/validations/overview) on your models will automatically cause 422 errors to be thrown if any of the validations fails.
+

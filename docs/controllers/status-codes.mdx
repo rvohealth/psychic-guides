@@ -1,0 +1,30 @@
+---
+sidebar_position: 3
+---
+
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
+# status codes
+
+Psychic comes with many convenience methods shadowing standard http response codes, enabling your code to stay expressive:
+
+```ts
+import { PsychicController, Params } from 'psychic'
+
+export default class HowyadoinsController extends PsychicController {
+  public async create() {
+    ...
+    this.created() // 201
+  }
+
+  public async index() {
+    ...
+    this.ok(things) // 200
+  }
+
+  public async update() {
+    ...
+    this.noContent() // 204
+  }
+}
+```

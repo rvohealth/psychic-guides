@@ -1,0 +1,21 @@
+# removeDefaultScopes
+
+The `removeDefaultScopes` method prevents all default scopes from applying. Consider a model where a soft delete pattern has been applied, like so:
+
+```ts
+@SoftDelete()
+export default class Pet extends ApplicationModel {}
+```
+
+When a `Pet` record is destroyed, the SoftDelete decorator will kick in, preventing the destroy and instead setting `deletedAt` field, which will cause the default `hideDeleted` scope to hide it. This means that you will not be able to find this record again, since one of the the SoftDelete decorator also applies a default scope to the model class, preventing non-null deletedAt fields from showing up. To get around this, you can use the `removeDefaultScopes` method, like so:
+
+```ts
+await Pet.count() // 0
+await Pet.removeDefaultScopes().count() // 1
+```
+
+Additionally, you can use the `removeDefaultScope` method to target a particular scope for removal:
+
+```ts
+await Pet.removeDefaultScope('dream:SoftDelete').count() // 1
+```

@@ -4,30 +4,109 @@ sidebar_position: 2
 
 # attributes
 
-Serializers make use of the `@Attribute` decorator to specify which fields should be serialized. When the decorator is called, a single argument is passed, specifying the data type this serializer should be rendering to, like so:
+When composing a serializer, the `@Attribute` decorator is used to signify which of the properties/methods on your serialize should be rendered. To do this, you can simply provide the Attribute decorator above each attribute you wish to be rendered:
 
 ```ts
-import { Attribute, DreamSerializer } from '@rvohealth/dream'
-
-export default class UserSerializer<
-  DataType extends User,
-> extends DreamSerializer<DataType> {
-  @Attribute('string')
+export default class UserSerializer extends DreamSerializer {
+  @Attribute()
   public email: string
 }
 ```
 
-## delegate
 
-Attributes can be delegated through another property attached to your data structure, like so:
+## openapi support
+
+When composing an app, you may choose to lean into the built-in support that comes out of the box if you are using Psychic and Dream together. When composing controllers in Psychic, you can take advantage of the built-in `@OpenAPI` decorator, which enables you to annotate your openapi responses in typescript and leverage the auto-generating mechanisms provided with the psychic cli.
+
+```ts
+class UsersController extends PsychicController {
+  @OpenAPI(() => User, {
+    many: true,
+    method: 'get',
+  })
+  public index() {
+    this.ok(await User.all())
+  }
+}
+```
+
+By default, psychic is able to infer very little from what you provide in these statements. This will automatically generate a 200 response with an array of serialized users as the response body. In the example above, the default serializer for the user model will be used, which can also leverage openapi's power in defining attributes. Using openapi syntax, combined with powerful shorthand provided by the decorator syntax, we can easily express openapi definitions by leveraging type primitives as arguments, like so:
 
 ```ts
 import { Attribute, DreamSerializer } from '@rvohealth/dream'
 
-export default class UserSerializer<
-  DataType extends { user: User; preferences: any },
-> extends DreamSerializer<DataType> {
-  @Attribute('string', { delegate: 'user' })
+export default class UserSerializer extends DreamSerializer {
+  @Attribute('string')
   public email: string
+}
+
+// {
+//   type: 'object',
+//   required: ['email'],
+//   properties: {
+//     email: {
+//       type: 'string',
+//       nullable: false,
+//     }
+//   }
+// }
+```
+
+Many generics are made available to you, including `decimal`, `date`, `date-time`, `boolean`, as well as array variants of these, which can be used like so:
+
+```ts
+import { Attribute, DreamSerializer } from '@rvohealth/dream'
+
+export default class UserSerializer extends DreamSerializer {
+  @Attribute('boolean[]')
+  public likesChalupas: boolean[]
+}
+
+// {
+//   type: 'object',
+//   required: ['likesChalupas'],
+//   properties: {
+//     likesChalupas: {
+//       type: 'array',
+//       items: {
+//         type: 'boolean',
+//         nullable: false,
+//       },
+//       nullable: false,
+//     }
+//   }
+// }
+```
+
+### custom schema definitions
+
+In addition to leveraging primitive types, you can explicitly spell out custom openapi shapes using our hybrid openapi shorthand. It supports all the usual things you can do in openapi:
+
+```ts
+import { Attribute, DreamSerializer } from '@rvohealth/dream'
+
+export default class UserSerializer extends DreamSerializer {
+  @Attribute({
+    type: 'object',
+    properties: {
+      first: {
+        type: 'string',
+        nullable: true,
+      },
+      last: {
+        type: 'string',
+        nullable: true,
+      },
+      title: {
+        type: 'string',
+        description: 'either Mr, Ms, Mrs, or Mizzzz',
+        nullable: true,
+        enum: ['Mr', 'Mrs', 'Ms', 'Mizzzz'],
+      },
+    }
+  })
+  public name() {
+    ...
+  }
 }
 ```

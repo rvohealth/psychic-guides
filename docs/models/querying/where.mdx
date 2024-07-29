@@ -4,6 +4,25 @@ import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
 
 The where statement will actually return back an instance of a Query (tethered by type generics back to the originating Dream class) which can then be chained with many statements before final execution.
 
+
 ```ts
-await User.where({ email: ops.ilike('burpcollaborator.net') }).destroy()
+await User.where({ email: null }).all()
+// [User{ email: null }, User{ email: null }, ...]
 ```
+
+Where statements will by default compare with strict equivilence. However, it is also possible to pass special expressions. The example below demonstrates the application of an `ilike` query being applied to your query.
+
+```ts
+await User.where({ email: ops.ilike('%burpcollaborator.net%') }).destroy()
+// 3
+```
+
+> For more info on ops expressions, see the [ops guide](/docs/models/querying/ops).
+
+If an array is passed as a value to a non-array field, the query will select any of the values provided in the array.
+
+```ts
+await User.where({ email: ['hi@hi', 'bye@bye'] }).all()
+// [User{ email: 'hi@hi' }, User{ email: 'bye@bye' }]
+```
+

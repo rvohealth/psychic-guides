@@ -5,3 +5,10 @@ The `exists` method will return true if at least one record is found matching th
 ```ts
 const exists = await User.joins('ratings', { body: 'I liked it' }).exists()
 ```
+
+Query building can be chained together prior to execution to scope your query
+```ts
+const exists = await User
+  .joins('ratings', { body: 'I liked it' })
+  .exists()
+```

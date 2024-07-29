@@ -32,3 +32,19 @@ redis >= 7.2.0
 ```
 
 You will need postgres and redis to be running locally for this to work, and if your credentials are different than those set up in your local `.env` and `.env.test` files, those credentials will need to be set/updated to reflect.
+
+## installing Dream without Psychic
+
+Though we don't encourage it, Dream can be used without an encapsulating Psychic app. To do this, you can install dream globally.
+
+```bash
+yarn global add https://github.com/@rvohealth/dream
+```
+
+Once done, you can use the global cli to provision a new dream app, simply run `dream new myapp`, like so:
+
+```bash
+dream new myapp
+```
+
+Once finished answering the cli's prompt, a new app will be bootstrapped for you which contains the bear bindings for a dream app, but no psychic app attached to it.

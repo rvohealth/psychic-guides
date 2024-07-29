@@ -1,0 +1,34 @@
+---
+sidebar_position: 0
+---
+
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
+# overview
+
+Routing enables your app to listen on specified routes, and to forward traffic from those routes to a controller and method of your choice. In the below example, a single route, `health-check`, will point to the `controllers/HealthCheckController.ts` file's `ping` method. 
+
+<RightSidebarItem>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET     /health-check  HealthCheck#ping
+`}
+  </pre>
+</RightSidebarItem>
+
+```ts // conf/routes.ts
+import { PsychicRouter } from 'psychic'
+
+export default (r: PsychicRouter) => {
+  r.get('/health-check', 'HealthCheck#ping')
+}
+```
+
+Psychic also provides the ability to namespace routes, which can be done using a variety of [namespacing](/docs/routing/namespacing) techniques.
+
+:::tip
+* To learn about basic route definitions, see our [crud](/docs/routing/crud) guide.
+* To learn more about techniques for namespacing, see our [namespacing](/docs/routing/namespacing) guide.
+* To learn about resourceful routing, see our [resourceful](/docs/routing/resources) guide.
+* To learn about nesting routes, see our [nesting](/docs/routing/nesting) guide.
+:::

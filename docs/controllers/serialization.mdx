@@ -1,0 +1,31 @@
+---
+sidebar_position: 2
+---
+
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
+# serialization
+
+Whenever rendering a dream instance, Psychic will always be smart enough to leverage the provided serializer, making these two lines equivilent:
+
+```ts
+export default class HowyadoinsController extends PsychicController {
+  public async index() {
+    ...
+    this.ok(things)
+    this.ok(things.map(thing => new ThingSerializer(thing).render()))
+  }
+}
+```
+
+If desired, a custom serializer can be chosen. The custom serializer must match one of the keys in the `serializers` getter defined on your model class.
+
+```ts
+export default class HowyadoinsController extends PsychicController {
+  public async index() {
+    ...
+    this.ok(things, { serializer: 'summary' })
+  }
+}
+```
+

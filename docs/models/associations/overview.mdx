@@ -1,0 +1,51 @@
+---
+sidebar_position: 0
+---
+
+# overview
+
+In postgres, it is possible to codify relationships between various tables in your database using foreign key constraints. The migration engine used by Dream provides the `references` method for doing this:
+
+```ts
+export async function up(db: Kysely<any>): Promise<void> {
+  await db.schema
+    .createTable('posts')
+    ...
+    .addColumn('body', 'text')
+    .addColumn('user_id', 'bigint', col => col.references('users.id'))
+    .execute()
+}
+```
+
+Since these types of relationships can exist at the database level, Dream exposes mechanisms so they can be expressed within the model layer as well. This can be done using the [BelongsTo](/docs/models/associations/belongs-to), [HasOne and HasMany](/docs/models/associations/has-one-and-has-many) associations to make those expose those relationships to your application:
+
+```ts
+class User extends ApplicationModel {
+  @HasMany(() => Post)
+  public posts: Post[]
+}
+
+class Post extends ApplicationModel {
+  @BelongsTo(() => User)
+  public user: User
+}
+```
+
+Once the association is defined, you can begin using it to simplify your domain interactions:
+
+```ts
+const user = await User.first()
+const post = await user.createAssociation('posts', { body: 'hello world' })
+
+const posts = await user.associationQuery('posts').where({ body: 'hello world' }).all()
+```
+
+:::tip
+There is much to learn about the power of Dream associations.
+
+* To learn more about BelongsTo associations, see our [BelongsTo guides](/docs/models/associations/belongs-to)
+* To learn more about HasOne and HasMany associations, see our [HasOne and HasMany guides](/docs/models/associations/has-one-and-has-many)
+* To learn about through associations, see our [through guides](/docs/models/associations/through)
+* To learn about polymorphic associations, see our [polymorphism guides](/docs/models/associations/polymorphism)
+* For extended usage guides, see our [usage guides](/docs/models/associations/usage)
+:::

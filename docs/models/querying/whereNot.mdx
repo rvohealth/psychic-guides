@@ -9,3 +9,15 @@ await User.whereNot({
   email: ops.ilike('burpcollaborator.net'),
 }).all()
 ```
+
+It is considered acceptable for you to chain multiple `whereNot` calls together, as well as to chain together with other calls to `where`. This can be useful for conditional query building
+
+```ts
+let query = Post.whereNot({ name: null })
+
+if (this.params.body) {
+  query = query.whereNot({ body: null })
+}
+
+await query.all()
+```
