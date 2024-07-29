@@ -4,5 +4,14 @@ The `count` method returns a count of the table
 
 ```ts
 await User.count() // 900
+```
+
+If desired, one can first provide conditions prior to counting, enabling one to limit the scope of the query before applying count.
+
+```ts
 await User.limit(10).count() // 10
 ```
+
+:::info
+Did you know that count can be pretty expensive to execute if you have a lot of data in your table? Consider using [exists](/docs/models/querying/exists) instead, if it can fit your use case.
+:::

@@ -448,4 +448,6 @@ now we can see all specs going green:
 yarn uspec
 ```
 
-NOTE: All cookies are automatically encrtpyed, httpOnly, and 31 days long. If you to override any defaults or pass additional options, you can always pass a third argument to `setCookie` to apply those overrides. However, if it is maxAge you need to set, you can simply adjust the default values set in `conf/app.ts` under `psy.setCookieOptions`, which will apply by default to all cookies being set (unless explicitly overridden).
+:::tip
+All cookies are automatically encrtpyed, httpOnly, and 31 days long. If you to override any defaults or pass additional options, you can always pass a third argument to `setCookie` to apply those overrides. However, if it is maxAge you need to set, you can simply adjust the default values set in `conf/app.ts` under `psy.set('cookie', {...})`, which will apply by default to all cookies being set (unless explicitly overridden).
+:::

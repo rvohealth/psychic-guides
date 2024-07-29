@@ -23,3 +23,5 @@ user.email = 'valid@email'
 console.log(user.isValid) // true
 console.log(user.isInvalid) // false
 ```
+
+If a save is attempted against a record, each of its validations will be called. If any of the validations fail, an exception will raise which prevents the record from being saved. When Psychic intercepts this error, it will automatically trigger a `422` error code, delivering an `errors` payload describing the list of validation failures.

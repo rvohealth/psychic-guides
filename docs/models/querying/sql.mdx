@@ -5,3 +5,9 @@ The sql method returns the sql that would be returned if executed.
 ```ts
 console.log(User.where({ email: 'howyadoin' }).sql())
 ```
+
+This is generally useful for debugging purposes, since it is often useful to see the executed SQL when you are executing queries.
+
+:::tip
+Did you know that you can convert your dream queries to kysely queries? For those familiar with the underlying tooling in kysely, this can also be a useful debugging experience. See the [toKysely](/docs/models/querying/toKysely) guide for more info.
+:::

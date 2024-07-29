@@ -9,3 +9,7 @@ await User.pluck('id')
 await User.pluck('id', 'email')
 // [['123', 'fred@flinstone.biz'], ['456', 'willlmmaaaaaaa@flinstone.biz']]
 ```
+
+:::tip
+If the query you are building could potentially return a very large amount of data, and you are unsure that you want to bring all that data into memory at once, try using [pluckEach](/docs/models/querying/pluckEach).
+:::

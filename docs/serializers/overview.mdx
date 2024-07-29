@@ -1,0 +1,39 @@
+---
+sidebar_position: 0
+---
+
+# overview
+
+Though the Dream ORM exclusively provides access to the database layer of your application, providing tools for abstracting those relational complexities into elegant domains, it also is aware that often you are going to want to serialize these models into different shapes, depending on the endpoint being hit, or other circumstances determined by your application logic.
+
+To enable multiple potential serialization shapes, dream provides a simple pattern for defining such connections:
+
+```ts
+class User extends ApplicationModel {
+  public get serializers() {
+    return {
+      default: UserSerializer,
+      summary: UserSummarySerializer,
+      admin: UserAdminSerializer,
+    } as const
+  }
+}
+```
+
+In psychic, when a dream is encountered in the process of serialization, the dream is serialized using its default serializer, unless a different serializer is specified explicitly:
+
+```ts
+class UsersController extends AuthedController {
+  public async show() {
+    const user = await User.findOrFail(this.castParam('id', 'bigint'))
+    this.ok(user, { serializer: 'admin' })
+  }
+}
+```
+
+:::info
+* To learn how to generate serializers, see our [generating serializer](/docs/serializers/generating) guide
+* To learn how to define attributes within a serializer, see our [serializer attributes](/docs/serializers/attributes) guide
+* To learn how to define associations within a serializer, see our [serializer associations](/docs/serializers/associations) guide
+* To learn how to render serializers, see our [serializer rendering](/docs/serializers/render) guide
+:::

@@ -1,0 +1,167 @@
+---
+sidebar_position: 4
+---
+
+# openapi
+
+Psychic provides built-in support for generating openapi schema to define your response payloads. Using the definitions you provide, Psychic will regenerate an `openapi.json` file at the root of your project whenever a sync occurs. Psychic will also use this to generate type files for your client app, allowing you to easily sync up your api mechanisms to the current values provided by the backend.
+
+## Automatic response generation
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI(() => Post, {
+    many: true,
+    status: 200,
+    serializerKey: 'summary',
+  })
+  public async index() {
+    this.ok(await this.currentUser.associationQuery('posts').all())
+  }
+}
+```
+
+If the first argument to the `OpenAPI` decorator is a callback function, then the return value of that function will dictate the success response payload. In the above case, because the `many: true` flag has been passed, the openapi response will yield an array type for the response content:
+
+```json
+"paths": {
+  "/posts": {
+    "parameters": [],
+    "get": {
+      "tags": [],
+      "summary": "",
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PostSummary"
+                }
+              }
+            }
+          },
+          "description": "index"
+        }
+      }
+    }
+  },
+}
+```
+
+## Implicit serializer scanning
+
+In the above example, a reference to the `#/components/schemas/PostSummary` component is made. This component is also generated in the components section of the openapi.json, leveraging the @Attribute decorator calls to construct an image of the serializer when building component schemas.
+
+```
+"components": {
+  "schemas": {
+    "PostSummary": {
+      "type": "object",
+      "required": [
+        "id",
+        "body",
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+      }
+    },
+  }
+}
+```
+
+Dream supports OpenAPI notation within the `@Attribute` decorator, allowing us to build openapi specs for each attribute:
+
+```ts
+class PostSerializer extends DreamSerializer {
+  @Attribute({
+    type: 'object',
+    properties: {
+      label: 'string',
+      value: {
+        type: 'string',
+        nullable: true,
+      },
+    }
+  })
+  public body() {
+    return {
+      label: 'Body',
+      value: this.data.body,
+    }
+  }
+}
+```
+
+## Extra response payloads
+
+In addition to the default response shapes described, you can pass custom response objects to the `responses` field, enabling you to handle custom response codes.
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI(() => Post, {
+    many: true,
+    status: 200,
+    serializerKey: 'summary',
+    responses: {
+      400: {
+        type: 'object',
+        properties: {
+          errors: 'string[]'
+        },
+      }
+    }
+  })
+  public async index() {
+    this.ok(await this.currentUser.associationQuery('posts').all())
+  }
+}
+```
+
+## Parameters
+
+To populate the `parameters` field in your OpenAPI definition for this route, the `headers`, `body`, `pathParams`, and `query` options are passed:
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI(() => Post, {
+    body: {
+      type: 'object',
+      properties: {
+        email: 'string'
+      }
+    },
+    query: [{ name: 'search', required: false }],
+    headers: [{ name: 'Authorization', required: true }],
+    pathParams: [{ name: 'id', required: true }],
+  })
+  public async create() {
+    this.ok(await this.currentUser.associationQuery('posts').all())
+  }
+}
+```
+
+## Tags
+
+When openapi routes are read, they are often grouped by the fields provided in their `tags` array. The `tags` option enables you to populate this field.
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI(() => Post, {
+    many: true,
+    status: 200,
+    serializerKey: 'summary',
+    tags: ['posts'],
+  })
+  public async index() {
+    this.ok(await this.currentUser.associationQuery('posts').all())
+  }
+}
+```
+

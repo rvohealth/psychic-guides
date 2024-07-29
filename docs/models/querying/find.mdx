@@ -2,8 +2,12 @@ import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
 
 # find
 
-Find is a simple static method used to find records by a given primary key. it will either return the record if found, or else null
+Find is a simple static method used to find records by its model's primary key. It will either return the record if found, or else null
 
 ```ts
 const user = await User.find(123)
 ```
+
+:::tip
+In some cases, [findOrFail](/docs/models/querying/findOrFail) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.
+:::

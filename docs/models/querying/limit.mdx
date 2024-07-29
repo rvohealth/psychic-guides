@@ -5,3 +5,15 @@ The limit method enables you to limit the number of results coming from your que
 ```ts
 const users = await User.limit(3).all()
 ```
+
+Often, limit will be used in accordance with an explicit order statement, as well as an offset, to support pagination.
+
+```ts
+const paginatedUsers = await User
+  .order('name')
+  .limit(10)
+  .offset(
+    this.castParam('page', 'integer')
+  )
+  .all()
+```

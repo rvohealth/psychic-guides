@@ -6,7 +6,15 @@ The `whereAny` method can be used to union two or more clauses together, like so
 
 ```ts
 await User.whereAny([
-  { email: ops.ilike('%burpcollaborator%') },
-  { name: ops.ilike('%Untitled%') },
+  { email: null },
+  { name: null },
 ]).all()
+
+// [User{ email: null, name: 'chalupa joe' }, User{ email: 'how@yadoin', name: null }, ...]
 ```
+
+This enables you to permit two adjacent conditions, essentially achieving the sql equivilent of an `or` clause. This is useful if you want an either-or case to apply.
+
+:::tip
+Perhaps you want multiple where clauses, but you don't want them to be either-or. In this case, you are generally just looking for a regular [where](/docs/models/querying/where) statement.
+:::

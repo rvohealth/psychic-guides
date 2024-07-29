@@ -6,3 +6,7 @@ The `pluckThrough` method enables you to drill through associations to get to th
 await User.pluckThrough('pets', 'collars', ['id', 'color'])
 // [['123', 'blue'], ['456', 'pink']]
 ```
+
+:::tip
+If the query you are building could potentially return a very large amount of data, and you are unsure that you want to bring all that data into memory at once, try using [pluckEachThrough](/docs/models/querying/pluckEachThrough).
+:::

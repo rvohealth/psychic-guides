@@ -1,0 +1,14 @@
+# toKysely
+
+The toKysley method returns the current query, converted to a kysely query.
+
+```ts
+const selectQuery = User.where({ email: 'howyadoin' }).toKysely('select')
+// SelectQueryBuilder{}
+```
+
+This is generally useful for debugging purposes, since it is often useful to tinker around in low level kysely to compare to queries being executed in Dream.
+
+:::tip
+Did you know that you can convert your dream queries to sql? See the [sql guide](/docs/models/querying/sql) for more info.
+:::

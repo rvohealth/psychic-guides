@@ -3,6 +3,17 @@
 The all method returns all records matching the given conditions. If none are passed, it will return all records in the table.
 
 ```ts
-const someUsers = await User.where(id: [1, 2, 3]).all()
-const allUsers = await User.all()
+await User.all()
+// [User{}, User{}, ...]
 ```
+
+Passing conditions to the query, we can drill down and limit the results returned.
+
+```ts
+await User.where({ id: [1, 2, 3] }).all()
+[User{ id: 1 }, User{ id: 2 }, User{ id: 3 }]
+```
+
+:::warning
+Though it can be tempting to reach for all, one must always consider the constraints of their own app when doing so. If your database has millions of columns in a table that you are querying, do you really want to bring all of that into memory at once? If the answer is no, then consider using [findEach](/docs/models/querying/findEach) instead.
+:::

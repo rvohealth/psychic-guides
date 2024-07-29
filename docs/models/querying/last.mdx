@@ -6,3 +6,7 @@ The last method returns the last record found in the given table.
 const user = await User.last()
 // User{id=9000}
 ```
+
+:::tip
+In some cases, [lastOrFail](/docs/models/querying/lastOrFail) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.
+:::
