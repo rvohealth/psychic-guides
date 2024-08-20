@@ -38,7 +38,7 @@ At the heart of any web application is a database, with, at least generally spea
 ```ts
 @SoftDelete()
 export default class User extends ApplicationModel {
-  public readonly get table() {
+  public get table() {
     return 'users' as const
   }
 
@@ -79,13 +79,13 @@ In addition to powerful decorators for describing validations and custom scoping
 class Post extends ApplicationModel {
   ...
 
-  @BelongsTo(() => User)
+  @Post.BelongsTo('User')
   public user: User
 
-  @HasMany(() => Comment)
+  @Post.HasMany('Comment')
   public comments: Comment[]
 
-  @HasMany(() => Reply, { through: 'comments' })
+  @Post.HasMany('Reply', { through: 'comments' })
   public replies: Reply[]
 }
 
@@ -155,7 +155,7 @@ export default class ApiV1IngredientsController extends AuthedController {
 
   public async update() {
     const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint'),
+      this.castParam('id', 'bigint')
     )
     await ingredient.update(this.paramsFor(Ingredient))
     this.noContent()
@@ -163,7 +163,7 @@ export default class ApiV1IngredientsController extends AuthedController {
 
   public async destroy() {
     const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint'),
+      this.castParam('id', 'bigint')
     )
     await ingredient.destroy()
     this.noContent()
@@ -273,7 +273,7 @@ describe('ApiV1UsersController', () => {
       return await request.session(
         '/api/v1/signin',
         { email: 'how@yadoin', password: 'password' },
-        204,
+        204
       )
     }
 

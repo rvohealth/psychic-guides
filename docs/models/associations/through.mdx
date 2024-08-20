@@ -8,10 +8,10 @@ Both HasOne and HasMany associations have recursively-nested `through` support b
 
 ```ts
 export default class CommentReply extends Dream {
-  @BelongsTo(() => Comment)
+  @CommentReply.BelongsTo('Comment')
   public comment: Comment
 
-  @HasOne(() => User, { through: 'comment' })
+  @CommentReply.HasOne('User', { through: 'comment' })
   public user: User
 }
 ```
@@ -22,13 +22,13 @@ Dream permits you to travel through other "through" associations, which can simp
 
 ```ts
 class User extends ApplicationModel {
-  @HasMany(() => Pet)
+  @User.HasMany('Pet')
   public pets: Pet[]
 
-  @HasMany(() => Collar, { through: 'pets' })
+  @User.HasMany('Collar', { through: 'pets' })
   public collars: Collar[]
 
-  @HasMany(() => NameTag, { through: 'collars' })
+  @User.HasMany('NameTag', { through: 'collars' })
   public nameTags: NameTag[]
 }
 
@@ -43,10 +43,10 @@ In some cases, the association name on the base model may be different than the 
 
 ```ts
 class User extends ApplicationModel {
-  @HasMany(() => Pet)
+  @User.HasMany('Pet')
   public pets: Pet[]
 
-  @HasMany(() => Collar, { through: 'pets', source: 'collars' })
+  @User.HasMany('Collar', { through: 'pets', source: 'collars' })
   public petCollars: Collar[]
 }
 ```

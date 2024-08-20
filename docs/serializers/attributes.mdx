@@ -13,14 +13,13 @@ export default class UserSerializer extends DreamSerializer {
 }
 ```
 
-
 ## openapi support
 
 When composing an app, you may choose to lean into the built-in support that comes out of the box if you are using Psychic and Dream together. When composing controllers in Psychic, you can take advantage of the built-in `@OpenAPI` decorator, which enables you to annotate your openapi responses in typescript and leverage the auto-generating mechanisms provided with the psychic cli.
 
 ```ts
 class UsersController extends PsychicController {
-  @OpenAPI(() => User, {
+  @OpenAPI(User, {
     many: true,
     method: 'get',
   })

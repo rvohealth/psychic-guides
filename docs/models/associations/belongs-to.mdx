@@ -14,13 +14,14 @@ Belongs to associations are to be used when the model in question is related to 
 ```ts
 export default class Post extends Dream {
   ...
-  @BelongsTo(() => User)
+  @Post.BelongsTo('User')
   public user: User
   public userId: DreamColumn<User, 'userId'>
 }
 ```
 
 ## Options
+
 ### Optional
 
 BelongsTo associations are required by default (and should have a corresponding not-null declaration on the foreign key column). To make an association optional, pass the `optional: true` option (and ensure that the column allows null values).
@@ -28,7 +29,7 @@ BelongsTo associations are required by default (and should have a corresponding 
 ```ts
 export default class Post extends Dream {
   ...
-  @BelongsTo(() => User, { optional: true })
+  @Post.BelongsTo('User', { optional: true })
   public user: User
   public userId: DreamColumn<User, 'userId'>
 }
@@ -42,14 +43,14 @@ default foreign key would be `userId`. This can be overridden by including an ex
 
 ```ts
 export default class Post extends Dream {
-  public readonly get table() {
+  public get table() {
     return 'posts' as const
   }
 
   public id: number
   public content: string | null
 
-  @BelongsTo(() => User, { foreignKey: 'myUserId' })
+  @Post.BelongsTo('User', { foreignKey: 'myUserId' })
   public user: User
   public myUserId: number
 }
@@ -63,14 +64,14 @@ this can be overridden by passing the `primaryKeyOverride: '<column-name-on-targ
 
 ```ts
 export default class Post extends Dream {
-  public readonly get table() {
+  public get table() {
     return 'posts' as const
   }
 
   public id: number
   public content: string | null
 
-  @BelongsTo(() => User, { primaryKeyOverride: 'uuid' })
+  @Post.BelongsTo('User', { primaryKeyOverride: 'uuid' })
   public user: User
   public userId: number
 }

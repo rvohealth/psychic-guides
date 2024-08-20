@@ -10,7 +10,7 @@ Psychic provides built-in support for generating openapi schema to define your r
 
 ```ts
 export default class PostsController extends PsychicController {
-  @OpenAPI(() => Post, {
+  @OpenAPI(Post, {
     many: true,
     status: 200,
     serializerKey: 'summary',
@@ -88,7 +88,7 @@ class PostSerializer extends DreamSerializer {
         type: 'string',
         nullable: true,
       },
-    }
+    },
   })
   public body() {
     return {
@@ -105,7 +105,7 @@ In addition to the default response shapes described, you can pass custom respon
 
 ```ts
 export default class PostsController extends PsychicController {
-  @OpenAPI(() => Post, {
+  @OpenAPI(Post, {
     many: true,
     status: 200,
     serializerKey: 'summary',
@@ -113,10 +113,10 @@ export default class PostsController extends PsychicController {
       400: {
         type: 'object',
         properties: {
-          errors: 'string[]'
+          errors: 'string[]',
         },
-      }
-    }
+      },
+    },
   })
   public async index() {
     this.ok(await this.currentUser.associationQuery('posts').all())
@@ -130,12 +130,12 @@ To populate the `parameters` field in your OpenAPI definition for this route, th
 
 ```ts
 export default class PostsController extends PsychicController {
-  @OpenAPI(() => Post, {
+  @OpenAPI(Post, {
     body: {
       type: 'object',
       properties: {
-        email: 'string'
-      }
+        email: 'string',
+      },
     },
     query: [{ name: 'search', required: false }],
     headers: [{ name: 'Authorization', required: true }],
@@ -153,7 +153,7 @@ When openapi routes are read, they are often grouped by the fields provided in t
 
 ```ts
 export default class PostsController extends PsychicController {
-  @OpenAPI(() => Post, {
+  @OpenAPI(Post, {
     many: true,
     status: 200,
     serializerKey: 'summary',
@@ -164,4 +164,3 @@ export default class PostsController extends PsychicController {
   }
 }
 ```
-
