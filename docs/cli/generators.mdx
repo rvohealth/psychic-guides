@@ -13,6 +13,9 @@ yarn psy g:migration add-deleted-at-to-posts
 # generate a model and migration
 yarn psy g:model User email:string
 
+# generate an STI child model and migration
+yarn psy g:sti-child Foo/Bar extends Foo/Base hello:string
+
 # generate a controller
 yarn psy g:controller Users create update destroy
 
