@@ -29,14 +29,15 @@ class UsersController extends PsychicController {
 }
 ```
 
-By default, psychic is able to infer very little from what you provide in these statements. This will automatically generate a 200 response with an array of serialized users as the response body. In the example above, the default serializer for the user model will be used, which can also leverage openapi's power in defining attributes. Using openapi syntax, combined with powerful shorthand provided by the decorator syntax, we can easily express openapi definitions by leveraging type primitives as arguments, like so:
+When a Dream model is passed to the @OpenAPI decorator, the serializer corresponding to that Dream model is leveraged to generate the final OpenAPI shape. As with Dream attribute types, here, Dream leverages the database schema to keep the OpenAPI schema in sync based on any migrations that have been applied:
 
 ```ts
-import { Attribute, DreamSerializer } from '@rvohealth/dream'
+import { Attribute, DreamColumn, DreamSerializer } from '@rvohealth/dream'
+import User from '../../models/User'
 
 export default class UserSerializer extends DreamSerializer {
-  @Attribute('string')
-  public email: string
+  @Attribute(User)
+  public email: DreamColumn<User, 'email'>
 }
 
 // {
