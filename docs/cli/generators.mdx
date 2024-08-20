@@ -10,10 +10,10 @@ Psychic provides several generators for quickly building scaffolding for your ap
 # generate migration
 yarn psy g:migration add-deleted-at-to-posts
 
-# generate a model and migration
+# generate a model, serializer, and migration
 yarn psy g:model User email:string
 
-# generate an STI child model and migration
+# generate an STI child model, serializer, and migration
 yarn psy g:sti-child Foo/Bar extends Foo/Base hello:string
 
 # generate a controller
@@ -22,7 +22,7 @@ yarn psy g:controller Users create update destroy
 # generate a serializer
 yarn psy g:serializer User email:string id:string
 
-# generate a model, migration, controller, and serializer, and,
+# generate a model, serializer, migration, and controller and,
 # provided your app is not api-only, a client api module
 yarn psy g:resource api/v1/users User email:string
 ```
