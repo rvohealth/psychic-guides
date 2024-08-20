@@ -71,3 +71,9 @@ await Cat.all()
 await Dog.all()
 // [Dog{}, Dog{}, ...]
 ```
+
+The sti-child generator makes it easy to create STI children:
+
+```bash
+yarn psy g:sti-child Foo/Bar extends Foo/Base hello:string
+```
