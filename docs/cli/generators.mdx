@@ -77,4 +77,7 @@ file. The generator also adds the `BelongsTo` decorator to the resulting model f
 
 ```bash
 yarn psy g:model Post user:belongs_to
+
+// the optional modifier alters both the migration and the BelongsTo association in the model
+yarn psy g:model Post user:belongs_to:optional
 ```
