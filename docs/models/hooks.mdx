@@ -36,6 +36,11 @@ export default class Post extends Dream {
   public async doSomething() {
     // ... do whatever you want here!
   }
+
+  @BeforeUpdate({ ifChanging: ['color'] })
+  public async doSomethingWhenColorIsChanging() {
+    // ... do whatever you want here!
+  }
 }
 ```
 
@@ -120,6 +125,11 @@ export default class Post extends Dream {
 
   @AfterUpdate()
   public async doSomething() {
+    // ... do whatever you want here!
+  }
+
+  @AfterUpdate({ ifChanged: ['color'] })
+  public async doSomethingWhenColorChanged() {
     // ... do whatever you want here!
   }
 }
@@ -208,6 +218,11 @@ export default class Post extends Dream {
 
   @AfterUpdateCommit()
   public async doSomething() {
+    // ... do whatever you want here!
+  }
+
+  @AfterUpdate({ ifChanged: ['color'] })
+  public async doSomethingWhenColorChanged() {
     // ... do whatever you want here!
   }
 }
