@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# installation
+# Installation
 
 In order to get started with psychic, you will first need to install the [psychic](https://github.com/rvohealth/psychic") package globally. The global CLI is really only needed to get a new app up and running. Once it is, you will use yarn scripts to access the non-global psychic cli, which will be useful for running migrations, generating resources, starting your development server, etc...
 

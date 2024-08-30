@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# welcome
+# Welcome
 
 Psychic and dream together provide a full-stack solution for a JSON-based api delivery system with robust backend needs. Together, they combine like a superpower to deliver elegant design patterns. Leveraging database introspection, as well as project files, type schemas are generated which enable Psychic, Dream, and Kysely to deliver powerful type guards, allowing your domain to reveal itself to you with power and elegance.
 
