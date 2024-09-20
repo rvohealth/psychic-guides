@@ -19,7 +19,7 @@ In this guide, we will be covering the following:
   - [Convention over configuration](#convention-over-configuration)
 - [Testing](#testing)
   - [Unit specs](#unit-specs)
-  - [Feature specs](#feature-specs)
+  - [Feature specs](#feature-end-to-end-specs)
 
 You may be familiar with the concepts, and want to skip ahead to [installation](/docs/installation), or to one of the primary sections of the documentation, such as:
 
