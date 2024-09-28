@@ -1,11 +1,11 @@
 .app-section {
   position: relative;
-  top: -100px;
   z-index: 10000;
   left: 0;
-  margin-bottom: -100px;
   /*background: #a2a396;*/
-  background: #cfd0c1;
+  /*background: #cfd0c1;*/
+  /*background: #e8e8e8;*/
+  /*background: #e0e0d1;*/
   padding-top: 20vh;
   padding-bottom: 20vh;
 }
@@ -16,13 +16,33 @@
   font-style: italic;
 }
 
+.app-section:nth-child(odd) .banner .title {
+  /*background: color(srgb 0.8742 0.93 0.8962);*/
+}
+
+.navbar__brand {
+  color: rgb(76, 85, 82);
+  font-style: inherit;
+  text-decoration: none;
+}
+
+[data-theme='dark'] .navbar__brand {
+  color: white;
+}
+
+body[data-location='home'] .navbar {
+  display: none;
+}
+
 .app-section:nth-child(odd) {
   /*background: #1cb88f;*/
   /*background: #5ff7ca;*/
   /*background: #c5f0d6;*/
   /*background: #6bffa6;*/
   /*background: #bcf0d0;*/
-  background: #a3e3a2;
+  /*background: #a3e3a2;*/
+  /*background: #eeeeee;*/
+  /*background: #f4f5e0;*/
 }
 
 .box-lines {
@@ -44,18 +64,19 @@
   /*right: 0;*/
   text-align: center;
   padding: 10px;
-  font-size: 35px;
+  font-size: 72px;
   font-style: italic;
   color: rgb(102, 11, 106);
   top: 0;
   margin-top: -1px;
   text-transform: uppercase;
   color: #1a0f15;
-  width: 350px;
+  width: 100%;
+  text-align: center;
   font-weight: 500;
-  margin-left: calc(50vw - 175px);
+  /*margin-left: calc(50vw - 175px);*/
   margin-bottom: 100px;
-  background-color: rgb(255, 51, 76);
+  /*background-color: rgb(255, 51, 76);*/
 }
 
 .app-section:nth-child(odd) h2 {
@@ -65,6 +86,7 @@
   /*background: rgb(255, 144, 182);*/
   /*background: rgb(255, 116, 133);*/
   /*background: rgb(255, 87, 144);*/
+  /*background: rgb(105, 255, 187);*/
 }
 
 .app-section h2 a {
@@ -117,14 +139,35 @@
 
 .logo-stacked h1 div {
   margin-top: -20px;
+  color: #f20c9c;
+  -webkit-text-stroke-width: 3px;
+  -webkit-text-stroke-color: #ff334c;
 }
 
 .logo-stacked h1 div:nth-child(1) {
+  opacity: 0;
+}
+
+body[data-location='home'][data-scroll-section='hero']
+  .logo-stacked
+  h1
+  div:nth-child(1) {
   opacity: 0.2;
+  transition: all 1000ms;
+  transition-delay: 200ms;
 }
 
 .logo-stacked h1 div:nth-child(2) {
-  color: black;
+  /*color: color(srgb 1 0.1983 0.296);*/
+  opacity: 0;
+  transition: all 1000ms;
+  transition-delay: 200ms;
+}
+
+body[data-location='home'][data-scroll-section='hero']
+  .logo-stacked
+  h1
+  div:nth-child(2) {
   opacity: 0.4;
 }
 
@@ -132,6 +175,11 @@
   color: #f20c9c;
   -webkit-text-stroke-width: 3px;
   -webkit-text-stroke-color: #ff334c;
+}
+
+.app-hero .logo-stacked .top {
+  opacity: 0;
+  transition: all 1s;
 }
 
 @media (min-width: 1000px) {

@@ -22,8 +22,10 @@ import { PsychicRouter } from 'psychic'
 export default (r: PsychicRouter) => {
   r.namespace('api', (r) => {
     r.namespace('v1', (r) => {
-      r.get('hi', 'users#hi')
+      r.get('hi', UsersController, 'hi')
     })
   })
 }
 ```
+
+Namespacing will always enforce the folder structure when presented with multiple route segments.

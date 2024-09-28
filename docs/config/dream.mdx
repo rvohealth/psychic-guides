@@ -4,23 +4,11 @@ sidebar_position: 2
 
 # dream
 
-Since dream is an independent library that is imported by psychic, we expose configuration for you which enables dream to understand, for example, what your database credentials are, or where you want your database migrations to go. These configuration items are spread into two files. The first, which is an optional file that can be included at the root of your api folder, is the `.dream.yml` file.
+Since dream is an independent library that is imported by psychic, we expose configuration for you which enables dream to understand, for example, what your database credentials are, or where you want your database migrations to go. These configuration items are set in the `conf/dream.ts` file, which we will be covering in depth in this guide.
 
-## .dream.yml
+## conf/dream.ts
 
-The .dream.yml file is entirely concerned with defining the paths to various folders. This file is optional, and each item on here will implicitly fall back to the default location within a psychic app. Generally speaking, you shouldn't need to make changes to this file.
-
-```yaml
-// api/.dream.yml
-models_path: 'src/app/models'
-serializers_path: 'src/app/serializers'
-client_api_schema_path: '../client/src/app/api/schema.ts'
-conf_path: 'src/conf'
-db_path: 'src/db'
-unit_spec_path: 'spec/unit'
-```
-
-A second configuration file is also used in dream, and can be found at the `conf/dream.ts` location. This file is concerned with provisioning your dream application with database credentials, primary key types, etc...
+A configuration file is used to configure dream, and can be found at the `conf/dream.ts` location. This file is concerned with provisioning your dream application with database credentials, primary key types, etc...
 
 ```ts
 // conf/dream.ts
@@ -28,27 +16,125 @@ import { Dreamconf } from '../../../src'
 
 export default function configureDream(dreamconf: Dreamconf) {
   dreamconf.set('primaryKeyType', 'bigserial')
-
-  dreamconf.set('dbCredentials', {
-    primary: {
-      user: process.env.DB_USER!,
-      password: process.env.DB_PASSWORD!,
-      host: process.env.PRIMARY_DB_HOST!,
-      name: process.env.PRIMARY_DB_NAME!,
-      port: parseInt(process.env.DB_PORT!),
-      useSsl: process.env.DB_USE_SSL === '1',
-    },
-    replica: {
-      user: process.env.DB_USER!,
-      password: process.env.DB_PASSWORD!,
-      host: process.env.REPLICA_DB_HOST!,
-      name: process.env.REPLICA_DB_NAME!,
-      port: parseInt(process.env.DB_PORT!),
-      useSsl: process.env.DB_USE_SSL === '1',
-    },
-  })
+  // etc...
 }
 ```
+
+### loading your application files
+
+In order for dream to function properly, it needs you to provide it folders to scan to locate:
+
+- your models
+- your serializers
+- your services
+
+To do so, every dream application must have the following lines provided in the dream configuration:
+
+```ts
+// conf/dream.ts
+export default async function (dreamApp: DreamApplication) {
+  await dreamApp.load('models', path.join(__dirname, '..', 'models'))
+  await dreamApp.load('serializers', path.join(__dirname, '..', 'serializers'))
+  await dreamApp.load('services', path.join(__dirname, '..', 'services'))
+  // etc...
+}
+```
+
+### setting your project root path
+
+Dream requires you to provide it the path from your configuration file to the project's root file. This should be an absolute path, including the \_\_dirname variable provided by node.
+
+```ts
+// conf/dream.ts
+export default async function (dreamApp: DreamApplication) {
+  dreamApp.set('projectRoot', path.join(__dirname, '..', '..', '..'))
+  // etc...
+}
+```
+
+### setting your primary key type
+
+The primaryKeyType configuration informs the cli how to generate your migrations for you when building out models using the cli generators provided by dream.
+
+```ts
+// conf/dream.ts
+export default async function (dreamApp: DreamApplication) {
+  dreamApp.set('primaryKeyType', 'bigserial')
+  // etc...
+}
+```
+
+### providing inflections
+
+Provide inflections to your dream application to inform the dream cli generators how to generate pluralized version of singulars.
+
+```ts
+// conf/dream.ts
+import inflections from './inflections'
+
+export default async function (dreamApp: DreamApplication) {
+  dreamApp.set('inflections', inflections)
+  // etc...
+}
+```
+
+### application logging
+
+Provide inflections to your dream application to inform the dream cli generators how to generate pluralized version of singulars.
+
+```ts
+// conf/dream.ts
+import inflections from './inflections'
+
+export default async function (dreamApp: DreamApplication) {
+  dreamApp.set(
+    'logger',
+    winston.createLogger({
+      level: 'info',
+      format: winston.format.json(),
+      defaultMeta: { service: 'user-service' },
+      transports: [
+        //
+        // - Write all logs with importance level of `error` or less to `error.log`
+        // - Write all logs with importance level of `info` or less to `combined.log`
+        //
+        new winston.transports.File({ filename: 'error.log', level: 'error' }),
+        new winston.transports.File({ filename: 'combined.log' }),
+      ],
+    }),
+  )
+
+  // etc...
+}
+```
+
+:::warning
+If no logger is provided, dream will log using `console.log`, which is not recommended, since `console.log` is blocking.
+:::
+
+### paths
+
+Provide information about the paths to the specific directories that dream cares about. These are only used by the cli locally to generate new files into your application, and it is optional to pass them. By default, they will use the typical paths of a psychic application to generate your files.
+
+```ts
+// conf/dream.ts
+export default async function (dreamApp: DreamApplication) {
+  // provides a list of path overrides for your app. This is optional, and will default
+  // to the paths expected for a typical psychic application.
+  dreamApp.set('paths', {
+    conf: 'my/custom/path/to/app/conf',
+    db: 'my/custom/path/to/db',
+    factories: 'my/custom/path/to/factories',
+    models: 'my/custom/path/to/app/models',
+    serializers: 'my/custom/path/to/app/serializers',
+    services: 'my/custom/path/to/app/services',
+    modelSpecs: 'my/custom/path/to/spec/unit/models',
+  })
+  // etc...
+}
+```
+
+### ApplicationModel
 
 Additionally, a base model (called `ApplicationModel`) is pre-established for you which contains carefully constructed type bindings to bridge the types generated by kysely throughout our app through each of your models. This happens automatically for you, but it must be the base class for each of your models in order for the type safety of our system to work properly.
 

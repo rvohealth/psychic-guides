@@ -21,7 +21,10 @@ export default function ORM() {
         </div>
       </div>
 
-      <Banner gifUrl="/img/routes-demo.gif">
+      <Banner
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+      >
         <p className="subtext">
           Leverage the query building API within Dream to easily construct
           powerful queries. Dream provides tools to enable you to easily
@@ -36,7 +39,12 @@ export default function ORM() {
         </nav>
       </Banner>
 
-      <Banner gifUrl="/img/routes-demo.gif" orientation="right">
+      <Banner
+        title="saving records"
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+        orientation="right"
+      >
         <p className="subtext">
           Use built-in methods for easily updating data on your records
         </p>
@@ -48,7 +56,11 @@ export default function ORM() {
         </nav>
       </Banner>
 
-      <Banner gifUrl="/img/routes-demo.gif">
+      <Banner
+        title="associations"
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+      >
         <p className="subtext">
           Take advantage of powerful association mechanisms to clarify your
           domain, as well as to gain easy access to your associated models.
@@ -61,7 +73,12 @@ export default function ORM() {
         </nav>
       </Banner>
 
-      <Banner gifUrl="/img/routes-demo.gif" orientation="right">
+      <Banner
+        title="validations"
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+        orientation="right"
+      >
         <p className="subtext">
           Leverage our validation decorators to easily apply validations before
           saving your records.
@@ -74,7 +91,11 @@ export default function ORM() {
         </nav>
       </Banner>
 
-      <Banner gifUrl="/img/routes-demo.gif">
+      <Banner
+        title="encryption"
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+      >
         <p className="subtext">
           Automatically encrypt columns on their way into the database, and
           decrypt them upon accessing.

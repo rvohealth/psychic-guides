@@ -18,7 +18,10 @@ export default function UnitTesting() {
         </div>
       </div>
 
-      <Banner gifUrl="/img/routes-demo.gif">
+      <Banner
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+      >
         <p className="subtext">
           Take advantage of custom jest assertions, designed to help you easily
           interact with Psychic and Dream constructs.
@@ -29,7 +32,12 @@ export default function UnitTesting() {
         </nav>
       </Banner>
 
-      <Banner gifUrl="/img/routes-demo.gif" orientation="right">
+      <Banner
+        title="specRequest"
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+        orientation="right"
+      >
         <p className="subtext">
           Use our in-house specRequest singleton for making requests to your
           endpoints, allowing you to easily assert response expectaions and

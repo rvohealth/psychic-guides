@@ -56,6 +56,8 @@ const config: Config = {
             './src/css/home/index.css',
             './src/css/home/banner.css',
             './src/css/home/box-lines.css',
+            './src/css/home/scroll.css',
+            './src/css/home/gif-with-preview.css',
           ],
         },
       } satisfies Preset.Options,

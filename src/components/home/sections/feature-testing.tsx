@@ -16,7 +16,10 @@ export default function FeatureTesting() {
         </div>
       </div>
 
-      <Banner gifUrl="/img/routes-demo.gif">
+      <Banner
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+      >
         <div>
           <p className="subtext">
             In addition to providing jest bindings for testing your backend,

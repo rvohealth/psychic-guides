@@ -4,13 +4,15 @@ sidebar_position: 1
 
 # psychic
 
-Psychic exposes a few different configuration points within the `conf` directory, but most of the configuration is done in `conf/app.ts`
+Psychic exposes a few different configuration points within the `conf` directory, but most of the configuration is done in `conf/app.ts`. This file enables you to express the underlying configuration for your psychic application, including encryption keys, cookie configurations, and much more.
+
+In addition, Psychic exposes access to the underlying express framework, enabling you to use any express-compatible plugin without any fuss.
 
 ```
 ├── app
 │   ├── conf
 │   │   ├── app.ts             // main psychic config
-│   │   ├── dreamconf.ts       // dream bindings
+│   │   ├── dream.ts           // dream bindings
 │   │   ├── global.ts          // loaded by app entry points
 │   │   ├── inflections.ts     // loaded by app entry points
 │   │   ├── loadEnv.ts         // loaded by app entry points
@@ -25,18 +27,23 @@ examining the `conf/app.ts` file, we will see many configuration options that ca
 
 ```ts
 export default (psy: Psyconf) => {
-  // the name of your application (no spaces)
-  psy.appName = 'howyadoin'
-
-  // set to true to leverage internal websocket bindings to socket.io
-  psy.useWs = true
-
-  // set to true to leverage internal redis bindings.
-  psy.useRedis = true
-
-  // set to true if you want to also attach a client app to your project.
-  psy.apiOnly = false
-  ...
+  psy.set('appName', 'howyadoin')
+  psy.set('useWs', true)
+  psy.set('useRedis', true)
+  psy.set('apiOnly', false)
+  psy.set('encryption', {
+    cookies: {
+      current: {
+        algorithm: 'aes-256-gcm',
+        key: process.env.APP_ENCRYPTION_KEY!,
+      },
+    },
+  })
+  psy.set('apiRoot', path.join(__dirname, '..', '..'))
+  psy.set('clientRoot', path.join(__dirname, '..', '..', '..', 'client'))
+  psy.set('inflections', inflections)
+  psy.set('routes', routesCb)
+  // ...etc
 }
 ```
 
@@ -71,6 +78,28 @@ export default (psy: Psyconf) => {
 }
 ```
 
+### encryption
+
+Use the `Psychonf#set` method to apply encryption options.
+
+```ts
+export default (psy: Psyconf) => {
+  psy.set('encryption', {
+    cookies: {
+      current: {
+        algorithm: 'aes-256-gcm',
+        key: process.env.APP_ENCRYPTION_KEY!,
+      },
+      // legacy is used when you are in the process of switching out your encryption keys
+      legacy: {
+        algorithm: 'aes-256-gcm',
+        key: process.env.LEGACY_APP_ENCRYPTION_KEY!,
+      },
+    },
+  })
+}
+```
+
 ### cors
 
 Use the `Psychonf#set` method to apply cors options. Cors options are driven through the express-cors package.
@@ -80,9 +109,7 @@ export default (psy: Psyconf) => {
   // set options for cors
   psy.set('cors', {
     credentials: true,
-    origin: [
-      process.env.CLIENT_HOST || 'http://localhost:3000'
-    ],
+    origin: [process.env.CLIENT_HOST || 'http://localhost:3000'],
   })
 }
 ```
@@ -161,7 +188,7 @@ export default (psy: PsychicConfig) => {
           transports: [new winston.transports.Console()],
           format: winston.format.combine(
             winston.format.colorize(),
-            winston.format.json()
+            winston.format.json(),
           ),
           meta: true, // optional: control whether you want to log the meta data about the request (default to true)
           msg: 'HTTP {{req.method}} {{req.url}}', // optional: customize the default logging message. E.g. "{{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}"
@@ -182,7 +209,7 @@ export default (psy: PsychicConfig) => {
           ],
           ignoredRoutes: ['/health_check'],
           bodyBlacklist: SENSITIVE_FIELDS,
-        })
+        }),
       )
     }
   })

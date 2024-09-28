@@ -19,7 +19,11 @@ export default function Routing() {
         </div>
       </div>
 
-      <Banner gifUrl="/img/routes-demo.gif" orientation="right">
+      <Banner
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+        orientation="right"
+      >
         <p className="subtext">express CRUD routes programatically</p>
 
         <nav>
@@ -27,7 +31,11 @@ export default function Routing() {
         </nav>
       </Banner>
 
-      <Banner gifUrl="/img/routes-demo.gif">
+      <Banner
+        title="namespacing"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+        gifUrl="/img/routes-demo.gif"
+      >
         <p className="subtext">
           Leverage namespace and scope methods to group route expressions
           together
@@ -40,7 +48,12 @@ export default function Routing() {
         </nav>
       </Banner>
 
-      <Banner gifUrl="/img/routes-demo.gif" orientation="right">
+      <Banner
+        title="resources"
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+        orientation="right"
+      >
         <p className="subtext">
           Define resourceful routes easily using standard patterns for
           expressing CRUD operations against one of your models.

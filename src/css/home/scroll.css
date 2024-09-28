@@ -1,0 +1,16 @@
+body[data-location='home'] {
+  overflow: hidden !important;
+}
+
+#home-scroll-container {
+  height: 100vh;
+}
+
+body[data-location='home'] #home-scroll-container {
+  overflow-y: scroll;
+}
+
+body[data-location='home'][data-scroll-section='not-hero']
+  #home-scroll-container {
+  height: 100vh;
+}
