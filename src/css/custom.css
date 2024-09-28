@@ -68,7 +68,7 @@ html[data-theme='light'] {
 .theme-code-block {
   border-radius: 20px !important;
   margin-top: 30px !important;
-  margin-bottom: 100px !important;
+  margin-bottom: 30px !important;
 }
 
 .theme-code-block pre {
