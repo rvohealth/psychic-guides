@@ -3,10 +3,6 @@ export default function BoxLines({
   bottom = false,
   right = false,
   left = false,
-  x = undefined,
-  y = undefined,
-  width,
-  height,
 }) {
   return (
     <div
@@ -16,10 +12,6 @@ export default function BoxLines({
         borderTopWidth: top ? 2 : 0,
         borderLeftWidth: left ? 2 : 0,
         borderRightWidth: right ? 2 : 0,
-        left: x,
-        top: y,
-        width,
-        height,
       }}
     ></div>
   )

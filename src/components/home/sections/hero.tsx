@@ -7,13 +7,7 @@ export default function Hero() {
     <div className="app-hero">
       <div className="above-night-sky logo-container">
         <LogoStacked size="large" />
-        <BoxLines
-          bottom={true}
-          left={true}
-          width="175px"
-          height="20vh"
-          x="308px"
-        />
+        <BoxLines bottom={true} left={true} />
         <div>
           <div className="subtext-container">
             <div className="subtext">

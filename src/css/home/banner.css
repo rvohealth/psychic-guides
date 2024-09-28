@@ -8,11 +8,32 @@
 }
 
 .banner + .banner {
-  margin-top: 100px;
+  margin-top: 20vh;
 }
 
 .banner:nth-child(even) {
   /*background-color: white !important;*/
+}
+
+.banner .title {
+  position: absolute;
+  /*color: white;*/
+  /*background: color(srgb 1 0.8 0.8605);*/
+  z-index: 2;
+  margin-top: -70px;
+  margin-left: 23vw;
+  padding: 0px 8px;
+  border-radius: 3px;
+  border: solid 2px black;
+  /*background: black;*/
+  /*color: #e0e0d1;*/
+  line-height: 1.4em;
+}
+
+.banner[data-orientation='right'] .title {
+  right: 0;
+  margin-left: auto;
+  margin-right: 23vw;
 }
 
 .banner .banner-image-container {
@@ -20,9 +41,6 @@
   margin-left: 160px;
   height: 60vh;
   position: relative;
-}
-
-.banner[data-orientation='right'] .banner-image-container {
 }
 
 .banner .banner-image {
@@ -33,7 +51,22 @@
   position: relative;
   z-index: 1;
   border-radius: 20px;
-  /*border-radius: 40px;*/
+  left: 10px;
+  transition: all 500ms;
+}
+
+.banner[data-orientation='right'] .banner-image {
+  left: inherit;
+  right: 10px;
+}
+
+.banner.active .banner-image {
+  left: 0;
+}
+
+.banner[data-orientation='right'].active .banner-image {
+  left: inherit;
+  right: 0;
 }
 
 .banner-text-container {
@@ -95,8 +128,32 @@
     width: calc(60vw - 40px);
     margin-left: auto;
     margin-right: 160px;
-    margin-top: 10vh;
     border-radius: 20px;
+
+    transition: all 150ms;
+    transition-delay: 500ms;
+    margin-top: calc(10vh - 50px);
+    margin-bottom: 150px;
+    border: solid rgba(0, 0, 0, 0.2) 2px;
+    background: #f7f3f3;
+  }
+
+  .banner .banner-text,
+  .banner .banner-text a {
+    transition: all 1000ms;
+    color: #9ba0a7 !important;
+  }
+
+  .banner.active .banner-text {
+    margin-top: 10vh;
+    padding-bottom: 100px;
+    border: solid black 2px;
+    opacity: 1;
+  }
+
+  .banner.active .banner-text,
+  .banner.active .banner-text a {
+    color: #000000 !important;
   }
 
   .banner[data-orientation='right'] .banner-text {

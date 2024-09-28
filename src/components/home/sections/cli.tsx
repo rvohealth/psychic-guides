@@ -17,7 +17,11 @@ export default function CLI() {
         </div>
       </div>
 
-      <Banner gifUrl="/img/routes-demo.gif" orientation="right">
+      <Banner
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+        orientation="right"
+      >
         <div>
           <p className="subtext">
             Use the suite of db commands to make adjustments to your database.
@@ -31,7 +35,11 @@ export default function CLI() {
         </nav>
       </Banner>
 
-      <Banner gifUrl="/img/routes-demo.gif">
+      <Banner
+        title="generators"
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+      >
         <div>
           <p className="subtext">
             Use generators to quickly create new models, controllers,
@@ -46,7 +54,12 @@ export default function CLI() {
         </nav>
       </Banner>
 
-      <Banner gifUrl="/img/routes-demo.gif" orientation="right">
+      <Banner
+        title="run specs"
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+        orientation="right"
+      >
         <div>
           <p className="subtext">
             Use provided spec runners to run unit and feature specs
@@ -60,7 +73,11 @@ export default function CLI() {
         </nav>
       </Banner>
 
-      <Banner gifUrl="/img/routes-demo.gif">
+      <Banner
+        title="start server"
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+      >
         <div>
           <p className="subtext">
             Start your dev server locally to play with your application.

@@ -4,10 +4,20 @@
  * work well for content-centric websites.
  */
 
+body {
+  /*background: #e0e0d1;*/
+  /*background: #d5dae2;*/
+  background: #f7f3f3;
+}
+
+[data-theme='dark'] body {
+  background: #030313;
+}
+
 /* You can override the default Infima variables here. */
 :root,
 .alert {
-  --ifm-background-color: #cfd0c1;
+  --ifm-background-color: #f7f3f3;
   --ifm-heading-color: #453f44;
   --ifm-toc-border-color: #5c5f62;
   --ifm-heading-font-weight: 300;
@@ -19,12 +29,13 @@
   --ifm-color-primary-lighter: #359962;
   --ifm-color-primary-lightest: #3cad6e;
   --ifm-code-font-size: 95%;
+  --ifm-code-background: white;
   --ifm-h1-font-size: 70px;
   --ifm-navbar-link-color: rgb(251, 67, 233);
-  --ifm-alert-background-color: rgb(162, 230, 220);
-  --ifm-alert-border-color: rgb(145, 235, 221);
+  --ifm-alert-background-color: rgb(81, 232, 183);
+  --ifm-alert-border-color: rgb(96, 237, 147);
   --ifm-blockquote-border-color: #63666a;
-  --ifm-link-color: #0fa26e;
+  --ifm-link-color: black;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 }
 
@@ -32,7 +43,7 @@
 [data-theme='dark'],
 [data-theme='dark'] .alert {
   --ifm-background-color: #030313 !important;
-  --ifm-heading-color: rgb(29, 166, 134);
+  --ifm-heading-color: rgb(168, 255, 224);
   --ifm-color-primary: #25c2a0;
   --ifm-color-primary-dark: #21af90;
   --ifm-color-primary-darker: #1fa588;
@@ -43,7 +54,28 @@
   --ifm-alert-background-color: rgb(26, 198, 172);
   --ifm-alert-foreground-color: color(srgb 0.022 0.275 0.238);
   --ifm-alert-border-color: rgb(145, 235, 221);
+  --ifm-link-color: white;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+.alert {
+  margin-top: 100px;
+}
+
+.alert.alert--warning {
+  background: rgb(240, 235, 108);
+  border-color: rgb(237, 232, 100);
+}
+
+a {
+  /*color: black;*/
+  font-style: italic;
+  text-decoration: underline;
+}
+
+.theme-doc-sidebar-container a {
+  font-style: inherit;
+  text-decoration: none;
 }
 
 .alert a {
@@ -54,14 +86,6 @@
   text-decoration-color: #093727;
 }
 
-/*[data-theme='dark'] .alert a {*/
-/*  color: #093727;*/
-/*  text-decoration: none;*/
-/*  font-style: italic;*/
-/*  text-decoration: underline;*/
-/*  text-decoration-color: #093727;*/
-/*}*/
-/**/
 body {
   font-size: 20px;
 }
@@ -72,10 +96,23 @@ h1 {
   margin-bottom: 50px !important;
 }
 
+.markdown > h2 {
+  margin-top: 80px;
+  margin-bottom: 80px;
+}
+
+.markdown > h3 {
+  font-weight: 600;
+}
+
 .navbar {
-  background: var(--ifm-background-color);
   border-bottom: none !important;
   box-shadow: none;
+  background: #f7f3f3;
+}
+
+[data-theme='dark'] .navbar {
+  background: #030313;
 }
 
 .theme-doc-sidebar-container {
@@ -161,8 +198,8 @@ main > .container > .row > .col {
   /* position: fixed; */
   position: absolute;
   right: 0;
-  background: #9e0dff;
-  color: #25fffc;
+  background: #0e0928;
+  color: #25ffb8;
   width: 25%;
   margin-right: 3%;
   padding: 12px;
@@ -195,4 +232,9 @@ main > .container > .row > .col {
 .right-sidebar-item {
   margin-top: 80px;
   margin-bottom: 57px;
+}
+
+.table-of-contents a {
+  font-size: 0.95rem;
+  text-decoration: none;
 }

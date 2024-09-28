@@ -11,11 +11,11 @@ You can add routes using the standard http methods, such as GET, POST, PUT, PATC
 <RightSidebarItem>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-GET     /ping  ping#ping
-POST    /ping  ping#ping
-PUT     /ping  ping#ping
-PATCH   /ping  ping#ping
-DELETE  /ping  ping#ping
+GET     /ping  Ping#ping
+POST    /ping  Ping#ping
+PUT     /ping  Ping#ping
+PATCH   /ping  Ping#ping
+DELETE  /ping  Ping#ping
 `}
   </pre>
 </RightSidebarItem>
@@ -24,10 +24,12 @@ DELETE  /ping  ping#ping
 import { PsychicRouter } from 'psychic'
 
 export default (r: PsychicRouter) => {
-  r.get('/ping', 'ping#ping')
-  r.post('/ping', 'ping#ping')
-  r.put('/ping', 'ping#ping')
-  r.patch('/ping', 'ping#ping')
-  r.delete('/ping', 'ping#ping')
+  r.get('/ping', PingController, 'ping')
+  r.post('/ping', PingController, 'ping')
+  r.put('/ping', PingController, 'ping')
+  r.patch('/ping', PingController, 'ping')
+  r.delete('/ping', PingController, 'ping')
 }
 ```
+
+Whenever providing a top-level route, Psychic will not attempt to infer the controller name for you. This means that you are forced to explicitly provide a controller and action in these cases.

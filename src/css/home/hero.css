@@ -1,10 +1,9 @@
 .app-hero {
   position: relative;
-  top: -100px;
   z-index: 10000;
+  min-height: 100vh;
   left: 0;
   width: 100vw;
-  min-height: calc(100vh + 100px);
   padding-bottom: 100px;
   text-align: center;
   font-size: 20px;
@@ -15,7 +14,7 @@
   /*background: linear-gradient(#140024, #250441, 66.83%, #150422);*/
   /*background: linear-gradient(#c8c8c8, #d0d0d0, 66.83%, #e9f6e9);*/
   /*background: #22d7b3;*/
-  background: #6bffa6;
+  /*background: #6bffa6;*/
   display: flex;
   justify-content: center;
   align-items: center;
@@ -38,11 +37,18 @@
 }
 
 .app-hero h1 {
+  position: relative;
+  top: -5vw;
   margin-top: calc(50vh - 80px);
   font-weight: 400;
   font-size: 140px;
   margin-bottom: 20px;
   margin-bottom: 0 !important;
+  transition: all 1s;
+}
+
+body[data-location='home'][data-scroll-section='hero'] .app-hero h1 {
+  top: 0;
 }
 
 .app-hero .subtext {
@@ -65,7 +71,15 @@
   left: 450px;
   position: relative;
   width: 550px;
-  background: #c5c6b7;
+  background: #d2d1cf;
+  margin-top: 50px;
+  transition: all 1s;
+}
+
+body[data-location='home'][data-scroll-section='hero']
+  .app-hero
+  .subtext-container {
+  margin-top: 0;
 }
 
 .app-hero .subtext-container,

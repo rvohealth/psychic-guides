@@ -6,9 +6,9 @@ export default function LogoStacked({
   return (
     <div className={`logo-stacked ${size}`}>
       <HTag>
-        <div>PSYCHIC</div>
-        <div>PSYCHIC</div>
-        <div>PSYCHIC</div>
+        <div className="top">PSYCHIC</div>
+        <div className="middle">PSYCHIC</div>
+        <div className="bottom">PSYCHIC</div>
       </HTag>
     </div>
   )

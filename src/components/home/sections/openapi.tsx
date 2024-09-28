@@ -23,7 +23,10 @@ export default function OpenAPI() {
         </div>
       </div>
 
-      <Banner gifUrl="/img/routes-demo.gif">
+      <Banner
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+      >
         <div>
           <p className="subtext">
             Define OpenAPI decorators on your controller endpoints, allowing you
@@ -39,7 +42,12 @@ export default function OpenAPI() {
         </nav>
       </Banner>
 
-      <Banner gifUrl="/img/routes-demo.gif" orientation="right">
+      <Banner
+        title="serializers"
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+        orientation="right"
+      >
         <div>
           <p className="subtext">
             Define attributes on your serializer, either explicitly defining the

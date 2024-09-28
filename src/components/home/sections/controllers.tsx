@@ -5,7 +5,7 @@ export default function Controllers() {
   return (
     <div className="app-controllers app-section">
       <h2>
-        <Link to="/docs/controller/overview">Controllers</Link>
+        <Link to="/docs/controllers/overview">Controllers</Link>
       </h2>
 
       <div className="main-text">
@@ -22,7 +22,10 @@ export default function Controllers() {
         </div>
       </div>
 
-      <Banner gifUrl="/img/routes-demo.gif">
+      <Banner
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+      >
         <p className="subtext">
           Easily bring params into your controller layer, running implicit
           validations under the hood to protect you from invalid data. Any
@@ -37,7 +40,12 @@ export default function Controllers() {
         </nav>
       </Banner>
 
-      <Banner gifUrl="/img/routes-demo.gif" orientation="right">
+      <Banner
+        title="status codes"
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+        orientation="right"
+      >
         <p className="subtext">
           Leverage helpful status code methods to easily render specific HTTP
           statuses.
@@ -46,21 +54,6 @@ export default function Controllers() {
         <nav>
           <Link to="/docs/controllers/status-codes">
             See our status code guides &gt;&gt;&gt;
-          </Link>
-        </nav>
-      </Banner>
-
-      <Banner gifUrl="/img/routes-demo.gif">
-        <p className="subtext">
-          Easily bring params into your controller layer, running implicit
-          validations under the hood to protect you from invalid data. Any
-          params failing to cast will cause the controller to raise a 400 status
-          code.
-        </p>
-
-        <nav>
-          <Link to="/docs/controllers/params">
-            See our params guides &gt;&gt;&gt;
           </Link>
         </nav>
       </Banner>

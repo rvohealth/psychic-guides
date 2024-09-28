@@ -18,7 +18,10 @@ export default function Repl() {
         </div>
       </div>
 
-      <Banner gifUrl="/img/routes-demo.gif">
+      <Banner
+        gifUrl="/img/routes-demo.gif"
+        gifPreviewUrl="/img/routes-demo-preview.png"
+      >
         <div>
           <p className="subtext">
             Use the repl to pull introspoect models and make changes to your

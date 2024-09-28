@@ -1,0 +1,20 @@
+.gif-with-preview {
+  width: 100%;
+  height: 60vh;
+  position: relative;
+}
+
+.gif-with-preview button {
+  position: absolute;
+  background: rgb(0, 255, 124);
+  border: none;
+  bottom: 0;
+  right: 0;
+  z-index: 1;
+  font-size: 30px;
+  cursor: pointer;
+}
+
+.gif-with-preview.playing button {
+  background: rgb(195, 199, 59);
+}
