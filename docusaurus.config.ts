@@ -50,7 +50,13 @@ const config: Config = {
             'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
         },
         theme: {
-          customCss: './src/css/custom.css',
+          customCss: [
+            './src/css/main.css',
+            './src/css/home/hero.css',
+            './src/css/home/index.css',
+            './src/css/home/banner.css',
+            './src/css/home/box-lines.css',
+          ],
         },
       } satisfies Preset.Options,
     ],

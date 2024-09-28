@@ -1,36 +1,14 @@
-import clsx from 'clsx'
-import Link from '@docusaurus/Link'
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext'
 import Layout from '@theme/Layout'
-import HomepageFeatures from '@site/src/components/HomepageFeatures'
-import { IoChevronDownCircle as ChevronDownIcon } from 'react-icons/io5'
-import Heading from '@theme/Heading'
-import Logo from '../components/logo'
-
-import styles from './index.module.css'
-
-function HomepageHeader() {
-  const { siteConfig } = useDocusaurusContext()
-  return (
-    <div className="app-hero">
-      <div className="above-night-sky">
-        <Logo size="large" />
-        <div>
-          <div className="subtext-container">
-            <p className="subtext">
-              An express-driven web framework with a jaw-dropping ORM built on
-              Kysely
-            </p>
-
-            <nav>
-              <Link to="/docs/intro">guides</Link>
-            </nav>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+import Controllers from '../components/home/sections/controllers'
+import FeatureTesting from '../components/home/sections/feature-testing'
+import Hero from '../components/home/sections/hero'
+import OpenAPI from '../components/home/sections/openapi'
+import ORM from '../components/home/sections/orm'
+import Repl from '../components/home/sections/repl'
+import Routing from '../components/home/sections/routing'
+import UnitTesting from '../components/home/sections/unit-testing'
+import CLI from '../components/home/sections/cli'
 
 export default function Home(): JSX.Element {
   const { siteConfig } = useDocusaurusContext()
@@ -39,8 +17,30 @@ export default function Home(): JSX.Element {
       title={`Hello from ${siteConfig.title}`}
       description="Description will go into a meta tag in <head />"
     >
-      <HomepageHeader />
+      <Hero />
+      <ORM />
+      <Controllers />
+      <Routing />
+      <UnitTesting />
+      <FeatureTesting />
+      <OpenAPI />
+      <Repl />
+      <CLI />
+
       <main></main>
     </Layout>
   )
 }
+
+// <Hero />
+// <ORM />
+// <Controllers />
+// <Routing />
+// <OpenAPI />
+// <Serializers />
+// <UnitTesting />
+// <FeatureTesting />
+// <Repl />
+// <CLI />
+// <Websockets />
+// <BackgroundJobs />

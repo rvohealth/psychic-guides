@@ -1,0 +1,87 @@
+---
+sidebar_position: 0
+---
+
+import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+
+# params
+
+Requests to your server will often contain either a request body, path params, or query params. Psychic controllers provide special helper methods for interacting with these params. They enable the developer to both keep DRY, as well as providing implicit param validation.
+
+## castParam
+
+The castParam method provides the developer with a unique way to both absorb _and_ validate a specific param simultaneously. In the following example, the `show` action will find any posts belonging to the currentUser with the id provided in the params. Psychic is param-location ambiguous, meaning that it will search the path, query, and body for a param with the key `id`, and will then cast it to a `bigint` type. However, if the param passed is not either an integer or a string integer, Psychic will raise a `400` status code error.
+
+```ts
+export default class PostsController extends AuthedController {
+  public show() {
+    const post = await this.currentUser
+      .associationQuery('posts')
+      .find(this.castParam('id', 'bigint'))
+    this.ok(post)
+  }
+}
+```
+
+Psychic supports many different data types for validation. Here are a few others that can be used:
+
+```ts
+export default class PostsController extends AuthedController {
+  public show() {
+    const uuid = this.castParam('id', 'uuid')
+    const int = this.castParam('id', 'integer')
+    const bigint = this.castParam('id', 'bigint')
+    const date = this.castParam('id', 'date')
+    const datetime = this.castParam('id', 'datetime')
+    const number = this.castParam('id', 'number')
+    const string = this.castParam('id', 'string')
+    const enum = this.castParam('id', 'string', { enum: ['basic', 'premium']})
+  }
+}
+```
+
+In addition to these primitive types, Psychic also supports array variants:
+
+```ts
+export default class PostsController extends AuthedController {
+  public show() {
+    const uuids = this.castParam('id', 'uuid[]')
+    const ints = this.castParam('id', 'integer[]')
+    const bigints = this.castParam('id', 'bigint[]')
+    const dates = this.castParam('id', 'date[]')
+    const datetimes = this.castParam('id', 'datetime[]')
+    const numbers = this.castParam('id', 'number[]')
+    const strings = this.castParam('id', 'string[]')
+    const enums = this.castParam('id', 'string[]', {
+      enum: ['basic', 'premium'],
+    })
+  }
+}
+```
+
+## paramsFor
+
+In addition to individual param casting, Psychic also provides the ability to automatically ingest all params for a given Dream model. This enables developers to easily bring in params for a model without having to specify their types manually:
+
+```ts
+export default class PostsController extends AuthedController {
+  public create() {
+    await this.currentUser.createAssociation('posts', this.paramsFor(Post))
+  }
+}
+```
+
+This will automatically bring in all params for the Post model, barring generated fields like `id`, `createdAt`, `updatedAt`, or any belongs to foreign keys.
+
+The paramsFor method also accepts the ability to customize which params should be allowed, enabling you to only bring in specific params without needing to cast their types:
+
+```ts
+export default class PostsController extends AuthedController {
+  public create() {
+    await this.currentUser.createAssociation(
+      'posts',
+      this.paramsFor(Post, { only: ['title', 'body'] }),
+    )
+  }
+}
+```
