@@ -1,0 +1,10 @@
+# ReplicaSafe
+
+```ts
+@ReplicaSafe()
+export default class Lesson extends ApplicationModel {
+```
+
+If you have Dream models that are mostly read, seldom written, it can be advantageous to set up a read-only database replica. A model with the `@ReplicaSafe` decorator will send read queries (`find/findOrFail`, `findBy/FindOrFailBy`, `first/firstOrFail`, `all`, etc.) to the read-only replica. (Note: within a transaction, all queries are directed to the primary database.)
+
+See [database config](/docs/config/dream#database-connection) to configure Dream with your read replica.

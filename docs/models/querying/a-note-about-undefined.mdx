@@ -4,7 +4,7 @@ tl;dr: Dream will throw `CannotPassUndefinedAsAValueToAWhereClause` at runtime i
 
 `undefined` poses a special challenge to a Typescript querying API since, to Typescript, setting an object key to `undefined` is identical to omitting that key. For example:
 
-```typescript
+```ts
 const { authSystemId } = (await jwtVerify(jwt, jwks, keys))
   .payload as JwtPayload
 const user = await User.findBy({ authSystemId })

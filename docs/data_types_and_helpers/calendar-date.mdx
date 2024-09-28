@@ -10,7 +10,7 @@ Date fields in the database are returned as CalendarDate objects. CalendarDate p
 
 ## Creating a CalendarDate
 
-```typescript
+```ts
 import { CalendarDate } from '@rvohealth/dream'
 
 // relative to today
@@ -40,7 +40,7 @@ calendarDate.isValid // false
 
 ## Converting from a CalendarDate
 
-```typescript
+```ts
 const calendarDate = CalendarDate.fromISO('2024-03-02')
 
 // to a string
@@ -64,7 +64,7 @@ calendarDate.day
 
 ## Date math
 
-```typescript
+```ts
 const calendarDate = CalendarDate.fromISO('2024-03-02')
 const otherCalendarDate = CalendarDate.fromISO('2024-02-27')
 

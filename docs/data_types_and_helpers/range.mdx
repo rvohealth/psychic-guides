@@ -10,7 +10,7 @@ Range is used in combination with `where` clauses in Dream.
 
 ## range supports start, end, or start and end values
 
-```typescript
+```ts
 import { range } from '@rvohealth/dream'
 
 // search Recipes with a rating of at least 3
@@ -25,7 +25,7 @@ await Recipe.where({ rating: range(2, 4) }).count()
 
 ## range supports CalendarDate, DateTime, and number values
 
-```typescript
+```ts
 import { range } from '@rvohealth/dream'
 
 await user

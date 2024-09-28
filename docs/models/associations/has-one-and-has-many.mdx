@@ -143,7 +143,7 @@ class User extends ApplicationModel {
 
 When an association is defined with an `order`, that ordering is automatically applied whenever `loading` or [`preloading`](/docs/models/querying/preload) models. Association `order` supports the same options as query [`order`](/docs/models/querying/order).
 
-```typescript
+```ts
 export default class GraphNode extends ApplicationModel {
   // ...
 
@@ -247,7 +247,7 @@ class User extends ApplicationModel {
 
 In the following example, the loaded Lesson models will have access to the `percentComplete` attribute even though it is stored on the join model:
 
-```typescript
+```ts
 const lessons = this.currentUser.load('lessons').all()
 console.log(lesson.preloadedThroughColumns.percentComplete)
 
@@ -284,7 +284,7 @@ export default class Lesson extends ApplicationModel {
 
 `preloadThroughColumns` also provide a mechanism to alias the preloaded columns to other names. In the following example, the `id` from the UserLesson join model is mapped to `userLessonId` in `preloadedThroughColumns`:
 
-```typescript
+```ts
 const lessons = this.currentUser.load('lessons').all()
 console.log(lesson.preloadedThroughColumns.userLessonId)
 console.log(lesson.preloadedThroughColumns.percentComplete)
@@ -343,7 +343,7 @@ In the above example, any time the `pets` association is loaded, it will automat
 
 For example, suppose we have an ArtExhibit, and that each day, we want to feature a different Artwork within that exhibit. Every day, we update the `featuredPosition` on the ArtExhibit. The `featuredArtwork` is the Artwork with that `position`.
 
-```typescript
+```ts
 const exhibits = await ArtExhibit.preload('featuredArtwork`).all()
 // each exhibit now has its `featureArtwork` loaded and ready to serialize, etc.
 
@@ -381,7 +381,7 @@ export default class Artwork extends ApplicationModel {
 
 For example, the below `siblings` association matches all EdgeNodes attached to the same GraphNode that are not the current EdgeNode:
 
-```typescript
+```ts
 const siblingEdgeNodes = await edgeNode.load('siblings').execute()
 // siblingEdgeNodes is all of edgeNode's siblings
 
