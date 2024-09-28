@@ -1,0 +1,142 @@
+.app-section {
+  position: relative;
+  top: -100px;
+  z-index: 10000;
+  left: 0;
+  margin-bottom: -100px;
+  /*background: #a2a396;*/
+  background: #cfd0c1;
+  padding-top: 20vh;
+  padding-bottom: 20vh;
+}
+
+.app-section a {
+  color: black;
+  text-decoration: underline;
+  font-style: italic;
+}
+
+.app-section:nth-child(odd) {
+  /*background: #1cb88f;*/
+  /*background: #5ff7ca;*/
+  /*background: #c5f0d6;*/
+  /*background: #6bffa6;*/
+  /*background: #bcf0d0;*/
+  background: #a3e3a2;
+}
+
+.box-lines {
+  position: absolute;
+  border-color: black;
+  border-style: solid;
+}
+
+/*.app-section:nth-child(even) .box-lines {*/
+/*  border-color: #72791b;*/
+/*}*/
+/**/
+/*.app-section:nth-child(odd) .box-lines {*/
+/*  border-color: #e04c1d;*/
+/*}*/
+/**/
+.app-section h2 {
+  /*position: absolute;*/
+  /*right: 0;*/
+  text-align: center;
+  padding: 10px;
+  font-size: 35px;
+  font-style: italic;
+  color: rgb(102, 11, 106);
+  top: 0;
+  margin-top: -1px;
+  text-transform: uppercase;
+  color: #1a0f15;
+  width: 350px;
+  font-weight: 500;
+  margin-left: calc(50vw - 175px);
+  margin-bottom: 100px;
+  background-color: rgb(255, 51, 76);
+}
+
+.app-section:nth-child(odd) h2 {
+  /*background-color: #a8ffe5;*/
+  /*color: rgb(48, 110, 91);*/
+  /*background: rgb(63, 222, 145);*/
+  /*background: rgb(255, 144, 182);*/
+  /*background: rgb(255, 116, 133);*/
+  /*background: rgb(255, 87, 144);*/
+}
+
+.app-section h2 a {
+  text-decoration: none;
+}
+
+.app-section .main-text {
+  text-align: center;
+  color: black;
+  font-size: 25px;
+  margin-bottom: 150px;
+}
+
+.app-section .main-text .paragraph-container p {
+  padding: 20px;
+  /*width: 40vw;*/
+  /*display: inline-block;*/
+}
+
+/* begin: orm styles */
+.app-orm {
+  /*top: -100px;*/
+  /*margin-bottom: -100px;*/
+}
+/* end: orm styles */
+
+/* begin: orm styles */
+.app-controllers {
+  /*top: -200px;*/
+}
+/* end: orm styles */
+
+/* begin: routing styles */
+.app-routing {
+  /*top: -300px;*/
+}
+/* end: routing styles */
+
+.logo-stacked {
+  margin-top: 40px;
+}
+
+.logo-stacked h1 {
+  color: black;
+  margin: 0;
+  padding: 0;
+  font-size: 80px;
+  line-height: 80px;
+}
+
+.logo-stacked h1 div {
+  margin-top: -20px;
+}
+
+.logo-stacked h1 div:nth-child(1) {
+  opacity: 0.2;
+}
+
+.logo-stacked h1 div:nth-child(2) {
+  color: black;
+  opacity: 0.4;
+}
+
+.logo-stacked h1 div:nth-child(3) {
+  color: #f20c9c;
+  -webkit-text-stroke-width: 3px;
+  -webkit-text-stroke-color: #ff334c;
+}
+
+@media (min-width: 1000px) {
+  .app-section .main-text .paragraph-container p {
+    width: 40vw;
+    display: inline-block;
+  }
+}

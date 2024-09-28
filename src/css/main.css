@@ -5,9 +5,11 @@
  */
 
 /* You can override the default Infima variables here. */
-:root {
-  --ifm-background-color: #eeeded;
-  --ifm-heading-color: #ff47f1;
+:root,
+.alert {
+  --ifm-background-color: #cfd0c1;
+  --ifm-heading-color: #453f44;
+  --ifm-toc-border-color: #5c5f62;
   --ifm-heading-font-weight: 300;
   --ifm-color-primary: #ff1ad3;
   --ifm-color-primary-dark: #29784c;
@@ -19,12 +21,18 @@
   --ifm-code-font-size: 95%;
   --ifm-h1-font-size: 70px;
   --ifm-navbar-link-color: rgb(251, 67, 233);
+  --ifm-alert-background-color: rgb(162, 230, 220);
+  --ifm-alert-border-color: rgb(145, 235, 221);
+  --ifm-blockquote-border-color: #63666a;
+  --ifm-link-color: #0fa26e;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
-[data-theme='dark'] {
+[data-theme='dark'],
+[data-theme='dark'] .alert {
   --ifm-background-color: #030313 !important;
+  --ifm-heading-color: rgb(29, 166, 134);
   --ifm-color-primary: #25c2a0;
   --ifm-color-primary-dark: #21af90;
   --ifm-color-primary-darker: #1fa588;
@@ -32,9 +40,28 @@
   --ifm-color-primary-light: #29d5b0;
   --ifm-color-primary-lighter: #32d8b4;
   --ifm-color-primary-lightest: #4fddbf;
+  --ifm-alert-background-color: rgb(26, 198, 172);
+  --ifm-alert-foreground-color: color(srgb 0.022 0.275 0.238);
+  --ifm-alert-border-color: rgb(145, 235, 221);
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
+.alert a {
+  color: #093727;
+  text-decoration: none;
+  font-style: italic;
+  text-decoration: underline;
+  text-decoration-color: #093727;
+}
+
+/*[data-theme='dark'] .alert a {*/
+/*  color: #093727;*/
+/*  text-decoration: none;*/
+/*  font-style: italic;*/
+/*  text-decoration: underline;*/
+/*  text-decoration-color: #093727;*/
+/*}*/
+/**/
 body {
   font-size: 20px;
 }
@@ -103,64 +130,6 @@ main > .container > .row > .col {
 .pagination-nav__link--next .pagination-nav__label::after,
 .pagination-nav__link--prev .pagination-nav__label::before {
   display: none;
-}
-
-.app-hero {
-  position: absolute;
-  z-index: 1;
-  left: 0;
-  width: 100vw;
-  min-height: 140vh;
-  padding-bottom: 100px;
-  text-align: center;
-  background: #020016;
-  font-size: 20px;
-  color: rgb(48, 48, 48);
-  z-index: 10000;
-  top: -100px;
-
-  background: rgb(20, 0, 36);
-  background: linear-gradient(#140024, #250441 66.83%, #5f0050);
-}
-
-.app-hero .icon {
-  margin-top: 20px;
-  font-size: 40px;
-  color: rgb(255, 0, 214);
-}
-
-.app-hero .above-night-sky {
-  position: relative;
-  z-index: 1;
-}
-
-.app-hero h1 {
-  margin-top: calc(50vh - 80px);
-  font-weight: 400;
-  font-size: 140px;
-  margin-bottom: 20px;
-}
-
-.app-hero .subtext {
-  max-width: 600px;
-  display: inline-block;
-  margin-bottom: 20px;
-  font-size: 26px;
-}
-
-.app-hero .subtext-container {
-  padding: 32px;
-  border-radius: 20px;
-  display: inline-block;
-}
-
-.app-hero .subtext-container,
-.app-hero .subtext-container a {
-  color: white;
-}
-
-.app-hero .subtext-container a {
-  font-weight: 600;
 }
 
 .logo h1,

@@ -1,0 +1,103 @@
+.app-hero {
+  position: relative;
+  top: -100px;
+  z-index: 10000;
+  left: 0;
+  width: 100vw;
+  min-height: calc(100vh + 100px);
+  padding-bottom: 100px;
+  text-align: center;
+  font-size: 20px;
+  color: rgb(48, 48, 48);
+
+  /*background: #020016;*/
+  /*background: rgb(20, 0, 36);*/
+  /*background: linear-gradient(#140024, #250441, 66.83%, #150422);*/
+  /*background: linear-gradient(#c8c8c8, #d0d0d0, 66.83%, #e9f6e9);*/
+  /*background: #22d7b3;*/
+  background: #6bffa6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.app-hero .logo-container {
+  position: relative;
+  margin-left: -30vw;
+}
+
+.app-hero .icon {
+  margin-top: 20px;
+  font-size: 40px;
+  color: rgb(255, 0, 214);
+}
+
+.app-hero .above-night-sky {
+  position: relative;
+  z-index: 1;
+}
+
+.app-hero h1 {
+  margin-top: calc(50vh - 80px);
+  font-weight: 400;
+  font-size: 140px;
+  margin-bottom: 20px;
+  margin-bottom: 0 !important;
+}
+
+.app-hero .subtext {
+  display: inline-block;
+  margin-bottom: 20px;
+  font-size: 30px;
+  height: 40vh;
+  text-align: left;
+  padding: 10px;
+  width: 100%;
+}
+
+.app-hero .subtext span {
+  display: block;
+}
+
+.app-hero .subtext-container {
+  padding: 20px;
+  display: inline-block;
+  left: 450px;
+  position: relative;
+  width: 550px;
+  background: #c5c6b7;
+}
+
+.app-hero .subtext-container,
+.app-hero .subtext-container a {
+  /*color: white;*/
+}
+
+.app-hero .subtext-container nav {
+  text-align: right;
+}
+
+.app-hero .subtext-container a {
+  font-weight: 600;
+  color: rgb(48, 48, 48);
+  font-size: 30px;
+  font-weight: 400;
+}
+
+@media (max-width: 1000px) {
+  .box-lines {
+    display: none;
+  }
+
+  .app-hero .logo-container {
+    margin-left: 0;
+  }
+
+  .app-hero .subtext-container {
+    left: 0;
+    margin-top: 20px;
+    width: calc(100vw - 80px);
+    max-width: 550px;
+    margin-top: 50px;
+  }
+}

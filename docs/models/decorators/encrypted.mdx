@@ -1,0 +1,8 @@
+# Encrypted
+
+```ts
+export default class User extends ApplicationModel {
+  @Encrypted()
+  public secret: { token: string }
+  public encryptedSecret: DreamColumn<User, 'encryptedSecret'>
+```
