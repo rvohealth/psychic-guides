@@ -77,6 +77,10 @@ code {
   padding: 5px 2px;
 }
 
+[data-theme='dark'] code {
+  color: black;
+}
+
 a {
   /*color: black;*/
   font-style: italic;
