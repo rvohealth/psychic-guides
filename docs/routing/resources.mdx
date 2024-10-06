@@ -11,12 +11,12 @@ You can also use resourceful routing as shorthand to quickly model standard http
 <RightSidebarItem>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-GET     /users      users#index
-POST    /users      users#create
-GET     /users/:id  users#show
-PUT     /users/:id  users#update
-PATCH   /users/:id  users#update
-DELETE  /users/:id  users#destroy
+GET     /users      Users#index
+POST    /users      Users#create
+GET     /users/:id  Users#show
+PUT     /users/:id  Users#update
+PATCH   /users/:id  Users#update
+DELETE  /users/:id  Users#destroy
 `}
   </pre>
 </RightSidebarItem>
@@ -25,7 +25,7 @@ DELETE  /users/:id  users#destroy
 import { PsychicRouter } from 'psychic'
 
 export default (r: PsychicRouter) => {
-  r.resources('user')
+  r.resources('users')
 }
 ```
 
@@ -34,8 +34,8 @@ You can use resourceful routes, but restrict the routes to only a collection, li
 <RightSidebarItem>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-GET     /users  users#index
-POST    /users  users#create
+GET     /users  Users#index
+POST    /users  Users#create
 `}
   </pre>
 </RightSidebarItem>
@@ -46,9 +46,9 @@ POST    /users  users#create
 import { PsychicRouter } from 'psychic'
 
 export default (r: PsychicRouter) => {
-  r.resources('user', { only: ['create', 'index'] })
+  r.resources('users', { only: ['create', 'index'] })
   // same as:
-  r.resources('user', { except: ['show', 'update', 'destroy'] })
+  r.resources('users', { except: ['show', 'update', 'destroy'] })
 }
 ```
 
@@ -57,8 +57,11 @@ Additionally, use the resource method to do the same, but with a singularized ro
 <RightSidebarItem>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-GET     /users  users#index
-POST    /users  users#create
+GET    /user  Users#show
+POST   /user  Users#create
+PUT    /user  Users#update
+PATCH  /user  Users#update
+DELETE /user  Users#destroy
 `}
   </pre>
 </RightSidebarItem>
@@ -71,4 +74,40 @@ import { PsychicRouter } from 'psychic'
 export default (r: PsychicRouter) => {
   r.resource('user')
 }
+```
+
+Both the `resource` and `resources` method enable nesting, enabling you to express child routes. By default, all child routes will be treated as `members` of the resource (meaning, they need to be reached by `id`).
+
+<RightSidebarItem>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET     /users/:id       Users#show
+GET     /users/:id/edit  Users#edit
+`}
+  </pre>
+</RightSidebarItem>
+
+```ts
+r.resources('users', { only: ['show'] }, (r) => {
+  r.get('edit')
+})
+```
+
+If you do not wish for your nested endpoint to contain the id as part of its signature, you can use the `collection` method, like so:
+
+<RightSidebarItem>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET     /users/:id   Users#show
+GET     /users/edit  Users#edit
+`}
+  </pre>
+</RightSidebarItem>
+
+```ts
+r.resources('users', { only: ['show'] }, (r) => {
+  r.collection((r) => {
+    r.get('edit')
+  })
+})
 ```

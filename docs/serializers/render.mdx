@@ -22,8 +22,8 @@ class Stuff extends ApplicationModel {
   ...
   public get serializers() {
     return {
-      default: StuffSerializer<any>,
-      summary: StuffSummarySerializer<any>,
+      default: 'StuffSerializer',
+      summary: 'StuffSummarySerializer',
     }
   }
 }

@@ -1,15 +1,18 @@
 # Sortable
 
-```
-export default class EdgeNode extends ApplicationModel {
-  // ...
+The `@Sortable` decorator enables your model to automatically sort on a particular field withiin your model. Typically, when doing this, you will also want to apply a `scope`, which enables the sorting to apply only to those records matching the scope.
 
-  @Sortable({ scope: 'node' })
+```ts
+export default class TodoItem extends ApplicationModel {
+  @Sortable({ scope: 'user' })
   public position: DreamColumn<EdgeNode, 'position'>
 
-  @Sortable({ scope: ['edge', 'node'] })
-  public multiScopedPosition: DreamColumn<EdgeNode, 'multiScopedPosition'>
+  @TodoItem.BelongsTo('User')
+  public user: User
+}
 ```
+
+Once this is applied, any time any records matching a scope receive changes to their `position` field, all other records matching that scope will automatically be shuffled around to maintain consistent order.
 
 ## Unique constraint
 
@@ -19,25 +22,24 @@ unique constraint, instead.
 
 ```ts
 import { Kysely } from 'kysely'
-import addDeferrableUniqueConstraint from '../../../src/db/migration-helpers/addDeferrableUniqueConstraint'
-import dropConstraint from '../../../src/db/migration-helpers/dropConstraint'
+import { MigrationHelpers } from '@rvohealth/dream'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function up(db: Kysely<any>): Promise<void> {
-  await addDeferrableUniqueConstraint(
+  await MigrationHelpers.addDeferrableUniqueConstraint(
     'graph_edge_nodes_uniq_on_edge_id_node_id_position',
     'graph_edge_nodes',
     ['edge_id', 'node_id', 'position'],
-    db
+    db,
   )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function down(db: Kysely<any>): Promise<void> {
-  await dropConstraint(
+  await MigrationHelpers.dropConstraint(
     'graph_edge_nodes_uniq_on_edge_id_node_id_position',
     'graph_edge_nodes',
-    db
+    db,
   )
 }
 ```

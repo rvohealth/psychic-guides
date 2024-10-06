@@ -1,8 +1,46 @@
 # Encrypted
 
+Leverage the `@Encrypted` decorator to automatically encrypt and decrypt values upon inserting and accessing values from the db. This works by defining a sudo-column, who's value is stored in a separate, encrypted field that is persisted to the db. Any time you access the decorated property, you will receive the payload of decrypting the corresponding encrypted field. Any time you make changes, those will persist to the db, encrypted and stored in the corresponding encrypted field.
+
 ```ts
 export default class User extends ApplicationModel {
   @Encrypted()
   public secret: { token: string }
   public encryptedSecret: DreamColumn<User, 'encryptedSecret'>
+  ...
+}
+
+const user = await User.firstOrFail()
+user.secret = { token: 'abc123' }
+await user.save()
+
+const reloaded = await User.firstOrFail()
+console.log(reloaded.secret)
+// { token: 'abc123' }
 ```
+
+By default, a given property that is decorated with the `@Encrypted` decorator will be expected to have a column in the db with the same name, but with the word `encrypted` up front, and camel-cased. This means that if your decorated property is `secret`, the expected corresponding column in your database will need to be called `encryptedSecret`. This column will store the encrypted data for retreival later.
+
+## Configuration
+
+Dream will use the values provided in your `conf/dream.ts` file to perform encryption and decryption. Dream also has built-in fallback support, allowing you to temporarily have both a current _and_ a legacy encryption encryption key at once, which can be set in the dream config using the `encryption` configuration setting, like so:
+
+```ts
+// conf/dream.ts
+export default function configureDream(dream: DreamApplication) {
+  dream.set('encryption', {
+    columns: {
+      current: {
+        algorithm: 'aes-256-gcm',
+        key: process.env.APP_ENCRYPTION_KEY!,
+      },
+      legacy: {
+        algorithm: 'aes-256-gcm',
+        key: process.env.LEGACY_APP_ENCRYPTION_KEY!,
+      },
+    },
+  })
+}
+```
+
+If Dream is unable to encrypt a value using the `current` encryption key, it will attempt to use the `legacy` encryption key before failing, enabling you to switch encryption keys without sweating the complexity of migrating existing data off of one and onto the other.

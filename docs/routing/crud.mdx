@@ -22,6 +22,7 @@ DELETE  /ping  Ping#ping
 
 ```ts // conf/routes.ts
 import { PsychicRouter } from 'psychic'
+import PingController from '../app/controllers/PingController'
 
 export default (r: PsychicRouter) => {
   r.get('/ping', PingController, 'ping')
@@ -32,4 +33,4 @@ export default (r: PsychicRouter) => {
 }
 ```
 
-Whenever providing a top-level route, Psychic will not attempt to infer the controller name for you. This means that you are forced to explicitly provide a controller and action in these cases.
+Whenever providing a top-level route, Psychic will not attempt to infer the controller name for you. This means that you are forced to explicitly provide a controller and action in these cases. Once providing a controller, typescript autocomplete helpers will aid you in selecting an action (i.e. a public method on your controller) to call when that route is hit.

@@ -12,9 +12,9 @@ To enable multiple potential serialization shapes, dream provides a simple patte
 class User extends ApplicationModel {
   public get serializers() {
     return {
-      default: UserSerializer,
-      summary: UserSummarySerializer,
-      admin: UserAdminSerializer,
+      default: 'UserSerializer',
+      summary: 'UserSummarySerializer',
+      admin: 'AdminUserSerializer',
     } as const
   }
 }
@@ -32,8 +32,10 @@ class UsersController extends AuthedController {
 ```
 
 :::info
-* To learn how to generate serializers, see our [generating serializer](/docs/serializers/generating) guide
-* To learn how to define attributes within a serializer, see our [serializer attributes](/docs/serializers/attributes) guide
-* To learn how to define associations within a serializer, see our [serializer associations](/docs/serializers/associations) guide
-* To learn how to render serializers, see our [serializer rendering](/docs/serializers/render) guide
-:::
+
+- To learn how to generate serializers, see our [generating serializer](/docs/serializers/generating) guide
+- To learn how to define attributes within a serializer, see our [serializer attributes](/docs/serializers/attributes) guide
+- To learn how to define associations within a serializer, see our [serializer associations](/docs/serializers/associations) guide
+- To learn how to render serializers, see our [serializer rendering](/docs/serializers/render) guide
+
+  :::

@@ -1,0 +1,30 @@
+# innerJoin
+
+The innerJoin method enables you to join associations as part of your queries.
+
+```ts
+const users = await User.innerJoin('posts', 'comments').all()
+```
+
+You can also attach `where` clauses to join statements. The second argument (the object) in the following code generates a `where` clause on the `posts` model:
+
+```ts
+const users = await User.innerJoin('posts', { category: 'travel' }).all()
+```
+
+`innerJoin` actually takes more than 2 arguments. Each argument can either be a model to join on (a string) or a where clause (an object) for the preceeding argument. Consider the following:
+
+```ts
+// A where statement on both `posts` and `comments`
+const users = await User.innerJoin(
+  'posts',
+  { category: 'travel' },
+  'comments',
+  {
+    flagged: true,
+  },
+).all()
+
+// A where statement on just `comments`
+const users = await User.innerJoin('posts', 'comments', { flagged: true }).all()
+```

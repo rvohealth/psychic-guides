@@ -44,7 +44,7 @@ export default class PostsController extends PsychicController {
 
 If the first argument to the `OpenAPI` decorator is a callback function, then the return value of that function will dictate the success response payload. In the above case, because the `many: true` flag has been passed, the openapi response will yield an array type for the response content:
 
-```json
+```js
 "paths": {
   "/posts": {
     "parameters": [],
@@ -75,7 +75,7 @@ If the first argument to the `OpenAPI` decorator is a callback function, then th
 
 In the above example, a reference to the `#/components/schemas/PostSummary` component is made. This component is also generated in the components section of the openapi.json, leveraging the @Attribute decorator calls to construct an image of the serializer when building component schemas.
 
-```
+```js
 "components": {
   "schemas": {
     "PostSummary": {

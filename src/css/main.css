@@ -14,6 +14,10 @@ body {
   background: #030313;
 }
 
+body[data-location='home'] {
+  background: #f7f3f3;
+}
+
 /* You can override the default Infima variables here. */
 :root,
 .alert {
@@ -28,8 +32,8 @@ body {
   --ifm-color-primary-light: #33925d;
   --ifm-color-primary-lighter: #359962;
   --ifm-color-primary-lightest: #3cad6e;
-  --ifm-code-font-size: 95%;
-  --ifm-code-background: white;
+  --ifm-code-font-size: 90%;
+  --ifm-code-background: color(srgb 0.93 0.93 0.93);
   --ifm-h1-font-size: 70px;
   --ifm-navbar-link-color: rgb(251, 67, 233);
   --ifm-alert-background-color: rgb(81, 232, 183);
@@ -67,6 +71,12 @@ body {
   border-color: rgb(237, 232, 100);
 }
 
+code {
+  background-color: color(srgb 0.905 0.9005 0.9005);
+  border: transparent;
+  padding: 5px 2px;
+}
+
 a {
   /*color: black;*/
   font-style: italic;
@@ -97,8 +107,8 @@ h1 {
 }
 
 .markdown > h2 {
-  margin-top: 80px;
-  margin-bottom: 80px;
+  margin-top: 40px;
+  margin-bottom: 40px;
 }
 
 .markdown > h3 {
@@ -148,6 +158,12 @@ html[data-theme='light'] {
 
 main > .container > .row > .col {
   max-width: 65% !important;
+}
+
+@media (max-width: 700px) {
+  main > .container > .row > .col {
+    max-width: 100% !important;
+  }
 }
 
 .pagination-nav__link {
@@ -200,7 +216,7 @@ main > .container > .row > .col {
   right: 0;
   background: #0e0928;
   color: #25ffb8;
-  width: 25%;
+  width: calc(25% - 25px);
   margin-right: 3%;
   padding: 12px;
   border-radius: 10px;
@@ -211,9 +227,23 @@ main > .container > .row > .col {
   font-size: 16px;
 }
 
+@media (max-width: 700px) {
+  .right-sidebar-item {
+    display: none;
+    /*position: relative;*/
+    /*width: calc(35% - 25px);*/
+  }
+}
+
+@media (max-width: 1000px) {
+  .right-sidebar-item {
+    width: calc(35% - 25px);
+  }
+}
+
 @media (max-width: 1500px) {
   .right-sidebar-item {
-    width: 15%;
+    /*width: 15%;*/
   }
 }
 

@@ -1,0 +1,40 @@
+---
+sidebar_position: 2
+---
+
+# Emitting
+
+Once you have successfully built a registration flow for your users (see our [Registering guides](/docs/websockets/registering) if you have not), you are able to emit to those registered users anywhere in your application (yes, including within background jobs!).
+
+To establish a new Ws instance, we need to provide it with a set of routes that our application allows, like so:
+
+```ts
+const wsRoutes = ['/users/ping', 'users/alert', 'users/info'] as const
+ws = new Ws(wsRoutes)
+```
+
+For your convenience, we recommend that you set up a simple helper function in your application to wrap this, as well as to establish a singleton, so as to prevent multiple instances from needing to establish independent connections:
+
+```ts
+// app/helpers/ws.ts
+
+import { Ws } from '@rvohealth/psychic'
+
+let _ws: Ws
+
+export default function appWs() {
+  if (_ws) return _ws
+
+  _ws = new Ws(wsRoutes)
+
+  return _ws
+}
+
+export const wsRoutes = ['/users/ping', 'users/alert', 'users/info'] as const
+```
+
+Once this has been established, you can now emit to your users with any of the provided routes:
+
+```ts
+await appWs().emit(user, '/users/ping', { hello: 'world' })
+```

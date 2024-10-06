@@ -1,0 +1,36 @@
+---
+sidebar_position: 3
+---
+
+# cookies
+
+Since most modern applications will require some form of cookie usage, Psychic provides direct cookie support out of the box. Configuration for this can be set in `conf/app.ts`, both in the `cookie` config option (documented [here](/docs/config/psychic#cookie)), and in the `encryption` config option (documented [here](/docs/config/psychic#encryption)).
+
+Psychic leverages symmetric encryption whenever creating or reading cookies on your behalf, utlizing the configuration you provide in `conf/app.ts`.
+
+## Setting cookies
+
+Since setting cookies is something that is request-driven, it can only be done within your controllers. Considering, helpful methods are attached to your controller to utilize your cookie configurations, like so:
+
+```ts
+// app/controllers/MyController.ts
+
+  public async login() {
+    ...
+    this.setCookie('authToken', user.primaryKeyValue)
+  }
+```
+
+Cookies attached using this process will automatically be `httpOnly`, and will inherit the configuration provided in your `conf/app.ts` file for expiration.
+
+## Retrieving cookies
+
+To retrieve cookies that have already been set, you can leverage the `getCookie` method provided on Psychic controllers, like so:
+
+```ts
+// app/controllers/AuthedController
+  public async authenticate() {
+    ...
+    const authToken = this.getCookie('authToken')
+  }
+```
