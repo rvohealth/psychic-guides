@@ -38,9 +38,17 @@
 
 .banner .banner-image-container {
   width: calc(100vw - 20px);
-  margin-left: 160px;
+  margin-left: 10px;
   height: 60vh;
   position: relative;
+  margin-bottom: 10px;
+}
+
+@media (min-width: 1000px) {
+  .banner .banner-image-container {
+    margin-left: 160px;
+    margin-bottom: 0;
+  }
 }
 
 .banner .banner-image {

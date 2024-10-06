@@ -1,0 +1,78 @@
+---
+sidebar_position: 2
+---
+
+# Encrypting and decrypting
+
+Encrypting and decrypting are very simple using the Encrypt class, provided you have the correct keys generated for your given algorithms. This is usually simple, since most applications will only use one algorithm and one key throughout their application, but if you are using multiple different encryption algorithms in different scenarios, you need to make sure to always match up the correct encryption keys with the correct encryption algorithms. Additionally, anything encrypted with a given algorithm _must_ be decrypted using that same algorithm and key, or else it will fail. This may be obvious to you, but to many this can be an easy and confusing mis-step when building encryption for their application.
+
+```ts
+const encrypted = Encrypt.encrypt('helloworld', {
+  algorithm: 'aes-256-gcm',
+  key: process.env.APP_ENCRYPTION_KEY!,
+})
+
+const decrypted = Encrypt.decrypt(encrypted, {
+  algorithm: 'aes-256-gcm',
+  key: process.env.APP_ENCRYPTION_KEY!,
+})
+
+console.log(decrypted)
+// 'helloworld'
+```
+
+## Abstracting
+
+Since your application will often be performing encryption and decryption using this same pattern over and over again, we recommend simply building helper functions into your application to encapsulate these patterns, like so:
+
+```ts
+// app/helpers/encrypt.ts
+export default function encrypt(val: any) {
+  return Encrypt.encrypt(val, {
+    algorithm: 'aes-256-gcm',
+    key: process.env.APP_ENCRYPTION_KEY!,
+  })
+}
+
+// app/helpers/decrypt.ts
+export default function decrypt<RetType>(val: any) {
+  return Encrypt.decrypt<RetType>(val, {
+    algorithm: 'aes-256-gcm',
+    key: process.env.APP_ENCRYPTION_KEY!,
+  })
+}
+```
+
+And then, elsewhere in your application, you can simply use these encryption helpers, like so:
+
+```ts
+const encrypted = encrypt({ token: 'abc123' })
+const decrypted = decrypt<{ token: string }>(encrypted)
+console.log(decrypted)
+// { token: 'abc123' }
+```
+
+This kind of abstraction is helpful to prevent you from mistakenly using the wrong keys with the wrong tokens.
+
+## Key rotation
+
+To keep your application's security tight, you may be regularly rotating your encryption keys. This can be a pain to maintain, since any time you rotate keys, you may have a period where some things in your database will be encrypted with the old key, and need to be brought down, decrypted with the old key, and then re-encrypted with the new key.
+
+In order to facilitate this, the `Encrypt.decrypt` method supports the ability to provide a legacy key and algorithm, which it will attempt to use if it fails to decrypt using the primary key and algorithm:
+
+```ts
+// app/helpers/decrypt.ts
+export default function decrypt<RetType>(val: any) {
+  return Encrypt.decrypt<RetType>(
+    val,
+    {
+      algorithm: 'aes-256-gcm',
+      key: process.env.APP_ENCRYPTION_KEY!,
+    },
+    {
+      algorithm: 'aes-128-gcm',
+      key: process.env.APP_LEGACY_ENCRYPTION_KEY!,
+    },
+  )
+}
+```

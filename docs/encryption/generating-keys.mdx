@@ -1,0 +1,46 @@
+---
+sidebar_position: 1
+---
+
+# Generating keys
+
+Keys are an important part of encryption, and depending on the algorithm you are using, the keys will need to be a different shape. This is often one of the most confusing parts of diving into encryption, and can be a real time suck for those who can't seem to figure out why their encryption/decryption patterns aren't working.
+
+Luckily, Dream handles the complexity of figuring out how to generate keys for your application for you. To generate a key, simply open your console and generate them with the `.generateKey` method, passing the algorithm you wish to use, like so:
+
+```ts
+NODE_ENV=development yarn console
+> Encrypt.generateKey('aes-256-gcm')
+// '65ogKxacRKyNxj20PCQKuBnxKgOty5eQnY4Ktbk04U0='
+```
+
+Dream is aware of the various requirements for each algorithm, and will automatically spit out a key that is valid to the encryption algorithm you intend to use. This means that the key you generate for an `aes-256-gcm` algorithm can only be used when encrypting/decrypting using that same algorithm, so be sure to match them up correctly.
+
+:::warning
+Do _not_ hard-code this encryption key into your application! Always use either env vars, or, better yet, A tool like AWS SecretsManager to pull in your env vars at runtime.
+:::
+
+This key can be brought into your application and used for encryption whenever using the `aes-256-gcm` algorithm.
+
+```
+# .env
+APP_ENCRYPTION_KEY="65ogKxacRKyNxj20PCQKuBnxKgOty5eQnY4Ktbk04U0="
+```
+
+```ts
+// in your app somewhere
+
+const encrypted = Encrypt.encrypt('helloworld', {
+  algorithm: 'aes-256-gcm',
+  key: process.env.APP_ENCRYPTION_KEY!,
+})
+
+const decrypted = Encrypt.decrypt(encrypted, {
+  algorithm: 'aes-256-gcm',
+  key: process.env.APP_ENCRYPTION_KEY!,
+})
+```
+
+:::warning
+This may be obvious to most who read this, but make sure that the keys you use in your local .env or .env.test files are different from the values you use in your production applications.
+:::

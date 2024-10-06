@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 2
 ---
 
 import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
@@ -19,7 +19,7 @@ To quickly accelerate things for us, let's use the resource generator to generat
 - a new serializer
 
 ```bash
-$ yarn psy g:resource api/v1/users User email:string password_digest:string role:enum:user_role:App,Admin
+yarn psy g:resource api/v1/users User email:string password_digest:string role:enum:user_role:App,Admin
 ```
 
 This will generate the following:
@@ -222,7 +222,7 @@ describe('ApiV1AuthController', () => {
   describe('POST /api/v1/signup', () => {
     function subject(
       params: UpdateableProperties<User>,
-      expectedStatus: number
+      expectedStatus: number,
     ) {
       return request.post('/api/v1/signup', expectedStatus, { data: params })
     }
@@ -283,7 +283,7 @@ describe('ApiV1UsersController', () => {
       return await request.session(
         '/api/v1/signin',
         { email: 'how@yadoin', password: 'password' },
-        204
+        204,
       )
     }
 

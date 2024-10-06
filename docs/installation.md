@@ -7,7 +7,7 @@ sidebar_position: 2
 In order to get started with psychic, you will first need to install the [psychic](https://github.com/rvohealth/psychic") package globally. The global CLI is really only needed to get a new app up and running. Once it is, you will use yarn scripts to access the non-global psychic cli, which will be useful for running migrations, generating resources, starting your development server, etc...
 
 ```bash
-yarn global add https://github.com/@rvohealth/psychic
+yarn global add https://github.com/@rvohealth/psychic-cli
 ```
 
 Once done, you can use the global cli to provision a new psychic app, simply run `psy new myapp`, like so:
@@ -48,3 +48,18 @@ dream new myapp
 ```
 
 Once finished answering the cli's prompt, a new app will be bootstrapped for you which contains the bear bindings for a dream app, but no psychic app attached to it.
+
+## Integrating dream into an existing application
+
+If you have an existing web application written in typescript, and you'd like to bring in `Dream` as a dependency without creating a brand new app, you can use the `init` command
+
+```bash
+cd my/project/folder
+dream init
+```
+
+The cli will prompt you with a few questions so it can build out a valid configuration for you, and then builds out the necessary infrastructure within your app to facilitate a dream structure.
+
+:::warning
+This feature is experimental, and it is still recommended that you use Dream and Psychic together to get the full benefits of the framework.
+:::

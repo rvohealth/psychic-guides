@@ -7,7 +7,7 @@ await User.where({
   email: ops.in(['burpcollaborator.net', 'howyadoin@gmail.biz']),
 }).destroy()
 
-await User.where({ email: ops.like('burpcollaborator.net') }).destroy()
-await User.where({ email: ops.ilike('burpcollaborator.net') }).destroy()
+await User.where({ email: ops.like('%burpcollaborator.net%') }).destroy()
+await User.where({ email: ops.ilike('%burpcollaborator.net%') }).destroy()
 await User.where({ id: ops.expression('<=', 23) }).destroy()
 ```

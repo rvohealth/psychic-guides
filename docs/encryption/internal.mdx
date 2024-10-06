@@ -1,0 +1,83 @@
+---
+sidebar_position: 2
+---
+
+# Internal
+
+Psychic and Dream both use the `Encrypt` class under the hood for various operations. Configurations for these internal uses are provided in the `conf/app.ts` and `conf/dream.ts` files.
+
+## Cookie encryption
+
+By default, Psychic encrypts any cookies that are created through it's cookie api. The encryption algorithm and key for this can be set in `conf/app.ts`, like so:
+
+```ts
+// conf/app.ts
+psy.set('encryption', {
+  cookies: {
+    current: {
+      algorithm: 'aes-256-gcm',
+      key: process.env.APP_ENCRYPTION_KEY!,
+    },
+  },
+})
+```
+
+If you are in the middle of key rotation and need to temporarily provide multiple keys for decryption, you can do that as well:
+
+```ts
+// conf/app.ts
+psy.set('encryption', {
+  cookies: {
+    current: {
+      algorithm: 'aes-256-gcm',
+      key: process.env.APP_ENCRYPTION_KEY!,
+    },
+    current: {
+      algorithm: 'aes-128-gcm',
+      key: process.env.APP_LEGACY_ENCRYPTION_KEY!,
+    },
+  },
+})
+```
+
+:::info
+For more information on utilizing cookies, see our [Cookie guides](/docs/controllers/cookies).
+:::
+
+## Encrypted decorator
+
+Within Dream, an `Encrypted` decorator is provided, which will automatically encrypt any values that are bound to it's call. In order for it to work properly, you must provide an algorithm and key in the `conf/dream.ts` file, like so:
+
+```ts
+// conf/dream.ts
+dream.set('encryption', {
+  columns: {
+    current: {
+      algorithm: 'aes-256-gcm',
+      key: process.env.APP_ENCRYPTION_KEY!,
+    },
+  },
+})
+```
+
+If you are in the middle of key rotation and need to temporarily provide multiple keys for decryption, you can do that as well:
+
+```ts
+// conf/app.ts
+dream.set('encryption', {
+  columns: {
+    current: {
+      algorithm: 'aes-256-gcm',
+      key: process.env.APP_ENCRYPTION_KEY!,
+    },
+    current: {
+      algorithm: 'aes-128-gcm',
+      key: process.env.APP_LEGACY_ENCRYPTION_KEY!,
+    },
+  },
+})
+```
+
+:::info
+For more information on the `@Encrypted` decorator, see our [Encrypted guides](/docs/models/decorators/encrypted)
+:::

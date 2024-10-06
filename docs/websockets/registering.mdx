@@ -1,0 +1,94 @@
+---
+sidebar_position: 1
+---
+
+# Registering
+
+Registering users with the `Ws` class is imperative if you intend to later emit things to them. Without making this connection, Psychic will not be able to know which socket thread corresponds with which user. This means that when your front end websocket client is connecting, it needs to provide some kind of auth token to indicate which user it corresponds to. Usually, this auth token will be an encrypted payload containing an identifier which points to your user. Here is an example of how this flow might look in an application using a bare-bones authentication pattern:
+
+```ts
+// app/controllers/UsersController.ts
+...
+
+  public async login() {
+    const user = await User.findBy({ email: this.param('email') })
+    if (!user || !(await user.checkPassword(this.param('password')))) this.notFound()
+
+    this.startSession(user!)
+
+    // this token is used for authenticating via websockets
+    const token = Encrypt.encrypt(user!.id.toString(), {
+      algorithm: 'aes-256-gcm',
+      key: process.env.APP_ENCRYPTION_KEY!,
+    })
+
+    this.ok(token)
+  }
+```
+
+The token returned by this endpoint can then be used on the front end client to attach to the handshake of the `socket.io-client` library when reaching out to make a connection.
+
+```ts
+// somewhere in your front end code:
+import { io } from 'socket.io-client'
+
+try {
+  // this token will be the token that was rendered as the result
+  // of the `login` method above:
+  const token = await AuthAPI.login(email, password)
+
+  const socket = io(`http://localhost:7777`, {
+    auth: {
+      token,
+    },
+    withCredentials: true,
+    transports: ['websocket'],
+  })
+
+  // this will be called automatically upon establishing
+  // a connection with socket.io in Psychic
+  socket.on('/ops/connection-success', (message) => {
+    console.log(message)
+  })
+} catch {
+  // handle auth failure
+}
+```
+
+Finally, in your `conf/app.ts` file, you will need to register your users with `Ws` upon connection via websocket:
+
+```ts
+// conf/app.ts
+
+export default async (psy: PsychicApplication) => {
+  ...
+
+  psy.on('ws:start', io => {
+    io.of('/').on('connection', async socket => {
+      // this will be the token that you passed to socket.io-client
+      const token = socket.handshake.auth.token as string
+
+      const userId = Encrypt.decrypt(token, {
+        algorithm: 'aes-256-gcm',
+        key: process.env.APP_ENCRYPTION_KEY!,
+      })
+      const user = await User.find(userId)
+
+      if (user) {
+        await Ws.register(socket, user)
+      }
+    })
+  })
+
+  ...
+})
+```
+
+Once this is done, you are able to emit from anywhere in your backend application to this user using the `#emit` method.
+
+```ts
+ws = new Ws(['/users/ping', 'users/alert', 'users/info'] as const)
+await ws.emit(user.id, '/users/ping', { hello: 'world' })
+```
+
+To learn more about emitting to your users, see our [Emitting guides](/docs/websockets/emitting)

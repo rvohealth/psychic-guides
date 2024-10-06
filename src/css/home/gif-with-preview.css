@@ -4,17 +4,43 @@
   position: relative;
 }
 
+.gif-with-preview.full-screen {
+  width: 100vw;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  position: fixed;
+  z-index: 1000;
+  border-radius: 0;
+}
+
+.gif-with-preview.full-screen .banner-image {
+  border-radius: 0;
+}
+
 .gif-with-preview button {
   position: absolute;
   background: rgb(0, 255, 124);
   border: none;
   bottom: 0;
-  right: 0;
+  right: 0px;
   z-index: 1;
   font-size: 30px;
   cursor: pointer;
+  width: 50px;
+  height: 43px;
+  padding-top: 7px;
 }
 
-.gif-with-preview.playing button {
+.gif-with-preview .pause-play-btn {
+  background: rgb(0, 255, 124);
+  right: 50px;
+}
+
+.gif-with-preview.playing .pause-play-btn {
   background: rgb(195, 199, 59);
+}
+
+.gif-with-preview .full-screen-btn {
+  background: rgb(201, 212, 206);
 }

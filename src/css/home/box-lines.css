@@ -29,7 +29,7 @@
 body[data-location='home'][data-scroll-section='hero'] .app-hero .box-lines {
   width: 100px;
   height: 200px;
-  left: calc(26vw - 100px);
+  left: 62%;
   opacity: 1;
 }
 

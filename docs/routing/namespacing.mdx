@@ -11,7 +11,7 @@ You can also use namespacing to reflect folder and uri structures at once. The f
 <RightSidebarItem>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-GET api/v1/hi Api/V1/Users#hi
+GET api/v1/users/hi Api/V1/Users#hi
 `}
   </pre>
 </RightSidebarItem>
@@ -22,10 +22,75 @@ import { PsychicRouter } from 'psychic'
 export default (r: PsychicRouter) => {
   r.namespace('api', (r) => {
     r.namespace('v1', (r) => {
-      r.get('hi', UsersController, 'hi')
+      r.namespace('users', (r) => {
+        r.get('hi')
+      })
     })
   })
 }
 ```
 
-Namespacing will always enforce the folder structure when presented with multiple route segments.
+Namespacing will always enforce the folder structure when presented with multiple route segments, which means you are required to put controllers in the expected folder structure in order for an action to be called when its corresponding route is hit. This can, of course, be overridden by passing an explicit controller to the namespace call.
+
+<RightSidebarItem>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET api/v1/users/hi HelloWorld#hi
+`}
+  </pre>
+</RightSidebarItem>
+
+```ts
+r.namespace('api', (r) => {
+  r.namespace('v1', (r) => {
+    // providing an explicit controller to the namespace
+    r.namespace('users', { controller: HelloWorldController } (r) => {
+      r.get('hi')
+    })
+  })
+})
+```
+
+Additionally, controller overrides can be passed to the child routes
+
+<RightSidebarItem>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET api/v1/users/hi HelloWorld#hi
+`}
+  </pre>
+</RightSidebarItem>
+
+```ts
+r.namespace('api', (r) => {
+  r.namespace('v1', (r) => {
+    r.namespace('users', (r) => {
+      // providing an explicit controller to the
+      // individual child route of a namespace
+      r.get('hi', HelloWorldController, 'hi')
+    })
+  })
+})
+```
+
+# scope
+
+In addition to `namespace`, Psychic also provides the `scope` method, which behaves identically to namespace, except that it does not enforce that particular segment within the path of the controller. In the following example, the `UsersController` will be expected to be located at `app/controllers/UsersController.ts`.
+
+<RightSidebarItem>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET api/v1/users/hi Users#hi
+`}
+  </pre>
+</RightSidebarItem>
+
+```ts
+r.scope('api', (r) => {
+  r.scope('v1', (r) => {
+    r.scope('users', (r) => {
+      r.get('hi')
+    })
+  })
+})
+```

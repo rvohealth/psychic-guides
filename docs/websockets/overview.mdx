@@ -2,6 +2,54 @@
 sidebar_position: 0
 ---
 
-# overview
+# Overview
 
-Websockets are provided through [socket.io](https://socket.io) by default to any application with the `useWs` configuration set to `true`.
+Websockets enable you to create a permanent tether between your client applications and your backend server. They are useful for broadcasting real-time updates between your backend, and are almost ubiquitous amongst modern web technology stacks.
+
+One of the challenges when building custom websocket systems is scaling. As you multiply the number of web servers you have and tuck them behind a load balancer, there is no guarantee that a user will stay connected to one or another server. In some cases, they may be connected to your systems on multiple devices as well, further complicating the issue.
+
+Psychic solves this complexity for you by providing you with two key features:
+
+1. A distributed websocket system, built on top of redis's pub-sub mechanisms, which enables you to emit to all servers at once, enabling you to target a message to a specific user without having to worry about detecting shich web server they are connected to.
+
+2. The `Ws` class, a simple class to use for registering users and emitting to them from anywhere in your stack. This class abstracts away the complexity of connecting to redis adapters, allowing you to set up clean patterns for both registering and emitting to users.
+
+To utilize the Ws class to your advantage, you first need to leverage the `#register` method when websocket connections. This can be done within the `conf/app.ts` file like so:
+
+```ts
+// conf/app.ts
+
+export default async (psy: PsychicApplication) => {
+  ...
+
+  psy.on('ws:start', io => {
+    io.of('/').on('connection', async socket => {
+      const token = socket.handshake.auth.token as string
+      const userId = Encrypt.decrypt(token, {
+        algorithm: 'aes-256-gcm',
+        key: process.env.APP_ENCRYPTION_KEY!,
+      })
+      const user = await User.find(userId)
+
+      if (user) {
+        await Ws.register(socket, user)
+      }
+    })
+  })
+
+  ...
+})
+```
+
+For this to work, of course, you would need that token you are capturing to have been generated during an authentication flow and provided to your front end, so that when it uses the `socket.io-client` library to establish a connection, it is able to hand that token back. To learn more about this flow, see our [Registering guides](/docs/websockets/registering).
+
+Once this is done, you are able to emit from anywhere in your application to this user using the `emit` method.
+
+```ts
+ws = new Ws(['/users/ping', 'users/alert', 'users/info'] as const)
+await ws.boot()
+
+await ws.emit(user.id, '/users/ping', { hello: 'world' })
+```
+
+To learn more about emitting to your users, see our [Emitting guides](/docs/websockets/emitting)

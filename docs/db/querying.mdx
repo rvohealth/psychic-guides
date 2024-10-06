@@ -9,11 +9,22 @@ Once your database connection is configured, you are able to import it and begin
 ```ts
 import db from '../db'
 
-db().selectAll('users').where('email', 'ilike', '%burpcollaborator%').execute()
+await db()
+  .selectAll('users')
+  .where('email', 'ilike', '%burpcollaborator%')
+  .execute()
+```
+
+Dream enables you to specify a connection when connecting to the db, like so:
+
+```ts
+await db('replica').selectAll('users').execute()
 ```
 
 You can additionally turn any query built in dream to a kysely query by calling `#toKysely`, like so:
 
 ```ts
-await User.where({ email: ops.ilike('%burpcollaborator%') }).toKysely('select')
+await User.where({ email: ops.ilike('%burpcollaborator%') })
+  .toKysely('select')
+  .execute()
 ```
