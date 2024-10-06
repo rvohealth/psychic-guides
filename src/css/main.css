@@ -127,6 +127,7 @@ h1 {
 
 .theme-doc-sidebar-container {
   font-size: 16px;
+  border-right: none !important;
 }
 
 html[data-theme='light'] {
