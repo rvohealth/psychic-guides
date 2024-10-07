@@ -10,11 +10,11 @@ One of the challenges when building custom websocket systems is scaling. As you 
 
 Psychic solves this complexity for you by providing you with two key features:
 
-1. A distributed websocket system, built on top of redis's pub-sub mechanisms, which enables you to emit to all servers at once, enabling you to target a message to a specific user without having to worry about detecting shich web server they are connected to.
+1. A distributed websocket system, built on top of redis's pub-sub mechanisms, which enables you to emit to all servers at once, enabling you to target a message to a specific user without having to worry about detecting which web server they are connected to.
 
 2. The `Ws` class, a simple class to use for registering users and emitting to them from anywhere in your stack. This class abstracts away the complexity of connecting to redis adapters, allowing you to set up clean patterns for both registering and emitting to users.
 
-To utilize the Ws class to your advantage, you first need to leverage the `#register` method when websocket connections. This can be done within the `conf/app.ts` file like so:
+To utilize the Ws class to your advantage, you first need to leverage the `.register` method when websocket connections. This can be done within the `conf/app.ts` file like so:
 
 ```ts
 // conf/app.ts

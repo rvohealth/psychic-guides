@@ -8,7 +8,7 @@ Psychic and Dream both use the `Encrypt` class under the hood for various operat
 
 ## Cookie encryption
 
-By default, Psychic encrypts any cookies that are created through it's cookie api. The encryption algorithm and key for this can be set in `conf/app.ts`, like so:
+By default, Psychic encrypts any cookies that are created through its cookie api. The encryption algorithm and key for this can be set in `conf/app.ts`, like so:
 
 ```ts
 // conf/app.ts
@@ -32,7 +32,7 @@ psy.set('encryption', {
       algorithm: 'aes-256-gcm',
       key: process.env.APP_ENCRYPTION_KEY!,
     },
-    current: {
+    legacy: {
       algorithm: 'aes-128-gcm',
       key: process.env.APP_LEGACY_ENCRYPTION_KEY!,
     },
@@ -46,7 +46,7 @@ For more information on utilizing cookies, see our [Cookie guides](/docs/control
 
 ## Encrypted decorator
 
-Within Dream, an `Encrypted` decorator is provided, which will automatically encrypt any values that are bound to it's call. In order for it to work properly, you must provide an algorithm and key in the `conf/dream.ts` file, like so:
+Within Dream, an `Encrypted` decorator is provided, which will automatically encrypt any values that are bound to its call. In order for it to work properly, you must provide an algorithm and key in the `conf/dream.ts` file, like so:
 
 ```ts
 // conf/dream.ts
@@ -70,7 +70,7 @@ dream.set('encryption', {
       algorithm: 'aes-256-gcm',
       key: process.env.APP_ENCRYPTION_KEY!,
     },
-    current: {
+    legacy: {
       algorithm: 'aes-128-gcm',
       key: process.env.APP_LEGACY_ENCRYPTION_KEY!,
     },
