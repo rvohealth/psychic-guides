@@ -2,9 +2,83 @@
 sidebar_position: 2
 ---
 
-# feature
+# Feature
 
-Contrary to unit specs, feature specs will launch your front end and back end servers, driving them with [jest-playwright](https://github.com/playwright-community/jest-playwright).
+Contrary to unit specs, feature specs will launch your front end and back end servers, driving them with [jest-playwright](https://github.com/playwright-community/jest-playwright). The configuration for this is totally exposed to you, allowing you to adjust the jest and playwright configurations respectively usingthe standard configuration patterns they provide.
+
+## Configuration
+
+Configuring your feature spec runs is unfortunately spread out over 3 files, which are used to configure jest, jest-playwrite, and playwrite, all of which have their own configuration files.
+
+The `spec/feature/jest.config.js` file is used to configure jest, setting it up to utilize the `jest-playwrite` plugin. By default, it should look something like this:
+
+```js
+// spec/feature/jest.config.js
+
+/** @type {import('ts-jest').JestConfigWithTsJest} */
+module.exports = {
+  bail: process.env.CI === '1',
+  restoreMocks: true,
+  clearMocks: true,
+  resetMocks: true,
+  preset: 'jest-playwright-preset',
+  testEnvironment: './setup/CustomPlaywrightEnvironment.js',
+  transform: { '^.+\\.tsx?$': 'ts-jest' },
+  setupFilesAfterEnv: ['expect-playwright', '<rootDir>/setup/hooks.ts'],
+  workerIdleMemoryLimit: '1024MB',
+}
+```
+
+We also need to configure the jest-playwrite package, which we can do by providing a second file, `spec/feature/jest-playwrite.config.js`. This file is used to launch both your backend _and_ your frontend in conjunction. Once both instances are up, it will begin running your feature specs, which can drive a headless browser through your frontend, hitting your backend for complete end-to-end testing.
+
+```js
+const { defineConfig, devices } = require('@playwright/test')
+
+module.exports = {
+  launchOptions: {
+    headless: process.env.BROWSER !== '1',
+  },
+  browsers: [
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+  ],
+  serverOptions: [
+    {
+      command:
+        'BROWSER=none PORT=3000 REACT_APP_PSYCHIC_ENV=test yarn --cwd=../client start',
+      host: '127.0.0.1',
+      debug: process.env.DEBUG === '1',
+      launchTimeout: 60000,
+      port: 3000,
+      usedPortAction: 'kill',
+      waitOnScheme: {
+        verbose: process.env.DEBUG === '1',
+      },
+    },
+    {
+      command:
+        'FEATURE_SPEC_RUN=1 DEV_SERVER_PORT=7778 npx ts-node --transpile-only ./src/spec-server.ts',
+      host: '127.0.0.1',
+      launchTimeout:
+        (process.env.LAUNCH_TIMEOUT_SECONDS &&
+          parseInt(process.env.LAUNCH_TIMEOUT_SECONDS) * 1000) ||
+        60000,
+      debug: process.env.DEBUG === '1',
+      port: 7778,
+      usedPortAction: 'kill',
+      waitOnScheme: {
+        verbose: process.env.DEBUG === '1',
+      },
+    },
+  ],
+}
+```
+
+## Custom spec helpers
+
+Psychic doesn't know much about your UI, so it doesn't provide many feature spec helpers for you out of the box (aside from those provided by playwright directly), but it does include a few in your app when it is first generated. you can use these custom helpers to navigate your app, like so:
 
 ```ts
 describe('ingredients index page', () => {
@@ -19,30 +93,31 @@ describe('ingredients index page', () => {
 })
 ```
 
-Psychic doesn't know much about your UI, so it doesn't provide many feature spec helpers for you out of the box (aside from those provided by playwright directly), but it does include a few in your app when it is first generated:
-
 ```bash
 ├── spec
 │   ├── features
-│   │   ├── attachFile.ts
-│   │   ├── clickButton.ts
-│   │   ├── clickLink.ts
-│   │   ├── clickSelector.ts
-│   │   ├── expectContent.ts
-│   │   ├── expectLink.ts
-│   │   ├── expectNoContent.ts
-│   │   ├── expectNoSelector.ts
-│   │   ├── expectSelector.ts
-│   │   ├── fillInput.ts
-│   │   ├── sleep.ts
-│   │   ├── toggle.ts
-│   │   ├── uncheck.ts
-│   │   ├── visit.ts
+│   │   ├── helpers
+│   │   │   ├── attachFile.ts
+│   │   │   ├── clickButton.ts
+│   │   │   ├── clickLink.ts
+│   │   │   ├── clickSelector.ts
+│   │   │   ├── expectContent.ts
+│   │   │   ├── expectLink.ts
+│   │   │   ├── expectNoContent.ts
+│   │   │   ├── expectNoSelector.ts
+│   │   │   ├── expectSelector.ts
+│   │   │   ├── fillInput.ts
+│   │   │   ├── sleep.ts
+│   │   │   ├── toggle.ts
+│   │   │   ├── uncheck.ts
+│   │   │   ├── visit.ts
 ```
 
-These helpers are for the most part general purpose, but may need to be tweaked depending on the UI framework you are using.
+These helpers are for the most part general purpose, but may need to be tweaked depending on the UI framework you are using. You may want to update your selectors to specify specific class names for buttons, etc... How you choose to implement these is up to you, and totally dependent on decisions you make about your UI (i.e. UI framework, CSS framework, etc...).
 
-between each spec run, the database will be truncated to ensure a clean slate. Similar to unit specs, this is set up in the `spec/features/setup/hooks.ts` file:
+## Cleanup
+
+Between each spec run, the database will be truncated to ensure a clean slate. Similar to unit specs, this is set up in the `spec/features/setup/hooks.ts` file:
 
 ```ts
 // api/spec/features/setup/hooks.ts
@@ -53,3 +128,5 @@ beforeEach(async () => {
   await truncate()
 })
 ```
+
+If there is anything else you need to do after each spec run, feel free to add to this file.
