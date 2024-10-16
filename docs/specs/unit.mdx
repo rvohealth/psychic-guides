@@ -2,11 +2,34 @@
 sidebar_position: 1
 ---
 
-# unit
+# Unit
 
-Unit specs are meant for testing strictly your backend components in isolation. They do not launch your server or front end. The config for them is located in `spec/unit/jest.config.js`. Composing unit specs, one is enabled to test all components of their app. Since this is all done using `jest` under the hood, this will likely be familiar to you already, with the one caviat that we also provide special unit spec helpers for spec'ing your endpoints.
+Unit specs are meant testing for strictly your backend components in isolation. Unlike your feature specs, in your unit specs you are not driving a headless browser through your front end. Instead, you are testing individual units of code in your backend to make sure they behave correctly. This could mean testing the behavior of a single helper function, as well as for testing models, services, and controllers within your app.
 
-## general specs
+## Configuration
+
+The configuration for your unit specs is located in `spec/unit/jest.config.js`. Composing unit specs, one is enabled to test all components of their app. Since this is all done using `jest` under the hood, this will likely be familiar to you already, with the one caviat that we also provide special unit spec helpers for spec'ing your endpoints. Here is a sample config that could enable one to, for example, integrate with `pollyjs`:
+
+```js
+// spec/unit/jest.config.js
+
+/** @type {import('ts-jest').JestConfigWithTsJest} */
+module.exports = {
+  bail: process.env.CI === '1',
+  restoreMocks: true,
+  clearMocks: true,
+  resetMocks: true,
+  preset: 'ts-jest',
+  testEnvironment: 'setup-polly-jest/jest-environment-node',
+  transform: { '^.+\\.tsx?$': 'ts-jest' },
+  setupFilesAfterEnv: ['<rootDir>setup/hooks.ts', 'luxon-jest-matchers'],
+  globalSetup: '<rootDir>setup/beforeAll.ts',
+  globalTeardown: '<rootDir>setup/afterAll.ts',
+  workerIdleMemoryLimit: '1024MB',
+}
+```
+
+## General specs
 
 For the most part, your app can be spec'd using the general tools provided by [jest](https://jestjs.io/docs/getting-started). We provide some boilerplate setup for your unit spec runs to make sure that the database is truncated between runs, which allows you to freely seed the db for each test without worrying about running into data from a previous test run:
 
@@ -20,7 +43,7 @@ beforeEach(async () => {
 })
 ```
 
-### models
+### Models
 
 Write model specs to enfore behavior for your models, like so:
 
@@ -64,7 +87,7 @@ describe('User', () => {
 })
 ```
 
-### serializers
+### Serializers
 
 We don't generally encourage developers to write serializer specs (since this is normally covered by endpoint tests), but sometimes it can make sense if the rendering logic gets to be fairly complex. In that case, you can test your serializers like this:
 
@@ -73,7 +96,7 @@ describe('UserSerializer', () => {
   it('renders loginCount', async () => {
     const user = await createUser({ email: 'how@yadoin', password: 'password' })
     expect(new Serializer(user).render()).toEqual(
-      expect.objectContaining({ loginCount: 0 })
+      expect.objectContaining({ loginCount: 0 }),
     )
   })
 })
@@ -81,7 +104,7 @@ describe('UserSerializer', () => {
 
 Anything else in the app should be fairly straight forward to test, with the exception of controller/endpoint tests, which we will cover next.
 
-## controller/endpoint specs
+## Controller/endpoint specs
 
 Under the hood, psychic provides some test helpers to make our lives easier when needing to run controller/endpoint tests:
 
@@ -112,7 +135,7 @@ describe('an authed user attempts to hit an authed route', () => {
     const session = await request.session(
       '/api/v1/signin',
       { email: 'how@yadoin', password: 'password' },
-      204
+      204,
     )
     await session.get('/api/v1/users/me').expect(200)
   })

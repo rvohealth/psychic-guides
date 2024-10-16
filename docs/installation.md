@@ -7,7 +7,7 @@ sidebar_position: 2
 In order to get started with psychic, you will first need to install the [psychic](https://github.com/rvohealth/psychic") package globally. The global CLI is really only needed to get a new app up and running. Once it is, you will use yarn scripts to access the non-global psychic cli, which will be useful for running migrations, generating resources, starting your development server, etc...
 
 ```bash
-yarn global add https://github.com/@rvohealth/psychic-cli
+npm i -g https://github.com/@rvohealth/psychic-cli
 ```
 
 Once done, you can use the global cli to provision a new psychic app, simply run `psy new myapp`, like so:
