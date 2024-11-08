@@ -15,7 +15,7 @@ Don't Repeat Yourself (DRY), is a guiding philosophy of Dream and Psychic, revea
 - cli code generators that set up models, serializers, and controllers using best practice conventions, such as controllers inheriting from an authenticated ancestor right from the start
 - advanced association constructs such as polymorphism that enable models to be associated with many different model types
 
-Together, Psycic and Dream (or even Dream alone, which can be used with other frameworks besides Psychic) provide an elegant framework for modeling complex domains, facilitating rapid development of maintainable applications.
+Together, Psychic and Dream (or Dream alone, which can be used with other frameworks besides Psychic) provide an elegant framework for modeling complex domains, facilitating rapid development of maintainable applications.
 
 :::info
 In this guide, we will be covering the following:
