@@ -13,7 +13,7 @@ Don't Repeat Yourself (DRY), is a guiding philosophy of Dream and Psychic, revea
 - `HasOne`, `HasMany`, and `BelongsTo` association decorators that encapsulate all the complexity of an association into a single declaration that, once defined, becomes an abstraction in a well defined domain
 - powerful decorators like `@SoftDelete` and `@Sortable` that automatically and universally handle common use cases which would otherwise introduce complexity into your application
 - cli code generators that set up models, serializers, and controllers using best practice conventions, such as controllers inheriting from an authenticated ancestor right from the start
-- advanced association constructs such as polymorphism that enable models to be associated with many different model types
+- advanced association constructs such as has-many-through, single table inheritance (STI), and polymorphism
 
 Together, Psychic and Dream (or Dream alone, which can be used with other frameworks besides Psychic) provide an elegant framework for modeling complex domains, facilitating rapid development of maintainable applications.
 
