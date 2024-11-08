@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Welcome
 
-Psychic is a web framework built on Express. Dream is an ORM built on the Kysely query builder. They are inspired by the elegance, expressiveness, and convention over configuration philosphy of Ruby on Rails and ActiveRecord, respectively, but with the power of Typescript.
+Psychic is a web framework built on [Express](https://expressjs.com/). Dream is an ORM built on the [Kysely query builder](https://kysely-org.github.io/kysely-apidoc/). They are inspired by the elegance, expressiveness, and convention over configuration philosphy of [Ruby on Rails](https://rubyonrails.org/) and [ActiveRecord](https://guides.rubyonrails.org/active_record_basics.html), respectively, but with the power of Typescript.
 
 Don't Repeat Yourself (DRY), is a guiding philosophy of Dream and Psychic, revealing itself in:
 
