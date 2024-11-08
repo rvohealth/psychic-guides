@@ -8,7 +8,7 @@ Psychic is a web framework built on [Express](https://expressjs.com/). Dream is 
 
 Don't Repeat Yourself (DRY), is a guiding philosophy of Dream and Psychic, revealing itself in:
 
-- model attribute types that are derived from the database, so when you write a migration that, for example, adds an enum, the one place that change is defined is in the migration, and it automatically cascades everywhere the enum is referenced or set
+- model attribute types that are derived from the database, so when you write a migration that, for example, adds an enum, the one place that you define the change is in the migration, and it automatically cascades everywhere the enum is referenced or set
 - OpenAPI definitions that are fleshed out automatically from the routes file and model serializers
 - `HasOne`, `HasMany`, and `BelongsTo` association decorators that encapsulate all the complexity of an association into a single declaration that, once defined, becomes an abstraction in a well defined domain
 - powerful decorators like `@SoftDelete` and `@Sortable` that automatically and universally handle common use cases which would otherwise introduce complexity into your application
