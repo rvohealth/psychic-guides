@@ -1,6 +1,6 @@
-# Website
+# Psychic guides
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+Leverages [Docusaurus](https://docusaurus.io/) to provide a documentation site for [Dream](https://github.com/rvohealth/dream) and [Psychic](https://github.com/rvohealth/psychic) repositories.
 
 ### Installation
 
@@ -37,3 +37,13 @@ yarn clear # remove existing build
 rm -rf node_modules yarn.lock # destroy lock
 yarn # re-install
 ```
+
+## Questions?
+
+- **Ask them on [Stack Overflow](https://stackoverflow.com)**, using the `[psychic]` tag.
+
+## Contributing
+
+Psychic is an open source library, so we encourage you to actively contribute. Visit our [Contributing](https://github.com/rvohealth/psychic-guides/CONTRIBUTING.md) guide to learn more about the processes we use for submitting pull requests or issues.
+
+Are you trying to report a possible security vulnerability? Visit our [Security Policy](https://github.com/rvohealth/psychic-guides/SECURITY.md) for guidelines about how to proceed.
