@@ -5,15 +5,13 @@ title: overview
 
 # OpenAPI Overview
 
-[OpenAPI](https://spec.openapis.org/oas/v3.0.2.html) is a standard for representing API specifications. It is useful whether your service will be consumed by other services or front end clients such as mobile devices. The OpenAPI spec also automatically generates front-end routes and types for your React, Vue, or Nuxt app in Psychic.
+[OpenAPI](https://spec.openapis.org/oas/v3.0.2.html) is a standard for representing API specifications. It is useful whether your service will be consumed by other services or front end clients such as mobile devices. Psychic and Dream work together to automatically generate [OpenAPI 3.0.2](https://spec.openapis.org/oas/v3.0.2.html) specs for your web application with as little additional work from you as possible. They do this by leveraging:
 
-Psychic and Dream work together to automatically generate [OpenAPI 3.0.2](https://spec.openapis.org/oas/v3.0.2.html) specs for your web application with as little additional work from you as possible. They do this by leveraging:
-
-1. the routes already defined in api/src/conf/routes.ts
+1. the routes already defined in `api/src/conf/routes.ts`
 1. the serializers you already use to turn models into JSON
-1. an @OpenAPI decorator in controllers
+1. an `@OpenAPI` decorator in controllers
 
-Note that the [resource generator](../cli/generators) automatically adds @OpenAPI decorator declarations corresponding to each endpoint, and since serializer attributes are typed back to the database schema, these types will stay in sync as you add migrations. (For example, if you add a migration to change a column from not allowing `null` to allowing `null`, the OpenAPI spec will change to include `nullable: true` for the corresponding property.)
+The [resource generator](../cli/generators) automatically adds `@OpenAPI` decorator declarations corresponding to each endpoint, and since serializer attributes are typed back to the database schema, these types will stay in sync as you add migrations. (For example, if you add a migration to change a column from not allowing `null` to allowing `null`, the OpenAPI spec will change to include `nullable: true` for the corresponding property.)
 
 Serializers and the @OpenAPI decorator also support hand-written specs to provide added flexibility when needed. As with everything in Dream and Psychic, these hand-written specs are strongly typed.
 

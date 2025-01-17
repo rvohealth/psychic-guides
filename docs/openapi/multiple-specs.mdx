@@ -1,0 +1,32 @@
+---
+sidebar_position: 4
+title: multiple specs
+---
+
+# Multiple specs
+
+For some applications, it may be desirable to split your openapi definitions into multiple, separate files. to do this, you can specify in `conf/app.ts` a second openapi configuration under a different name (e.g. `admin`), like so:
+
+```ts
+export default (psy: Psyconf) => {
+  psy.set('openapi', {
+    // ...
+  })
+
+  psy.set('openapi', 'admin', {
+    // you must include a custom filename for all non-default openapi specs
+    outputFilename: 'admin.openapi.json',
+    // ...
+  })
+}
+```
+
+Psychic encourages you to use one openapi spec per controller. Considering, the only way to specify an alternate openapi spec is to define it in your controller explicitly, like so:
+
+```ts
+class AdminUsersController extends ApplicationController {
+  public static get openapiName(): PsychicOpenapiNames<ApplicationController> {
+    return 'admin'
+  }
+}
+```
