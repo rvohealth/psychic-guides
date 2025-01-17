@@ -87,9 +87,20 @@ Sometimes it is necessary to further-narrow the scope of your association using 
 ```ts
 class User extends ApplicationModel {
   ...
-  @User.HasOne('Pet', { where: { favorite: true } })
+  @User.HasOne('Pet', { where: { name: 'Aster' } })
   public favoritePet: Pet | null
 }
+```
+
+> Note: when using a where clause to create a HasOne, make sure to add a unique index on the the foreign key column (and the foreign key type column if a polymorphic association) and the column(s) in the where clause. For example:
+
+```ts
+await db.schema
+  .createIndex('pets_user_id_name')
+  .on('pets')
+  .columns(['user_id', 'name'])
+  .unique()
+  .execute()
 ```
 
 In some cases, dynamic values will need to be permitted for the provided where statements. In these cases, you can leverage required where clauses to enforce the where clause to be present any time an association is loaded. If utilized, an exception will be raised if you attempt to load this association without passing the required where statements.

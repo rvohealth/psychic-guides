@@ -4,7 +4,18 @@ sidebar_position: 1
 
 # Welcome
 
-Psychic and dream together provide a full-stack solution for a JSON-based api delivery system with robust backend needs. Together, they combine like a superpower to deliver elegant design patterns. Leveraging database introspection, as well as project files, type schemas are generated which enable Psychic, Dream, and Kysely to deliver powerful type guards, allowing your domain to reveal itself to you with power and elegance.
+Psychic is a web framework built on [Express](https://expressjs.com/). Dream is an ORM built on the [Kysely query builder](https://kysely-org.github.io/kysely-apidoc/). They are inspired by the elegance, expressiveness, and convention over configuration philosphy of [Ruby on Rails](https://rubyonrails.org/) and [ActiveRecord](https://guides.rubyonrails.org/active_record_basics.html), respectively, but with the power of Typescript.
+
+Don't Repeat Yourself (DRY), is a guiding philosophy of Dream and Psychic, revealing itself in:
+
+- model attribute types that are derived from the database, so when you write a migration that, for example, adds an enum, the one place that you define the change is in the migration, and it automatically cascades everywhere the enum is referenced or set
+- OpenAPI definitions that are fleshed out automatically from the routes file and model serializers
+- `HasOne`, `HasMany`, and `BelongsTo` association decorators that encapsulate all the complexity of an association into a single declaration that, once defined, becomes an abstraction in a well defined domain
+- powerful decorators like `@SoftDelete`, `@Sortable`, and `@ReplicaSafe` that automatically and universally handle common use cases which would otherwise introduce complexity into your application
+- cli code generators that set up models, serializers, and controllers using best practice conventions, such as controllers inheriting from an authenticated ancestor right from the start
+- advanced association patterns such as has-many-through, single table inheritance (STI), and polymorphism
+
+Together, Psychic and Dream (or Dream alone, which can be used with other frameworks besides Psychic) provide an elegant framework for modeling complex domains, facilitating rapid development of maintainable applications.
 
 :::info
 In this guide, we will be covering the following:

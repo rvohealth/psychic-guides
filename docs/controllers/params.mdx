@@ -71,7 +71,19 @@ export default class PostsController extends AuthedController {
 }
 ```
 
-This will automatically bring in all params for the Post model, barring generated fields like `id`, `createdAt`, `updatedAt`, or any belongs to foreign keys.
+This will automatically bring in all params for the Post model, barring generated fields like `id`, `createdAt`, `updatedAt`, `deletedAt`, or any belongs-to foreign keys or foreign key types.
+
+The attributes that can be updated via params can be further restricted by providing a `paramSafeColumns` getter in any Dream model:
+
+```ts
+export default class User extends ApplicationModel {
+  public get paramSafeColumns() {
+    return ['email'] as const
+  }
+}
+```
+
+Note that `paramSafeColumns` cannot be used to allow setting of generated columns (`id`, `createdAt`, `updatedAt`, `deletedAt`, or any belongs-to foreign keys or foreign key types) via params.
 
 The paramsFor method also accepts the ability to customize which params should be allowed, enabling you to only bring in specific params without needing to cast their types:
 
@@ -80,7 +92,7 @@ export default class PostsController extends AuthedController {
   public create() {
     await this.currentUser.createAssociation(
       'posts',
-      this.paramsFor(Post, { only: ['title', 'body'] }),
+      this.paramsFor(Post, { only: ['title', 'body'] })
     )
   }
 }
