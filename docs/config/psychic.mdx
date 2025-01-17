@@ -39,7 +39,7 @@ export default (psy: Psyconf) => {
     cookies: {
       current: {
         algorithm: 'aes-256-gcm',
-        key: process.env.APP_ENCRYPTION_KEY!,
+        key: AppEnv.string('APP_ENCRYPTION_KEY'),
       },
     },
   })
@@ -164,7 +164,7 @@ export default (psy: Psyconf) => {
 
 ### json
 
-Use the `Psychonf#set` method to apply json (body parser) options. Json options are driven through the [body-parser](https://www.npmjs.com/package/body-parser) package.
+Use the `PsychicApplication#set` method to apply json (body parser) options. Json options are driven through the [body-parser](https://www.npmjs.com/package/body-parser) package.
 
 ```ts
 export default (psy: Psyconf) => {
@@ -176,7 +176,7 @@ export default (psy: Psyconf) => {
 
 ### cookie
 
-Use the `Psychonf#set` method to apply cookie options. Cookie options are driven through the express-cookie package.
+Use the `PsychicApplication#set` method to apply cookie options. Cookie options are driven through the express-cookie package.
 
 ```ts
 export default (psy: Psyconf) => {
@@ -193,9 +193,24 @@ export default (psy: Psyconf) => {
 }
 ```
 
+### ssl
+
+Encryption between the load balancer and your Psychic webservers is an important part of encryption-in-transit. This SSL certificate will be a self-signed certificate. It is separate from the SSL certificate that you'll install on your load balancer.
+
+```ts
+export default (psy: Psyconf) => {
+  if (AppEnv.isProduction) {
+    psy.set('ssl', {
+      key: AppEnv.string('SSL_KEY_PATH'),
+      cert: AppEnv.string('SSL_CERT_PATH'),
+    })
+  }
+}
+```
+
 ### encryption
 
-Use the `Psychonf#set` method to apply encryption options.
+Use the `PsychicApplication#set` method to apply encryption options.
 
 ```ts
 export default (psy: Psyconf) => {
@@ -203,12 +218,12 @@ export default (psy: Psyconf) => {
     cookies: {
       current: {
         algorithm: 'aes-256-gcm',
-        key: process.env.APP_ENCRYPTION_KEY!,
+        key: AppEnv.string('APP_ENCRYPTION_KEY'),
       },
       // legacy is used when you are in the process of switching out your encryption keys
       legacy: {
         algorithm: 'aes-256-gcm',
-        key: process.env.LEGACY_APP_ENCRYPTION_KEY!,
+        key: AppEnv.string('LEGACY_APP_ENCRYPTION_KEY'),
       },
     },
   })
@@ -217,67 +232,206 @@ export default (psy: Psyconf) => {
 
 ### cors
 
-Use the `Psychonf#set` method to apply cors options. Cors options are driven through the express-cors package.
+Use the `PsychicApplication#set` method to apply cors options. Cors options are driven through the express-cors package.
 
 ```ts
 export default (psy: Psyconf) => {
   // set options for cors
   psy.set('cors', {
     credentials: true,
-    origin: [process.env.CLIENT_HOST || 'http://localhost:3000'],
+    origin: [AppEnv.string('CLIENT_HOST') || 'http://localhost:3000'],
   })
 }
 ```
 
-### redis
+### background jobs
 
-Use the `Psychonf#set` method to apply redis options. Redis options are driven by the [node-redis](https://github.com/redis/node-redis) package.
+Use the `PsychicApplication#set` method to apply background options. Background options are driven by [BullMQ](https://bullmq.io) package. Psychic provides an intuitive abstraction around BullMQ to make setting up queues easier for you, which enables you to drive your application with simplified configurations.
+
+To simplify the queue process, Psychic has provided a helpful concept called `workstreams`. Workstreams are essentially queue-worker combinations, allowing you to drive your application with as many Queue/Worker combinations as you would like. By default, Psychic provides a single default workstream, which all jobs will automatically be funneled into unless otherwise specified.
+
+However, you may find it useful to have additional workstreams. This can be useful for, say, segmenting off API calls to a single worker and applying rate limiting on that worker.
 
 ```ts
 export default (psy: Psyconf) => {
   // redis background job credentials
-  psy.set('redis:background', {
-    username: process.env.BACKGROUND_JOBS_REDIS_USER,
-    password: process.env.BACKGROUND_JOBS_REDIS_PASSWORD,
-    host: process.env.BACKGROUND_JOBS_REDIS_HOST,
-    port: process.env.BACKGROUND_JOBS_REDIS_PORT,
-    secure: process.env.BACKGROUND_JOBS_REDIS_USE_SSL === '1',
-  })
+  psy.set('background', {
+    // configures the default workstream, which all jobs will automatically
+    // be fed to unless directed otherwise
+    defaultWorkstream: {
+      // https://docs.bullmq.io/guide/parallelism-and-concurrency
+      workerCount: os.cpus().length,
+      concurrency: 100,
+    },
 
-  // redis websocket credentials
-  psy.set('redis:ws', {
-    username: process.env.WS_REDIS_USER,
-    password: process.env.WS_REDIS_PASSWORD,
-    host: process.env.WS_REDIS_HOST,
-    port: process.env.WS_REDIS_PORT,
-    secure: process.env.WS_REDIS_USE_SSL === '1',
+    // additional workstreams you wish to provide.
+    namedWorkstreams: [
+      {
+        name: 'FacebookApi',
+        workerCount: 1,
+
+        // rateLimit argument enables you to throttle your workers, so that
+        // they don't trip up rate limiting rules for this API.
+        // NOTE: rate limiting is a BullMQ Pro-only feature, so only provide
+        // this argument if you are also leveraging BullMQ Pro.
+        rateLimit: {
+          max: 100_000,
+          duration: 1000 * 60 * 60 * 24,
+        },
+      },
+    ],
+
+    // By default, Psychic provides a Queue and Worker class from BullMQ. If you are leveraging
+    // BullMQ Pro, you will need to provide the custom Queue and Worker classes from BullMQ.
+    providers: {
+      Queue: QueuePro,
+      Worker: WorkerPro,
+    },
+
+    // options to provide to your default queue (leveraged by your default workstream)
+    defaultBullMQQueueOptions: {
+      defaultJobOptions: {
+        removeOnComplete: 1000,
+        removeOnFail: 20000,
+        // 524,288,000 ms (~6.1 days) using algorithm:
+        // "2 ^ (attempts - 1) * delay"
+        attempts: 20,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+      },
+    },
+
+    // provide a redis connection for your default queue
+    defaultQueueConnection: AppEnv.isProduction
+      ? new Cluster(
+          [
+            {
+              host: AppEnv.string('BG_JOBS_REDIS_HOST'),
+              port: AppEnv.integer('BG_JOBS_REDIS_PORT'),
+            },
+          ],
+          {
+            dnsLookup: (address, callback) => callback(null, address),
+            redisOptions: {
+              username: AppEnv.string('BG_JOBS_REDIS_USERNAME'),
+              password: AppEnv.string('BG_JOBS_REDIS_PASSWORD'),
+              tls: AppEnv.isProduction ? {} : undefined,
+            },
+            enableOfflineQueue: false,
+          },
+        )
+      : new Redis({
+          host:
+            AppEnv.string('BG_JOBS_REDIS_HOST', { optional: true }) ||
+            'localhost',
+          port:
+            AppEnv.integer('BG_JOBS_REDIS_PORT', { optional: true }) || '6379',
+          username: AppEnv.string('BG_JOBS_REDIS_USERNAME', { optional: true }),
+          password: AppEnv.string('BG_JOBS_REDIS_PASSWORD', { optional: true }),
+          tls: AppEnv.isProduction ? {} : undefined,
+          enableOfflineQueue: false,
+        }),
+
+    // provide a redis connection for your default workers, which will
+    // be working off jobs from the default workstream.
+    defaultWorkerConnection: !AppEnv.boolean('WORKER_SERVICE')
+      ? undefined
+      : AppEnv.isProduction
+        ? new Cluster(
+            [
+              {
+                host: AppEnv.string('BG_JOBS_REDIS_HOST'),
+                port: AppEnv.integer('BG_JOBS_REDIS_PORT'),
+              },
+            ],
+            {
+              dnsLookup: (address, callback) => callback(null, address),
+              redisOptions: {
+                username: AppEnv.string('BG_JOBS_REDIS_USERNAME'),
+                password: AppEnv.string('BG_JOBS_REDIS_PASSWORD'),
+                tls: AppEnv.isProduction ? {} : undefined,
+                maxRetriesPerRequest: null,
+              },
+            },
+          )
+        : new Redis({
+            host:
+              AppEnv.string('BG_JOBS_REDIS_HOST', { optional: true }) ||
+              'localhost',
+            port:
+              AppEnv.integer('BG_JOBS_REDIS_PORT', { optional: true }) ||
+              '6379',
+            username: AppEnv.string('BG_JOBS_REDIS_USERNAME', {
+              optional: true,
+            }),
+            password: AppEnv.string('BG_JOBS_REDIS_PASSWORD', {
+              optional: true,
+            }),
+            tls: AppEnv.isProduction ? {} : undefined,
+            enableOfflineQueue: false,
+          }),
+
+    // if you are deploying new redis instances to connect to, and you have old jobs up
+    // that still need to be worked off, then you can use transitionalWorkstreams to maintain
+    // a connection to the old redis, allowing you to work off any jobs that still exist in the
+    // old queue after deploying the new connection changes. We recommend that you only keep this
+    // online for as long as you need to for all workers to work off all jobs on this connection.
+    // once the queue is empty, send up a deployment to remove transitionalWorkstreams.
+    transitionalWorkstreams: AppEnv.isProduction
+      ? {
+          defaultQueueConnection: new Redis({
+            host: AppEnv.string('BACKGROUND_JOBS_REDIS_HOST'),
+            port: AppEnv.integer('BACKGROUND_JOBS_REDIS_PORT'),
+            username: AppEnv.string('BACKGROUND_JOBS_REDIS_USERNAME'),
+            password: AppEnv.string('BACKGROUND_JOBS_REDIS_PASSWORD'),
+            tls: AppEnv.isProduction ? {} : undefined,
+            enableOfflineQueue: false,
+          }),
+
+          defaultWorkerConnection: !AppEnv.string('WORKER_SERVICE')
+            ? undefined
+            : new Redis({
+                host:
+                  AppEnv.string('BACKGROUND_JOBS_REDIS_HOST', {
+                    optional: true,
+                  }) || 'localhost',
+                port:
+                  AppEnv.integer('BACKGROUND_JOBS_REDIS_PORT', {
+                    optional: true,
+                  }) || '6379',
+                username: AppEnv.string('BACKGROUND_JOBS_REDIS_USERNAME', {
+                  optional: true,
+                }),
+                password: AppEnv.string('BACKGROUND_JOBS_REDIS_PASSWORD', {
+                  optional: true,
+                }),
+                tls: AppEnv.isProduction ? {} : undefined,
+                enableOfflineQueue: false,
+              }),
+        }
+      : undefined,
   })
 }
 ```
 
-### background job options
+### websockets
 
-Use the `Psychonf#set` method to apply background queue options. Since background jobs are driven by BullMQ, the options here are passed to the job instance of the BullMQ package.
+To configure websockets for your Psychic application, you will need to provide a redis connection. This is because the websockets built into Psychic automatically support distributed websocket systems, and leverage redis pub-sub mechanisms to emit websocket events to all your servers.
 
 ```ts
 export default (psy: Psyconf) => {
-  // configuration options for bullmq queue (used for running background jobs in redis)
-  psy.set('background:queue', {
-    defaultJobOptions: {
-      removeOnComplete: 1000,
-      removeOnFail: 20000,
-      // 524,288,000 ms (~6.1 days) using algorithm:
-      // "2 ^ (attempts - 1) * delay"
-      attempts: 20,
-      backoff: {
-        type: 'exponential',
-        delay: 1000,
-      },
-    },
+  psy.set('websockets', {
+    connection: new Redis({
+      host: AppEnv.string('WS_REDIS_HOST'),
+      port: AppEnv.integer('WS_REDIS_PORT'),
+      username: AppEnv.string('WS_REDIS_USERNAME', { optional: true }),
+      password: AppEnv.string('WS_REDIS_PASSWORD', { optional: true }),
+      tls: AppEnv.isProduction ? {} : undefined,
+      maxRetriesPerRequest: null,
+    }),
   })
-
-  // configuration options for bullmq worker (used for running background jobs in redis)
-  psy.set('background:worker', {})
 }
 ```
 
@@ -288,8 +442,8 @@ Hooks are called during specific lifecycle events in the server initialization p
 ```ts
 export default (psy: PsychicConfig) => {
   // run once an express app is initialized by the psychic server
-  psy.on('express:init', (app) => {
-    if (!testEnv() || process.env.REQUEST_LOGGING === '1') {
+  psy.on('server:init', (app) => {
+    if (!testEnv() || AppEnv.boolean('REQUEST_LOGGING')) {
       const SENSITIVE_FIELDS = [
         'password',
         'token',
@@ -305,25 +459,9 @@ export default (psy: PsychicConfig) => {
             winston.format.colorize(),
             winston.format.json(),
           ),
-          meta: true, // optional: control whether you want to log the meta data about the request (default to true)
-          msg: 'HTTP {{req.method}} {{req.url}}', // optional: customize the default logging message. E.g. "{{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}"
-          expressFormat: true, // Use the default Express/morgan request formatting. Enabling this will override any msg if true. Will only output colors with colorize set to true
-          colorize: false, // Color the text and status code, using the Express/morgan color palette (text: gray, status: default green, 3XX cyan, 4XX yellow, 5XX red).
-          headerBlacklist: [
-            'authorization',
-            'content-length',
-            'connection',
-            'cookie',
-            'sec-ch-ua',
-            'sec-ch-ua-mobile',
-            'sec-ch-ua-platform',
-            'sec-fetch-dest',
-            'sec-fetch-mode',
-            'sec-fetch-site',
-            'user-agent',
-          ],
           ignoredRoutes: ['/health_check'],
           bodyBlacklist: SENSITIVE_FIELDS,
+          // ...etc
         }),
       )
     }

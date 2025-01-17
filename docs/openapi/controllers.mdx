@@ -1,3 +1,363 @@
 ---
-sidebar_position: 3
+sidebar_position: 2
+title: controllers
 ---
+
+# OpenAPI - Controllers
+
+Controllers provide an entry point for all openapi entries. When Psychic builds openapi files for your application, it starts by scanning all of your controllers and finding all openapi decorators. It then computes the schema for those endpoints, and then spits that schema out into the corresponding json files.
+
+To leverage the OpenAPI decorator in your controllers, simply import it and use it to decorate the methods you wish to expose, like so:
+
+```ts
+import { OpenAPI } from '@rvohealth/psychic'
+
+export default class PostsController extends PsychicController {
+  @OpenAPI(Post, {
+    many: true,
+    status: 200,
+    serializerKey: 'summary',
+  })
+  public async index() {
+    this.ok(await this.currentUser.associationQuery('posts').all())
+  }
+}
+```
+
+By default, Psychic will match this endpoint to the corresponding route entry in your `conf/routes.ts` file. If it does not find a matching route, it will raise an exception, so be sure to add a matching entry pointing to that method on your controller, i.e.
+
+```ts
+// conf/routes.ts
+export default function routes(r: PsychicRouter) {
+  r.resources('posts', { only: ['index'] })
+  // OR
+  r.get('/posts', PostsController, 'index')
+}
+```
+
+## Implicit serialization
+
+If a serializable class is provided as the first argument to the `@OpenAPI` decorator, it will automatically read all related `@Attribute` decorators on the corresponding serializer, formulating an object shape that it injects into the openapi document.
+
+```ts
+export default class PostsController extends PsychicController {
+  // by providing Post here, we are telling OpenAPI to locate the default
+  // serializer attached to the Post model and serialize its attribute shapes
+  // into an openapi document, which will become the 200 response shape for
+  // this endpoint
+  @OpenAPI(Post, {
+    status: 200,
+  })
+  public async show() {
+    this.ok(
+      await this.currentUser
+        .associationQuery('posts')
+        .findOrFail(this.castParam('id', 'bigint')),
+    )
+  }
+}
+```
+
+In addition to providing a model class as the first argument, you can also specify a serializer directly, which takes away the implicit decision making that Psychic does to decide on a serializer for you.
+
+```ts
+@OpenAPI(PostSerializer, {
+  status: 200,
+})
+```
+
+## serializerKey
+
+You can provide a `serializerKey` option, which will inform the decorator to use a specific serializer attached to your model, like so:
+
+```ts
+// models/Post.ts
+export default class Post extends ApplicationModel {
+  public get table() {
+    return 'posts' as const
+  }
+
+  public get serializers(): DreamSerializers<Post> {
+    return { default: 'PostSerializer', admin: 'Admin/PostSerializer' }
+  }
+
+  // ...
+}
+
+// controllers/Admin/PostsController
+export default class AdminPostsController extends PsychicController {
+  // by specifying the "admin" serializerKey, we are telling OpenAPI
+  // to use the `Admin/PostSerializer`.
+  @OpenAPI(Post, {
+    serializerKey: 'admin',
+    status: 200,
+  })
+  public async show() {
+    this.ok(
+      await this.currentUser
+        .associationQuery('posts')
+        .findOrFail(this.castParam('id', 'bigint')),
+    )
+  }
+}
+```
+
+## many
+
+Use the `many` option when you are providing a serializable class, and you want the endpoint to render an array of them. This can be done like so:
+
+```ts
+export default class AdminPostsController extends PsychicController {
+  @OpenAPI(Post, {
+    many: true,
+    status: 200,
+  })
+  public async index() {
+    this.ok(await this.currentUser.associationQuery('posts').limit(100).all())
+  }
+}
+```
+
+## nullable
+
+As expected, the `nullable` option enables you to specify that the default response can also be null.
+
+```ts
+export default class AdminPostsController extends PsychicController {
+  @OpenAPI(Post, {
+    nullable: true,
+    status: 200,
+  })
+  public async show() {
+    this.ok(await this.currentUser.associationQuery('posts').first())
+  }
+}
+```
+
+## status
+
+By providing a `status` option to the OpenAPI decorator, you can specify which HTTP status code will be returned if the request succeeds.
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI({
+    status: 204,
+  })
+  public async helloWorld() {
+    this.noContent()
+  }
+}
+```
+
+## requestBody
+
+Using the `requestBody` option, we can inform OpenAPI what the shape of our incoming request will be, using standard OpenAPI notation.
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI({
+    status: 204,
+    requestBody: {
+      type: 'object',
+      required: ['searchTerm'],
+      properties: {
+        searchTerm: {
+          type: 'string',
+          description: 'A search term provided by the user',
+        },
+      },
+    },
+  })
+  public async helloWorld() {
+    this.noContent()
+  }
+}
+```
+
+## requestBody
+
+Using the `requestBody` option, we can inform OpenAPI what the shape of our incoming request will be, using standard OpenAPI notation.
+
+```ts
+export default class UsersController extends PsychicController {
+  @OpenAPI({
+    requestBody: {
+      type: 'object',
+      required: ['firstName', 'lastName'],
+      properties: {
+        firstName: {
+          type: 'string',
+          description: "The user's first name",
+        },
+        lastName: {
+          type: 'string',
+          description: "The user's first name",
+        },
+      },
+    },
+  })
+  public async create() {
+    await User.create(this.paramsFor(User, { only: ['firstName', 'lastName'] }))
+    this.noContent()
+  }
+}
+```
+
+## headers
+
+Provide the `headers` option to specify which headers are expected for this endpoint.
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI({
+    headers: {
+      Authorization: { description: 'Bearer token', required: true },
+    },
+  })
+  public async helloWorld() {
+    this.noContent()
+  }
+}
+```
+
+## responses
+
+Use the `responses` option to specify the payload shape for specific response statuses, like so:
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI({
+    status: 204,
+    responses: {
+      400: {
+        type: 'object',
+        properties: {
+          errors: 'string[]',
+        },
+      },
+    },
+  })
+  public async helloWorld() {
+    if (something) {
+      this.badRequest({ errors: ['error 1', 'error 2'] })
+    }
+
+    this.noContent()
+  }
+}
+```
+
+## query
+
+The `query` option enables you to specify the shape of custom query params for your endpoint. By default, all query params are automatically assumed to be strings, but you can customize their shape if desired, using the `schema` suboption, as shown below
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI({
+    query: {
+      searchTerm: {
+        required: false,
+      },
+      searchTerms: {
+        required: false,
+        schema: {
+          type: 'string[]',
+        },
+      },
+    },
+  })
+  public async helloWorld() {
+    this.noContent()
+  }
+}
+```
+
+## defaultResponse
+
+Use the `defaultResponse` option to specify attributes for the default response, such as description:
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI({
+    defaultResponse: {
+      description: 'my description',
+    },
+  })
+  public async helloWorld() {
+    this.noContent()
+  }
+}
+```
+
+## security
+
+Use the `security` option to provide security entries for openapi. The shape provided here is identical to the shape required by openapi itself, which is an array of objects, where the keys are the names, and the values are arrays of scopes required (or a blank array if there are no scopes).
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI({
+    security: [
+      {
+        bearerToken: ['read', 'write'],
+      },
+      {
+        httpBasicAuth: [],
+      },
+    ],
+  })
+  public async helloWorld() {
+    this.noContent()
+  }
+}
+```
+
+## omitDefaultHeaders
+
+The `omitDefaultHeaders` option enables you to exclude all default-provided headers (which are configured in `conf/app.ts`).
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI({
+    omitDefaultHeaders: true,
+  })
+  public async helloWorld() {
+    this.noContent()
+  }
+}
+```
+
+### omitDefaultResponses
+
+Similar to the omitDefaultHeaders option, the `omitDefaultResponses` option enables you to exclude all default-provided responses (which are also configured in `conf/app.ts`).
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI({
+    omitDefaultResponses: true,
+  })
+  public async helloWorld() {
+    this.noContent()
+  }
+}
+```
+
+### pathParams
+
+```ts
+export default class PostsController extends PsychicController {
+  @OpenAPI({
+    pathParams: {
+      id: {
+        description: 'the id of the post',
+      },
+    },
+  })
+  public async show() {
+    this.ok(
+      await this.currentUser
+        .associationQuery('posts')
+        .findOrFail(this.castParam('id', 'bigint')),
+    )
+  }
+}
+```
