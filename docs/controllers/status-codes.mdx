@@ -6,25 +6,63 @@ import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
 
 # status codes
 
-Psychic comes with many convenience methods shadowing standard http response codes, enabling your code to stay expressive:
+Psychic encourages developers to think in terms of http status codes names, rather than manually setting status codes and rendering json. We provide methods which will automatically apply the given statuses, and will render JSON automatically.
 
 ```ts
 import { PsychicController, Params } from 'psychic'
 
-export default class HowyadoinsController extends PsychicController {
+export default class PostsController extends PsychicController {
   public async create() {
-    ...
+    await this.currentUser.createAssociation('posts', this.paramsFor(Post))
     this.created() // 201
   }
 
   public async index() {
-    ...
-    this.ok(things) // 200
+    const posts = await this.currentUser.associationQuery('posts')
+    this.ok(posts) // 200
   }
 
   public async update() {
-    ...
+    const post = await this.currentUser
+      .associationQuery('posts')
+      .findOrFail(this.castParam('id', 'uuid'))
+    await post.update(this.paramsFor(Post))
+
     this.noContent() // 204
+  }
+}
+```
+
+Thinking in terms of status codes helps you to write a clearly-defined API, and will produce more consistent, standardized patterns for handling various operations. In addition to providing status codes for handling successes, Psychic also provides methods for handling non-success statuses, like so:
+
+```ts
+export default class PostsController extends PsychicController {
+  public async show() {
+    const post = await this.currentUser
+      .associationQuery('posts')
+      .find(this.castParam('id', 'uuid'))
+    if (!post) this.notFound() // throws a 404
+    this.ok(post)
+  }
+}
+```
+
+Note that in the example above, there is no return statement encapsulating the `this.notFound` call. This may seem like a mistake, since this request looks like it would render both a 404 _and_ a 200 response. However, calling the `notFound` method carefully raises an exception, which is then rescued within the request thread and rendered with the appropriate status. This is done so that any code after the `notFound` will not be run, guaranteeing that you don't mistakenly double-render your responses, which is a common problem in express applications.
+
+## Implici status codes
+
+In addition to explicit status-code messages, Psychic provides reactive mechanisms to encapsulate Dream functionality, providing default status codes out the gate for you, such as in `castParam` and `findOrFail`:
+
+```ts
+export default class PostsController extends PsychicController {
+  public async show() {
+    // if the id is not present, or is not a valid uuid, this throws an error which Psychic converts to a 400
+    const id = this.castParam('id', 'uuid')
+
+    // if a post is not found by that id for this user, this throws an error which Psychic converts to a 404
+    const post = await this.currentUser.associationQuery('posts').findOrFail(id)
+
+    this.ok(post)
   }
 }
 ```
