@@ -9,17 +9,53 @@ import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
 To generate a controller, use the provided cli tool as demonstrated below:
 
 ```bash
-yarn psy g:controller howyadoins create update destroy
+yarn psy g:controller Posts create update destroy
+generating controller: src/app/controllers/PostsController.ts
+generating controller spec: spec/unit/controllers/PostsController.spec.ts
 ```
 
-This will spit out the followig:
+The controller produced will automatically have the methods specified provided for you, with `OpenAPI` decorators automatically registered on your methods.
 
 ```ts
-import { PsychicController, Params } from 'psychic'
+import { OpenAPI } from '@rvohealth/psychic'
+import AuthedController from './AuthedController'
 
-export default class HowyadoinsController extends PsychicController {
+const openApiTags = ['posts']
+
+export default class PostsController extends AuthedController {
+  @OpenAPI({
+    response: {
+      200: {
+        tags: openApiTags,
+        description: '<tbd>',
+        // add openapi definition for your custom endpoint
+      },
+    },
+  })
   public async create() {}
+
+  @OpenAPI({
+    status: 204,
+    tags: openApiTags,
+    description: '<tbd>',
+  })
   public async update() {}
+
+  @OpenAPI({
+    status: 204,
+    tags: openApiTags,
+    description: '<tbd>',
+  })
   public async destroy() {}
 }
+```
+
+Additionally, a spec file will be generated, which is empty by default, but ready for you to add tests to.
+
+```ts
+// import { describe as context } from '@jest/globals'
+
+describe('PostsController', () => {
+  it.todo('add a test here to get started building PostsController')
+})
 ```
