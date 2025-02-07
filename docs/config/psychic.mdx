@@ -25,15 +25,13 @@ The `conf/app.ts` file is the primary configuration entrypoint for Psychic appli
 
 ### set method
 
-The `set` method is the primary method used to configure a Psychic application. The first argument to the `set` call is the specific configuration option that you want to adjust, such as `appName`, or `useRedis`. Based on what is provided to the first argument, careful type helpers will guide you through specifying the second argument, which will be different based on what was provided to the first argument.
+The `set` method is the primary method used to configure a Psychic application. The first argument to the `set` call is the specific configuration option that you want to adjust, such as `appName`, or `apiOnly`. Based on what is provided to the first argument, careful type helpers will guide you through specifying the second argument, which will be different based on what was provided to the first argument.
 
 Below is a brief example of some of the settings that can be adjusted, while each option will be carefully illustrated in the subsequent sections of this guide.
 
 ```ts
 export default (psy: Psyconf) => {
   psy.set('appName', 'howyadoin')
-  psy.set('useWs', true)
-  psy.set('useRedis', true)
   psy.set('apiOnly', false)
   psy.set('encryption', {
     cookies: {
@@ -58,33 +56,6 @@ This configuration informs Psychic what your app's name is, which is primarily u
 ```ts
 export default (psy: Psyconf) => {
   psy.set('appName', 'howyadoin')
-  ...
-}
-```
-
-### useWs
-
-The `useWs` configuration option informs Psychic whether or not you would like to utilize the built-in socket.io integration. If your app is needing websockets, we highly recommend utilizing this functionality, as well as turning on `useRedis`, since they work together to provide a scalable, distributed websocket system that is otherwise fairly hard to build out on your own.
-
-```ts
-export default (psy: Psyconf) => {
-  psy.set('useWs', true)
-  psy.set('useRedis', true)
-  ...
-}
-```
-
-### useRedis
-
-The `useRedis` configuration option informs Psychic whether or not you would like to utilize the built-in redis integration. The redis integration is useful for 3 things in your Psychic application:
-
-1. It supports the built-in socket.io integration (activated by setting `useWs` to `true`). With redis enabled, Psychic is able to supercharge your socket.io integration with redis's pub-sub functionality, which enables you to always be able to broadcast to a user, no matter which server they are currently connected to within your system. This essentially takes care of your scaling needs with websockets automatically, and is highly recommended if you plan to enable websockets within your application. For more information on socket.io and redis integration, see [this article from socket.io](https://socket.io/docs/v4/redis-adapter).
-
-2. It supports background jobs, a powerful feature provided out of the box by Psychic that enables your app to easily run jobs in the background. This feature is powered by [bullmq](https://docs.bullmq.io), a powerful node-based queing system that enables you to offload intensive work to background workers, which is useful to prevent your webservers from taking on intensive jobs, since they need to be availble to respond to new web traffic. We recommend turning this on, since it is highly useful for building scalable web applications.
-
-```ts
-export default (psy: Psyconf) => {
-  psy.set('useRedis', true)
   ...
 }
 ```
@@ -476,7 +447,6 @@ export default (psy: PsychicConfig) => {
   // run a callback after the config is loaded
   psy.on('load', async () => {
     // uncomment to initialize background jobs
-    // (this should only be done if useRedis is true)
     await background.connect()
   })
 
