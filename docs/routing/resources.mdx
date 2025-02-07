@@ -6,17 +6,27 @@ import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
 
 # resources
 
-You can also use resourceful routing as shorthand to quickly model standard http routes for one of your underlying models, like so:
+Psychic provides resourceful routing to encourage devs to think about their app in terms of resources. While the needs of an application will by highly diverse from app to app, they can all be boiled down to a collection of resources which will ultimately fill their databases and represent their user's state within the context of their application.
+
+It is fundamentally essential to think this way, since you are already being forced to do it when you separate out your application's needs into a collection of tables. The idea here is to extend these resourceful representations of your data up into the routing layer as well.
+
+For example, if you are making an application that allows users to sign up and create a blog, you may need a users table, a blogs table, a posts table, and a comments table. It would be nice if your application could cleanly reflect some of these resources:
 
 <RightSidebarItem>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-GET     /users      Users#index
-POST    /users      Users#create
-GET     /users/:id  Users#show
-PUT     /users/:id  Users#update
-PATCH   /users/:id  Users#update
-DELETE  /users/:id  Users#destroy
+GET     /blogs                          Blogs#index
+POST    /blogs                          Blogs#create
+GET     /blogs/:id                      Blogs#show
+PUT     /blogs/:id                      Blogs#update
+PATCH   /blogs/:id                      Blogs#update
+DELETE  /blogs/:id                      Blogs#destroy
+GET     /blogs/:id/posts                Blogs/Posts#index
+POST    /blogs/:id/posts                Blogs/Posts#create
+GET     /blogs/:blogId/posts/:id        Blogs/Posts#show
+PUT     /blogs/:blogId/posts/:id        Blogs/Posts#update
+PATCH   /blogs/:blogId/posts/:id        Blogs/Posts#update
+DELETE  /blogs/:blogId/posts/:id        Blogs/Posts#destroy
 `}
   </pre>
 </RightSidebarItem>
@@ -25,11 +35,13 @@ DELETE  /users/:id  Users#destroy
 import { PsychicRouter } from 'psychic'
 
 export default (r: PsychicRouter) => {
-  r.resources('users')
+  r.resources('blogs', (r) => {
+    r.resources('posts')
+  })
 }
 ```
 
-You can use resourceful routes, but restrict the routes to only a collection, like so:
+You can use resourceful routes, but restrict the routes to only a collection. This is dead-useful, since often you are building an application which does express _some_ resourceful routing, but does not need certain routes. For example, you may have no need for the destroy or update methods. Below is an example of resourceful route limiting:
 
 <RightSidebarItem>
   <pre style={{ backgroundColor: 'transparent' }}>
