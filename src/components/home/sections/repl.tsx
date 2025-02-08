@@ -5,7 +5,7 @@ export default function Repl() {
   return (
     <div className="app-repl app-section">
       <h2>
-        <Link to="/docs/cli/repl">Repl</Link>
+        <Link to="/docs/utils/cli/repl">Repl</Link>
       </h2>
 
       <div className="main-text">

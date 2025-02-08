@@ -5,7 +5,7 @@ export default function CLI() {
   return (
     <div className="app-cli app-section">
       <h2>
-        <Link to="/docs/cli/overview">CLI</Link>
+        <Link to="/docs/utils/cli/overview">CLI</Link>
       </h2>
 
       <div className="main-text">
@@ -29,7 +29,7 @@ export default function CLI() {
         </div>
 
         <nav>
-          <Link to="/docs/cli/migrations">
+          <Link to="/docs/utils/cli/migrations">
             See our migration guides &gt;&gt;&gt;
           </Link>
         </nav>
@@ -48,7 +48,7 @@ export default function CLI() {
         </div>
 
         <nav>
-          <Link to="/docs/cli/generators">
+          <Link to="/docs/utils/cli/generators">
             See our generator guides &gt;&gt;&gt;
           </Link>
         </nav>
@@ -67,7 +67,7 @@ export default function CLI() {
         </div>
 
         <nav>
-          <Link to="/docs/cli/spec-runners">
+          <Link to="/docs/utils/cli/spec-runners">
             See our spec runner guides &gt;&gt;&gt;
           </Link>
         </nav>
@@ -85,7 +85,7 @@ export default function CLI() {
         </div>
 
         <nav>
-          <Link to="/docs/cli/dev-server">
+          <Link to="/docs/utils/cli/dev-server">
             See our dev-server guides &gt;&gt;&gt;
           </Link>
         </nav>
