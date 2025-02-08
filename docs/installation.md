@@ -19,7 +19,7 @@ psy new myapp
 
 This will prompt you to ask a few questions, and then provision a new psychic app for you in the "myapp" folder of your current directory. All of your dependencies will be automatically installed (for both your server and client apps, if you are generating with a client) and committed to a new git repo.
 
-For more information, see [the new app guides](/docs/getting-started/new-app).
+For more information, see [the new app guides](/docs/tutorials/new-app).
 
 ## local dependencies
 

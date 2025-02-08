@@ -28,7 +28,7 @@ yarn psy sync:client
 
 This will sync client files over to your frontend client for you, allowing you to make use of them in your app without much effort.
 
-If you are following along with the [authentication](/docs/getting-started/authenticating) tutorial, then when you generated your `User` model, it will have also generated a client api file at `client/src/api/users.ts`. This api module is meant to carry all of the routes related to the user, but it did not guess correctly at what methods would be needed (since users are always a bit of an odd case in resource paradigms). Let's open that file and change it to the routes that exist in our system:
+If you are following along with the [authentication](/docs/tutorials/authenticating) tutorial, then when you generated your `User` model, it will have also generated a client api file at `client/src/api/users.ts`. This api module is meant to carry all of the routes related to the user, but it did not guess correctly at what methods would be needed (since users are always a bit of an odd case in resource paradigms). Let's open that file and change it to the routes that exist in our system:
 
 ```ts
 // client/src/api/users.ts

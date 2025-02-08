@@ -39,7 +39,8 @@ You may be familiar with the concepts, and want to skip ahead to [installation](
 - [models](/docs/models/overview)
 - [serializers](/docs/serializers/overview)
 - [specs](/docs/specs/overview)
-- [cli](/docs/cli/overview)
+- [cli](/docs/utils/cli/overview)
+
   :::
 
 ## What is Dream?
@@ -166,7 +167,7 @@ export default class ApiV1IngredientsController extends AuthedController {
 
   public async update() {
     const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint')
+      this.castParam('id', 'bigint'),
     )
     await ingredient.update(this.paramsFor(Ingredient))
     this.noContent()
@@ -174,7 +175,7 @@ export default class ApiV1IngredientsController extends AuthedController {
 
   public async destroy() {
     const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint')
+      this.castParam('id', 'bigint'),
     )
     await ingredient.destroy()
     this.noContent()
@@ -284,7 +285,7 @@ describe('ApiV1UsersController', () => {
       return await request.session(
         '/api/v1/signin',
         { email: 'how@yadoin', password: 'password' },
-        204
+        204,
       )
     }
 
@@ -340,7 +341,7 @@ describe('visitor visits the signup page', () => {
 
 :::tip
 Wondering how to get started? A good place to go next is our [installation](/docs/installation) guide.
-Not quite ready for a deep dive just yet? You can visit our [authenticating](/docs/getting-started/authenticating) guide, which will give you an idea of what it's like to build in this framework.
+Not quite ready for a deep dive just yet? You can visit our [authenticating](/docs/tutorials/authenticating) guide, which will give you an idea of what it's like to build in this framework.
 
 Otherwise, you may want to read up more on some of the major features provided by Dream and Psychic:
 
@@ -349,5 +350,6 @@ Otherwise, you may want to read up more on some of the major features provided b
 - [models](/docs/models/overview)
 - [serializers](/docs/serializers/overview)
 - [specs](/docs/specs/overview)
-- [cli](/docs/cli/overview)
+- [cli](/docs/utils/cli/overview)
+
   :::
