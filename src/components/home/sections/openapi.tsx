@@ -24,8 +24,8 @@ export default function OpenAPI() {
       </div>
 
       <Banner
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
+        gifUrl="/img/openapi-demo.gif"
+        gifPreviewUrl="/img/openapi-demo-preview.png"
       >
         <div>
           <p className="subtext">
@@ -39,24 +39,7 @@ export default function OpenAPI() {
           <Link to="/docs/openapi/controllers">
             See our OpenAPI controller guides &gt;&gt;&gt;
           </Link>
-        </nav>
-      </Banner>
-
-      <Banner
-        title="serializers"
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
-        orientation="right"
-      >
-        <div>
-          <p className="subtext">
-            Define attributes on your serializer, either explicitly defining the
-            attribute, or else pointing to a model to inherit the types from the
-            DB schema for that column.
-          </p>
-        </div>
-
-        <nav>
+          <br />
           <Link to="/docs/openapi/serializers">
             See our OpenAPI serializer guides &gt;&gt;&gt;
           </Link>

@@ -19,8 +19,8 @@ export default function UnitTesting() {
       </div>
 
       <Banner
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
+        gifUrl="/img/unit-specs-demo.gif"
+        gifPreviewUrl="/img/unit-specs-demo-preview.png"
       >
         <p className="subtext">
           Take advantage of custom jest assertions, designed to help you easily
@@ -34,8 +34,8 @@ export default function UnitTesting() {
 
       <Banner
         title="specRequest"
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
+        gifUrl="/img/unit-specs-spec-request-demo.gif"
+        gifPreviewUrl="/img/unit-specs-spec-request-demo-preview.png"
         orientation="right"
       >
         <p className="subtext">

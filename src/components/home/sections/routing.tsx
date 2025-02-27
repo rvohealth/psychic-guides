@@ -20,8 +20,8 @@ export default function Routing() {
       </div>
 
       <Banner
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
+        gifUrl="/img/routing-crud-demo.gif"
+        gifPreviewUrl="/img/routing-crud-demo-preview.png"
         orientation="right"
       >
         <p className="subtext">express CRUD routes programatically</p>
@@ -44,24 +44,6 @@ export default function Routing() {
         <nav>
           <Link to="/docs/routing/namespacing">
             See our namespacing guides &gt;&gt;&gt;
-          </Link>
-        </nav>
-      </Banner>
-
-      <Banner
-        title="resources"
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
-        orientation="right"
-      >
-        <p className="subtext">
-          Define resourceful routes easily using standard patterns for
-          expressing CRUD operations against one of your models.
-        </p>
-
-        <nav>
-          <Link to="/docs/routing/resources">
-            See our resourceful routing guides &gt;&gt;&gt;
           </Link>
         </nav>
       </Banner>

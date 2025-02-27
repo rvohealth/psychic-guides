@@ -17,8 +17,8 @@ export default function FeatureTesting() {
       </div>
 
       <Banner
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
+        gifUrl="/img/fspecs-demo.gif"
+        gifPreviewUrl="/img/fspecs-demo-preview.png"
       >
         <div>
           <p className="subtext">

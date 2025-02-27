@@ -22,8 +22,8 @@ export default function ORM() {
       </div>
 
       <Banner
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
+        gifUrl="/img/query-demo.gif"
+        gifPreviewUrl="/img/query-demo-preview.png"
       >
         <p className="subtext">
           Leverage the query building API within Dream to easily construct
@@ -41,8 +41,8 @@ export default function ORM() {
 
       <Banner
         title="saving records"
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
+        gifUrl="/img/saving-records-demo.gif"
+        gifPreviewUrl="/img/saving-records-demo-preview.png"
         orientation="right"
       >
         <p className="subtext">
@@ -58,8 +58,8 @@ export default function ORM() {
 
       <Banner
         title="associations"
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
+        gifUrl="/img/associations-demo.gif"
+        gifPreviewUrl="/img/associations-demo-preview.png"
       >
         <p className="subtext">
           Take advantage of powerful association mechanisms to clarify your
@@ -75,8 +75,8 @@ export default function ORM() {
 
       <Banner
         title="validations"
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
+        gifUrl="/img/validations-demo.gif"
+        gifPreviewUrl="/img/validations-demo-preview.png"
         orientation="right"
       >
         <p className="subtext">
@@ -93,8 +93,8 @@ export default function ORM() {
 
       <Banner
         title="encryption"
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
+        gifUrl="/img/encrypted-demo.gif"
+        gifPreviewUrl="/img/encrypted-demo-preview.png"
       >
         <p className="subtext">
           Automatically encrypt columns on their way into the database, and
