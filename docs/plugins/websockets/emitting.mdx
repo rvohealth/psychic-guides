@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 # Emitting
@@ -18,23 +18,17 @@ For your convenience, we recommend that you set up a simple helper function in y
 ```ts
 // app/helpers/ws.ts
 
-import { Ws } from '@rvohealth/psychic'
+import { Ws } from '@rvohealth/psychic-websockets'
 
-let _ws: Ws
+export const WS_ROUTES = ['/ops/connection-success'] as const
 
-export default function appWs() {
-  if (_ws) return _ws
+const ws = new Ws(WS_ROUTES)
 
-  _ws = new Ws(wsRoutes)
-
-  return _ws
-}
-
-export const wsRoutes = ['/users/ping', 'users/alert', 'users/info'] as const
+export default ws
 ```
 
 Once this has been established, you can now emit to your users with any of the provided routes:
 
 ```ts
-await appWs().emit(user, '/users/ping', { hello: 'world' })
+await ws.emit(user, '/users/ping', { hello: 'world' })
 ```

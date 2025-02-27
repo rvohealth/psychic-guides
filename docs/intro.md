@@ -4,7 +4,17 @@ sidebar_position: 1
 
 # Welcome
 
-Psychic is a web framework built on [Express](https://expressjs.com/). Dream is an ORM built on the [Kysely query builder](https://kysely-org.github.io/kysely-apidoc/). They are inspired by the elegance, expressiveness, and convention over configuration philosphy of [Ruby on Rails](https://rubyonrails.org/) and [ActiveRecord](https://guides.rubyonrails.org/active_record_basics.html), respectively, but with the power of Typescript.
+In your grand search to find the perfect typescript web framework, we are humbled that you have stumbled upon us. We are new to the game, having just officially released in March of 2025, but we believe our offering to you was worth the wait.
+
+## Philosophy
+
+There are many excellent tools for providing the bits and pieces of a web framework that you might need for your application. In the nodejs community, everything is very plug-and-play, allowing you to pick and choose tiny tools that are responsible for tiny jobs, and they do those jobs well, and if you don't need them, then you just don't use them.
+
+Though it tends to be quite a nerdy way to approach your software, we love this philosophy, and in Psychic and Dream, this philosophy is very much alive and well. However, we also attempt to provide some staple pieces to the puzzle, as well as the glue to bind them together, which will really make your experience in typescript more enjoyable, since adding types to the puzzle can put some strain on the plug-and-play ideology.
+
+Psychic is a web framework built on [Express](https://expressjs.com/), which is the backbone of the nodejs web community. Anything you can do with express, and any plugin you can use with express, should be compatible with Psychic, allowing you to extend it to whatever lengths you desire. Dream is an ORM built on the [Kysely query builder](https://kysely-org.github.io/kysely-apidoc/). Both Dream and Psychic are inspired by the elegance, expressiveness, and convention over configuration philosphy of [Ruby on Rails](https://rubyonrails.org/) and [ActiveRecord](https://guides.rubyonrails.org/active_record_basics.html), respectively, but with the power of Typescript types to add pure bliss to your dev experience.
+
+### Keeping DRY
 
 Don't Repeat Yourself (DRY), is a guiding philosophy of Dream and Psychic, revealing itself in:
 
@@ -103,10 +113,8 @@ class Post extends ApplicationModel {
 
 const post = await Post.firstOrFail()
 await post
-  .joins('comments', { body: ops.ilike('%oops%') }, 'replies')
-  .distinct('body')
-  .order('position')
-  .preload('comments', 'replies')
+  .innerJoin('comments as c', { on: { body: ops.ilike('%oops%') } })
+  .where({ 'c.authorName': 'chalupa gooding jr' })
   .all()
 // [Post{ body: 'oops' }, Post{ body: 'oops, I did it again' }]
 ```

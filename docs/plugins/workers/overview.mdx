@@ -1,5 +1,22 @@
 ---
 sidebar_position: 0
+title: overview
 ---
 
-# Overview
+# Workers - overview
+
+A web application is like an ecosystem, with many different players interacting and responding to eachother's behavior. Much of this is done in the form of api requests being triggered from clients to your backend application servers, but some things are not. For example, you may find yourself needing a piece of code that runs every hour of every day, or something that just runs on the first monday of each 3rd month.
+
+Additionally, it is important to keep your web servers fluid. You don't want to expose any endpoints that respond slowly, because, while node concurrency is helpful, you don't want to lean on it to save you from slow endpoint responses, since this makes you vulnerable to DDoS.
+
+to alleviate the pressure on your web application server, you can offload costly or process-intensive services to background processes, so that your web server can continue to be reliable and performant. Additionally, you can use cron-like features within Psychic to schedule your jobs to run at specific times, such as the third tuesday of the month at noon UTC.
+
+:::tip
+
+- To learn how to install Psychic Workers, see our [installation](/docs/plugins/workers/installation) guide
+- To learn how to configure Psychic Workers, see our [config](/docs/plugins/workers/config) guide
+- To learn how to use background services, see our [services](/docs/plugins/workers/services) guide
+- To learn how to use backgrounding functions within models, see our [models](/docs/plugins/workers/models) guide
+- To learn how to schedule your services to run at specific times, see our [scheduled](/docs/plugins/workers/scheduled) guide
+
+  :::

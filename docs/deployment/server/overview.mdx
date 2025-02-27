@@ -1,0 +1,32 @@
+---
+sidebar_position: 0
+title: overview
+---
+
+Every web application has different deployment needs, so planning for everyone is quite a meticulous task. As an overview, wherever you decide to deploy to, you will need the following, at minimum:
+
+- a postgres database
+- a server instance with a modern nodejs version running on it
+- a load balancer
+- a way to provision and deploy secrets into your environment securely.
+
+If you are using websockets, you will also need:
+
+- a redis instance
+
+And if you are using background workers, you will additionally also need:
+
+- a redis instance
+- worker instances with a modern nodejs version
+
+Additionally, if you would like a console to be able to interface with your application, you will need:
+
+- a console instance running with a modern nodejs version
+
+Not all of these things are necessarily the responsibility of these guides to explain, so these guides will instead focus narrowly on how to provision instances in a given environment, and how to launch respective processes, but in general, if you just follow tutorials for setting up an express server with postgres, it will get you most of the way there.
+
+:::tip
+
+- See our [aws](/docs/deployment/server/aws) guides to learn how to provision your application for aws.
+
+  :::

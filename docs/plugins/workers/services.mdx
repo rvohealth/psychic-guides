@@ -1,5 +1,32 @@
 ---
 sidebar_position: 2
+title: services
 ---
 
-# Services
+# ApplicationBackgroundedService
+
+Within any class extending your `ApplicationBackgroundedService` class, you will find both static and instance `background` methods. These methods are used to execute underlying methods on your model in the background. For instance, let's say you have a service that syncs your user data to a service like intercom, twilio, salesforce, helpdesk, etc...
+
+```ts
+class IntercomSync {
+  public static async syncUser(id: IdType) {
+    // ...sync user to intercom
+  }
+}
+```
+
+You can easily make this a backgroundable service. Simply extend `ApplicationBackgroundedService`, and now you can background:
+
+```ts
+class IntercomSync extends ApplicationBackgroundedService {
+  public static async syncUser(id: string) {
+    await this.background('_syncUser', id)
+  }
+
+  public static async _syncUser(id: IdType) {
+    // ...sync user to intercom
+  }
+}
+```
+
+Now, from anywhere in your app you can safely call `syncUser` without tying up resources on the api request!

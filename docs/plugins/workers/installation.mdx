@@ -1,0 +1,104 @@
+---
+sidebar_position: 1
+title: installation
+---
+
+# Workers - installation
+
+There are two ways to install the `psychic-workers` package. The first is by selecting `yes` when prompted during the initial psychic app provisioning stage. If you select yes, the package will be automatically installed, and your app bootstrapped to use workers automatically.
+
+However, if this is not the case for you and you are looking to install websockets after the fact, you can follow these steps:
+
+1. Install the package.
+
+```bash
+yarn add @rvohealth/psychic-workers
+```
+
+2. Add the missing configuration file to `src/conf/workers.ts`:
+
+```ts
+import os from 'os'
+import { PsychicApplicationWorkers } from '@rvohealth/psychic-workers'
+import Redis, { Cluster } from 'ioredis'
+import AppEnv from './AppEnv'
+
+export default (workersApp: PsychicApplicationWorkers) => {
+  workersApp.set('background', {
+    defaultWorkstream: {
+      // https://docs.bullmq.io/guide/parallelism-and-concurrency
+      workerCount: os.cpus().length,
+      concurrency: 100,
+    },
+
+    defaultQueueConnection: AppEnv.isProduction
+      ? new Cluster(
+          [
+            {
+              host: AppEnv.string('BG_JOBS_REDIS_HOST'),
+              port: AppEnv.integer('BG_JOBS_REDIS_PORT'),
+            },
+          ],
+          {
+            slotsRefreshTimeout: 5000,
+            dnsLookup: (address, callback) => callback(null, address),
+            redisOptions: {
+              username: AppEnv.string('BG_JOBS_REDIS_USERNAME'),
+              password: AppEnv.string('BG_JOBS_REDIS_PASSWORD'),
+              tls: AppEnv.isProduction ? {} : undefined,
+            },
+            enableOfflineQueue: false,
+          },
+        )
+      : new Redis({
+          host: process.env.BACKGROUND_JOBS_REDIS_HOST || 'localhost',
+          port: parseInt(process.env.BACKGROUND_JOBS_REDIS_PORT || '6379', 10),
+          username: process.env.BACKGROUND_JOBS_REDIS_USERNAME,
+          password: process.env.BACKGROUND_JOBS_REDIS_PASSWORD,
+          tls: AppEnv.isProduction ? {} : undefined,
+          enableOfflineQueue: false,
+        }),
+
+    defaultWorkerConnection: !process.env.WORKER_SERVICE
+      ? undefined
+      : AppEnv.isProduction
+        ? new Cluster(
+            [
+              {
+                host: AppEnv.string('BG_JOBS_REDIS_HOST'),
+                port: AppEnv.integer('BG_JOBS_REDIS_PORT'),
+              },
+            ],
+            {
+              slotsRefreshTimeout: 5000,
+              dnsLookup: (address, callback) => callback(null, address),
+              redisOptions: {
+                username: AppEnv.string('BG_JOBS_REDIS_USERNAME'),
+                password: AppEnv.string('BG_JOBS_REDIS_PASSWORD'),
+                tls: AppEnv.isProduction ? {} : undefined,
+                maxRetriesPerRequest: null,
+              },
+            },
+          )
+        : new Redis({
+            host: process.env.BACKGROUND_JOBS_REDIS_HOST || 'localhost',
+            port: parseInt(
+              process.env.BACKGROUND_JOBS_REDIS_PORT || '6379',
+              10,
+            ),
+            username: process.env.BACKGROUND_JOBS_REDIS_USERNAME,
+            password: process.env.BACKGROUND_JOBS_REDIS_PASSWORD,
+            tls: AppEnv.isProduction ? {} : undefined,
+            maxRetriesPerRequest: null,
+          }),
+  })
+
+  // ******
+  // HOOKS:
+  // ******
+
+  workersApp.on('workers:shutdown', () => {
+    // add worker shutdown sequence here
+  })
+}
+```

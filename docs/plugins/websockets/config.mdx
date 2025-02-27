@@ -1,0 +1,147 @@
+---
+sidebar_position: 1
+---
+
+# Config
+
+## Installation
+
+There are two ways to install the `psychic-websockets` package. The first is by selecting `yes` when prompted during the initial psychic app provisioning stage. If you select yes, the package will be automatically installed, and your app bootstrapped to use websockets automatically.
+
+However, if this is not the case for you and you are looking to install websockets after the fact, you can follow these steps:
+
+1. Install the package.
+
+```bash
+yarn add @rvohealth/psychic-websockets
+```
+
+2. Add the missing configuration file to `src/conf/websockets.ts`:
+
+```ts
+import { Encrypt } from '@rvohealth/dream'
+import { PsychicApplicationWebsockets, Ws } from '@rvohealth/psychic-websockets'
+import Redis from 'ioredis'
+
+export default (wsApp: PsychicApplicationWebsockets) => {
+  wsApp.set('websockets', {
+    connection: new Redis({
+      username: process.env.REDIS_USER,
+      password: process.env.REDIS_PASSWORD,
+      host: process.env.REDIS_HOST,
+      port: process.env.REDIS_PORT ? Number(process.env.REDIS_PORT) : undefined,
+      tls: process.env.REDIS_USE_SSL === '1' ? {} : undefined,
+      maxRetriesPerRequest: null,
+    }),
+  })
+
+  wsApp.on('ws:start', (io) => {
+    // do something on start
+  })
+
+  wsApp.on('ws:connect', () => {
+    // do something once the initial socket.io connection is established.
+    // this would be similar to calling io.on('connect', cb), which
+    // you can also do.
+  })
+}
+```
+
+3. Update your `initializePsychicApplication.ts` file to include the following:
+
+```ts
+import {
+  PsychicApplication,
+  PsychicApplicationInitOptions,
+} from '@rvohealth/psychic'
+import { PsychicApplicationWebsockets } from '@rvohealth/psychic-websockets'
+import psychicConf from '../../conf/app'
+import dreamConf from '../../conf/dream'
+import websocketsConf from '../../conf/websockets'
+
+export default async function initializePsychicApplication(
+  opts: PsychicApplicationInitOptions = {},
+) {
+  const psychicApp = await PsychicApplication.init(psychicConf, dreamConf, opts)
+  await PsychicApplicationWebsockets.init(psychicApp, websocketsConf)
+  // ...
+  return psychicApp
+}
+```
+
+4. We recommend you include a singleton within your application to simplify your websockets integration:
+
+```ts
+import { Ws } from '@rvohealth/psychic-websockets'
+
+export const WS_ROUTES = ['/ops/connection-success'] as const
+
+const ws = new Ws(WS_ROUTES)
+
+export default ws
+```
+
+## Configuration
+
+The configuration for the `psychic-websockets` package is driven by the `conf/websockets.ts` file. This file contains both basic bootstrapping information for redis, as well as hooks to tap into to initialize socket.io and establish websocket listeners for your backend application.
+
+### Redis
+
+Redis, which is used to emit accross distributed websocket systems, can be configured using the `#set` method provided by `PsychicApplicationWebsockets`, like so:
+
+```ts
+import { Encrypt } from '@rvohealth/dream'
+import { PsychicApplicationWebsockets, Ws } from '@rvohealth/psychic-websockets'
+import Redis from 'ioredis'
+
+export default (wsApp: PsychicApplicationWebsockets) => {
+  wsApp.set('websockets', {
+    connection: new Redis({
+      username: process.env.REDIS_USER,
+      password: process.env.REDIS_PASSWORD,
+      host: process.env.REDIS_HOST,
+      port: process.env.REDIS_PORT ? Number(process.env.REDIS_PORT) : undefined,
+      tls: process.env.REDIS_USE_SSL === '1' ? {} : undefined,
+      maxRetriesPerRequest: null,
+    }),
+  })
+}
+```
+
+### Hooks
+
+In addition to configuration, psychic-websockets also exposes hooks to tap into during various lifecycle events exposed by the websockets app.
+
+#### ws:start
+
+The `ws:start` event is called whenever the psychic server is started. This allows you to establish socket bindings. Under the hood we are using [socket.io](https://socket.io) to power our websocket bindings, which means you can visit their documentation to understand more about setting up a websockets app within your application.
+
+```ts
+export default (wsApp: PsychicApplicationWebsockets) => {
+  // ...
+  wsApp.on('ws:start', (io) => {
+    // use socket.io to establish namespaced channels
+    // for your app to communicate on
+    io.of('/').on('connection', async (socket) => {
+      // this is an example of how you might be handling
+      // socket.io authentication. It would require extra
+      // setup on both your frontend and backend clients,
+      // but would enable you to emit to any user from anywhere
+      // within the application.
+      const token = socket.handshake.auth.token as string
+      const userId = Encrypt.decrypt<string>(token, {
+        algorithm: 'aes-256-gcm',
+        key: process.env.APP_ENCRYPTION_KEY!,
+      })!
+      const user = await User.find(userId)
+
+      if (user) {
+        // this automatically fires the /ops/connection-success message
+        await Ws.register(socket, user.id)
+      }
+
+      // establish socket routes using socket.on
+    })
+  })
+}
+```

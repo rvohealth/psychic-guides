@@ -29,7 +29,7 @@ module.exports = {
 }
 ```
 
-We also need to configure the jest-playwrite package, which we can do by providing a second file, `spec/feature/jest-playwrite.config.js`. This file is used to launch both your backend _and_ your frontend in conjunction. Once both instances are up, it will begin running your feature specs, which can drive a headless browser through your frontend, hitting your backend for complete end-to-end testing.
+We also need to configure the jest-playwrite package, which we can do by providing a second file, `spec/feature/jest-playwrite.config.js`. This file is used to launch your frontend client so that we can send a headless browser through it. Once the front end port is responding at port 3000, jest-playwright will begin running your feature specs, which can drive a headless browser through your frontend, hitting your backend for complete end-to-end testing.
 
 ```js
 const { defineConfig, devices } = require('@playwright/test')
@@ -57,23 +57,43 @@ module.exports = {
         verbose: process.env.DEBUG === '1',
       },
     },
-    {
-      command:
-        'FEATURE_SPEC_RUN=1 DEV_SERVER_PORT=7778 npx ts-node --transpile-only ./src/spec-server.ts',
-      host: '127.0.0.1',
-      launchTimeout:
-        (process.env.LAUNCH_TIMEOUT_SECONDS &&
-          parseInt(process.env.LAUNCH_TIMEOUT_SECONDS) * 1000) ||
-        60000,
-      debug: process.env.DEBUG === '1',
-      port: 7778,
-      usedPortAction: 'kill',
-      waitOnScheme: {
-        verbose: process.env.DEBUG === '1',
-      },
-    },
   ],
 }
+```
+
+In addition to the `jest-playwright.config.js` file, your app already comes bootstrapped with the config necessary to get your backend psychic server running in-thread, so that you can continue to use jest to spy on your backend code while running your feature specs.
+
+```ts
+// spec/features/setup/hooks.ts
+
+import { DreamApplication } from '@rvohealth/dream'
+import { PsychicServer } from '@rvohealth/psychic'
+import { truncate } from '@rvohealth/dream-spec-helpers'
+import initializePsychicApplication from '../../../../src/app/helpers/initializePsychicApplication'
+
+let server: PsychicServer
+
+beforeEach(async () => {
+  await initializePsychicApplication()
+
+  server = new PsychicServer()
+  await server.start(parseInt(process.env.DEV_SERVER_PORT || '7778'))
+
+  await truncate(DreamApplication)
+})
+
+afterEach(async () => {
+  await server.stop({ bypassClosingDbConnections: true })
+})
+```
+
+## Running specs
+
+To run feature specs, Psychic automatically provides a script in your package.json file, called `fspec` (short for "feature spec"). You can run it, simply by calling `yarn fspec` from your api directory
+
+```bash
+cd api
+yarn fspec
 ```
 
 ## Custom spec helpers
@@ -122,10 +142,13 @@ Between each spec run, the database will be truncated to ensure a clean slate. S
 ```ts
 // api/spec/features/setup/hooks.ts
 
+import { DreamApplication } from '@rvohealth/dream'
 import { truncate } from '@rvohealth/dream/spec-helpers'
 
+...
+
 beforeEach(async () => {
-  await truncate()
+  await truncate(DreamApplication)
 })
 ```
 
