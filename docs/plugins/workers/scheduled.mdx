@@ -1,5 +1,23 @@
 ---
 sidebar_position: 4
+title: scheduled
 ---
 
-# Scheduled
+# ApplicationScheduledService
+
+In your application, you may find yourself needing to run hourly, weekly, daily jobs, etc... In these contexts, you can leverage your `ApplicationScheduledService` class to schedule using a beautiful, cron-driven api, courtesy of bullmq under the hood.
+
+```ts
+import ApplicationScheduledService from '../ApplicationScheduledService'
+import HourProcessor from './HourProcessor'
+
+export default class ScheduledJobs extends ApplicationScheduledService {
+  public static async scheduleAllJobs() {
+    await this.schedule('0 * * * *', 'processHour')
+  }
+
+  public static async processHour() {
+    await HourProcessor.process(DateTime.now())
+  }
+}
+```

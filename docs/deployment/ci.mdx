@@ -1,0 +1,270 @@
+---
+sidebar_position: 2
+title: ci
+---
+
+# continuous integration
+
+To guarantee the stability of your app, we recommend that you run pr checks using github actions to:
+
+- run build on your app
+- run eslint on your app
+- run build on your client applications
+- run unit specs
+- run feature specs
+
+Here is an example of how to achieve this using github actions:
+
+```yml
+# .github/workflows/pr-checks.yml
+name: PR Checks
+on:
+  - pull_request
+
+env:
+  NODE_ENV: test
+  YARN_CACHE_FOLDER: ~/.yarn-cache
+  PORT: 7778
+  CORS_HOSTS: '["http://localhost:3000"]'
+  DB_USER: myapp
+  DB_NAME: myapp
+  DB_HOST: localhost
+  DB_PASSWORD: postgres
+  DB_PORT: 5432
+  PUPPETEER_SKIP_DOWNLOAD: true
+  CHROME_PATH: /usr/bin/google-chrome
+
+jobs:
+  uspec:
+    name: Unit tests
+    strategy:
+      # uncomment to parallelize
+      # matrix:
+      #   shard: [1, 2, 3, 4, 5]
+      fail-fast: false
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: myapp
+          POSTGRES_DB: myapp
+          POSTGRES_PASSWORD: 'postgres'
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7.0
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    defaults:
+      run:
+        working-directory: ./api
+    env:
+      DREAM_PARALLEL_TESTS: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '23'
+
+      - run: npm install -g corepack
+      - run: corepack enable
+
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.yarn-cache
+          key: ${{ runner.os }}-cache-node-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - if: ${{ steps.cache-node-modules.outputs.cache-hit != 'true' }}
+        name: List the state of node modules
+        continue-on-error: true
+        run: yarn list
+      - run: yarn install --immutable
+      - run: yarn psy db:migrate --skip-sync
+      - run: yarn uspec --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+
+  fspec:
+    name: Feature tests
+    strategy:
+      # uncomment for parallelism
+      # matrix:
+      #   shard: [1, 2, 3, 4, 5]
+      fail-fast: false
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: welloscentral
+          POSTGRES_DB: wellos_central_test
+          POSTGRES_PASSWORD: 'postgres'
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7.0
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    defaults:
+      run:
+        working-directory: ./api
+
+    env:
+      DISABLE_ESLINT_PLUGIN: true
+      ESLINT_NO_DEV_ERRORS: true
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 'Check chrome and chromedriver are installed'
+        run: |
+          google-chrome --version
+          which google-chrome
+          chromedriver --version
+          which chromedriver
+
+      - run: npm install -g corepack
+      - run: corepack enable
+
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.yarn-cache
+          key: ${{ runner.os }}-cache-node-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - if: ${{ steps.cache-node-modules.outputs.cache-hit != 'true' }}
+        name: List the state of node modules
+        continue-on-error: true
+        run: yarn list
+      - run: yarn install --immutable
+
+      - run: yarn install --immutable
+        working-directory: ./client
+
+      - run: mkdir -p /tmp/screenshots
+      - run: APP_ROOT_PATH=$(pwd) yarn psy db:migrate --skip-sync
+      - run: APP_ROOT_PATH=$(pwd) yarn fspec --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+
+      - name: Archive screenshots
+        uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: Feature spec screenshots
+          path: /tmp/screenshots
+
+  lint:
+    name: Linting
+    runs-on: Wellos
+    defaults:
+      run:
+        working-directory: ./api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: npm install -g corepack
+      - run: corepack enable
+
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.yarn-cache
+          key: ${{ runner.os }}-cache-node-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - if: ${{ steps.cache-node-modules.outputs.cache-hit != 'true' }}
+        name: List the state of node modules
+        continue-on-error: true
+        run: yarn list
+
+      - run: yarn install --immutable
+      - run: yarn lint
+
+  check-build:
+    name: Check build
+    runs-on: Wellos
+    defaults:
+      run:
+        working-directory: ./api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: npm install -g corepack
+      - run: corepack enable
+
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.yarn-cache
+          key: ${{ runner.os }}-cache-node-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - if: ${{ steps.cache-node-modules.outputs.cache-hit != 'true' }}
+        name: List the state of node modules
+        continue-on-error: true
+        run: yarn list
+
+      - run: yarn install --immutable
+      - run: yarn build
+
+  check-admin-build:
+    name: Check admin build
+    runs-on: Wellos
+    defaults:
+      run:
+        working-directory: ./client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: npm install -g corepack
+      - run: corepack enable
+
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.yarn-cache
+          key: ${{ runner.os }}-cache-node-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - if: ${{ steps.cache-node-modules.outputs.cache-hit != 'true' }}
+        name: List the state of node modules
+        continue-on-error: true
+        run: yarn list
+
+      - run: yarn install --immutable
+      - run: yarn build
+```

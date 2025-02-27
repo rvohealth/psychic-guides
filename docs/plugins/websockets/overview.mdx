@@ -47,8 +47,6 @@ Once this is done, you are able to emit from anywhere in your application to thi
 
 ```ts
 ws = new Ws(['/users/ping', 'users/alert', 'users/info'] as const)
-await ws.boot()
-
 await ws.emit(user.id, '/users/ping', { hello: 'world' })
 ```
 

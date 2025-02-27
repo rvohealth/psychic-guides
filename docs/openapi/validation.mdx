@@ -1,3 +1,51 @@
 ---
 sidebar_position: 4
+title: validation
 ---
+
+# OpenAPI - Validation
+
+In addition to automatically generating OpenAPI specs for your application, Psychic also utilizes the [express-openapi-validator](https://www.npmjs.com/package/express-openapi-validator) package to provide request and response validation, which can be attenuated to your needs.
+
+```ts
+// conf/app.ts
+export default async (psy: PsychicApplication) => {
+  ...
+
+
+  psy.set('openapi', {
+    // ...
+    validation: {
+      apiSpec: './openapi.json',
+      validateRequests: true,
+      validateSecurity: false,
+      validateResponses: AppEnv.isTest,
+      ignoreUndocumented: true,
+      formats: {
+        'date-time': {
+           type: 'string',
+           validate: (value: DateTime | string) => {
+             return value instanceof DateTime ? value?.isValid : isValidISODateString(value)
+           },
+        },
+        decimal: {
+          type: 'string',
+          validate: (value: string) => /^-?(\d+\.?\d*|\d*\.?\d+)$/.test(value),
+        },
+      },
+
+      // serialize/deserialize
+      serDes: [
+        {
+          format: 'date-time',
+          deserialize: s => DateTime.fromISO(s),
+          serialize: (o: DateTime | string) => (o instanceof DateTime ? o.toISO() : o)!,
+        },
+      ],
+      ignorePaths: ignorePaths.length ? new RegExp(ignorePaths.join('|')) : undefined,
+    },
+  })
+}
+```
+
+Though it is tempting to document all the possibilities here, their API may shift over time, so be sure to check out [their documentation](https://www.npmjs.com/package/express-openapi-validator) directly.

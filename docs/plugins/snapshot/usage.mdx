@@ -1,5 +1,41 @@
 ---
 sidebar_position: 2
+title: usage
 ---
 
 # Usage
+
+To use `Snapshotable`, first make sure to install the package
+
+```sh
+yarn add @rvohealth/dream-plugin-json-snapshot
+```
+
+Once done, find the model you want to take snapshots with, and be sure to extend the parent model using the provided mixin:
+
+```ts
+import { Snapshotable } from '@rvohealth/dream-plugin-json-snapshot'
+
+class User extends Snapshotable(ApplicationModel) {
+  ...
+}
+```
+
+Once done, you can take a snapshot of a user like so:
+
+```ts
+const user = await User.firstOrFail()
+const data = await user.takeSnapshot()
+```
+
+## Filtering out unwanted associations
+
+In some cases, you want to hide certain associations from snapshots. In these cases, you can use the provided `HideFromSnapshotable` decorator, like so:
+
+```ts
+class User extends Snapshotable(ApplicationModel) {
+  @HideFromSnapshotable()
+  @User.HasMany(Pet)
+  public pets: Pet[]
+}
+```

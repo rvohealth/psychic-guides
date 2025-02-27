@@ -1,0 +1,393 @@
+---
+sidebar_position: 1
+title: aws
+---
+
+To deploy your application to aws, we will be leveraging aws fargate to provision our web server, worker, and console instances. We will be using a single Dockerfile to provision all of them, but will run different initialization commands depending on if the instance provisioned is a `worker`, `console`, or `web` instance. For now, this guide assumes you have the following already set up:
+
+- an ecr instance for your worker
+- an ecr instance for your console
+- an ecr instance for your web
+
+In the future, I may write a guide on provisioning this with the cdk, but for now I will leave it at that.
+
+## Dockerfile
+
+At the root of your api application, add a Dockerfile with the following:
+
+```bash
+ARG NODE_IMAGE=node:22-alpine
+
+FROM $NODE_IMAGE AS dev
+USER node
+
+FROM $NODE_IMAGE AS base
+ENV NODE_ENV=production
+ENV DB_USE_SSL=1
+ENV PSYCHIC_LOG_PATH=/dev/shm
+ENV PSYCHIC_SSL_CERT_PATH=/home/node/app/cert/psychic-selfsigned.crt
+ENV PSYCHIC_SSL_KEY_PATH=/home/node/app/cert/psychic-selfsigned.key
+ENV COREPACK_HOME=/home/node/bin
+ENV YARN_VERSION=4.4.1
+ENV APP_NAME=myapp
+RUN apk -U upgrade
+RUN apk add dumb-init
+ARG INSTALL_PG_DUMP_RESTORE
+RUN if [ "$INSTALL_PG_DUMP_RESTORE" = '1' ] ; then apk add postgresql15 ; fi
+RUN mkdir -p /home/node/app && chown node:node /home/node/app
+RUN mkdir -p /home/node/.npm && chown node:node /home/node/.npm
+RUN mkdir -p /home/node/.yarn && chown node:node /home/node/.yarn
+WORKDIR /home/node/app
+RUN mkdir tmp
+
+FROM base AS dependencies
+COPY --chown=node:node ./package.json .
+COPY --chown=node:node ./yarn.lock .
+USER root
+RUN apk add git
+COPY --chown=node:node .yarnrc.yml .
+COPY --chown=node:node . .
+RUN mkdir ${COREPACK_HOME}
+RUN corepack enable --install-directory ${COREPACK_HOME} && corepack prepare yarn@${YARN_VERSION}
+# RUN corepack enable && corepack prepare yarn@${YARN_VERSION}
+
+# need types to build, so install dev dependencies
+RUN yarn workspaces focus --production
+RUN NODE_ENV=production yarn install --immutable
+RUN NODE_ENV=production yarn build
+# # now that we've built, we can install without dev dependencies
+RUN rm -rf node_modules
+RUN yarn workspaces focus --production
+
+RUN rm .yarnrc.yml
+RUN echo "nodeLinker: node-modules" > .yarnrc.yml
+
+FROM base AS sslsetup
+USER root
+RUN mkdir /home/node/cert && \
+    apk update && \
+    apk add --no-cache openssl && \
+    openssl req -x509 -nodes -days 365 \
+      -subj  "/C=CA/ST=SC/O=Wellos/CN=*.wellos.com" \
+      -newkey rsa:2048 -keyout /home/node/cert/psychic-selfsigned.key \
+      -out /home/node/cert/psychic-selfsigned.crt;
+
+FROM base AS production
+USER root
+COPY --chown=node:node --from=dependencies /home/node/app/ .
+COPY --chown=node:node --from=sslsetup /home/node/cert ./cert
+RUN mkdir ${COREPACK_HOME}
+RUN corepack enable --install-directory ${COREPACK_HOME} && corepack prepare yarn@${YARN_VERSION}
+
+USER node
+RUN echo 'alias yarn="corepack yarn"' >> /home/node/.profile
+
+EXPOSE 8443
+ENV PATH="${PATH}:/home/node/npm_global/bin"
+
+# pm2 is installed globally; specify where to install global npm packages
+RUN mkdir /home/node/npm_global
+ENV NPM_CONFIG_PREFIX=/home/node/npm_global
+
+#########################
+# non-readonly carveout
+#########################
+# /dev/shm is non-read-only on the servers, so anything that needs to
+# be able to write files on the server, needs write to /dev/shm
+RUN mkdir -p /dev/shm
+RUN ln -sf /dev/shm ../.npm
+RUN ln -sf /dev/shm ../.npm/_cacache
+RUN ln -sf /dev/shm ../.yarn
+RUN ln -sf /dev/shm ../app_tmp
+
+# pm2 needs to be able to write to disk (for logs and pid files), so set up a writeable directory for it
+# and set PM2_HOME to the writeable directory
+ENV PM2_HOME=/dev/shm/.pm2
+RUN mkdir ${PM2_HOME}
+#########################
+# end: non-readonly carveout
+#########################
+
+# you can use regular pm2 if you do not need websockets
+RUN npm install -g @socket.io/pm2
+
+COPY --chown=node:node ./migrate_and_serve.sh ./
+
+# Uncomment when want to get onto the repl and be able to import:
+# COPY --chown=node:node --from=build /home/node/app ./development
+RUN ["chmod", "+x", "./migrate_and_serve.sh"]
+CMD [ "dumb-init", "--", "./migrate_and_serve.sh" ]
+```
+
+This will provision whatever server pulls from this image to prepare it for use as a psychic application, be it a server, worker, or console instance. At the very end of the Dockerfile is a call to `migrate_and_serve.sh`, which is the next topic of discussion.
+
+## migrate_and_serve
+
+With the Dockerfile in place, we will need the corresponding `migrate_and_serve.sh` file, which is used to further initialize your instance. Add this next to your Dockerfile with the following contents:
+
+```sh
+# migrate_and_serve.sh
+
+#!/bin/sh
+
+source /home/node/.profile
+echo $(type yarn)
+
+if [ $WEB_SERVICE ]; then
+  YARN_CACHE_FOLDER=/dev/shm TMP=/dev/shm NODE_ENV=production yarn psy db:migrate --skip-sync \
+  && YARN_CACHE_FOLDER=/dev/shm TMP=/dev/shm NODE_ENV=production yarn psy db:seed \
+  && pm2-runtime start ./server.ecosystem.config.js --env production \
+  && pm2 save
+elif [ $WORKER_SERVICE ]; then
+  pm2-runtime start ./worker.ecosystem.config.js --env production && pm2 save
+elif [ $CONSOLE_SERVICE ]; then
+  sleep infinity
+fi
+```
+
+Finally, we will use some github actions to automatically trigger continuous deployment. Depending on your needs, you may have many different environments, so we will just present an example for deploying to production, and let you reason about how to do the same for other environments, since the process should be very similar. To do so, add the following workflow file to your project root:
+
+```yml
+# .github/workflows/prod.yml
+
+name: Deploy to Prod
+on:
+  push:
+    branches:
+      - prod
+
+jobs:
+  build-webserver:
+    uses: .github/workflows/build-image.yml
+    name: Build webserver
+    secrets:
+      BULLMQ_PRO_NPM_TOKEN: ${{ secrets.BULLMQ_PRO_NPM_TOKEN }}
+    with:
+      aws-region: YOUR_AWS_REGION
+      aws-repo: YOUR_AWS_ECR_WEBSERVER_REPO
+      aws-role-arn: ROLE_ARN_FOR_ALLOWING_GITHUB_ACTIONS_TO_DEPLOY_TO_YOUR_ENVIRONMENT
+      install_pg_dump_restore: '1'
+      path: './api'
+
+  deploy-webserver:
+    uses: .github/workflows/deploy.yml
+    name: Deploy webserver
+    needs: build-webserver
+    with:
+      aws-ecs-cluster-name: YOUR_AWS_CLUSTER_NAME_HERE
+      aws-ecs-service-name: YOUR_AWS_WEBSERVER_SERVICE_NAME_HERE
+      aws-family: YOUR_AWS_WEBSERVER_TASK_DEF_NAME
+      aws-region: YOUR_AWS_REGION
+      aws-role-arn: ROLE_ARN_FOR_ALLOWING_GITHUB_ACTIONS_TO_DEPLOY_TO_YOUR_ENVIRONMENT
+      container-name: webserver
+      path: './api'
+      image: ${{ needs.build-webserver.outputs.image }}
+
+  build-worker:
+    uses: .github/workflows/build-image.yml
+    name: Build worker
+    with:
+      aws-region: YOUR_AWS_REGION
+      aws-repo: YOUR_AWS_WORKER_ECR_REPO
+      aws-role-arn: ROLE_ARN_FOR_ALLOWING_GITHUB_ACTIONS_TO_DEPLOY_TO_YOUR_ENVIRONMENT
+      install_pg_dump_restore: '1'
+      path: './api'
+
+  deploy-worker:
+    uses: .github/workflows/deploy.yml
+    name: Deploy worker
+    needs: build-worker
+    with:
+      aws-ecs-cluster-name: YOUR_AWS_CLUSTER_NAME_HERE
+      aws-ecs-service-name: YOUR_AWS_WORKER_SERVICE_NAME_HERE
+      aws-family: YOUR_AWS_WORKER_TASK_DEF_NAME
+      aws-region: YOUR_AWS_REGION
+      aws-role-arn: ROLE_ARN_FOR_ALLOWING_GITHUB_ACTIONS_TO_DEPLOY_TO_YOUR_ENVIRONMENT
+      container-name: worker
+      path: './api'
+      image: ${{ needs.build-webserver.outputs.image }}
+
+  deploy-console:
+    uses: .github/workflows/deploy.yml
+    name: Deploy console
+    needs: build-worker
+    with:
+      aws-ecs-cluster-name: YOUR_AWS_CLUSTER_NAME_HERE
+      aws-ecs-service-name: YOUR_AWS_CONSOLE_SERVICE_NAME_HERE
+      aws-family: YOUR_AWS_CONSOLE_TASK_DEF_NAME
+      aws-region: YOUR_AWS_REGION
+      aws-role-arn: ROLE_ARN_FOR_ALLOWING_GITHUB_ACTIONS_TO_DEPLOY_TO_YOUR_ENVIRONMENT
+      container-name: console
+      path: './api'
+      image: ${{ needs.build-webserver.outputs.image }}
+```
+
+Additionally, you will need workflows for building and deploying images:
+
+```yml
+# .github/workflows/build-image.yml
+
+on:
+  workflow_call:
+    inputs:
+      instance-type:
+        required: true
+        description: The instance type. Should be either 'web', 'worker', or 'console'
+        type: choice
+        options:
+          - web
+          - worker
+          - console
+      aws-region:
+        description: AWS region to operate in
+        required: true
+        type: string
+      aws-repo:
+        description: Name of an Amazon ECR repository
+        required: true
+        type: string
+      aws-role-arn:
+        description: Role ARN that the profile should take
+        required: true
+        type: string
+      install_pg_dump_restore:
+        description: "'1' if building the worker, '0' otherwise"
+        required: true
+        type: string
+      path:
+        description: A path for the context of the build
+        required: true
+        type: string
+    outputs:
+      image:
+        description: 'The built Docker image which has been uploaded to ECR'
+        value: ${{ jobs.build.outputs.image }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      packages: read # for golden images
+    outputs:
+      image: ${{ steps.build-image.outputs.image }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.path }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws-role-arn }}
+          role-session-name: build-to-ecr-and-deploy-to-ecs
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push docker image to Amazon ECR
+        id: build-image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: ${{ inputs.aws-repo }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -f Dockerfile \
+            -t $REGISTRY/$REPOSITORY:$IMAGE_TAG \
+            -t $REGISTRY/$REPOSITORY:latest \
+            --build-arg GITHUB_OAUTH_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
+            --build-arg BULLMQ_PRO_NPM_TOKEN="${{ secrets.BULLMQ_PRO_NPM_TOKEN }}" \
+            --build-arg INSTALL_PG_DUMP_RESTORE="${{ inputs.install_pg_dump_restore }}" \
+            --build-arg INSTANCE_TYPE="${{ inputs.instance-type }}" \
+            .
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker push $REGISTRY/$REPOSITORY:latest
+          echo "image=$REGISTRY/$REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+```
+
+```yml
+# .github/workflows/deploy.yml
+
+on:
+  workflow_call:
+    inputs:
+      aws-ecs-cluster-name:
+        description: The short name or full ARN of the cluster that hosts the service
+        required: true
+        type: string
+      aws-ecs-service-name:
+        description: The name of the ECS service to update
+        required: true
+        type: string
+      aws-family:
+        description: Name of the task definition's family
+        required: true
+        type: string
+      aws-region:
+        description: AWS region to operate in
+        required: true
+        type: string
+      aws-role-arn:
+        description: Role ARN that the profile should take
+        required: true
+        type: string
+      container-name:
+        description: The name of the container (e.g webserver, worker, console)
+        required: true
+        type: string
+      path:
+        description: A path for the context of the build
+        required: true
+        type: string
+      image:
+        description: The built Docker image
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      packages: read # for golden images
+    defaults:
+      run:
+        working-directory: ${{ inputs.path }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws-role-arn }}
+          role-session-name: build-to-ecr-and-deploy-to-ecs
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition-family: ${{ inputs.aws-family }}
+          container-name: ${{ inputs.container-name }}
+          image: ${{ inputs.image }}
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1.6.0
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ inputs.aws-ecs-service-name }}
+          cluster: ${{ inputs.aws-ecs-cluster-name }}
+          wait-for-service-stability: true
+```

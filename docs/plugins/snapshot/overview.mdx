@@ -1,5 +1,14 @@
 ---
 sidebar_position: 0
+title: overview
 ---
 
-# Overview
+# Snapshotable - overview
+
+Snapshotable provides a method, `takeSnapshot`, which will scan through each of your `HasMany` and `HasOne` associations, recursively following the chain all the way down and building up a json snapshot of each of the models found. This is useful in cases, say, where you need to backup all of a user's data to stay in compliance with HIPAA, or some other regulatory requirement.
+
+:::tip
+
+- To learn how to install and configure Snapshotable, see our [usage](/docs/plugins/snapshot/usage) guide.
+
+  :::
