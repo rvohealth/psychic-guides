@@ -102,3 +102,89 @@ export default (workersApp: PsychicApplicationWorkers) => {
   })
 }
 ```
+
+3. You will need to register this plugin as part of the `initializePsychicApplication.ts` file within your project. It will need to look something like this:
+
+```ts
+// initializePsychicApplication.ts
+
+import {
+  PsychicApplication,
+  PsychicApplicationInitOptions,
+} from '@rvohealth/psychic'
+import { PsychicApplicationWorkers } from '@rvohealth/psychic-workers'
+import psychicConf from '../../conf/app'
+import dreamConf from '../../conf/dream'
+import workersConf from '../../conf/workers'
+
+export default async function initializePsychicApplication(
+  opts: PsychicApplicationInitOptions = {},
+) {
+  const psychicApp = await PsychicApplication.init(psychicConf, dreamConf, opts)
+
+  // add this line to integrate psychic workers with your app
+  await PsychicApplicationWorkers.init(psychicApp, workersConf)
+
+  return psychicApp
+}
+```
+
+4. You will need to add some base classes to your system. These are the classes that end up providing all the backgrounding and scheduling functionality throughout your app, and they are also necessary to bridge types across your application.
+
+```ts
+// app/services/ApplicationBackgroundedService.ts
+
+import { BaseBackgroundedService } from '@rvohealth/psychic-workers'
+import psychicTypes from '../../types/psychic'
+
+export default class ApplicationBackgroundedService extends BaseBackgroundedService {
+  public get psychicTypes() {
+    return psychicTypes
+  }
+}
+```
+
+```ts
+// app/services/ApplicationScheduledService.ts
+
+import { BaseScheduledService } from '@rvohealth/psychic-workers'
+import psychicTypes from '../../types/psychic'
+
+export default class ApplicationScheduledService extends BaseScheduledService {
+  public get psychicTypes() {
+    return psychicTypes
+  }
+}
+```
+
+```ts
+// app/models/ApplicationBackgroundedModel
+
+import {
+  BackgroundJobConfig,
+  BaseBackgroundedModel,
+} from '@rvohealth/psychic-workers'
+import { DBClass } from '../../types/db'
+import { globalSchema, schema } from '../../types/dream'
+import psychicTypes from '../../types/psychic'
+
+export default class ApplicationBackgroundedModel extends BaseBackgroundedModel {
+  public DB: DBClass
+
+  public static get backgroundJobConfig(): BackgroundJobConfig<BaseBackgroundedModel> {
+    return {}
+  }
+
+  public get schema() {
+    return schema
+  }
+
+  public get globalSchema() {
+    return globalSchema
+  }
+
+  public get psychicTypes() {
+    return psychicTypes
+  }
+}
+```
