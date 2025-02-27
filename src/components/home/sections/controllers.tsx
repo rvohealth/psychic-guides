@@ -23,8 +23,8 @@ export default function Controllers() {
       </div>
 
       <Banner
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
+        gifUrl="/img/controller-params-demo.gif"
+        gifPreviewUrl="/img/controller-params-demo-preview.png"
       >
         <p className="subtext">
           Easily bring params into your controller layer, running implicit
@@ -42,8 +42,8 @@ export default function Controllers() {
 
       <Banner
         title="status codes"
-        gifUrl="/img/routes-demo.gif"
-        gifPreviewUrl="/img/routes-demo-preview.png"
+        gifUrl="/img/controller-status-codes-demo.gif"
+        gifPreviewUrl="/img/controller-status-codes-demo-preview.png"
         orientation="right"
       >
         <p className="subtext">

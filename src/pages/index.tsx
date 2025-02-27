@@ -80,8 +80,6 @@ export default function Home(): JSX.Element {
         <UnitTesting />
         <FeatureTesting />
         <OpenAPI />
-        <Repl />
-        <CLI />
       </div>
 
       <main></main>
