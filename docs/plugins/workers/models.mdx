@@ -3,3 +3,32 @@ sidebar_position: 3
 ---
 
 # Models
+
+Models extending the `ApplicationBackgroundedModel` will have the added capability of being able to call any of their underlying static and instance methods in a background job. Similar to the `ApplicationScheduledService` class, it will have both a static and instance `background` method, which will be used to call underlying methods in the background.
+
+```ts
+class User extends ApplicationBackgroundedModel {
+  ...
+  public static async doSomething(stuff: string, thing: number) {}
+}
+
+await User.background('doSomething', 'a little howyadoin', 1)
+```
+
+This will trigger a new job into the background queue system. When a worker picks up this job, it will call `await User.doSomething('a little howyadoin', 1)`.
+
+## instance methods
+
+Models behave differently when calling instance methods in the background. This is because a model is a reflection of a specific row in a specific table in your database. before calling any instance methods on your model instances, psychic will make sure to do a lookup of the model by its primary key.
+
+```ts
+class User extends ApplicationBackgroundedModel {
+  ...
+  public async doSomething(stuff: string, thing: number) {}
+}
+
+const user = await User.firstOrFail()
+await user.background('doSomething', 'howyadoin', 1)
+```
+
+In the above example, Psychic will make sure to store the primaryKey belonging to the `user` var, and then, once a worker picks up the job, it will do a lookup based on the primary key that was stored.

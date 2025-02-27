@@ -168,8 +168,8 @@ jobs:
         working-directory: ./client
 
       - run: mkdir -p /tmp/screenshots
-      - run: APP_ROOT_PATH=$(pwd) yarn psy db:migrate --skip-sync
-      - run: APP_ROOT_PATH=$(pwd) yarn fspec --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+      - run: yarn psy db:migrate --skip-sync
+      - run: yarn fspec --shard=${{ matrix.shard }}/${{ strategy.job-total }}
 
       - name: Archive screenshots
         uses: actions/upload-artifact@v4
