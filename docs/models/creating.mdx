@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # creating
 
@@ -39,7 +39,7 @@ Utilizing `findOrCreateBy`, we can either collect a record if it exists, or else
 ```ts
 const user = await User.findOrCreateBy(
   { email: 'how@yadoin' },
-  { createWith: { password: 'mypassword' } }
+  { createWith: { password: 'mypassword' } },
 )
 ```
 
@@ -51,6 +51,6 @@ The `createOrFindBy` method is very similar to `findOrCreateBy`, except it will 
 // this expects that the `email` column with have a unique contraint in the DB
 const user = await User.createOrFindBy(
   { email: 'how@yadoin' },
-  { createWith: { password: 'mypassword' } }
+  { createWith: { password: 'mypassword' } },
 )
 ```

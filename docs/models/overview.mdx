@@ -2,7 +2,7 @@
 sidebar_position: 0
 ---
 
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # overview
 
@@ -12,10 +12,10 @@ Since most web applications will require a database, Dream is the tool for abstr
 export async function up(db: Kysely<any>): Promise<void> {
   await db.schema
     .createTable('users')
-    .addColumn('id', 'bigserial', col => col.primaryKey())
+    .addColumn('id', 'bigserial', (col) => col.primaryKey())
     .addColumn('email', 'varchar(64)')
-    .addColumn('created_at', 'timestamp', col => col.notNull())
-    .addColumn('updated_at', 'timestamp', col => col.notNull())
+    .addColumn('created_at', 'timestamp', (col) => col.notNull())
+    .addColumn('updated_at', 'timestamp', (col) => col.notNull())
     .execute()
 }
 
@@ -37,25 +37,26 @@ await User.all()
 // [User{ email: 'how@yadoin' }]
 ```
 
-
 :::tip
 Dream provides a rich set of features for interacting with your database. We have only begun to get into it here, so we encourage you to explore the model guides to learn more.
 
 ### Basic model interactions
-* To learn how to generate a new model, see our [generating guide](/docs/models/generating)
-* To learn how to create new records, see our [creating guide](/docs/models/creating)
-* To learn how to update records, see our [updating guide](/docs/models/updating)
-* To learn how to destroy records, see our [destroying guide](/docs/models/destroying)
-* To learn how to query records, see our [querying guide](/docs/models/querying/overview)
-* To learn how to build associations, see our [associations guide](/docs/models/associations/overview)
-* To learn how to leverage validations, see our [validations guide](/docs/models/validations/overview)
 
+- To learn how to generate a new model, see our [generating guide](/docs/models/generating)
+- To learn how to create new records, see our [creating guide](/docs/models/creating)
+- To learn how to update records, see our [updating guide](/docs/models/updating)
+- To learn how to destroy records, see our [destroying guide](/docs/models/destroying)
+- To learn how to query records, see our [querying guide](/docs/models/querying/overview)
+- To learn how to build associations, see our [associations guide](/docs/models/associations/overview)
+- To learn how to leverage validations, see our [validations guide](/docs/models/validations/overview)
 
 ### Advanced concepts
-* To learn how to leverage postgres transactions, see our [transactions guide](/docs/models/transactions)
-* To learn how to leverage STI (single table inheritence), see our [STI guide](/docs/models/sti)
-* To learn how to leverage model hooks, see our [hooks guide](/docs/models/hooks)
-* To learn how to leverage model scopes, see our [scopes guide](/docs/models/scopes)
-* To learn about the concept of dirty records, and how they apply to Dream models, see our [dirty guide](/docs/models/dirty)
-* To learn how to leverage the Sortable decorator, see our [sortable guide](/docs/models/decorators/sortable)
-:::
+
+- To learn how to leverage postgres transactions, see our [transactions guide](/docs/models/transactions)
+- To learn how to leverage STI (single table inheritence), see our [STI guide](/docs/models/sti)
+- To learn how to leverage model hooks, see our [hooks guide](/docs/models/hooks)
+- To learn how to leverage model scopes, see our [scopes guide](/docs/models/scopes)
+- To learn about the concept of dirty records, and how they apply to Dream models, see our [dirty guide](/docs/models/dirty)
+- To learn how to leverage the Sortable decorator, see our [sortable guide](/docs/models/decorators/sortable)
+
+  :::

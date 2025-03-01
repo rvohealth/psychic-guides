@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # range
 
@@ -33,7 +33,7 @@ await user
   .where({
     adoptedOn: range(
       CalendarDate.today().minus({ months: 2 }),
-      CalendarDate.today().minus({ month: 1 })
+      CalendarDate.today().minus({ month: 1 }),
     ),
   })
   .order({ adoptedOn: 'desc' })
@@ -44,7 +44,7 @@ await user
   .where({
     adoptedOn: range(
       DateTime.now().minus({ months: 2 }),
-      DateTime.now().minus({ month: 1 })
+      DateTime.now().minus({ month: 1 }),
     ),
   })
   .order({ adoptedOn: 'desc' })

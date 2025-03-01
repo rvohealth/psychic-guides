@@ -1,14 +1,11 @@
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # whereAny
 
 The `whereAny` method can be used to union two or more clauses together, like so:
 
 ```ts
-await User.whereAny([
-  { email: null },
-  { name: null },
-]).all()
+await User.whereAny([{ email: null }, { name: null }]).all()
 
 // [User{ email: null, name: 'chalupa joe' }, User{ email: 'how@yadoin', name: null }, ...]
 ```

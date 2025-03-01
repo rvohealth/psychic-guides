@@ -2,21 +2,13 @@
 sidebar_position: 0
 ---
 
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # overview
 
 Psychic follows a paradigm set up by many other MVC frameworks, which is to have a centralized file from which all of your application's routes can be derived. Though some frameworks have done away with such mechanisms, favoring implicit routing built into the application's controllers, Psychic prefers the centralized routing system, since it gives the engineer a high-level overview of their application, and enables them to easily switch routes on and off.
 
 The route bindings for a Psychic application can be found in the `conf/routes.ts` file. Routes are expressed elegantly using standard HTTP-verb driven language, like so:
-
-<RightSidebarItem>
-  <pre style={{ backgroundColor: 'transparent' }}>
-    {`
-GET     /health-check  HealthCheck#ping
-`}
-  </pre>
-</RightSidebarItem>
 
 ```ts // conf/routes.ts
 import { PsychicRouter } from 'psychic'
@@ -25,6 +17,14 @@ export default (r: PsychicRouter) => {
   r.get('/health-check')
 }
 ```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET     /health-check  HealthCheck#ping
+`}
+  </pre>
+</RoutesOutput>
 
 ## CRUD routing mechanisms
 
@@ -40,19 +40,6 @@ In the HTTP world, these verbs are translated into the following:
 
 Here is an example, demonstrating how these verbs might be used to clearly express a resourcefully-driven application, i.e. for a blog
 
-<RightSidebarItem>
-  <pre style={{ backgroundColor: 'transparent' }}>
-    {`
-POST     /posts      Posts#create
-GET      /posts      Posts#index
-GET      /posts/:id  Posts#show
-PATCH    /posts/:id  Posts#update
-PUT      /posts/:id  Posts#update
-DELETE   /posts/:id  Posts#destroy
-`}
-  </pre>
-</RightSidebarItem>
-
 ```ts // conf/routes.ts
 import { PsychicRouter } from 'psychic'
 
@@ -66,13 +53,7 @@ export default (r: PsychicRouter) => {
 }
 ```
 
-To learn more about CRUD-driven routing mechanisms, see our [crud guide](/docs/routing/crud).
-
-## Resourceful routing
-
-Since this type of routing pattern is quite common, Psychic provides encapsulated methods which will automatically build out these exact route directives in a single call, using the `resources` method, like so:
-
-<RightSidebarItem>
+<RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
 POST     /posts      Posts#create
@@ -83,7 +64,13 @@ PUT      /posts/:id  Posts#update
 DELETE   /posts/:id  Posts#destroy
 `}
   </pre>
-</RightSidebarItem>
+</RoutesOutput>
+
+To learn more about CRUD-driven routing mechanisms, see our [crud guide](/docs/routing/crud).
+
+## Resourceful routing
+
+Since this type of routing pattern is quite common, Psychic provides encapsulated methods which will automatically build out these exact route directives in a single call, using the `resources` method, like so:
 
 ```ts // conf/routes.ts
 import { PsychicRouter } from 'psychic'
@@ -93,24 +80,24 @@ export default (r: PsychicRouter) => {
 }
 ```
 
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+POST     /posts      Posts#create
+GET      /posts      Posts#index
+GET      /posts/:id  Posts#show
+PATCH    /posts/:id  Posts#update
+PUT      /posts/:id  Posts#update
+DELETE   /posts/:id  Posts#destroy
+`}
+  </pre>
+</RoutesOutput>
+
 To learn more about resourceful routing, see our [resourceful routing guide](/docs/routing/resources).
 
 ## Namespacing
 
 The Psychic router also provides techniques for namespacing your application, using nested callbacks to organize clusters of routes together, like so:
-
-<RightSidebarItem>
-  <pre style={{ backgroundColor: 'transparent' }}>
-    {`
-POST     /api/v1/posts      Posts#create
-GET      /api/v1/posts      Posts#index
-GET      /api/v1/posts/:id  Posts#show
-PATCH    /api/v1/posts/:id  Posts#update
-PUT      /api/v1/posts/:id  Posts#update
-DELETE   /api/v1/posts/:id  Posts#destroy
-`}
-  </pre>
-</RightSidebarItem>
 
 ```ts // conf/routes.ts
 import { PsychicRouter } from 'psychic'
@@ -123,6 +110,19 @@ export default (r: PsychicRouter) => {
   })
 }
 ```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+POST     /api/v1/posts      Posts#create
+GET      /api/v1/posts      Posts#index
+GET      /api/v1/posts/:id  Posts#show
+PATCH    /api/v1/posts/:id  Posts#update
+PUT      /api/v1/posts/:id  Posts#update
+DELETE   /api/v1/posts/:id  Posts#destroy
+`}
+  </pre>
+</RoutesOutput>
 
 To learn more about techniques for namespacing, see our [namespacing guide](/docs/routing/namespacing).
 

@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # params
 
@@ -92,7 +92,7 @@ export default class PostsController extends AuthedController {
   public create() {
     await this.currentUser.createAssociation(
       'posts',
-      this.paramsFor(Post, { only: ['title', 'body'] })
+      this.paramsFor(Post, { only: ['title', 'body'] }),
     )
   }
 }

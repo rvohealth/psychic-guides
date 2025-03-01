@@ -2,19 +2,11 @@
 sidebar_position: 4
 ---
 
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # namespacing
 
 You can also use namespacing to reflect folder and uri structures at once. The following example would require the respective users controller to be located at `app/controllers/Api/V1/UsersController.ts`
-
-<RightSidebarItem>
-  <pre style={{ backgroundColor: 'transparent' }}>
-    {`
-GET api/v1/users/hi Api/V1/Users#hi
-`}
-  </pre>
-</RightSidebarItem>
 
 ```ts // conf/routes.ts
 import { PsychicRouter } from 'psychic'
@@ -30,15 +22,15 @@ export default (r: PsychicRouter) => {
 }
 ```
 
-Namespacing will always enforce the folder structure when presented with multiple route segments, which means you are required to put controllers in the expected folder structure in order for an action to be called when its corresponding route is hit. This can, of course, be overridden by passing an explicit controller to the namespace call.
-
-<RightSidebarItem>
+<RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-GET api/v1/users/hi HelloWorld#hi
+GET api/v1/users/hi Api/V1/Users#hi
 `}
   </pre>
-</RightSidebarItem>
+</RoutesOutput>
+
+Namespacing will always enforce the folder structure when presented with multiple route segments, which means you are required to put controllers in the expected folder structure in order for an action to be called when its corresponding route is hit. This can, of course, be overridden by passing an explicit controller to the namespace call.
 
 ```ts
 r.namespace('api', (r) => {
@@ -51,15 +43,15 @@ r.namespace('api', (r) => {
 })
 ```
 
-Additionally, controller overrides can be passed to the child routes
-
-<RightSidebarItem>
+<RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
 GET api/v1/users/hi HelloWorld#hi
 `}
   </pre>
-</RightSidebarItem>
+</RoutesOutput>
+
+Additionally, controller overrides can be passed to the child routes
 
 ```ts
 r.namespace('api', (r) => {
@@ -73,17 +65,17 @@ r.namespace('api', (r) => {
 })
 ```
 
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET api/v1/users/hi HelloWorld#hi
+`}
+  </pre>
+</RoutesOutput>
+
 # scope
 
 In addition to `namespace`, Psychic also provides the `scope` method, which behaves identically to namespace, except that it does not enforce that particular segment within the path of the controller. In the following example, the `UsersController` will be expected to be located at `app/controllers/UsersController.ts`.
-
-<RightSidebarItem>
-  <pre style={{ backgroundColor: 'transparent' }}>
-    {`
-GET api/v1/users/hi Users#hi
-`}
-  </pre>
-</RightSidebarItem>
 
 ```ts
 r.scope('api', (r) => {
@@ -94,3 +86,11 @@ r.scope('api', (r) => {
   })
 })
 ```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET api/v1/users/hi Users#hi
+`}
+  </pre>
+</RoutesOutput>
