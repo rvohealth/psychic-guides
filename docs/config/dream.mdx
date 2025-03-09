@@ -50,9 +50,9 @@ To do so, every dream application must have the following lines provided in the 
 
 ```ts
 export default async function (dream: DreamApplication) {
-  await dream.load('models', path.join(__dirname, '..', 'models'))
-  await dream.load('serializers', path.join(__dirname, '..', 'serializers'))
-  await dream.load('services', path.join(__dirname, '..', 'services'))
+  app.load('models', srcPath('app', 'models'), await importModels())
+  app.load('serializers', srcPath('app', 'serializers'), await importSerializers())
+  app.load('services', srcPath('app', 'services'), await importServices())
   ...
 }
 ```

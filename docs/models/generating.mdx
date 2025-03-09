@@ -12,6 +12,84 @@ The easiest way to generate a model is by using the psychic cli.
 yarn psy g:dream todo user:belongs_to content:string type:enum:todo_types:one_time,recurring
 ```
 
+Psychic provides a rich api for composing models via generators, allowing you to get fairly specific with your architecture. when generating a dream, the general api is:
+
+```bash
+yarn psy g:dream NameOfDream col1:type col2:type ...
+```
+
+The following column types are supported out of the box:
+
+```
+bigint
+bigserial
+bit
+bit varying
+boolean
+box
+bytea
+character
+character varying
+cidr
+circle
+date
+double
+inet
+integer
+interval
+json
+jsonb
+line
+lseg
+macaddr
+macaddr8
+money
+numeric
+path
+pg_lsn
+pg_snapshot
+point
+polygon
+real
+smallint
+smallserial
+serial
+text
+time
+time
+timestamp
+tsquery
+tsvector
+txid_snapshot
+uuid
+xml
+```
+
+We will allow whatever data types are supported by postgres. The complete list can be found here: [https://www.postgresql.org/docs/current/datatype.html](https://www.postgresql.org/docs/current/datatype.html).
+
+## special column types
+
+In addition to the above column types, Dream also provides special column types for the common vernacular:
+
+```
+# string shorthand
+name:string -> varchar(255)
+name:string:200 -> varchar(200)
+
+# datetime abstraction
+created_at:datetime -> timestamp
+
+# enums
+species:enum:species_enum:cat,dog,bird,other
+delicious_food:enum:delicious_food_items:chalupa,unknown
+```
+
+## snake_casing our columns
+
+since sql is a case-insensitive language, it is encouraged that you write your columns and tables to snake case. We enforce this by providing a plugin under the hood through kysely which will forcibly convert all columns to snake case, and will translate the results back to camel case before handing them off to you. To further adhere to this principle, when you are naming columns in your generators, we encourage you to always give them snake_case names. Throughought the rest of your app, they will always be camelized, but it is preferred to keep them snake_cased in your migrations and generators.
+
+## generating resources
+
 If you know you will be needing endpoints exposed for the resource, you can additionally use the resource generator provided by psychic to also generate a controller. You will still need to add routes manually, and will definitely need to modify the generated code to tighten the wrenches authorization-wise, params-wise, etc...
 
 ```bash

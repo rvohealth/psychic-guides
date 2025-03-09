@@ -2,13 +2,13 @@
 sidebar_position: 2
 ---
 
-import RoutesOutput from '@site/src/components/ui/routes-output'
-
 # creating
 
-## using "create"
+In any application, you will often times find yourself in need of having some things in your database. Otherwise...I mean... what are we doing here? Snarcasm aside, Dream provides many different ways to insert records into the database, depending on what you are doing and why.
 
-To create an instance of a psychic model, use the static .create method. This method will automatically fill the `id`, `createdAt` and `updatedAt` fields on your model.
+## Dream.create
+
+When looking for a clean, direct way to get something into a table in your database, look no further than the static `Dream.create` method. As reliable as your cat stealing your spot as soon as you get up (it turns out, you were stealing _their_ spot), the create method will provide you with a simple, type-protected way to safely insert attributes into the database.
 
 ```ts
 import User from 'app/models/user'
@@ -19,14 +19,21 @@ const user = await User.create({
 })
 ```
 
-## using "save"
+When using the static create method, the `BeforeCreate`, `BeforeSave`, `AfterCreate`, `AfterSave`, `AfterCreateCommit`, and `AfterSaveCommit` hooks will all fire, enabling lifecycle events defined in your model layer to kick off additional changes to your application's ecosystem.
 
-Additionally, you can save a new instance of a model like so:
+## Dream#save
+
+Sometimes, you may find yourself wanting to slowly build up attributes, or just making change to one field, conditionally. This is the perfect time to leverage the `Dream#save` method!
 
 ```ts
 const user = User.new()
-user.email = 'hello@world.biz'
-user.password = 'fishandfriends'
+
+if (thing1) {
+  user.email = 'hello@world.biz'
+} else {
+  user.email = 'goodbye@cruelworld'
+}
+
 await user.save()
 ```
 
