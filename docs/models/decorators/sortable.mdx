@@ -7,7 +7,7 @@ export default class TodoItem extends ApplicationModel {
   @Sortable({ scope: 'user' })
   public position: DreamColumn<EdgeNode, 'position'>
 
-  @TodoItem.BelongsTo('User')
+  @Deco.BelongsTo('User')
   public user: User
 }
 ```

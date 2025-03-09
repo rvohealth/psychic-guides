@@ -98,16 +98,18 @@ export default class User extends ApplicationModel {
 In addition to powerful decorators for describing validations and custom scoping on your models, Dream also provides a powerful association layer, enabling you to describe rich, intimate associations with elegant simplicity:
 
 ```ts
+const Deco = Decorators<InstanceType<typeof Post>>
+
 class Post extends ApplicationModel {
   ...
 
-  @Post.BelongsTo('User')
+  @Deco.BelongsTo('User')
   public user: User
 
-  @Post.HasMany('Comment')
+  @Deco.HasMany('Comment')
   public comments: Comment[]
 
-  @Post.HasMany('Reply', { through: 'comments' })
+  @Deco.HasMany('Reply', { through: 'comments' })
   public replies: Reply[]
 }
 
@@ -224,7 +226,7 @@ Since Psychic and Dream are meant to be used together, Psychic is well-fit to au
 
 Psychic can easily act as a standalone JSON web delivery system, but it also encourages certain paradigms which enable the developer to still write end-to-end tests, as well as a rich tooling system for composing unit tests. Psychic was designed with a `BDD` philosophy in mind, which means that our system _must_ provide adequate tooling for spec'ing out our entire app.
 
-As most in the javascript world are comfortable with [jest](https://jestjs.io), we have built our tooling to rest comfortably on top of it, allowing you to bring in custom jest plugins of your choice without any trouble from the framework. We do, however, provide some useful jest extensions to make your life easier when spec'ing in Dream and Psychic.
+As most in the javascript world are comfortable with [vitest](http://vitest.dev), we have built our tooling to rest comfortably on top of it, allowing you to bring in custom vitest or jest plugins of your choice without any trouble from the framework. We do, however, provide some useful extensions to make your life easier when spec'ing in Dream and Psychic.
 
 ### Unit specs
 
@@ -237,16 +239,15 @@ Unit specs describe the behavior of your app. When practicing BDD, the unit spec
 When spec'ing your models, you can leverage special jest extensions to make assertions simple, and can very easily test all sorts of extraneous behavior using the same suite of tools:
 
 ```ts
-import { describe as context } from '@jest/globals'
-...
-
 describe('User', () => {
   describe('upon creation', () => {
     context('UserSettings model creation', () => {
       it('creates a user settings model, and attaches it to the user', async () => {
         expect(await UserSettings.count()).toEqual(0)
         const user = await createUser()
-        expect(await UserSettings.firstOrFail()).toMatchDreamModel(user.userSettings)
+        expect(await UserSettings.firstOrFail()).toMatchDreamModel(
+          user.userSettings,
+        )
       })
     })
   })
@@ -329,14 +330,14 @@ import visit from '../helpers/visit'
 describe('visitor visits the signup page', () => {
   it('allows visitor to fill sign up for a new account and then log in with the same credentials', async () => {
     await visit('/signup')
-    await fillInput('#email', 'hello@world')
-    await fillInput('#password', 'mypassword')
-    await clickButton('sign up')
+    await expect(page).toFill('#email', 'hello@world')
+    await expect(page).toFill('#password', 'mypassword')
+    await expect(page).toClickButton('sign up')
 
-    await expectContent('Log in')
-    await fillInput('#email', 'hello@world')
-    await fillInput('#password', 'mypassword')
-    await clickButton('log in')
+    await expect(page).toHaveTextContent('Log in')
+    await expect(page).toFill('#email', 'hello@world')
+    await expect(page).toFill('#password', 'mypassword')
+    await expect(page).toClickButton('log in')
 
     await expectContent('DASHBOARD')
 

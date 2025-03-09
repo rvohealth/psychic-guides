@@ -9,7 +9,7 @@ Polymorphism enables you to specify more than one model class for the same assoc
 ```ts
 // models/Pet.ts
 export default class Rating extends Dream {
-  @Rating.BelongsTo(['User', 'Recipe', 'Organization'], { polymorphic: true })
+  @Deco.BelongsTo(['User', 'Recipe', 'Organization'], { polymorphic: true })
   public rateable: User | Recipe | Organization
   public rateableId: DreamColumn<Rating, 'rateableId'>
   public rateableType: DreamColumn<Rating, 'rateableType'>

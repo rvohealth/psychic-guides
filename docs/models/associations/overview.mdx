@@ -21,12 +21,12 @@ Since these types of relationships can exist at the database level, Dream expose
 
 ```ts
 class User extends ApplicationModel {
-  @User.HasMany('Post')
+  @Deco.HasMany('Post')
   public posts: Post[]
 }
 
 class Post extends ApplicationModel {
-  @Post.BelongsTo('User')
+  @Deco.BelongsTo('User')
   public user: User
 }
 ```
@@ -51,4 +51,5 @@ There is much to learn about the power of Dream associations.
 - To learn about through associations, see our [through guides](/docs/models/associations/through)
 - To learn about polymorphic associations, see our [polymorphism guides](/docs/models/associations/polymorphism)
 - For extended usage guides, see our [usage guides](/docs/models/associations/usage)
+
   :::

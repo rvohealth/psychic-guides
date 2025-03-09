@@ -35,7 +35,7 @@ In some cases, you want to hide certain associations from snapshots. In these ca
 ```ts
 class User extends Snapshotable(ApplicationModel) {
   @HideFromSnapshotable()
-  @User.HasMany(Pet)
+  @Deco.HasMany(Pet)
   public pets: Pet[]
 }
 ```
