@@ -5,7 +5,7 @@ title: psychic
 
 ## Requirements
 
-In order to get started working on dream locally, you will first need to install the following:
+In order to get started working on psychic locally, you will first need to install the following:
 
 - nodejs >= 23.9.0
 - postgres >= 13.4
@@ -42,6 +42,8 @@ LEGACY_APP_ENCRYPTION_KEY="REPLACE_ME"
 ```
 
 In each of these files, you will want to replace `WHO_AM_I` with the result of running `whoami` in your local terminal. Generally speaking, the username for postgres will be the name of the current user, though this can be different depending on how postgres was installed.
+
+> NOTE: Whenever running any CLI commands, Dream will notice that your encryption keys are invalid, and will print warnings in the console with suggested keys that could work in their place. You can copy those key values, and place them into the `APP_ENCRYPTION_KEY` and `LEGACY_APP_ENCRYPTION_KEY` environment variable values
 
 Once this is done, you should be able to reset the test database and run specs:
 
