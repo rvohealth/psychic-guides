@@ -27,7 +27,7 @@ This will generate the following:
 1. A new `User` model
 
 ```ts
-import { DreamColumn } from '@rvohealth/dream'
+import { DreamColumn } from '@rvoh/dream'
 import ApplicationModel from './ApplicationModel'
 import UserSerializer, {
   UserSummarySerializer,
@@ -137,7 +137,7 @@ This will, amongst a few other things, generate the `schema.ts` file, which help
 ```ts
 // api/src/db/schema.ts
 
-import { CalendarDate } from '@rvohealth/dream'
+import { CalendarDate } from '@rvoh/dream'
 import { DateTime } from 'luxon'
 import { UserRolesEnumValues, IdType, UserRolesEnum } from './sync'
 
@@ -207,12 +207,11 @@ Let's start with the `AuthController.spec.ts` file:
 // api/spec/unit/controllers/Api/V1/AuthedController.spec.ts
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { describe as context } from '@jest/globals'
-import { Encrypt } from '@rvohealth/psychic'
+import { Encrypt } from '@rvoh/psychic'
+import { UpdateableProperties } from '@rvoh/dream'
+import { specRequest as request } from '@rvoh/psychic-spec-helpers'
 import User from '../../../../../src/app/models/User'
-import { UpdateableProperties } from '@rvohealth/dream'
 import createUser from '../../../../factories/UserFactory'
-import { specRequest as request } from '@rvohealth/psychic/spec-helpers'
 
 describe('ApiV1AuthController', () => {
   beforeEach(async () => {
@@ -267,9 +266,9 @@ and our `UsersController.spec.ts` file:
 // api/spec/unit/controllers/Api/V1/UsersController.spec.ts
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { PsychicServer } from '@rvohealth/psychic'
+import { PsychicServer } from '@rvoh/psychic'
 import createUser from '../../../../factories/UserFactory'
-import { specRequest as request } from '@rvohealth/psychic/spec-helpers'
+import { specRequest as request } from '@rvoh/psychic/spec-helpers'
 
 const server = new PsychicServer()
 
@@ -307,7 +306,7 @@ Right away upon writing these, we can see that there is some missing behavior an
 // spec/unit/models/User.spec.ts
 
 import { describe as context } from '@jest/globals'
-import { Hash } from '@rvohealth/psychic'
+import { Hash } from '@rvoh/psychic'
 import createUser from '../../factories/UserFactory'
 
 describe('User', () => {
@@ -353,12 +352,12 @@ This should have produced some errors for us. Let's get them passing by adding s
 ```ts
 // api/src/app/models/User.ts
 
-import { BeforeSave, DreamColumn, Virtual } from '@rvohealth/dream'
+import { Hash } from '@rvoh/psychic'
+import { BeforeSave, DreamColumn, Virtual } from '@rvoh/dream'
 import ApplicationModel from './ApplicationModel'
 import UserSerializer, {
   UserSummarySerializer,
 } from '../../../src/app/serializers/UserSerializer'
-import { Hash } from '@rvohealth/psychic'
 
 export default class User extends ApplicationModel {
   ...
@@ -388,7 +387,7 @@ This should get our specs to go green for the User model, now let's focus on imp
 ```ts
 // api/src/app/controllers/api/v1/AuthController.ts
 
-import { PsychicController, BeforeAction, Encrypt } from '@rvohealth/psychic'
+import { PsychicController, BeforeAction, Encrypt } from '@rvoh/psychic'
 import User from '../models/User'
 
 export default class AuthedController extends PsychicController {
@@ -426,7 +425,7 @@ export default class ApiV1UsersController extends AuthedController {
 // api/src/app/controllers/api/v1/AuthController.ts
 
 import User from '../../../models/User'
-import { Encrypt, PsychicController } from '@rvohealth/psychic'
+import { Encrypt, PsychicController } from '@rvoh/psychic'
 
 export default class ApiV1AuthController extends PsychicController {
   public async signup() {

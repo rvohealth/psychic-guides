@@ -12,14 +12,14 @@ However, if this is not the case for you and you are looking to install websocke
 1. Install the package.
 
 ```bash
-yarn add @rvohealth/psychic-workers
+yarn add @rvoh/psychic-workers
 ```
 
 2. Add the missing configuration file to `src/conf/workers.ts`:
 
 ```ts
 import os from 'os'
-import { PsychicApplicationWorkers } from '@rvohealth/psychic-workers'
+import { PsychicApplicationWorkers } from '@rvoh/psychic-workers'
 import Redis, { Cluster } from 'ioredis'
 import AppEnv from './AppEnv'
 
@@ -111,8 +111,8 @@ export default (workersApp: PsychicApplicationWorkers) => {
 import {
   PsychicApplication,
   PsychicApplicationInitOptions,
-} from '@rvohealth/psychic'
-import { PsychicApplicationWorkers } from '@rvohealth/psychic-workers'
+} from '@rvoh/psychic'
+import { PsychicApplicationWorkers } from '@rvoh/psychic-workers'
 import psychicConf from '../../conf/app'
 import dreamConf from '../../conf/dream'
 import workersConf from '../../conf/workers'
@@ -134,7 +134,7 @@ export default async function initializePsychicApplication(
 ```ts
 // app/services/ApplicationBackgroundedService.ts
 
-import { BaseBackgroundedService } from '@rvohealth/psychic-workers'
+import { BaseBackgroundedService } from '@rvoh/psychic-workers'
 import psychicTypes from '../../types/psychic'
 
 export default class ApplicationBackgroundedService extends BaseBackgroundedService {
@@ -147,7 +147,7 @@ export default class ApplicationBackgroundedService extends BaseBackgroundedServ
 ```ts
 // app/services/ApplicationScheduledService.ts
 
-import { BaseScheduledService } from '@rvohealth/psychic-workers'
+import { BaseScheduledService } from '@rvoh/psychic-workers'
 import psychicTypes from '../../types/psychic'
 
 export default class ApplicationScheduledService extends BaseScheduledService {
@@ -163,7 +163,7 @@ export default class ApplicationScheduledService extends BaseScheduledService {
 import {
   BackgroundJobConfig,
   BaseBackgroundedModel,
-} from '@rvohealth/psychic-workers'
+} from '@rvoh/psychic-workers'
 import { DBClass } from '../../types/db'
 import { globalSchema, schema } from '../../types/dream'
 import psychicTypes from '../../types/psychic'

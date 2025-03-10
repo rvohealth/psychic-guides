@@ -136,7 +136,7 @@ Psychic enables you to programatically define routes, as well as their connectio
 ```ts
 // conf/routes.ts
 
-import { PsychicRouter } from '@rvohealth/psychic'
+import { PsychicRouter } from '@rvoh/psychic'
 
 export default (r: PsychicRouter) => {
   r.get('', 'Welcome#index')
@@ -281,7 +281,7 @@ Psychic also provides helpers to enable easy endpoint testing, allowing you to h
 ```ts
 // api/spec/unit/controllers/Api/V1/UsersController.spec.ts
 
-import { specRequest as request } from '@rvohealth/psychic/spec-helpers'
+import { specRequest as request } from '@rvoh/psychic/spec-helpers'
 import createUser from '../../../../factories/UserFactory'
 
 describe('ApiV1UsersController', () => {

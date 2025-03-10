@@ -11,7 +11,7 @@ Range is used in combination with `where` clauses in Dream.
 ## range supports start, end, or start and end values
 
 ```ts
-import { range } from '@rvohealth/dream'
+import { range } from '@rvoh/dream'
 
 // search Recipes with a rating of at least 3
 await Recipe.where({ rating: range(3) }).count()
@@ -26,7 +26,7 @@ await Recipe.where({ rating: range(2, 4) }).count()
 ## range supports CalendarDate, DateTime, and number values
 
 ```ts
-import { range } from '@rvohealth/dream'
+import { range } from '@rvoh/dream'
 
 await user
   .associationQuery('pets')

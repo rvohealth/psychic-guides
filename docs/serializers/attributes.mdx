@@ -32,7 +32,7 @@ class UsersController extends PsychicController {
 When a Dream model is passed to the @OpenAPI decorator, the serializer corresponding to that Dream model is leveraged to generate the final OpenAPI shape. As with Dream attribute types, here, Dream leverages the database schema to keep the OpenAPI schema in sync based on any migrations that have been applied:
 
 ```ts
-import { Attribute, DreamColumn, DreamSerializer } from '@rvohealth/dream'
+import { Attribute, DreamColumn, DreamSerializer } from '@rvoh/dream'
 import User from '../../models/User'
 
 export default class UserSerializer extends DreamSerializer {
@@ -55,7 +55,7 @@ export default class UserSerializer extends DreamSerializer {
 Many generics are made available to you, including `decimal`, `date`, `date-time`, `boolean`, as well as array variants of these, which can be used like so:
 
 ```ts
-import { Attribute, DreamSerializer } from '@rvohealth/dream'
+import { Attribute, DreamSerializer } from '@rvoh/dream'
 
 export default class UserSerializer extends DreamSerializer {
   @Attribute('boolean[]')
@@ -83,7 +83,7 @@ export default class UserSerializer extends DreamSerializer {
 In addition to leveraging primitive types, you can explicitly spell out custom openapi shapes using our hybrid openapi shorthand. It supports all the usual things you can do in openapi:
 
 ```ts
-import { Attribute, DreamSerializer } from '@rvohealth/dream'
+import { Attribute, DreamSerializer } from '@rvoh/dream'
 
 export default class UserSerializer extends DreamSerializer {
   @Attribute({

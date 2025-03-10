@@ -9,10 +9,10 @@ Like models, serializers also have a concept of association chaining, which enab
 ## renders many
 
 ```ts
-import { Attribute, DreamSerializer } from '@rvohealth/dream'
+import { Attribute, DreamSerializer } from '@rvoh/dream'
 
 export default class UserSerializer<
-  DataType extends User
+  DataType extends User,
 > extends DreamSerializer<DataType> {
   @RendersMany(Pet)
   public pets: Pet[]
@@ -29,10 +29,10 @@ this.ok(user)
 ## renders one
 
 ```ts
-import { Attribute, DreamSerializer } from '@rvohealth/dream'
+import { Attribute, DreamSerializer } from '@rvoh/dream'
 
 export default class UserSerializer<
-  DataType extends User
+  DataType extends User,
 > extends DreamSerializer<DataType> {
   @RendersOne(Pet)
   public pet: Pet

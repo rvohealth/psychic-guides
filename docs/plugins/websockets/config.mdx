@@ -13,14 +13,14 @@ However, if this is not the case for you and you are looking to install websocke
 1. Install the package.
 
 ```bash
-yarn add @rvohealth/psychic-websockets
+yarn add @rvoh/psychic-websockets
 ```
 
 2. Add the missing configuration file to `src/conf/websockets.ts`:
 
 ```ts
-import { Encrypt } from '@rvohealth/dream'
-import { PsychicApplicationWebsockets, Ws } from '@rvohealth/psychic-websockets'
+import { Encrypt } from '@rvoh/dream'
+import { PsychicApplicationWebsockets, Ws } from '@rvoh/psychic-websockets'
 import Redis from 'ioredis'
 
 export default (wsApp: PsychicApplicationWebsockets) => {
@@ -53,8 +53,8 @@ export default (wsApp: PsychicApplicationWebsockets) => {
 import {
   PsychicApplication,
   PsychicApplicationInitOptions,
-} from '@rvohealth/psychic'
-import { PsychicApplicationWebsockets } from '@rvohealth/psychic-websockets'
+} from '@rvoh/psychic'
+import { PsychicApplicationWebsockets } from '@rvoh/psychic-websockets'
 import psychicConf from '../../conf/app'
 import dreamConf from '../../conf/dream'
 import websocketsConf from '../../conf/websockets'
@@ -72,7 +72,7 @@ export default async function initializePsychicApplication(
 4. We recommend you include a singleton within your application to simplify your websockets integration:
 
 ```ts
-import { Ws } from '@rvohealth/psychic-websockets'
+import { Ws } from '@rvoh/psychic-websockets'
 
 export const WS_ROUTES = ['/ops/connection-success'] as const
 
@@ -90,8 +90,8 @@ The configuration for the `psychic-websockets` package is driven by the `conf/we
 Redis, which is used to emit accross distributed websocket systems, can be configured using the `#set` method provided by `PsychicApplicationWebsockets`, like so:
 
 ```ts
-import { Encrypt } from '@rvohealth/dream'
-import { PsychicApplicationWebsockets, Ws } from '@rvohealth/psychic-websockets'
+import { Encrypt } from '@rvoh/dream'
+import { PsychicApplicationWebsockets, Ws } from '@rvoh/psychic-websockets'
 import Redis from 'ioredis'
 
 export default (wsApp: PsychicApplicationWebsockets) => {

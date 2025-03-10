@@ -40,7 +40,7 @@ For the most part, your app can be spec'd using the general tools provided by [v
 ```ts
 // api/spec/unit/setup/hooks.ts
 
-import { truncate } from '@rvohealth/dream/spec-helpers'
+import { truncate } from '@rvoh/dream-spec-helpers'
 
 beforeEach(async () => {
   await truncate()
@@ -54,7 +54,7 @@ Write model specs to enfore behavior for your models, like so:
 ```ts
 // api/spec/unit/models/User.spec.ts
 
-import { Hash } from '@rvohealth/psychic'
+import { Hash } from '@rvoh/psychic'
 import createUser from '../../factories/UserFactory'
 
 describe('User', () => {
@@ -112,7 +112,7 @@ Anything else in the app should be fairly straight forward to test, with the exc
 Under the hood, psychic provides some test helpers to make our lives easier when needing to run controller/endpoint tests:
 
 ```ts
-import { specRequest as request } from '@rvohealth/psychic/spec-helpers'
+import { specRequest as request } from '@rvoh/psychic/spec-helpers'
 
 describe('a visitor attempts to hit an unauthed route', () => {
   beforeEach(async () => {

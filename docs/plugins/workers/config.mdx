@@ -16,7 +16,7 @@ Psychic scans your worker config whenever you run `yarn psy sync`, capturing the
 ```ts
 // app/services/ApplicationBackgroundedService.ts
 
-import { BaseBackgroundedService } from '@rvohealth/psychic-workers'
+import { BaseBackgroundedService } from '@rvoh/psychic-workers'
 import psychicTypes from '../../types/psychic'
 
 export default class ApplicationBackgroundedService extends BaseBackgroundedService {
@@ -29,7 +29,7 @@ export default class ApplicationBackgroundedService extends BaseBackgroundedServ
 ```ts
 // app/services/ApplicationScheduledService.ts
 
-import { BaseScheduledService } from '@rvohealth/psychic-workers'
+import { BaseScheduledService } from '@rvoh/psychic-workers'
 import psychicTypes from '../../types/psychic'
 
 export default class ApplicationScheduledService extends BaseScheduledService {

@@ -32,10 +32,7 @@ The configuration entry point is found at `spec/features/vite.config.ts`. This f
 ```ts
 // spec/features/setup/globalSetup.ts
 
-import {
-  launchViteServer,
-  stopViteServer,
-} from '@rvohealth/psychic-spec-helpers'
+import { launchViteServer, stopViteServer } from '@rvoh/psychic-spec-helpers'
 import initializePsychicApplication from '../../../test-app/src/cli/helpers/initializePsychicApplication'
 
 export async function setup() {
@@ -53,9 +50,9 @@ The second point of departure from unit specs can be found at `spec/features/set
 ```ts
 // spec/features/setup/hooks.ts
 
-import { DreamApplication } from '@rvohealth/dream'
-import { PsychicServer } from '@rvohealth/psychic'
-import { truncate } from '@rvohealth/dream-spec-helpers'
+import { DreamApplication } from '@rvoh/dream'
+import { PsychicServer } from '@rvoh/psychic'
+import { truncate } from '@rvoh/dream-spec-helpers'
 import initializePsychicApplication from '../../../../src/app/helpers/initializePsychicApplication'
 
 let server: PsychicServer
@@ -88,7 +85,7 @@ yarn fspec
 Psychic doesn't know much about your UI, so the assertion helpers it provides out of the box are fairly basic. That being said, this suite of tools is generally enough to get the job done for most apps.
 
 ```ts
-import { visit } from '@rvohealth/psychic-spec-helpers'
+import { visit } from '@rvoh/psychic-spec-helpers'
 
 describe('ingredients index page', () => {
   beforeEach(async () => {
@@ -136,8 +133,8 @@ Between each spec run, the database will be truncated to ensure a clean slate. S
 ```ts
 // api/spec/features/setup/hooks.ts
 
-import { DreamApplication } from '@rvohealth/dream'
-import { truncate } from '@rvohealth/dream/spec-helpers'
+import { DreamApplication } from '@rvoh/dream'
+import { truncate } from '@rvoh/dream-spec-helpers'
 
 ...
 
