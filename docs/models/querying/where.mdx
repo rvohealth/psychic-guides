@@ -1,9 +1,8 @@
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # where
 
 The where statement will actually return back an instance of a Query (tethered by type generics back to the originating Dream class) which can then be chained with many statements before final execution.
-
 
 ```ts
 await User.where({ email: null }).all()
@@ -25,4 +24,3 @@ If an array is passed as a value to a non-array field, the query will select any
 await User.where({ email: ['hi@hi', 'bye@bye'] }).all()
 // [User{ email: 'hi@hi' }, User{ email: 'bye@bye' }]
 ```
-

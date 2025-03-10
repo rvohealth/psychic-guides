@@ -1,8 +1,8 @@
 ---
-sidebar_position: 1
+sidebar_position: 7
 ---
 
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # range
 
@@ -11,7 +11,7 @@ Range is used in combination with `where` clauses in Dream.
 ## range supports start, end, or start and end values
 
 ```ts
-import { range } from '@rvohealth/dream'
+import { range } from '@rvoh/dream'
 
 // search Recipes with a rating of at least 3
 await Recipe.where({ rating: range(3) }).count()
@@ -26,14 +26,14 @@ await Recipe.where({ rating: range(2, 4) }).count()
 ## range supports CalendarDate, DateTime, and number values
 
 ```ts
-import { range } from '@rvohealth/dream'
+import { range } from '@rvoh/dream'
 
 await user
   .associationQuery('pets')
   .where({
     adoptedOn: range(
       CalendarDate.today().minus({ months: 2 }),
-      CalendarDate.today().minus({ month: 1 })
+      CalendarDate.today().minus({ month: 1 }),
     ),
   })
   .order({ adoptedOn: 'desc' })
@@ -44,7 +44,7 @@ await user
   .where({
     adoptedOn: range(
       DateTime.now().minus({ months: 2 }),
-      DateTime.now().minus({ month: 1 })
+      DateTime.now().minus({ month: 1 }),
     ),
   })
   .order({ adoptedOn: 'desc' })

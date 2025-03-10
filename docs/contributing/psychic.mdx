@@ -1,0 +1,99 @@
+---
+sidebar_position: 0
+title: psychic
+---
+
+## Requirements
+
+In order to get started working on psychic locally, you will first need to install the following:
+
+- nodejs >= 23.9.0
+- postgres >= 13.4
+- redis >= 7.2.0 (if using workers or websockets)
+
+## Installation
+
+Once done, you can clone the repo locally:
+
+```bash
+git clone https://github.com/rvohealth/psychic
+```
+
+once in, you will need to add two env files to the project root:
+
+```
+DB_USER=WHO_AM_I
+DB_NAME=psychic_core_dev
+DB_PORT=5432
+DB_HOST=localhost
+APP_ENCRYPTION_KEY="REPLACE_ME"
+LEGACY_APP_ENCRYPTION_KEY="REPLACE_ME"
+```
+
+```
+# .env.test
+PORT=7777
+DB_USER=WHO_AM_I
+DB_NAME=psychic_core_test
+DB_PORT=5432
+DB_HOST=localhost
+APP_ENCRYPTION_KEY="REPLACE_ME"
+LEGACY_APP_ENCRYPTION_KEY="REPLACE_ME"
+```
+
+In each of these files, you will want to replace `WHO_AM_I` with the result of running `whoami` in your local terminal. Generally speaking, the username for postgres will be the name of the current user, though this can be different depending on how postgres was installed.
+
+> NOTE: Whenever running any CLI commands, Dream will notice that your encryption keys are invalid, and will print warnings in the console with suggested keys that could work in their place. You can copy those key values, and place them into the `APP_ENCRYPTION_KEY` and `LEGACY_APP_ENCRYPTION_KEY` environment variable values
+
+Once this is done, you should be able to reset the test database and run specs:
+
+```bash
+yarn psycore db:reset
+yarn uspec
+yarn fspec
+```
+
+## Architecture
+
+Psychic is a light-weight wrapper around express, and largely revolves around the ecosystem provided by the web server. There are a few primary constructs worth paying attention to within the psychic ecosystem:
+
+- `PsychicServer` - this is the server which wraps express to produce your web server
+- `PsychicRouter` - the routing mechanism responsible for interpreting your `conf/routes.ts` file, as well as processing requests
+- `PsychicApplication` - The configuration class which understands and configures your application
+- `cli/bin` - provides the cli utils for your application
+
+### PsychicServer
+
+The `PsychicServer` is the wrapper around express. It is responsible for managing the express instance, as well is orchestrating the lifecycle events around its starting and stopping.
+
+### PsychicRouter
+
+`PsychicRouter` is responsible for interpreting your routes.ts file, as well as orchestrating your requests.
+
+### PsychicApplication
+
+A high-level class called `PsychicApplication` is provided by psychic, which is responsible for loading all of your controllers, as well as configuring your server (i.e. cors, body-parser, etc...). It additionally wraps around the `DreamApplication` class, passing much of the shared configuration through so that it need not be provided twice.
+
+Any time anything related to a dream application is executed, the psychic application must be initialized first. This is done through a helper that is automatically provided in every psychic application, called `initializePsychicApplication`. This is the entry point to your app, and must be called before you do anything, whether it is run a spec, examine your application's routes, run migrations, use the repl...you get it, anything!
+
+### cli/bin
+
+The cli/bin provide the cli utilities used to orchestrate your app from the command line.
+
+## Unit specs
+
+Unit specs are used to test the individual classes and functions within your application. In addtion, they are also used to test requests to your backend, which are often called `e2e` tests in other worlds. Since these request specs have no problem running alongside ordinary unit tests, we run them all together as part of the same suite, allowing you to choose when to launch a request in your test and when not to.
+
+## Feature specs
+
+In a real world application, feature specs would be used to drive a headless browser through your entire application, allowing you to seed your backend database, run a browser test, clear the database out, and start another test. Since psychic itself is an app builder, we do not have any reason for feature tests, so the `fspec` command is very thin, leaving us with just enough feature specs to prove that we are capable of stubbing our backend controllers between specs.
+
+the `test-app` folder at the root of the project contains an example app that is built in psychic. This app contains a dummy project with some models scaffolded in to drive our tests with. Doing this is the best way to simulate a real app using psychic.
+
+### psycore
+
+The `yarn psycore` command is used for interacting with the dummy application located in the test-app folder. Anything you might want to test, like for example generating a model, will be done to the test-app folder. For example, if you wanted to generate a new model, `ChalupaSupreme`, running the following command would generate your model in the `test-app/app/models` folder.
+
+```bash
+yarn psycore g:model ChalupaSupreme deliciousness:boolean
+```

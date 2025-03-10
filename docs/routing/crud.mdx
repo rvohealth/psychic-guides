@@ -2,23 +2,11 @@
 sidebar_position: 1
 ---
 
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # crud
 
 You can add routes using the standard http methods, such as GET, POST, PUT, PATCH, and DELETE. In the below example, all the different http verbs will be pointing to the ping controller's ping method.
-
-<RightSidebarItem>
-  <pre style={{ backgroundColor: 'transparent' }}>
-    {`
-GET     /ping  Ping#ping
-POST    /ping  Ping#ping
-PUT     /ping  Ping#ping
-PATCH   /ping  Ping#ping
-DELETE  /ping  Ping#ping
-`}
-  </pre>
-</RightSidebarItem>
 
 ```ts // conf/routes.ts
 import { PsychicRouter } from 'psychic'
@@ -32,5 +20,17 @@ export default (r: PsychicRouter) => {
   r.delete('/ping', PingController, 'ping')
 }
 ```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET     /ping  Ping#ping
+POST    /ping  Ping#ping
+PUT     /ping  Ping#ping
+PATCH   /ping  Ping#ping
+DELETE  /ping  Ping#ping
+`}
+  </pre>
+</RoutesOutput>
 
 Whenever providing a top-level route, Psychic will not attempt to infer the controller name for you. This means that you are forced to explicitly provide a controller and action in these cases. Once providing a controller, typescript autocomplete helpers will aid you in selecting an action (i.e. a public method on your controller) to call when that route is hit.

@@ -1,74 +1,58 @@
 ---
 sidebar_position: 2
+title: feature
 ---
 
 # Feature
 
-Contrary to unit specs, feature specs will launch your front end and back end servers, driving them with [jest-playwright](https://github.com/playwright-community/jest-playwright). The configuration for this is totally exposed to you, allowing you to adjust the jest and playwright configurations respectively usingthe standard configuration patterns they provide.
+Over the years, the landscape of web development has changed dramatically. We have come far from our jQuery beginnings, and preferences in that time have shifted in a big way in terms of web application development. One of the biggest shifts has been a great decoupling of front ends and back ends. This serves the modern app ecosystem well, since a team can exclusively focus on servicing a front end, while another team works on building out a back end, allowing coders to specialize and deliver higher quality products faster.
+
+Psychic believes strongly in this philosophy, and recognizes that many teams will be looking to use our technology without marrying the code bases or teams in any way. For those who are in this boat, Psychic is still for you, though feature specs may not be.
+
+## What is a "feature" spec?
+
+Feature specs are also commonly referred to as `end-to-end`, or `e2e` specs. We borrowed the classic term from `rspec` to continue to nod to the amazing ruby ecosystem we were so inspired by as we wrote Psychic. While unit tests can also have an end-to-end-like quality to them, especially when you are testing endpoints, feature specs are meant to test interactions outside your back end application.
+
+A feature spec, like a unit spec, is written and executed from the back end context. This is amazingly powerful, since it provides you all the tools to provision your database between specs, enabling you to do proper set up, tear down, and assert the state of your database in between.
+
+Where feature specs differ from unit specs is that a headless browser is used to drive through any number of your client applications, enabling them to interact with your back end application and allowing you to test the results of those interactions however you see fit.
+
+## How is this done?
+
+Feature specs will use [vitest](http://vitest.dev/) to run, but will additionally leverage [puppeteer](https://pptr.dev/guides/page-interactions) to drive a headless browser through your client. Psychic comes prepared with assertion helpers to make working in this environment very comfortable for you, though the assertion library exposed by puppeteer is powerful enough to not need anything else.
+
+When provisioning your application, psychic asks if you would like a client and admin application. If you select either of these options, the new app provisioner will automatically provision new client and admin applications in the front end framework of choice. All of the client application provisioning is done using the latest version of vite, and no additional code is added to the front end.
+
+This is, generally speaking, magical, since most everyone I know has a totally different toolset they like to use to build out their front ends, and being forced into any specific paradigm can be untenable. Psychic attempts to bridge the gap to your front end only at the testing layer, allowing it to be otherwise completely decoupled from your back end application.
 
 ## Configuration
 
-Configuring your feature spec runs is unfortunately spread out over 3 files, which are used to configure jest, jest-playwrite, and playwrite, all of which have their own configuration files.
+The configuration entry point is found at `spec/features/vite.config.ts`. This file will look near-identical to the vite.config.ts file found in the unit folder. Where the feature specs differ is really in two places. The first is the global setup and teardown, both located at `spec/features/setup/globalSetup.ts`. In this file, a new vite server is launched, pointing at the client app that was provisioned for you.
 
-The `spec/feature/jest.config.js` file is used to configure jest, setting it up to utilize the `jest-playwrite` plugin. By default, it should look something like this:
+```ts
+// spec/features/setup/globalSetup.ts
 
-```js
-// spec/feature/jest.config.js
+import { launchViteServer, stopViteServer } from '@rvoh/psychic-spec-helpers'
+import initializePsychicApplication from '../../../test-app/src/cli/helpers/initializePsychicApplication'
 
-/** @type {import('ts-jest').JestConfigWithTsJest} */
-module.exports = {
-  bail: process.env.CI === '1',
-  restoreMocks: true,
-  clearMocks: true,
-  resetMocks: true,
-  preset: 'jest-playwright-preset',
-  testEnvironment: './setup/CustomPlaywrightEnvironment.js',
-  transform: { '^.+\\.tsx?$': 'ts-jest' },
-  setupFilesAfterEnv: ['expect-playwright', '<rootDir>/setup/hooks.ts'],
-  workerIdleMemoryLimit: '1024MB',
+export async function setup() {
+  await initializePsychicApplication()
+  await launchViteServer({ port: 3000, cmd: 'yarn client' })
+}
+
+export function teardown() {
+  stopViteServer()
 }
 ```
 
-We also need to configure the jest-playwrite package, which we can do by providing a second file, `spec/feature/jest-playwrite.config.js`. This file is used to launch your frontend client so that we can send a headless browser through it. Once the front end port is responding at port 3000, jest-playwright will begin running your feature specs, which can drive a headless browser through your frontend, hitting your backend for complete end-to-end testing.
-
-```js
-const { defineConfig, devices } = require('@playwright/test')
-
-module.exports = {
-  launchOptions: {
-    headless: process.env.BROWSER !== '1',
-  },
-  browsers: [
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-  ],
-  serverOptions: [
-    {
-      command:
-        'BROWSER=none PORT=3000 REACT_APP_PSYCHIC_ENV=test yarn --cwd=../client start',
-      host: '127.0.0.1',
-      debug: process.env.DEBUG === '1',
-      launchTimeout: 60000,
-      port: 3000,
-      usedPortAction: 'kill',
-      waitOnScheme: {
-        verbose: process.env.DEBUG === '1',
-      },
-    },
-  ],
-}
-```
-
-In addition to the `jest-playwright.config.js` file, your app already comes bootstrapped with the config necessary to get your backend psychic server running in-thread, so that you can continue to use jest to spy on your backend code while running your feature specs.
+The second point of departure from unit specs can be found at `spec/features/setup/hooks.ts`. Here you will see that we additionally start and stop a psychic server programatically. Doing so enables us to spy on back end modules, which is extremely important for end to end tests.
 
 ```ts
 // spec/features/setup/hooks.ts
 
-import { DreamApplication } from '@rvohealth/dream'
-import { PsychicServer } from '@rvohealth/psychic'
-import { truncate } from '@rvohealth/dream-spec-helpers'
+import { DreamApplication } from '@rvoh/dream'
+import { PsychicServer } from '@rvoh/psychic'
+import { truncate } from '@rvoh/dream-spec-helpers'
 import initializePsychicApplication from '../../../../src/app/helpers/initializePsychicApplication'
 
 let server: PsychicServer
@@ -96,44 +80,51 @@ cd api
 yarn fspec
 ```
 
-## Custom spec helpers
+## Custom assertion matchers
 
-Psychic doesn't know much about your UI, so it doesn't provide many feature spec helpers for you out of the box (aside from those provided by playwright directly), but it does include a few in your app when it is first generated. you can use these custom helpers to navigate your app, like so:
+Psychic doesn't know much about your UI, so the assertion helpers it provides out of the box are fairly basic. That being said, this suite of tools is generally enough to get the job done for most apps.
 
 ```ts
+import { visit } from '@rvoh/psychic-spec-helpers'
+
 describe('ingredients index page', () => {
   beforeEach(async () => {
+    await createUser()
     await createIngredient({ name: 'Cabbage', ... })
   })
 
   it('accepts the request', async () => {
-    await visit('/ingredients')
-    await expectContent('Cabbage')
+    const page = await visit('/ingredients')
+    await exect(page).toHaveTextContent('Cabbage')
   })
 })
 ```
 
-```bash
-├── spec
-│   ├── features
-│   │   ├── helpers
-│   │   │   ├── attachFile.ts
-│   │   │   ├── clickButton.ts
-│   │   │   ├── clickLink.ts
-│   │   │   ├── clickSelector.ts
-│   │   │   ├── expectContent.ts
-│   │   │   ├── expectLink.ts
-│   │   │   ├── expectNoContent.ts
-│   │   │   ├── expectNoSelector.ts
-│   │   │   ├── expectSelector.ts
-│   │   │   ├── fillInput.ts
-│   │   │   ├── sleep.ts
-│   │   │   ├── toggle.ts
-│   │   │   ├── uncheck.ts
-│   │   │   ├── visit.ts
-```
+Psychic provides the following helpers:
 
-These helpers are for the most part general purpose, but may need to be tweaked depending on the UI framework you are using. You may want to update your selectors to specify specific class names for buttons, etc... How you choose to implement these is up to you, and totally dependent on decisions you make about your UI (i.e. UI framework, CSS framework, etc...).
+- `launchBrowser` - launches a new puppeteer browser with your provided configuration.
+- `launchPage` - launches a new browser and creates a new page from it.
+- `providePuppeteerViteMatchers` - a helper function that provides the assertion helpers for vite and puppeteer
+- `launchViteDevServer` - launches a dev server, used to launch your front end when running feature specs
+
+Additionally, Psychic provides the following assertion helpers:
+
+- `toCheck` - attempts to check a checkbox
+- `toClick` - attempts to click an element on the page with the specified text
+- `toClickButton` - attempts to click a button on the page with the specified text
+- `toClickButton` - attempts to click an anchor tag on the page with the specified text
+- `toClickSelector` - attempts to click an element on the page with the specified css selector
+- `toFill` - attempts to fill in the value for a text field
+- `toHaveChecked` - expects the page to have a checked element with the specified text value
+- `toHaveLink` - expects the page to have a link with the specified text value
+- `toHavePath` - expects the page to have the specified path
+- `toHaveSelector` - expects the page to have the specified css selector
+- `toHaveUnchecked` - expects the page to have an unchecked checkbox with the provided text value
+- `toHaveUrl` - expects the page to have the provided url
+- `toMatchTextContent` - expects the page to have the provided text
+- `toNotHaveSelector` - expects the page to not have the provided css selector
+- `toNotMatchTextContent` - expects the page to not match the provided text content
+- `toUncheck` - attempts to uncheck a checkbox with the provided text value
 
 ## Cleanup
 
@@ -142,8 +133,8 @@ Between each spec run, the database will be truncated to ensure a clean slate. S
 ```ts
 // api/spec/features/setup/hooks.ts
 
-import { DreamApplication } from '@rvohealth/dream'
-import { truncate } from '@rvohealth/dream/spec-helpers'
+import { DreamApplication } from '@rvoh/dream'
+import { truncate } from '@rvoh/dream-spec-helpers'
 
 ...
 

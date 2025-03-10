@@ -2,7 +2,7 @@
 sidebar_position: 4
 ---
 
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # exception handling
 
@@ -29,8 +29,10 @@ Similar to `castParam`, `paramsFor` will raise a 400 exception if any of the par
 ```ts
 class PostsController extends PsychicController {
   public async create() {
-    const post = await this.currentUser
-      .createAssociation('posts', this.paramsFor(Post))
+    const post = await this.currentUser.createAssociation(
+      'posts',
+      this.paramsFor(Post),
+    )
   }
 }
 ```
@@ -52,13 +54,11 @@ class PostsController extends PsychicController {
 
 There are many failable lookup methods within dream, and taking advantage of them in your controllers can often save you an annoying manual step. Here are the other failable lookup methods that will case a 404 to be thrown:
 
-* [firstOrFail](/docs/models/querying/firstOrFail)
-* [lastOrFail](/docs/models/querying/lastOrFail)
-* [findOrFail](/docs/models/querying/findOrFail)
-* [findOrFailBy](/docs/models/querying/findOrFailBy)
-
+- [firstOrFail](/docs/models/querying/firstOrFail)
+- [lastOrFail](/docs/models/querying/lastOrFail)
+- [findOrFail](/docs/models/querying/findOrFail)
+- [findOrFailBy](/docs/models/querying/findOrFailBy)
 
 ## validation failures
 
 Setting up [validations](/docs/models/validations/overview) on your models will automatically cause 422 errors to be thrown if any of the validations fails.
-

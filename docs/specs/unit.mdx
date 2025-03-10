@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+title: unit
 ---
 
 # Unit
@@ -8,35 +9,38 @@ Unit specs are meant testing for strictly your backend components in isolation. 
 
 ## Configuration
 
-The configuration for your unit specs is located in `spec/unit/jest.config.js`. Composing unit specs, one is enabled to test all components of their app. Since this is all done using `jest` under the hood, this will likely be familiar to you already, with the one caviat that we also provide special unit spec helpers for spec'ing your endpoints. Here is a sample config that could enable one to, for example, integrate with `pollyjs`:
+The configuration for your unit specs is located in `spec/unit/vite.config.ts`. Composing unit specs, one is enabled to test all components of their app. Since this is all done using `vitest` under the hood, this will likely be familiar to you already, with the one caviat that we also provide special unit spec helpers for spec'ing your endpoints. Here is a sample config that could enable one to, for example, integrate with `pollyjs`:
 
 ```js
-// spec/unit/jest.config.js
+// spec/unit/vite.config.ts
 
-/** @type {import('ts-jest').JestConfigWithTsJest} */
-module.exports = {
-  bail: process.env.CI === '1',
-  restoreMocks: true,
-  clearMocks: true,
-  resetMocks: true,
-  preset: 'ts-jest',
-  testEnvironment: 'setup-polly-jest/jest-environment-node',
-  transform: { '^.+\\.tsx?$': 'ts-jest' },
-  setupFilesAfterEnv: ['<rootDir>setup/hooks.ts', 'luxon-jest-matchers'],
-  globalSetup: '<rootDir>setup/beforeAll.ts',
-  globalTeardown: '<rootDir>setup/afterAll.ts',
-  workerIdleMemoryLimit: '1024MB',
-}
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    dir: './spec/unit',
+    globals: true,
+    setupFiles: ['luxon-jest-matchers', './spec/unit/setup/hooks.ts'],
+    fileParallelism: false,
+    maxConcurrency: 1,
+    maxWorkers: 1,
+    minWorkers: 1,
+    mockReset: true,
+    watch: false,
+
+    globalSetup: './spec/unit/setup/globalSetup.ts',
+  },
+})
 ```
 
 ## General specs
 
-For the most part, your app can be spec'd using the general tools provided by [jest](https://jestjs.io/docs/getting-started). We provide some boilerplate setup for your unit spec runs to make sure that the database is truncated between runs, which allows you to freely seed the db for each test without worrying about running into data from a previous test run:
+For the most part, your app can be spec'd using the general tools provided by [vitest](http://vitest.dev). We provide some boilerplate setup for your unit spec runs to make sure that the database is truncated between runs, which allows you to freely seed the db for each test without worrying about running into data from a previous test run:
 
 ```ts
 // api/spec/unit/setup/hooks.ts
 
-import { truncate } from '@rvohealth/dream/spec-helpers'
+import { truncate } from '@rvoh/dream-spec-helpers'
 
 beforeEach(async () => {
   await truncate()
@@ -50,8 +54,7 @@ Write model specs to enfore behavior for your models, like so:
 ```ts
 // api/spec/unit/models/User.spec.ts
 
-import { describe as context } from '@jest/globals'
-import { Hash } from '@rvohealth/psychic'
+import { Hash } from '@rvoh/psychic'
 import createUser from '../../factories/UserFactory'
 
 describe('User', () => {
@@ -109,7 +112,7 @@ Anything else in the app should be fairly straight forward to test, with the exc
 Under the hood, psychic provides some test helpers to make our lives easier when needing to run controller/endpoint tests:
 
 ```ts
-import { specRequest as request } from '@rvohealth/psychic/spec-helpers'
+import { specRequest as request } from '@rvoh/psychic/spec-helpers'
 
 describe('a visitor attempts to hit an unauthed route', () => {
   beforeEach(async () => {

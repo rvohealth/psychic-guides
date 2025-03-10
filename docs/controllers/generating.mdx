@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # generating
 
@@ -17,7 +17,7 @@ generating controller spec: spec/unit/controllers/PostsController.spec.ts
 The controller produced will automatically have the methods specified provided for you, with `OpenAPI` decorators automatically registered on your methods.
 
 ```ts
-import { OpenAPI } from '@rvohealth/psychic'
+import { OpenAPI } from '@rvoh/psychic'
 import AuthedController from './AuthedController'
 
 const openApiTags = ['posts']
@@ -53,8 +53,6 @@ export default class PostsController extends AuthedController {
 Additionally, a spec file will be generated, which is empty by default, but ready for you to add tests to.
 
 ```ts
-// import { describe as context } from '@jest/globals'
-
 describe('PostsController', () => {
   it.todo('add a test here to get started building PostsController')
 })

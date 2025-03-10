@@ -18,13 +18,13 @@ In a HasMany relationship, your base model can potentially point to many differe
 ```ts
 class User extends ApplicationModel {
   ...
-  @User.HasMany('Pet')
+  @Deco.HasMany('Pet')
   public pets: Pet[]
 }
 
 class Pet extends ApplicationModel {
   ...
-  @Pet.BelongsTo('User')
+  @Deco.BelongsTo('User')
   public user: User[]
   public userId: DreamColumn<Pet, 'userId'>
 }
@@ -39,13 +39,13 @@ Complementary to `@HasMany`, we have the `@HasOne` association, which is almost 
 ```ts
 class User extends ApplicationModel {
   ...
-  @User.HasOne('UserSettings')
+  @Deco.HasOne('UserSettings')
   public userSettings: UserSettings | null
 }
 
 class UserSettings extends ApplicationModel {
   ...
-  @UserSettings.BelongsTo('User')
+  @Deco.BelongsTo('User')
   public user: User[]
   public userId: DreamColumn<UserSettings, 'userId'>
 }
@@ -62,10 +62,10 @@ When defining a HasOne/HasMany association, the foreign key is automatically ass
 ```ts
 class User extends ApplicationModel {
   ...
-  @User.HasOne('UserSettings')
+  @Deco.HasOne('UserSettings')
   public userSettings: UserSettings | null
 
-  @User.HasMany('Pet')
+  @Deco.HasMany('Pet')
   public pets: Pet[]
 }
 ```
@@ -75,7 +75,7 @@ To customize the foreign key, you can pass an additional `foreigkKey` option to 
 ```ts
 class User extends ApplicationModel {
   ...
-  @User.HasOne('UserSettings', { foreignKey: 'userUuid' })
+  @Deco.HasOne('UserSettings', { foreignKey: 'userUuid' })
   public userSettings: UserSettings | null
 }
 ```
@@ -87,7 +87,7 @@ Sometimes it is necessary to further-narrow the scope of your association using 
 ```ts
 class User extends ApplicationModel {
   ...
-  @User.HasOne('Pet', { where: { name: 'Aster' } })
+  @Deco.HasOne('Pet', { where: { name: 'Aster' } })
   public favoritePet: Pet | null
 }
 ```
@@ -108,7 +108,7 @@ In some cases, dynamic values will need to be permitted for the provided where s
 ```ts
 class User extends ApplicationModel {
   ...
-  @User.HasOne('Pet', { where: { species: DreamConst.required } })
+  @Deco.HasOne('Pet', { where: { species: DreamConst.required } })
   public favoritePet: Pet | null
 }
 
@@ -125,7 +125,7 @@ Additionally, you can defer the passed arguments to a higher level by leveraging
 ```ts
 class User extends ApplicationModel {
   ...
-  @User.HasOne('LocalizedText', { where: { locale: DreamConst.passthrough } })
+  @Deco.HasOne('LocalizedText', { where: { locale: DreamConst.passthrough } })
   public currentLocalizedText: LocalizedText | null
 }
 
@@ -145,7 +145,7 @@ Similar to `where`, a `whereNot` statement can be provided to filter records:
 ```ts
 class User extends ApplicationModel {
   ...
-  @User.HasMany('LocalizedText', { whereNot: { deletedAt: null } })
+  @Deco.HasMany('LocalizedText', { whereNot: { deletedAt: null } })
   public deletedLocalizedTexts: LocalizedText[]
 }
 ```
@@ -163,19 +163,19 @@ export default class GraphNode extends ApplicationModel {
   ///////////////////////////////////////////
   // order built into the join association //
   ///////////////////////////////////////////
-  @GraphNode.HasMany('EdgeNode', { foreignKey: 'nodeId', order: 'position' })
+  @Deco.HasMany('EdgeNode', { foreignKey: 'nodeId', order: 'position' })
   public orderedEdgeNodes: EdgeNode[]
 
-  @GraphNode.HasMany('GraphEdge', { through: 'orderedEdgeNodes' })
+  @Deco.HasMany('GraphEdge', { through: 'orderedEdgeNodes' })
   public edges: GraphEdge[]
 
   //////////////////////////////////////////////
   // order applied to the through association //
   //////////////////////////////////////////////
-  @GraphNode.HasMany('EdgeNode', { foreignKey: 'nodeId' })
+  @Deco.HasMany('EdgeNode', { foreignKey: 'nodeId' })
   public edgeNodes: EdgeNode[]
 
-  @GraphNode.HasMany('GraphEdge', {
+  @Deco.HasMany('GraphEdge', {
     through: 'edgeNodes',
     order: 'weight',
     source: 'edge', // since `edgesOrderedByWeight` does not correspond to an
@@ -191,11 +191,11 @@ export default class EdgeNode extends ApplicationModel {
   @Sortable({ scope: 'node' })
   public position: DreamColumn<EdgeNode, 'position'>
 
-  @EdgeNode.BelongsTo('GraphEdge', { foreignKey: 'edgeId' })
+  @Deco.BelongsTo('GraphEdge', { foreignKey: 'edgeId' })
   public edge: GraphEdge
   public edgeId: DreamColumn<EdgeNode, 'edgeId'>
 
-  @EdgeNode.BelongsTo('GraphNode', { foreignKey: 'nodeId' })
+  @Deco.BelongsTo('GraphNode', { foreignKey: 'nodeId' })
   public node: GraphNode
   public nodeId: DreamColumn<EdgeNode, 'nodeId'>
 }
@@ -229,7 +229,7 @@ However, in the case of polymorphic relationships, this type of cascading is not
 
 ```ts
 class Rating extends ApplicationModel {
-  @Rating.BelongsTo(['Composition', 'Post'], {
+  @Deco.BelongsTo(['Composition', 'Post'], {
     polymorphic: true,
     dependent: 'destroy',
   })
@@ -247,7 +247,7 @@ If you want to avoid picking up duplicate records with the same value for a cert
 
 ```ts
 class User extends ApplicationModel {
-  @User.HasMany('Pet', { distinct: 'name' })
+  @Deco.HasMany('Pet', { distinct: 'name' })
   public petsWithUniqueNames: Pet[]
 }
 ```
@@ -265,10 +265,10 @@ console.log(lesson.preloadedThroughColumns.percentComplete)
 export default class User extends ApplicationModel {
   // ...
 
-  @User.HasMany('UserLesson')
+  @Deco.HasMany('UserLesson')
   public userLessons: UserLesson[]
 
-  @User.HasMany('Lesson', {
+  @Deco.HasMany('Lesson', {
     through: 'userLessons',
     preloadThroughColumns: ['percentComplete'],
   })
@@ -280,7 +280,7 @@ export default class UserLesson extends ApplicationModel {
 
   public percentComplete: DreamColumn<Lesson, 'percentComplete'>
 
-  @UserLesson.HasMany('Lesson')
+  @Deco.HasMany('Lesson')
   public lessons: Lesson[]
 }
 
@@ -303,10 +303,10 @@ console.log(lesson.preloadedThroughColumns.percentComplete)
 export default class User extends ApplicationModel {
   // ...
 
-  @User.HasMany('UserLesson')
+  @Deco.HasMany('UserLesson')
   public userLessons: UserLesson[]
 
-  @User.HasMany('Lesson', {
+  @Deco.HasMany('Lesson', {
     through: 'userLessons',
     preloadThroughColumns: {
       id: 'userLessonId',
@@ -321,7 +321,7 @@ export default class UserLesson extends ApplicationModel {
 
   public percentComplete: DreamColumn<Lesson, 'percentComplete'>
 
-  @UserLesson.HasMany('Lesson')
+  @Deco.HasMany('Lesson')
   public lessons: Lesson[]
 }
 
@@ -341,7 +341,7 @@ In some cases, you may find it necessary to change the primary key being used on
 
 ```ts
 class User extends ApplicationModel {
-  @User.HasMany('Pet', { primaryKeyOverride: 'uuid' })
+  @Deco.HasMany('Pet', { primaryKeyOverride: 'uuid' })
   public pets: Pet[]
 }
 ```
@@ -363,10 +363,10 @@ export default class ArtExhibit extends ApplicationModel {
 
   public featuredPosition: DreamColumn<ArtExhibit, 'featuredPosition'>
 
-  @ArtExhibit.HasMany('Artwork')
+  @Deco.HasMany('Artwork')
   public artworks: Artwork[]
 
-  @ArtExhibit.HasOne('Artwork', {
+  @Deco.HasOne('Artwork', {
     selfWhere: {
       position: 'featuredPosition',
     },
@@ -380,7 +380,7 @@ export default class Artwork extends ApplicationModel {
   @Sortable({ scope: 'artExhibit' })
   public position: DreamColumn<Artwork, 'position'>
 
-  @Artwork.BelongsTo('ArtExhibit')
+  @Deco.BelongsTo('ArtExhibit')
   public artExhibit: ArtExhibit
   public artExhibitId: DreamColumn<Artwork, 'artExhibitId'>
 }
@@ -399,11 +399,11 @@ const siblingEdgeNodes = await edgeNode.load('siblings').execute()
 export default class EdgeNode extends ApplicationModel {
   // ...
 
-  @EdgeNode.BelongsTo('GraphNode', { foreignKey: 'nodeId' })
+  @Deco.BelongsTo('GraphNode', { foreignKey: 'nodeId' })
   public node: DreamColumn<GraphNode, 'node'>
   public nodeId: DreamColumn<GraphNode, 'nodeId'>
 
-  @EdgeNode.HasMany('EdgeNode', {
+  @Deco.HasMany('EdgeNode', {
     through: 'node',
     source: 'edgeNodes',
     selfWhereNot: { id: 'id' },
@@ -414,7 +414,7 @@ export default class EdgeNode extends ApplicationModel {
 export default class GraphNode extends ApplicationModel {
   // ...
 
-  @GraphNode.HasMany('EdgeNode', { foreignKey: 'nodeId' })
+  @Deco.HasMany('EdgeNode', { foreignKey: 'nodeId' })
   public edgeNodes: EdgeNode[]
 }
 ```

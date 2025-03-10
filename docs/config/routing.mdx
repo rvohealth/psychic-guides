@@ -2,24 +2,11 @@
 sidebar_position: 3
 ---
 
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # routing
 
 In addition to configuration for building your express app, a separate configuration file is provided to configure the routing mechanism provided by psychic. This file is located at `conf/routes.ts`.
-
-<RightSidebarItem>
-  <pre style={{ backgroundColor: 'transparent' }}>
-    {`
-GET    api/v1/pets      Api/V1/Pets#index
-POST   api/v1/pets      Api/V1/Pets#create
-GET    api/v1/pets/:id  Api/V1/Pets#show
-PUT    api/v1/pets/:id  Api/V1/Pets#update
-PATCH  api/v1/pets/:id  Api/V1/Pets#update
-DELETE api/v1/pets/:id  Api/V1/Pets#destroy
-`}
-  </pre>
-</RightSidebarItem>
 
 ```ts
 // conf/routes.ts
@@ -32,5 +19,18 @@ export default (r: PsychicRouter) => {
   })
 }
 ```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET    api/v1/pets      Api/V1/Pets#index
+POST   api/v1/pets      Api/V1/Pets#create
+GET    api/v1/pets/:id  Api/V1/Pets#show
+PUT    api/v1/pets/:id  Api/V1/Pets#update
+PATCH  api/v1/pets/:id  Api/V1/Pets#update
+DELETE api/v1/pets/:id  Api/V1/Pets#destroy
+`}
+  </pre>
+</RoutesOutput>
 
 The routes API is fairly robust. For more information on available methods, see our [routing guides](/docs/routing/crud).

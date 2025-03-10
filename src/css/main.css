@@ -215,25 +215,8 @@ main > .container > .row > .col {
   -webkit-text-stroke-color: none !important;
 }
 
-.right-sidebar-item {
-  /* position: fixed; */
-  position: absolute;
-  right: 0;
-  background: #0e0928;
-  color: #25ffb8;
-  width: calc(25% - 25px);
-  margin-right: 3%;
-  padding: 12px;
-  border-radius: 10px;
-  margin-top: 10px !important;
-}
-
-.right-sidebar-item pre {
-  font-size: 16px;
-}
-
 @media (max-width: 700px) {
-  .right-sidebar-item {
+  .routes-output {
     display: none;
     /*position: relative;*/
     /*width: calc(35% - 25px);*/
@@ -241,15 +224,27 @@ main > .container > .row > .col {
 }
 
 @media (max-width: 1000px) {
-  .right-sidebar-item {
+  .routes-output {
     width: calc(35% - 25px);
   }
 }
 
 @media (max-width: 1500px) {
-  .right-sidebar-item {
+  .routes-output {
     /*width: 15%;*/
   }
+}
+
+.routes-output {
+  background: #0e0928;
+  color: #25ffb8;
+  padding: 20px;
+  border-radius: 20px;
+  margin-bottom: 57px;
+}
+
+.routes-output pre {
+  font-size: 16px;
 }
 
 .theme-doc-footer,
@@ -262,11 +257,6 @@ main > .container > .row > .col {
 .theme-code-block {
   margin: 30px 0;
   box-shadow: none !important;
-}
-
-.right-sidebar-item {
-  margin-top: 80px;
-  margin-bottom: 57px;
 }
 
 .table-of-contents a {

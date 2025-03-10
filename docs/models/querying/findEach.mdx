@@ -1,4 +1,4 @@
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # findEach
 
@@ -13,6 +13,6 @@ await User.findEach(
   async (user) => {
     if (user.email.includes('burpcollaborator')) await user.destroy()
   },
-  { batchSize: 20000 }
+  { batchSize: 20000 },
 )
 ```

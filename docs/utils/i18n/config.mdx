@@ -1,0 +1,66 @@
+---
+sidebar_position: 1
+title: config
+---
+
+# i18n - config
+
+By default, Psychic apps are already provisioned with the necessary bindings to provide this translation utility. While the `i18n` function itself exists in the `app/helpers` folder, the configuration for it can be found at `conf/locales/index.ts`. By default, an english translation file is set up for you, but any other languages you wish to support can be provided as well.
+
+```ts
+// conf/locales/index.ts
+
+import en from './en'
+import es from './es'
+
+export default {
+  en,
+  es,
+}
+
+export type SupportedLocales = 'en' | 'es'
+```
+
+Within each translation file, you will want to make sure to provide the same payload shape, so that translations can be correctly resolved in all locales:
+
+```ts
+// conf/locales/en.ts
+
+export default {
+  labels: {
+    nutrition: {
+      calories: 'calories',
+    },
+  },
+}
+
+// conf/locales/es.ts
+
+export default {
+  labels: {
+    nutrition: {
+      calories: 'calorias',
+    },
+  },
+}
+```
+
+## Regional locale resolution
+
+While our configurations demonstrate base locales like `en` and `es`, Psychic also supports more specific locale resolutions, such as `en-US` vs `en-UK`. To create locales which can resolve to these specific regions, you can simply provide direct overrides for each region, like so:
+
+```ts
+// conf/locales/index.ts
+
+import en from './en'
+import enUk from './en-UK'
+
+export default {
+  en,
+  ['en-UK']: enUk,
+}
+
+export type SupportedLocales = 'en' | 'en-US' | 'en-UK'
+```
+
+With this in place, Psychic will carefully resolve the `en-UK` locale to the provided override. All other variants of `en-*` will be resolved to `en`.

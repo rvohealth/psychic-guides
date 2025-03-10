@@ -11,7 +11,7 @@ the `conf/repl.ts` file is used for bootstrapping the repl (which happens when y
 
 import './loadEnv'
 import * as repl from 'node:repl'
-import { loadRepl } from '@rvohealth/psychic'
+import { loadRepl } from '@rvoh/psychic'
 
 const replServer = repl.start('> ')
 
@@ -39,4 +39,3 @@ This will enable access once in the repl, like so:
 NODE_ENV=development yarn console
 > console.log(MyCustomClass)
 ```
-

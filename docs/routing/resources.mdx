@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-import RightSidebarItem from '@site/src/components/ui/right-sidebar-item'
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # resources
 
@@ -12,7 +12,17 @@ It is fundamentally essential to think this way, since you are already being for
 
 For example, if you are making an application that allows users to sign up and create a blog, you may need a users table, a blogs table, a posts table, and a comments table. It would be nice if your application could cleanly reflect some of these resources:
 
-<RightSidebarItem>
+```ts // conf/routes.ts
+import { PsychicRouter } from 'psychic'
+
+export default (r: PsychicRouter) => {
+  r.resources('blogs', (r) => {
+    r.resources('posts')
+  })
+}
+```
+
+<RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
 GET     /blogs                          Blogs#index
@@ -29,28 +39,9 @@ PATCH   /blogs/:blogId/posts/:id        Blogs/Posts#update
 DELETE  /blogs/:blogId/posts/:id        Blogs/Posts#destroy
 `}
   </pre>
-</RightSidebarItem>
-
-```ts // conf/routes.ts
-import { PsychicRouter } from 'psychic'
-
-export default (r: PsychicRouter) => {
-  r.resources('blogs', (r) => {
-    r.resources('posts')
-  })
-}
-```
+</RoutesOutput>
 
 You can use resourceful routes, but restrict the routes to only a collection. This is dead-useful, since often you are building an application which does express _some_ resourceful routing, but does not need certain routes. For example, you may have no need for the destroy or update methods. Below is an example of resourceful route limiting:
-
-<RightSidebarItem>
-  <pre style={{ backgroundColor: 'transparent' }}>
-    {`
-GET     /users  Users#index
-POST    /users  Users#create
-`}
-  </pre>
-</RightSidebarItem>
 
 ```ts
 // conf/routes.ts
@@ -64,19 +55,16 @@ export default (r: PsychicRouter) => {
 }
 ```
 
-Additionally, use the resource method to do the same, but with a singularized route endpoint. This is generally done when you do not need to pass an id to identify the resource, such as when the resource will always belong to the authenticated user.
-
-<RightSidebarItem>
+<RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-GET    /user  Users#show
-POST   /user  Users#create
-PUT    /user  Users#update
-PATCH  /user  Users#update
-DELETE /user  Users#destroy
+GET     /users  Users#index
+POST    /users  Users#create
 `}
   </pre>
-</RightSidebarItem>
+</RoutesOutput>
+
+Additionally, use the resource method to do the same, but with a singularized route endpoint. This is generally done when you do not need to pass an id to identify the resource, such as when the resource will always belong to the authenticated user.
 
 ```ts
 // conf/routes.ts
@@ -88,16 +76,19 @@ export default (r: PsychicRouter) => {
 }
 ```
 
-Both the `resource` and `resources` method enable nesting, enabling you to express child routes. By default, all child routes will be treated as `members` of the resource (meaning, they need to be reached by `id`).
-
-<RightSidebarItem>
+<RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-GET     /users/:id       Users#show
-GET     /users/:id/edit  Users#edit
+GET    /user  Users#show
+POST   /user  Users#create
+PUT    /user  Users#update
+PATCH  /user  Users#update
+DELETE /user  Users#destroy
 `}
   </pre>
-</RightSidebarItem>
+</RoutesOutput>
+
+Both the `resource` and `resources` method enable nesting, enabling you to express child routes. By default, all child routes will be treated as `members` of the resource (meaning, they need to be reached by `id`).
 
 ```ts
 r.resources('users', { only: ['show'] }, (r) => {
@@ -105,16 +96,25 @@ r.resources('users', { only: ['show'] }, (r) => {
 })
 ```
 
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET     /users/:id       Users#show
+GET     /users/:id/edit  Users#edit
+`}
+  </pre>
+</RoutesOutput>
+
 If you do not wish for your nested endpoint to contain the id as part of its signature, you can use the `collection` method, like so:
 
-<RightSidebarItem>
+<RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
 GET     /users/:id   Users#show
 GET     /users/edit  Users#edit
 `}
   </pre>
-</RightSidebarItem>
+</RoutesOutput>
 
 ```ts
 r.resources('users', { only: ['show'] }, (r) => {

@@ -1,0 +1,38 @@
+---
+sidebar_position: 2
+title: usage
+---
+
+# i18n - usage
+
+Within `app/helpers/i18n.ts`, you will find some boilerplate code provided for you which will activate [your app's locale configuration](/docs/utils/i18n/config). This code uses a util provided by Psychic to provision a curried `i18n` function for you, which will carefully absorb the locale shape of your config and use it to provide type completion that will make your life much easier.
+
+```ts
+// app/helpers/i18n.ts
+
+import { I18nProvider } from '@rvoh/psychic'
+import locales from '../../conf/locales'
+
+const i18n = I18nProvider.provide(locales, 'en')
+
+export default i18n
+```
+
+When calling `I18nProvider.provide`, the first argument will be the entire payload of locales from your application config, and the second argument will be the specific locale that you are treating as your base locale. This is used to provide type completion as you use the i18n helper.
+
+```ts
+// elsewhere, in your app
+
+const text = i18n('en-US', 'labels.nutrition.calories')
+```
+
+We recommend that you leverage i18n within your serializer layer, since this can be an incredibly conventient place to make translations before delivering your endpoint results.
+
+```ts
+export default class NutritionSerializer extends DreamSerializer {
+  @Attribute('string')
+  public calories() {
+    return i18n(this.$passthroughData.locale, 'labels.nutrition.calories')
+  }
+}
+```
