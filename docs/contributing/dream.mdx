@@ -3,19 +3,22 @@ sidebar_position: 0
 title: dream
 ---
 
-## Dream setup
+### Requirements
 
 In order to get started working on dream locally, you will first need to install the following:
 
 - nodejs >= 23.9.0
 - postgres >= 13.4
-- redis >= 7.2.0 (if using workers or websockets)
+
+### Installation
 
 Once done, you can clone the repo locally:
 
 ```bash
-git clone https://rvohealth/dream
+git clone https://github.com/rvohealth/dream
 ```
+
+### Set up env
 
 once in, you will need to add two env files:
 
@@ -54,4 +57,71 @@ Once this is done, you should be able to reset the test database and run specs:
 ```bash
 yarn dreamcore db:reset
 yarn spec
+```
+
+### Architecture
+
+There are only a few very important classes within the dream ecosystem, and most of the functions and decorators are driven to support their behavior. From a top level overview, these entities are:
+
+- `Dream/Query` - The two classes responsible for modeling and speaking to your database
+- `DreamSerializer` - The class responsible for translating your model's attributes into renderable JSON
+- `DreamApplication` - The configuration class which understands and configures your application
+- `cli/bin` - used to puppet [commanderjs](https://www.npmjs.com/package/commander), a node cli runner that enables you to perform helpful setup operations from the command line
+
+### Dream/Query
+
+The guts of Dream are primarily driven by two main classes: `Dream` and `Query`. The dream class is the base class, from which all models in your system will ultimately extend through the `ApplicationModel` class in any given app. The `Dream` class is responsible for modeling your database, while the `Query` class is the workhorse designed to build queries and send them to your database. They both work together to make dream as powerful as it is,
+
+### DreamSerializer
+
+While it is true that the dream library's primary asset is the `Dream` class itself, the `DreamSerializer` is a second class that enables you to represent you models in a variety of ways. Dreams and serializers are usually connected together through the `serializers` getter defined on any models you generate using the dream cli. The serializers getter returns an object, with key value pairs, where the keys are recognized as `serializerKeys` throughout our app, and their values point to actual serializers in our system.
+
+### DreamApplication
+
+Because dreams and serializers are connected together, we provide a high-level class called `DreamApplication`, which is responsible for loading all of your models and serializers, assigning global names to them, and bootstrapping their properties. This is all necessary to build an understanding of your app, as well as to pry any metadata off of the decorators applied to your models and serializers, since stage 3 decorators have thrown some very odd curveballs at our conventional understanding of what you can do with a decorator.
+
+Any time anything related to a dream application is executed, the dream application must be initialized first. This is done through a helper that is automatically provided in every dream application, called `initializeDreamApplication`. This is the entry point to your app, and must be called before you do anything, whether it is run a spec, examine your application's routes, run migrations, use the repl...you get it, anything!
+
+### cli/bin
+
+The cli and bin folders provide integration into commanderjs, a nodejs cli runner which enables one to use shell commands to run javascript. Dream leverages these commands for things like generating models, running migrations, etc...
+
+### Spec layout
+
+Dream, unlike psychic, contains only one spec suite. This is because Dream is not designed to be tied to a web framework, and can be used in any kind of application. As such, we don't have any test suites covering the behavior of dream within a web application, and thus do not have any request or feature specs to run.
+
+for classes like `Dream` and `Query`, the method list and functionality is incredibly expansive. As such, our spec suite is designed to give you a nice high-level overview of the functionality by browsing the file tree. To see what I mean, examine the `spec/unit/dream` directory. You will see a long list of files, each one named after a method that you can call on the `Dream` class. Both static and instance methods are tested in these files, and if a static and instance method share the same file name, they are both tested in the same file.
+
+```
+├── spec
+│   ├── unit
+│   │   ├── dream
+│   │   │   ├── all.spec.ts
+│   │   │   ├── clone.spec.ts
+│   │   │   ├── count.spec.ts
+│   │   │   ├── ...
+```
+
+Running in tandem with the dream folder is a `query` folder, which will contain many of the same file names you found in the dream folder. Upon examining these files, you may notice that the files in the query folder generally have many more tests that their dream counterparts. This is very much intentional. The Query class is responsible for executing any queries against the db within the dream ecosystem, which means that any time you call a method on a dream that executes a query, the dream class will be forced to call down into the query class to do the work. Because of this, the tests for the dream methods are generally shallow, while their query counterparts run much deeper, and navigate the nuance of complex query chains.
+
+```
+├── spec
+│   ├── unit
+│   │   ├── query
+│   │   │   ├── all.spec.ts
+│   │   │   ├── clone.spec.ts
+│   │   │   ├── count.spec.ts
+│   │   │   ├── ...
+```
+
+### Test App
+
+the `test-app` folder at the root of the project contains an example app that is built in dream. This app contains a dummy project with some models scaffolded in to drive our tests with. Doing this is the best way to simulate a real app using dream. Some of the models have childishly crazy associations, since we were forced declare so many of them to carefully test so many features of our app with.
+
+### dreamcore
+
+The `yarn dreamcore` command is used for interacting with the dummy application located in the test-app folder. Anything you might want to test, like for example generating a model, will be done to the test-app folder. For example, if you wanted to generate a new model, `ChalupaSupreme`, running the following command would generate your model in the `test-app/app/models` folder.
+
+```bash
+yarn dreamcore g:model ChalupaSupreme deliciousness:boolean
 ```
