@@ -1,0 +1,57 @@
+---
+sidebar_position: 0
+title: psychic
+---
+
+## Dream setup
+
+In order to get started working on dream locally, you will first need to install the following:
+
+- nodejs >= 23.9.0
+- postgres >= 13.4
+- redis >= 7.2.0 (if using workers or websockets)
+
+Once done, you can clone the repo locally:
+
+```bash
+git clone https://rvohealth/dream
+```
+
+once in, you will need to add two env files:
+
+```
+# .env
+
+DB_USER=WHO_AM_I
+DB_PORT=5432
+DB_HOST=localhost
+PRIMARY_DB_NAME=dream_core_development
+PRIMARY_DB_HOST=localhost
+REPLICA_DB_NAME=dream_core_development
+REPLICA_DB_HOST=localhost
+APP_ENCRYPTION_KEY="65ogKxacRKyNxj20PCQKuBnxKgOty5eQnY4Ktbk04U0="
+LEGACY_APP_ENCRYPTION_KEY="rulSOruUpfq6hqRezhK6l0tzhJtAE9SHxmubD9zIpaM="
+```
+
+```
+# .env.test
+
+DB_USER=WHO_AM_I
+DB_PORT=5432
+DB_HOST=localhost
+PRIMARY_DB_NAME=dream_core_test
+PRIMARY_DB_HOST=localhost
+REPLICA_DB_NAME=dream_core_test
+REPLICA_DB_HOST=localhost
+APP_ENCRYPTION_KEY="65ogKxacRKyNxj20PCQKuBnxKgOty5eQnY4Ktbk04U0="
+LEGACY_APP_ENCRYPTION_KEY="rulSOruUpfq6hqRezhK6l0tzhJtAE9SHxmubD9zIpaM="
+```
+
+In each of these files, you will want to replace `WHO_AM_I` with the result of running `whoami` in your local terminal. Generally speaking, the username for postgres will be the name of the current user, though this can be different depending on how postgres was installed.
+
+Once this is done, you should be able to reset the test database and run specs:
+
+```bash
+yarn dreamcore db:reset
+yarn spec
+```
