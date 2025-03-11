@@ -13,7 +13,7 @@ export default function Hero() {
             <div className="subtext">
               <span>A TypeScript-driven</span>
               <span>web framework</span>
-              <span>that keeps you in mind.</span>
+              <span>that reads your mind.</span>
             </div>
 
             <nav>

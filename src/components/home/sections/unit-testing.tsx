@@ -11,8 +11,8 @@ export default function UnitTesting() {
           <p>
             No application is complete without a functioning test suite to prove
             its capabilities. Psychic bootstraps your app with{' '}
-            <a href="http://jestjs.io/">Jest</a>, a powerful testing tool which
-            has become the standard testing platform for modern javascript
+            <a href="https://vitest.dev">Vitest</a>, a powerful testing tool
+            which has become the standard testing platform for modern typescript
             applications.
           </p>
         </div>
@@ -23,8 +23,8 @@ export default function UnitTesting() {
         gifPreviewUrl="/img/unit-specs-demo-preview.png"
       >
         <p className="subtext">
-          Take advantage of custom jest assertions, designed to help you easily
-          interact with Psychic and Dream constructs.
+          Take advantage of custom vitest assertions, designed to help you
+          easily interact with Psychic and Dream constructs.
         </p>
 
         <nav>
