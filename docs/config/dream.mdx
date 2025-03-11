@@ -150,7 +150,7 @@ export default async function (dream: DreamApplication) {
 
 ### parallelTests
 
-Psychic tests can be slower than traditional jest testing, since each test utilizes a connection to a single database, and that database must be truncated between each test run, preventing multiple test runs from being done at once. This means your tests _must_ run one at a time, which can be quite slow. To speed things up, we provide the ability for you to partition your test runs onto multiple databases, enabling you to run as many tests as you have databases at once.
+Psychic tests can be slower than traditional vitest testing, since each test utilizes a connection to a single database, and that database must be truncated between each test run, preventing multiple test runs from being done at once. This means your tests _must_ run one at a time, which can be quite slow. To speed things up, we provide the ability for you to partition your test runs onto multiple databases, enabling you to run as many tests as you have databases at once.
 
 ```ts
 export default async function (dream: DreamApplication) {

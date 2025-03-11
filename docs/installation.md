@@ -20,7 +20,7 @@ In order for you to run your local dev server, you will need to have the followi
 ```bash
 node >= 20.9.0
 postgres >= 13.4
-redis >= 7.2.0
+redis >= 7.2.0 # (only if using websockets or workers)
 ```
 
 You will need postgres and redis to be running locally for this to work, and if your credentials are different than those set up in your local `.env` and `.env.test` files, those credentials will need to be set/updated to reflect.

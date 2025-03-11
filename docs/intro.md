@@ -209,14 +209,14 @@ In choosing to provide a framework, we were not interested in reinventing the wh
 
 Considering, here is a breakdown of the technologies we are leaning on for our application stack:
 
+- kysely (used for driving the Dream ORM)
 - expressjs (drives the underlying web server)
-- node-redis (adds node bindings to redis, enabling us to support both distributed websocket systems, as well as background job systems)
+- node-pg (used for driving the ORM)
+- ioredis (adds node bindings to redis, enabling us to support both distributed websocket systems, as well as background job systems)
 - bullmq (used for driving background jobs)
 - socket.io (used for websockets)
-- kysely (used for driving the Dream ORM)
-- node-pg (used for driving the ORM)
-- jest (used for driving unit and feature tests)
-- playwright (used for driving feature tests)
+- vitest (used for driving unit and feature tests)
+- puppeteer (used for running a headless browser during your feature tests)
 
 ### Convention over configuration
 
@@ -236,7 +236,7 @@ Unit specs describe the behavior of your app. When practicing BDD, the unit spec
 
 #### Dream (model) specs
 
-When spec'ing your models, you can leverage special jest extensions to make assertions simple, and can very easily test all sorts of extraneous behavior using the same suite of tools:
+When spec'ing your models, you can leverage special vitest extensions to make assertions simple, and can very easily test all sorts of extraneous behavior using the same suite of tools:
 
 ```ts
 describe('User', () => {

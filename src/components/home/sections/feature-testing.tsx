@@ -22,7 +22,7 @@ export default function FeatureTesting() {
       >
         <div>
           <p className="subtext">
-            In addition to providing jest bindings for testing your backend,
+            In addition to providing vitest bindings for testing your backend,
             Psychic also provides a framework for writing end-to-end tests. When
             configuring Psychic with a client application, it will automatically
             generate a framework for running `feature tests`, enabling you to
@@ -32,7 +32,7 @@ export default function FeatureTesting() {
 
         <div>
           <p className="subtext">
-            This is all driven by playwright and puppeteer, both of which are
+            This is all driven by vitest and puppeteer, both of which are
             configured in your Psychic application by default. Since the
             configurations are provided, but committed to your repository, you
             can make any changes you see fit to adapt to your own custom setup.

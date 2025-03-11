@@ -61,7 +61,7 @@ export default (psy: Psyconf) => {
 
 ### apiOnly
 
-The `apiOnly` configuration option informs Psychic whether or not you are attaching a web application directly to this application. If you are building a front end to couple to your application, we recommend you turn this on, since it enables you to run feature tests with [playwrite](https://playwright.dev), a testing tool which runs a headless browser through your client application and connects to a Psychic test application. This tool is extremely powerful, and completely front-end agnostic, enabling you to build your front end however you want and connect it seamlessly with Psychic for testing.
+The `apiOnly` configuration option informs Psychic whether or not you are attaching a web application directly to this application. If you are building a front end to couple to your application, we recommend you turn this on, since it enables you to run feature tests with [puppeteer](https://pptr.dev/guides/what-is-puppeteer), a testing tool which enables you to run a headless browser through your client application and connect to a Psychic test application. This tool is extremely powerful, and completely front-end agnostic, enabling you to build your front end however you want and connect it seamlessly with Psychic for testing.
 
 ```ts
 export default (psy: Psyconf) => {
