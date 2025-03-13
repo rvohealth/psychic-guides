@@ -4,10 +4,6 @@ The `max` method will pluck a field with the highest value
 
 ```ts
 const id = await User.where({ email: ops.ilike('%burpcollaborator%') }).max(
-  'id'
+  'id',
 )
 ```
-
-:::tip
-If you need to find the max value through an association, we recommend making use of the [maxThrough](/docs/models/querying/maxThrough) method, which was designed for this exact use case.
-:::

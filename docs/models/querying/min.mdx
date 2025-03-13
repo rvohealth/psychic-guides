@@ -4,10 +4,6 @@ The `min` method will pluck a field with the lowest value
 
 ```ts
 const id = await User.where({ email: ops.ilike('%burpcollaborator%') }).min(
-  'id'
+  'id',
 )
 ```
-
-:::tip
-If you need to find the min value through an association, we recommend making use of the [minThrough](/docs/models/querying/minThrough) method, which was designed for this exact use case.
-:::
