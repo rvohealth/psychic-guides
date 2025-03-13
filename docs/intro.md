@@ -314,7 +314,7 @@ describe('ApiV1UsersController', () => {
 
 ### Feature (end-to-end) specs
 
-For those who opt into the client integration, Psychic will automatically bootstrap with Playwright to provide a headless browser you can use to test a web application end-to-end. Whenever these tests run, a psychic server will automatically be started which can be used by your client application, allowing you to test your frontend integration with your backend.
+For those who opt into the client integration, Psychic will automatically bootstrap with [puppeteer](https://pptr.dev/guides/what-is-puppeteer) to provide a headless browser you can use to test a web application end-to-end. Whenever these tests run, a psychic server will automatically be started which can be used by your client application, allowing you to test your front end integration with your back end.
 
 > For more information, see [The Feature spec guides](/docs/specs/feature).
 
@@ -334,12 +334,12 @@ describe('visitor visits the signup page', () => {
     await expect(page).toFill('#password', 'mypassword')
     await expect(page).toClickButton('sign up')
 
-    await expect(page).toHaveTextContent('Log in')
+    await expect(page).toMatchTextContent('Log in')
     await expect(page).toFill('#email', 'hello@world')
     await expect(page).toFill('#password', 'mypassword')
     await expect(page).toClickButton('log in')
 
-    await expectContent('DASHBOARD')
+    await expect(page).toMatchTextContent('DASHBOARD')
 
     const user = await User.last()
     expect(user.email).toEqual('hello@world')
