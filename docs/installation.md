@@ -2,6 +2,10 @@
 sidebar_position: 2
 ---
 
+:::warning
+Dream and psychic are in a pre-release stage. We are working out the minor kinks in our refactor to pure esm modules. We anticpate to be ready for use some time around March 20th, 2025, but in the mean time, you are free to tinker around.
+:::
+
 # Installation
 
 To create a new psychic app, you can use the psychic app provisioner via npx, like so:
