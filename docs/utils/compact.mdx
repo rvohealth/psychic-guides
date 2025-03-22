@@ -1,0 +1,19 @@
+---
+sidebar_position: 8
+---
+
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
+# compact
+
+Returns a copy of an object or array, with `null` and `undefined` values removed.
+
+```ts
+import { compact } from '@rvoh/dream'
+
+compact(['hello', null, 'world'])
+// ['hello', 'world']
+
+compact({ hello: 'world', goodbye: null })
+// { hello: 'world' }
+```

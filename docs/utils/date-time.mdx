@@ -6,7 +6,9 @@ import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # DateTime
 
-Datetime fields in the database are returned as Luxon DateTime objects. DateTime provides robust handling of datetimes, including timezone manipulation, formatting, and math. See [https://moment.github.io/luxon/#/](https://moment.github.io/luxon/#/) for full documentation.
+Datetime fields in the database are returned as DateTime objects. DateTime provides robust handling of datetimes, including timezone manipulation, formatting, and math. See [https://moment.github.io/luxon/#/](https://moment.github.io/luxon/#/) for full documentation.
+
+Note: in Psychic Projects, import DateTime from @rvoh/dream and do not include @types/luxon in your package.json. We found Luxon types to be incompatible with node16 module resolution and included modified DateTime types within Dream.
 
 ```ts
 import { DateTime } from 'luxon'
