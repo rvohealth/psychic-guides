@@ -1,0 +1,26 @@
+---
+sidebar_position: 9
+---
+
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
+# uniq
+
+Returns a copy of the array with duplicates removed. Takes an optional a `toKey` argument, that, if provided, is a function that accepts each element of the array and returns a string or number that will be used to compare for uniqueness. NOTE: Dream models bypass any passed `toKey` function, using an internal value for comparison.
+
+```ts
+import { uniq } from '@rvoh/dream'
+
+const graphNode1 = await GraphNode.create({ name: 'Hello' })
+const graphNode2 = await GraphNode.create({ name: 'Hello' })
+const graphNode3 = await GraphNode.findOrFail(graphNode1.id)
+
+const uniqArray = uniq([graphNode1, graphnNode2, graphNode3])
+// uniqArray will contain graphNode1 and graphnNode2
+
+uniq(['world', 'hello', 'hello'])
+// ['world', 'hello']
+
+uniq(['world', 'hello', 'hi'], (str: string) => str.length)
+// ['world', 'hi']
+```
