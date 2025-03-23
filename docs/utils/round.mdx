@@ -1,0 +1,23 @@
+---
+sidebar_position: 7
+---
+
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
+# round
+
+Accepts an optional `precision` argument that determines the number of places to which to round.
+
+```ts
+import { round } from '@rvoh/dream'
+
+round(3.3333333)
+// 3
+round(7.7777777)
+// 8
+
+round(3.3333333, 2)
+// 3.33
+round(7.7777777, 2)
+// 7.78
+```

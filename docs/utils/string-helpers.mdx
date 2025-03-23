@@ -1,5 +1,5 @@
 ---
-sidebar_position: 10
+sidebar_position: 7
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -13,6 +13,15 @@ import { camelize } from '@rvoh/dream'
 
 camelize('hello_world')
 // helloWorld
+```
+
+## capitalize
+
+```ts
+import { capitalize } from '@rvoh/dream'
+
+capitalize('hello')
+// Hello
 ```
 
 ## hyphenize
@@ -40,4 +49,13 @@ import { snakeify } from '@rvoh/dream'
 
 snakeify('helloWorld')
 // hello_world
+```
+
+## uncapitalize
+
+```ts
+import { uncapitalize } from '@rvoh/dream'
+
+uncapitalize('Hello')
+// hello
 ```
