@@ -3,9 +3,15 @@ sidebar_position: 0
 title: overview
 ---
 
-# Snapshotable - overview
+# @Snapshotable - overview
 
-Snapshotable provides a method, `takeSnapshot`, which will scan through each of your `HasMany` and `HasOne` associations, recursively following the chain all the way down and building up a json snapshot of each of the models found. This is useful in cases, say, where you need to backup all of a user's data to stay in compliance with HIPAA, or some other regulatory requirement.
+The `@Snapshotable()` class decorator adds the instance method `takeSnapshot` to the decorated Dream model. When called, `takeSnapshot` builds a simple object of all the database fields for the model. It also traverses the association tree rooted at the model, following `HasMany` and `HasOne` associations, recursively calling `takeSnapshot` on each. This is useful for converting an entire model tree to JSON to, for example, store a user's data in compliance with HIPAA retention requirements.
+
+Snapshotable automatically skips associations with `required` or `passthrough` `on` clauses.
+
+`BelongsTo` associations are intentionally skipped, as are `through` associations, so Snapshotable automatically avoids circuits (which would lead to an infinite loop). To explicitly include a `through` association, decorate it with the `@SnapshotableFollowThrough()` decorator.
+
+NOTE: Snapshotable is not optimized to eliminate the N+1 problem, but it will leverage the read replica, if configured. Snapshotable builds a single object of the entire content tree, so the in-memory object may become quite large. As such, it may be advisable to leverage `@SnapshotableHide` to prevent full traversing the tree so that it can be split into chunks. It is recommended that Snapshotable is only used in a background job (see [https://psychicframework.com/docs/plugins/workers/overview](https://psychicframework.com/docs/plugins/workers/overview)).
 
 :::tip
 

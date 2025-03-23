@@ -30,11 +30,11 @@ const data = await user.takeSnapshot()
 
 ## Filtering out unwanted associations
 
-In some cases, you want to hide certain associations from snapshots. In these cases, you can use the provided `HideFromSnapshotable` decorator, like so:
+In some cases, you want to hide certain associations from snapshots. In these cases, you can use the provided `SnapshotableHide` decorator, like so:
 
 ```ts
 class User extends Snapshotable(ApplicationModel) {
-  @HideFromSnapshotable()
+  @SnapshotableHide()
   @Deco.HasMany(Pet)
   public pets: Pet[]
 }
