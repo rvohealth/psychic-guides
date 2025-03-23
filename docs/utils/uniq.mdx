@@ -1,12 +1,12 @@
 ---
-sidebar_position: 9
+sidebar_position: 7
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # uniq
 
-Returns a copy of the array with duplicates removed. Takes an optional a `toKey` argument, that, if provided, is a function that accepts each element of the array and returns a string or number that will be used to compare for uniqueness. NOTE: Dream models bypass any passed `toKey` function, using an internal value for comparison.
+Returns a copy of the array with duplicates removed. The optional, second argument is a function that returns a string or number to compare for uniqueness. NOTE: Dream models bypass any passed `toKey` function, using an internal value for comparison.
 
 ```ts
 import { uniq } from '@rvoh/dream'
