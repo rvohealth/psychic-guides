@@ -22,4 +22,7 @@ sortBy([5, 3, 7], (num: number) => num)
 
 sortBy([5, 3, 7], (num: number) => -num)
 // [7, 5, 3]
+
+sortBy([2, 3, 'world', 1, 'hello'], (a) => String(a))
+// [1, 2, 3, 'hello', 'world']
 ```
