@@ -28,13 +28,30 @@ const user = await User.firstOrFail()
 const data = await user.takeSnapshot()
 ```
 
+## Including `through` associations
+
+`BelongsTo` associations are intentionally skipped, as are `through` associations, so Snapshotable automatically avoids circuits (which would lead to an infinite loop). To explicitly include a `through` association, decorate it with the `@SnapshotableFollowThrough()` decorator.
+
+```ts
+const Deco = new Decorators<InstanceType<typeof Host>>()
+
+export default class Host extends ApplicationModel {
+  @Deco.HasMany('HostPlace')
+  public hostPlaces: HostPlace[]
+
+  @SnapshotableFollowThrough()
+  @Deco.HasMany('Place', { through: 'hostPlaces' })
+  public places: Place[]
+}
+```
+
 ## Filtering out unwanted associations
 
-In some cases, you want to hide certain associations from snapshots. In these cases, you can use the provided `SnapshotableHide` decorator, like so:
+In some cases, you want to hide certain associations from snapshots. In these cases, you can use the provided `SnapshotableIgnore` decorator, like so:
 
 ```ts
 class User extends Snapshotable(ApplicationModel) {
-  @SnapshotableHide()
+  @SnapshotableIgnore()
   @Deco.HasMany(Pet)
   public pets: Pet[]
 }
