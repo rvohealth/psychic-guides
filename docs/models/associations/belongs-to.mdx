@@ -14,7 +14,7 @@ Belongs to associations are to be used when the model in question is related to 
 ```ts
 export default class Post extends Dream {
   ...
-  @Deco.BelongsTo('User')
+  @deco.BelongsTo('User')
   public user: User
   public userId: DreamColumn<User, 'userId'>
 }
@@ -29,7 +29,7 @@ BelongsTo associations are required by default (and should have a corresponding 
 ```ts
 export default class Post extends Dream {
   ...
-  @Deco.BelongsTo('User', { optional: true })
+  @deco.BelongsTo('User', { optional: true })
   public user: User
   public userId: DreamColumn<User, 'userId'>
 }
@@ -50,7 +50,7 @@ export default class Post extends Dream {
   public id: number
   public content: string | null
 
-  @Deco.BelongsTo('User', { foreignKey: 'myUserId' })
+  @deco.BelongsTo('User', { foreignKey: 'myUserId' })
   public user: User
   public myUserId: number
 }
@@ -71,7 +71,7 @@ export default class Post extends Dream {
   public id: number
   public content: string | null
 
-  @Deco.BelongsTo('User', { primaryKeyOverride: 'uuid' })
+  @deco.BelongsTo('User', { primaryKeyOverride: 'uuid' })
   public user: User
   public userId: number
 }
