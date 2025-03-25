@@ -21,12 +21,12 @@ Since these types of relationships can exist at the database level, Dream expose
 
 ```ts
 class User extends ApplicationModel {
-  @Deco.HasMany('Post')
+  @deco.HasMany('Post')
   public posts: Post[]
 }
 
 class Post extends ApplicationModel {
-  @Deco.BelongsTo('User')
+  @deco.BelongsTo('User')
   public user: User
 }
 ```

@@ -362,10 +362,10 @@ Once this is run, you can go back to your model spec and see that some of the er
 Leveraging a second model hook, we can store a hashed copy of the user's password. In order to perform the password hashing, we will need some kind of password hashing utils, which we will leverage from psychic.
 
 ```ts
-const Deco = new Decorators<InstanceType<typeof User>>()
+const deco = new Decorators<InstanceType<typeof User>>()
 
 class User extends ApplicationModel {
-  @Deco.BeforeSave()
+  @deco.BeforeSave()
   public async hashPass(this: User) {
     if (this.password) this.passwordDigest = await Encrypt.hash(this.password)
 

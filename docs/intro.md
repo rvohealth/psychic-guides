@@ -98,18 +98,18 @@ export default class User extends ApplicationModel {
 In addition to powerful decorators for describing validations and custom scoping on your models, Dream also provides a powerful association layer, enabling you to describe rich, intimate associations with elegant simplicity:
 
 ```ts
-const Deco = Decorators<InstanceType<typeof Post>>
+const deco = Decorators<InstanceType<typeof Post>>
 
 class Post extends ApplicationModel {
   ...
 
-  @Deco.BelongsTo('User')
+  @deco.BelongsTo('User')
   public user: User
 
-  @Deco.HasMany('Comment')
+  @deco.HasMany('Comment')
   public comments: Comment[]
 
-  @Deco.HasMany('Reply', { through: 'comments' })
+  @deco.HasMany('Reply', { through: 'comments' })
   public replies: Reply[]
 }
 

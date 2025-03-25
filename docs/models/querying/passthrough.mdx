@@ -4,7 +4,7 @@ Associations in dream can be defined with a passthrough constraint. This means t
 
 ```ts
 export default class Post extends ApplicationModel {
-  @Deco.HasOne('LocalizedText', {
+  @deco.HasOne('LocalizedText', {
     polymorphic: true,
     foreignKey: 'localizableId',
     where: { locale: DreamConst.passthrough },
