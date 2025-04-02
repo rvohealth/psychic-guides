@@ -134,8 +134,8 @@ source /home/node/.profile
 echo $(type yarn)
 
 if [ $WEB_SERVICE ]; then
-  YARN_CACHE_FOLDER=/dev/shm TMP=/dev/shm NODE_ENV=production yarn psy db:migrate --skip-sync \
-  && YARN_CACHE_FOLDER=/dev/shm TMP=/dev/shm NODE_ENV=production yarn psy db:seed \
+  YARN_CACHE_FOLDER=/dev/shm TMP=/dev/shm NODE_ENV=production yarn psyjs db:migrate --skip-sync \
+  && YARN_CACHE_FOLDER=/dev/shm TMP=/dev/shm NODE_ENV=production yarn psyjs db:seed \
   && pm2-runtime start ./server.ecosystem.config.js --env production \
   && pm2 save
 elif [ $WORKER_SERVICE ]; then

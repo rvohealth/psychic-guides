@@ -7,7 +7,7 @@ sidebar_position: 0
 Dream exposes a powerful, type-driven query building engine to make talking to your database a friendly experience. All fields on your model can be leveraged as elements of your query, and associations can be joined and preloaded to simplify database interactions.
 
 ```ts
-const users = await User.joins('posts', {
+const users = await User.innerJoin('posts', {
   content: ops.ilike('howyadoin'),
 }).all()
 ```
@@ -48,6 +48,7 @@ Query building methods are those that do not execute a query, but instead modify
 - To learn about offsetting records, see the [offset guide](/docs/models/querying/offset)
 - To learn about ordering records, see the [order guide](/docs/models/querying/order)
 - To learn about preloading associated records, see the [preload guide](/docs/models/querying/preload)
+- To learn about left joining associated records, see the [leftJoinPreload guide](/docs/models/querying/leftJoinPreload)
 - To learn about passthrough data, see the [passthrough guide](/docs/models/querying/passthrough)
 
   :::

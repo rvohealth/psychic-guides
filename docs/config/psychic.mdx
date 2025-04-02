@@ -31,6 +31,7 @@ Below is a brief example of some of the settings that can be adjusted, while eac
 ```ts
 export default (psy: Psyconf) => {
   psy.set('appName', 'howyadoin')
+  psy.set('packageManager', 'pnpm')
   psy.set('apiOnly', false)
   psy.set('encryption', {
     cookies: {
@@ -55,6 +56,17 @@ This configuration informs Psychic what your app's name is, which is primarily u
 ```ts
 export default (psy: Psyconf) => {
   psy.set('appName', 'howyadoin')
+  ...
+}
+```
+
+### packageManager
+
+Determines which package manager to use when provisioning your psychic app, as well as any client apps that were requested during provisioning. Psychic also leverages your package manager choice during syncing, so it needs to be both provided and correct, meaning that if you switch somewhere down the road, you need to remember to update this line, or else you may get errors during type syncing.
+
+```ts
+export default (psy: Psyconf) => {
+  psy.set('packageManager', 'yarn')
   ...
 }
 ```

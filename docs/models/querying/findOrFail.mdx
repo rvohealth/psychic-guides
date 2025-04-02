@@ -1,3 +1,5 @@
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
 # findOrFail
 
 `findOrFail`, similar to `find`, will look up a record by it's primary key. However, if that record is not found, a `RecordNotFound` exception will be raised, rather than returning `null`.
@@ -7,4 +9,34 @@ const user = await User.findOrFail(123)
 // User{id: 123}
 ```
 
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+where ("users"."id" = $1)
+order by "users"."id" asc nulls first
+limit 1
+`}
+  </pre>
+</RoutesOutput>
+
 If findOrFail is called within a request cycle and the `RecordNotFound` exception is not handled manually, Psychic will automatically throw a 404.
+
+## Chaining
+
+Similar to other execution methods, `findOrFail` can be chained with other chainable query methods, such as `whereNot`.
+
+```ts
+await User.whereNot({ email: null }).findOrFail(123)
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+where ("users"."id" = $1 and not ("users"."email" is null))
+order by "users"."id" asc nulls first
+limit 1
+`}
+  </pre>
+</RoutesOutput>

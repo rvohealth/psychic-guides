@@ -1,11 +1,13 @@
 # preload
 
-The preload method enables you to side-load other associations while executing a query.
+Simlar to [leftJoinPreload](/docs/models/querying/leftJoinPreload), the preload method enables you to side-load other associations while executing a query. The difference is that preload executes its queries in stages, rather than all at once. The query below will produce 3 sql queries, one to load the users, one to load all of the users' posts, and one to load all of the posts' comments.
 
 ```ts
 const users = await User.preload('posts', 'comments').all()
 const firstComments = users[0].posts[0].comments
 ```
+
+## Arrays
 
 If one needs to gain access to multiple resources, the last argument can always be an array, like so:
 
@@ -17,10 +19,24 @@ const users = await User.preload('posts', [
 ]).all()
 ```
 
+## Chaining
+
 Multiple preload statements can be chained together to successfully sideload all of your associations:
 
 ```ts
 const users = await User.preload('posts', ['comments', 'ratings'])
   .preload('comments', 'ratings', 'images', ['credits', 'curators'])
   .all()
+```
+
+## Incompatibilities
+
+Due to the complex nature of query building, we do not permit you to build a query that combines both `preload` _and_ `leftJoinPreload` together in one call. Type guards are in place within Dream to prevent you from making this mistake, but it is still worth mentioning, since it can be quite confusing.
+
+```ts
+// INVALID to mix leftJoinPreload and preload in a single query:
+const users = await User.preload('posts', [
+  'comments',
+  'ratings',
+]).leftJoinPreload('posts', 'images', ['credits', 'captions'])
 ```

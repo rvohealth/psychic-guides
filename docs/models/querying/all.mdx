@@ -7,11 +7,24 @@ await User.all()
 // [User{}, User{}, ...]
 ```
 
-Passing conditions to the query, we can drill down and limit the results returned.
+It can be tempting to reach for all, and then use plain typescript to further filter down your records, but if you have a very large users table, this approach can be very problematic for you. By leveraging our query building mechanisms, we can inject conditions into the query before executing. Below, we use the `where` method to inject a where clause into our sql, enabling us to filter down our records at the sql level before bringing them into memory.
 
 ```ts
 await User.where({ id: [1, 2, 3] }).all()
 [User{ id: 1 }, User{ id: 2 }, User{ id: 3 }]
+```
+
+In addition to the `where` method, Dream supports several other query building mechanisms to make querying your database as simple as possible. Below, we will leverage several of these methods chained together to demonstrate the full power:
+
+```ts
+await User.order({ id: 'desc' })
+  .limit(20)
+  .offset(100)
+  .where({ active: true })
+  .whereNot({ email: null })
+  .leftJoinPreload('pets as p')
+  .whereNot({ 'p.name': null })
+  .all()
 ```
 
 :::warning

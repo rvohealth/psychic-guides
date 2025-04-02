@@ -1,15 +1,36 @@
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
 # distinct
 
 The distinct method returns all unique records matching the given distinct field
 
 ```ts
-const count = await User.distinct('body').count()
+const users = await User.distinct('name').all()
 ```
 
-You can also use other query building methods to build up a query prior to executing.
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select distinct on ("users"."name") "users".* from "users"
+`}
+  </pre>
+</RoutesOutput>
+
+## Chaining
+
+Similar to other execution methods, distinct is chainable to other query-building methods, such as `where`
 
 ```ts
-const count = await User.joins('ratings', { body: 'I liked it' })
-  .distinct('body')
+const count = await User.innerJoin('pets as p', { name: 'Aster' })
+  .distinct('p.name')
   .count()
 ```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select count(DISTINCT $1) as "tablecount" from "users"
+inner join "pets" as "p" on "users"."id" = "p"."user_id"
+`}
+  </pre>
+</RoutesOutput>

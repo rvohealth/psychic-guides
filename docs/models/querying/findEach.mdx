@@ -16,3 +16,13 @@ await User.findEach(
   { batchSize: 20000 },
 )
 ```
+
+## Chaining
+
+Similar to other execution methods, `findEach` can be chained with other chainable query methods, such as `where` and `whereNot`.
+
+```ts
+await User.whereNot({ email: null }).findEach(async (user) => {
+  if (user.email.includes('burpcollaborator')) await user.destroy()
+})
+```

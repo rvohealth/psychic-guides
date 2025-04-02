@@ -8,6 +8,36 @@ Find is a simple static method used to find records by its model's primary key. 
 const user = await User.find(123)
 ```
 
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+where ("users"."id" = $1)
+order by "users"."id" asc nulls first
+limit 1
+`}
+  </pre>
+</RoutesOutput>
+
+## Chaining
+
+Similar to other execution methods, `find` can be chained with other query building methods to filter at the sql level.
+
+```ts
+const user = await User.find(123)
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+where ("users"."id" = $1)
+order by "users"."id" asc nulls first
+limit 1
+`}
+  </pre>
+</RoutesOutput>
+
 :::tip
 In some cases, [findOrFail](/docs/models/querying/findOrFail) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.
 :::

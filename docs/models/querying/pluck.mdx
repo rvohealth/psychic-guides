@@ -1,3 +1,5 @@
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
 # pluck
 
 The pluck method returns raw objects containing just the attributes specified. If only one attribute is passed, it is returned as a flattened array.
@@ -9,6 +11,24 @@ await User.pluck('id')
 await User.pluck('id', 'email')
 // [['123', 'fred@flinstone.biz'], ['456', 'willlmmaaaaaaa@flinstone.biz']]
 ```
+
+## Chaining
+
+You can leverage chainable methods to filter out records at the sql level before calling pluck.
+
+```ts
+const id = await User.where({ email: ops.ilike('%burpcollaborator%') }).pluck(
+  'id',
+)
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users"."id" as "id" from "users" where "users"."email" ilike $1
+`}
+  </pre>
+</RoutesOutput>
 
 :::tip
 If the query you are building could potentially return a very large amount of data, and you are unsure that you want to bring all that data into memory at once, try using [pluckEach](/docs/models/querying/pluckEach).

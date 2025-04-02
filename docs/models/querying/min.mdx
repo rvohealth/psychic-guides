@@ -1,9 +1,37 @@
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
 # min
 
 The `min` method will pluck a field with the lowest value
+
+```ts
+const id = await User.min('id')
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select min("id") from "users"
+`}
+  </pre>
+</RoutesOutput>
+
+`min` is smart enough to know the return type for id, so the returned value will already have the correct type cast for the `id` field.
+
+## Chaining
+
+You can leverage chainable methods to filter out records at the sql level before calling min.
 
 ```ts
 const id = await User.where({ email: ops.ilike('%burpcollaborator%') }).min(
   'id',
 )
 ```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select min("id") from "users" where ("users"."email" ilike $1)
+`}
+  </pre>
+</RoutesOutput>

@@ -1,3 +1,5 @@
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
 # last
 
 The last method returns the last record found in the given table.
@@ -6,6 +8,34 @@ The last method returns the last record found in the given table.
 const user = await User.last()
 // User{id=9000}
 ```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+order by "users"."id" desc nulls last
+limit 1
+`}
+  </pre>
+</RoutesOutput>
+
+## Chaining
+
+Similar to other execution methods, `last` can be chained with other chainable query methods, such as `order`.
+
+```ts
+await User.order({ email: 'asc' }).last()
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+order by "users"."email" desc nulls last
+limit 1
+`}
+  </pre>
+</RoutesOutput>
 
 :::tip
 In some cases, [lastOrFail](/docs/models/querying/lastOrFail) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.

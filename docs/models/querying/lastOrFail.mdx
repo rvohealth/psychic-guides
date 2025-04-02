@@ -1,3 +1,5 @@
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
 # lastOrFail
 
 The `lastOrFail` method returns the last record found in the given table. If no record is found, a `RecordNotFound` exception is raised.
@@ -7,4 +9,30 @@ const user = await User.lastOrFail()
 // User{id=9000}
 ```
 
-If lastOrFail is called within a request cycle and the `RecordNotFound` exception is not handled manually, Psychic will automatically throw a 404.
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+order by "users"."id" desc nulls last
+limit 1
+`}
+  </pre>
+</RoutesOutput>
+
+## Chaining
+
+Similar to other execution methods, `lastOrFail` can be chained with other chainable query methods, such as `order`.
+
+```ts
+await User.order({ email: 'asc' }).lastOrFail()
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+order by "users"."email" desc nulls last
+limit 1
+`}
+  </pre>
+</RoutesOutput>
