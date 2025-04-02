@@ -3,7 +3,7 @@ sidebar_position: 2
 ---
 
 :::warning
-Dream and psychic are in a pre-release stage. We are still refining some cosmetic aspects to the framework, but that code is coming in rapidly, and we anticipate this will be ready for use by April 1st, 2025. In the mean time, feel free to tinker to your heart's desire!
+Dream and psychic are in a pre-release stage. We are still refining some cosmetic aspects to the framework, but that code is coming in rapidly, and we anticipate this will be ready for use sometime early April, 2025. In the mean time, feel free to tinker to your heart's desire!
 :::
 
 # Installation
@@ -16,6 +16,21 @@ npx @rvoh/create-psychic howyadoin
 ```
 
 This will prompt you to ask a few questions, and then provision a new psychic app for you in the "howyadoin" folder of your current directory. All of your dependencies will be automatically installed (for both your server and client apps, if you are generating with a client) and committed to a new git repo.
+
+# repos
+
+- [psychic](https://github.com/rvohealth/psychic)
+- [dream](https://github.com/rvohealth/dream)
+
+The source code for Dream and Psychic are separated, with the intention that dream would be usable outside of psychic, if you so desired. This is of course, possible, since Psychic itself is a Dream application, but we have not made any attempts to utilize Dream without Psychic, and would discourage it in practice, given that you lose much of the powerful integration that makes writing Dream applications so seamless, including the built-in OpenAPI integration that dream can bind into.
+
+In addition to these repos, Dream and Psychic also provide spec helpers, as well as background jobs and websockets. The repos for each of those plugins can be found here:
+
+- [dream spec helpers](https://github.com/rvohealth/dream-spec-helpers)
+- [psychic spec helpers](https://github.com/rvohealth/psychic-spec-helpers)
+- [psychic-workers](https://github.com/rvohealth/psychic-workers)
+- [psychic-websockets](https://github.com/rvohealth/psychic-websockets)
+- [snapshotable](https://github.com/rvohealth/dream-plugin-json-snapshot)
 
 ## package managers
 

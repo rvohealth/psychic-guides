@@ -1,14 +1,37 @@
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
 # exists
 
-The `exists` method will return true if at least one record is found matching the query
+The `exists` method will return true if at least one record is found matching the query. Otherwise, it will return false.
 
 ```ts
-const exists = await User.joins('ratings', { body: 'I liked it' }).exists()
+const exists = await User.exists()
 ```
 
-Query building can be chained together prior to execution to scope your query
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+inner join "pets" on "users"."id" = "pets"."user_id"
+limit $1
+`}
+  </pre>
+</RoutesOutput>
+
+## Chaining
+
+Similar to other execution methods, `exists` can be chained together with other query building methods prior to execution.
+
 ```ts
-const exists = await User
-  .joins('ratings', { body: 'I liked it' })
-  .exists()
+const exists = await User.innerJoin('pets', { name: 'I liked it' }).exists()
 ```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+inner join "pets" on "users"."id" = "pets"."user_id"
+limit $1
+`}
+  </pre>
+</RoutesOutput>

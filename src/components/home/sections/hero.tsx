@@ -18,6 +18,10 @@ export default function Hero() {
 
             <nav>
               <Link to="/docs/intro">SEE THE GUIDES&gt;&gt;&gt;</Link>
+              <br />
+              <Link to="https://github.com/rvohealth/psychic">
+                GITHUB&gt;&gt;&gt;
+              </Link>
             </nav>
           </div>
         </div>

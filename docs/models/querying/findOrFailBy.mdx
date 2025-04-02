@@ -1,3 +1,5 @@
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
 # findOrFailBy
 
 The findOrFailBy method Allows you to pass custom attributes to locate a record by. If multiple records exist matching the conditions, only the first one found will be returned. If no record is found matching the conditions, a `RecordNotFound` exception is raised.
@@ -7,4 +9,34 @@ const user = await User.findOrFailBy({ email: 'abc' })
 // User{email: 'abc'}
 ```
 
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+where ("users"."email" = $1 and "users"."deleted_at" is null)
+order by "users"."id" asc nulls first
+limit 1
+`}
+  </pre>
+</RoutesOutput>
+
 If findOrFailBy is called within a request cycle and the `RecordNotFound` exception is not handled manually, Psychic will automatically throw a 404.
+
+## Chaining
+
+Similar to other execution methods, `findOrFailBy` can be chained with other chainable query methods, such as `whereNot`.
+
+```ts
+await User.whereNot({ email: null }).findOrFailBy({ name: 'chalupa joe' })
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+where ("users"."name" = $1 and "users"."deleted_at" is null and not ("users"."email" is null))
+order by "users"."id" asc nulls first
+limit 1
+`}
+  </pre>
+</RoutesOutput>

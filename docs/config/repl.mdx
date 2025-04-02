@@ -20,7 +20,7 @@ export default (async function () {
 })()
 ```
 
-By default, this config will automatically load all models and services to the global context (though beware, the names of the classes will shift in this context to be based around file path, rather than the name of the class itself), in addition to the DateTime class (provided by luxon).
+By default, this config will automatically load all models and services to the global context (though beware, the names of the classes will shift in this context to be based around file path, rather than the name of the class itself).
 
 If you need to bind anything else to the global context, you can simply attach it to `replServer.context`, like so:
 
@@ -38,4 +38,12 @@ This will enable access once in the repl, like so:
 ```bash
 NODE_ENV=development yarn console
 > console.log(MyCustomClass)
+```
+
+## Dynamically importing files
+
+When in the repl, you may find you need to import something into the repl context that doesn't exist. For example, a helper function within your app somewhere. In this case, you can use the `dynamic import` syntax to bring those files in dynamically, like so:
+
+```ts
+myHelper = (await import('./test-app/app/helpers/myHelper.js')).default
 ```

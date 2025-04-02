@@ -1,3 +1,5 @@
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
 # count
 
 The `count` method returns a count of the table
@@ -6,10 +8,34 @@ The `count` method returns a count of the table
 await User.count() // 900
 ```
 
-If desired, one can first provide conditions prior to counting, enabling one to limit the scope of the query before applying count.
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select count("users"."id") as "tablecount" from "users"
+`}
+  </pre>
+</RoutesOutput>
+
+## Chaining
+
+If desired, one can first provide conditions prior to counting, enabling one to limit the scope of the query before applying count at the sql layer.
 
 ```ts
 await User.limit(10).count() // 10
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select count("users"."id") as "tablecount" from "users" limit $1
+`}
+  </pre>
+</RoutesOutput>
+
+Similar to other execution methods, `count` is compatible with all query building mechanisms. Below is a demonstration of utilizing several chained methods to capture a count:
+
+```ts
+await User.where({ active: true }).whereNot({ email: null }).count() // 5
 ```
 
 :::info

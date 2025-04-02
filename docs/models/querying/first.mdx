@@ -1,3 +1,5 @@
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
 # first
 
 The first method returns the first record found in the given table.
@@ -6,6 +8,34 @@ The first method returns the first record found in the given table.
 const user = await User.first()
 // User{id=1}
 ```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+order by "users"."id" asc nulls first
+limit $1
+`}
+  </pre>
+</RoutesOutput>
+
+## Chaining
+
+Similar to other execution methods, `first` can be chained with other chainable query methods, such as `order`.
+
+```ts
+await User.order({ email: 'asc' }).first()
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+order by "users"."email" asc nulls first
+limit 1
+`}
+  </pre>
+</RoutesOutput>
 
 :::tip
 In some cases, [firstOrFail](/docs/models/querying/firstOrFail) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.

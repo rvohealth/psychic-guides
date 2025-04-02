@@ -9,6 +9,17 @@ const user = await User.findBy({ email: 'abc' })
 // User{email: 'abc'}
 ```
 
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "users".* from "users"
+where "users"."email" = $1
+order by "users"."id" asc nulls first
+limit 1
+`}
+  </pre>
+</RoutesOutput>
+
 :::tip
 In some cases, [findOrFailBy](/docs/models/querying/findOrFailBy) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.
 :::

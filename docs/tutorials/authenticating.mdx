@@ -68,7 +68,16 @@ cd ~/Sites
 npx @rvoh/create-psychic howyadoin
 ```
 
-This will ask you a few basic questions. The first is which kind of primary key you would like to use when provisioning new tables for your database models. The default is `bigserial`, which is essentially an auto-incrementing integer. You can also choose `serial` or `uuid`. I like to use `uuid` when I want an id that will abstract the state of my application. For example, an auto-incrementing number can inform those using your application how many of something you have in your database, which may or may not be an issue for you.
+This will ask you a few basic questions. First up is which package manager you want to use. We will use `yarn` today, but you can select whichever you prefer for your use case.
+
+```sh
+what package manager would you like to use?
+ > yarn
+   pnpm
+   npm
+```
+
+The next question is which kind of primary key you would like to use when provisioning new tables for your database models. The default is `bigserial`, which is essentially an auto-incrementing integer. You can also choose `serial` or `uuid`. I like to use `uuid` when I want an id that will abstract the state of my application. For example, an auto-incrementing number can inform those using your application how many of something you have in your database, which may or may not be an issue for you.
 
 ```sh
 what primary key type would you like to use?
@@ -148,22 +157,22 @@ You may marvel at my catscii art while your application provisions. My cat's nam
 
 ## Configuring
 
-Once your app is done installing, you will immediately want to update the `.env` and `.env.test` files in the root of your `api` dir, so that the `DB_USER` is pointing to your current machine's user (or whoever is provisioned as the default postgres user when you installed postgres, but if you used `brew`, then it would be the result of running `whoami` in the terminal)
+Once your app is done installing, you will immediately want to check the `.env` and `.env.test` files in the root of your `api` dir, so that the `DB_USER` is pointing to your current machine's user (or whoever is provisioned as the default postgres user when you installed postgres, but if you used `brew`, then it would be the result of running `whoami` in the terminal)
 
 ```sh
 whoami
-# chalupasdelbronzo
+# laurapalmer
 ```
 
 Whatever is output as the result of `whoami` (or whoever your postgres user is if you know it and it is different) should make it into both of your env files:
 
 ```sh
 # .env.test
-DB_USER=chalupasdelbronzo
+DB_USER=laurapalmer
 ...
 
 # .env
-DB_USER=chalupasdelbronzo
+DB_USER=laurapalmer
 ...
 ```
 
@@ -182,11 +191,11 @@ NODE_ENV=test yarn psy db:reset
 NODE_ENV=development yarn psy db:reset
 ```
 
-Our test database will be used for running specs, while the development database will be used for us to poke around with in our local environment. It is best to have them separated, since specs will truncate the database in between each test.
+Our test database will be used for running specs, while the development database will be used for us to poke around with in our local environment. It is best to have them separated, since specs will truncate the test database in between each test run.
 
 With both databases reset, let's start by generating a new `User` model. We will need this user model to have an email and a password, so that we can provide a way for them to sign up. We can easily do this by leveraging the generators provided by psychic. Run the following from within the `api` dir of your app:
 
-```
+```bash
 yarn psy g:model User email:string password_digest:string
 ```
 
@@ -362,19 +371,22 @@ Once this is run, you can go back to your model spec and see that some of the er
 Leveraging a second model hook, we can store a hashed copy of the user's password. In order to perform the password hashing, we will need some kind of password hashing utils, which we will leverage from psychic.
 
 ```ts
+import * as argon2 from 'argon2'
+...
+
 const deco = new Decorators<InstanceType<typeof User>>()
 
 class User extends ApplicationModel {
   @deco.BeforeSave()
   public async hashPass(this: User) {
-    if (this.password) this.passwordDigest = await Encrypt.hash(this.password)
+    if (this.password) this.passwordDigest = await argon2.hash(this.password)
 
     this.password = undefined
   }
 
   public async checkPassword(this: User, password: string) {
     if (!this.passwordDigest) return false
-    return await Encrypt.verifyHash(password, this.passwordDigest)
+    return await argon2.verify(password, this.passwordDigest)
   }
 }
 ```
@@ -1003,7 +1015,7 @@ This will add `@rtk-query/codegen-openapi`, an open source package for integrati
 ```ts
 // conf/app.ts
 psy.on('sync', async () => {
-  await sspawn('yarn sync:client:openapi')
+  await DreamCLI.spawn('yarn sync:client:openapi')
 })
 ```
 

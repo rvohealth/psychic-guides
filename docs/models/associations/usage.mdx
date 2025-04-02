@@ -50,7 +50,7 @@ Using associationQuery, you can add additional statements to your query before l
 const posts = await user
   .associationQuery('posts')
   .where({ body: null })
-  .joins('comments', { body: null })
+  .innerJoin('comments', { body: null })
   .all()
 
 // [Post{ body: null }, Post{ body: null }, ...]
@@ -95,7 +95,11 @@ await user.updateAssociation('userSettings', { active: true })
 Additional where clauses can be applied during update, like so:
 
 ```ts
-await user.updateAssociation('userSettings', { active: true }, { where: { userId: [1, 2, 3] }})
+await user.updateAssociation(
+  'userSettings',
+  { active: true },
+  { where: { userId: [1, 2, 3] } },
+)
 ```
 
 ## destroying

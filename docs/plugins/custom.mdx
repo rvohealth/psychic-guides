@@ -1,0 +1,33 @@
+---
+sidebar_position: 0
+---
+
+Building custom plugins in the Psychic ecosystem is incredibly simple. You can utilize the `app.plugin` method (this exists both on the `DreamApplication` and `PsychicApplication` classes) to register custom behavior, enabling you to provide encapsulated logic to extend both dream and psychic exactly the same way you would if you were writing custom code into the `conf/app.ts` and `conf/dream.ts` files directly.
+
+```ts
+// conf/app.ts
+export default async (psy: PsychicApplication) => {
+  ...
+  psy.plugin(myPlugin)
+}
+
+async function myPlugin(psy: PsychicApplication) {
+  // this function will be called after both Psychic and Dream
+  // are initialized, enabling you to extend both with
+  // custom behavior
+}
+```
+
+Psychic also ships with a few helpful plugins that you can opt into during app provisioning. These are utilities that most applications may not need, but for the ones that do, they provide a powerful pack of extra features.
+
+## Psychic workers
+
+The [workers plugin](/docs/plugins/workers/overview) enables you to easily provision background job systems that integrate seamlessly into your app's service and model layers, enabling you to easily kick functions off to a background system whenever you see fit.
+
+## Psychic websockets (beta)
+
+The [websockets plugin](/docs/plugins/websockets/overview) provides mechanisms for leveraging redis pubsub mechanisms to bind socket.io to your app, enabling you to emit messages to your users no matter which web instance they are connected to.
+
+## Snapshotable
+
+The [Snapshotable plugin](/docs/plugins/snapshot/overview) plugin provides a powerful mixin to enable you to easily take snapshots of your model layer.
