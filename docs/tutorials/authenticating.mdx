@@ -374,7 +374,7 @@ Leveraging a second model hook, we can store a hashed copy of the user's passwor
 import * as argon2 from 'argon2'
 ...
 
-const deco = new Decorators<InstanceType<typeof User>>()
+const deco = new Decorators<typeof User>()
 
 class User extends ApplicationModel {
   @deco.BeforeSave()
@@ -457,7 +457,7 @@ describe('Api/V1/UsersController', () => {
   describe('#signin', () => {
     const subject = async (
       expectedStatus: number,
-      { email, password }: { email: string; password: string },
+      { email, password }: { email: string; password: string }
     ) =>
       await request.post('/api/v1/users/signin', expectedStatus, {
         data: {
@@ -613,7 +613,7 @@ export default class ApiV1UsersController extends UnauthedController {
     if (!user) return this.unauthorized()
 
     const validPassword = await user?.checkPassword(
-      this.castParam('password', 'string'),
+      this.castParam('password', 'string')
     )
     if (!validPassword) return this.unauthorized()
 
@@ -778,7 +778,7 @@ export default class ApiV1UsersController extends UnauthedController {
     if (!user) return this.unauthorized()
 
     const validPassword = await user?.checkPassword(
-      this.castParam('password', 'string'),
+      this.castParam('password', 'string')
     )
     if (!validPassword) return this.unauthorized()
 
@@ -1178,9 +1178,8 @@ createRoot(document.getElementById('root')!).render(
         <App />
       </Router>
     </Provider>
-  </StrictMode>,
+  </StrictMode>
 )
-
 ```
 
 With these in place, we can finally hook up our client application. I will keep the entire implementation within the App.tsx file, just so it is easier to understand from a tutorial perspective. Below, we are essentially creating a top-level app, which decides whether to show authenticated or unauthenticated pages based on the resolved payload from our user status endpoint

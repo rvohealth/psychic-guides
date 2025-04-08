@@ -33,7 +33,7 @@ const data = await user.takeSnapshot()
 `BelongsTo` associations are intentionally skipped, as are `through` associations, so Snapshotable automatically avoids circuits (which would lead to an infinite loop). To explicitly include a `through` association, decorate it with the `@SnapshotableFollowThrough()` decorator.
 
 ```ts
-const deco = new Decorators<InstanceType<typeof Host>>()
+const deco = new Decorators<typeof Host>()
 
 export default class Host extends ApplicationModel {
   @deco.HasMany('HostPlace')
