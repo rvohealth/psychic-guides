@@ -49,7 +49,7 @@ export default class PostsController extends PsychicController {
 
 Note that in the example above, there is no return statement encapsulating the `this.notFound` call. This may seem like a mistake, since this request looks like it would render both a 404 _and_ a 200 response. However, calling the `notFound` method carefully raises an exception, which is then rescued within the request thread and rendered with the appropriate status. This is done so that any code after the `notFound` will not be run, guaranteeing that you don't mistakenly double-render your responses, which is a common problem in express applications.
 
-## Implici status codes
+## Implicit status codes
 
 In addition to explicit status-code messages, Psychic provides reactive mechanisms to encapsulate Dream functionality, providing default status codes out the gate for you, such as in `castParam` and `findOrFail`:
 
