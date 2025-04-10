@@ -57,3 +57,276 @@ describe('PostsController', () => {
   it.todo('add a test here to get started building PostsController')
 })
 ```
+
+# Resources
+
+In addition to generating a controller directly, you can generate a resource. This is useful when you want to create a model, route, and a controller all at once.
+
+```sh
+yarn psy g:resource v1/pets Pet User:belongs_to name:string
+```
+
+Running this will, in addition to generating a model, migration, and all the things that are normally done when generating a model, generate a controller for you with the below content. All of the method implementations are by default commented out, to prevent you from mistakenly publishing implementation for an endpoint you are not using. Additionally, it is not known exactly how you will be establishing authentication, so you may want to modify the `this.currentUser` approach to something else, if you are not using this pattern in your applications.
+
+```ts
+import { OpenAPI } from '@rvoh/psychic'
+import V1BaseController from './BaseController.js'
+import Pet from '../../../models/Pet.js'
+
+const openApiTags = ['pets']
+
+export default class V1PetsController extends V1BaseController {
+  @OpenAPI(Pet, {
+    status: 201,
+    tags: openApiTags,
+    description: 'Create a Pet',
+  })
+  public async create() {
+    //    const pet = await this.currentUser.createAssociation('pets', this.paramsFor(Pet))
+    //    this.created(pet)
+  }
+
+  @OpenAPI(Pet, {
+    status: 200,
+    tags: openApiTags,
+    description: 'Fetch multiple Pets',
+    many: true,
+    serializerKey: 'summary',
+  })
+  public async index() {
+    //    const pets = await this.currentUser.associationQuery('pets').all()
+    //    this.ok(pets)
+  }
+
+  @OpenAPI(Pet, {
+    status: 200,
+    tags: openApiTags,
+    description: 'Fetch a Pet',
+  })
+  public async show() {
+    //    const pet = await this.pet()
+    //    this.ok(pet)
+  }
+
+  @OpenAPI(Pet, {
+    status: 204,
+    tags: openApiTags,
+    description: 'Update a Pet',
+  })
+  public async update() {
+    //    const pet = await this.pet()
+    //    await pet.update(this.paramsFor(Pet))
+    //    this.noContent()
+  }
+
+  @OpenAPI({
+    status: 204,
+    tags: openApiTags,
+    description: 'Destroy a Pet',
+  })
+  public async destroy() {
+    //    const pet = await this.pet()
+    //    await pet.destroy()
+    //    this.noContent()
+  }
+
+  private async pet() {
+    // return await this.currentUser.associationQuery('pets').findOrFail(
+    //   this.castParam('id', 'string')
+    // )
+  }
+}
+```
+
+It will additionally generate a modification to the routes file, adding the newly-specified namespaces, like so:
+
+```ts
+// conf/routes.ts
++  r.namespace('v1', r => {
++    r.resources('pets')
++  })
+```
+
+For each nested namespace in your path, Psychic will automatically generate a BaseController for that folder path, encouraging you to establish clean inheritence patterns within nested routes to keep DRY and provide stable authentication strategies.
+
+Psychic will also automatically generate a controller test for you with the following content:
+
+```ts
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { UpdateableProperties } from '@rvoh/dream'
+import { PsychicServer } from '@rvoh/psychic'
+import { specRequest as request } from '@rvoh/psychic-spec-helpers'
+import Pet from '../../../../../src/app/models/Pet.js'
+import User from '../../../../../src/app/models/User.js'
+import createPet from '../../../../helpers/factories/PetFactory.js'
+import createUser from '../../../../helpers/factories/UserFactory.js'
+import addEndUserAuthHeader from '../../../helpers/authentication.js'
+
+describe('/V1/PetsController', () => {
+  let user: User
+
+  beforeEach(async () => {
+    await request.init(PsychicServer)
+    user = await createUser()
+  })
+
+  describe('GET index', () => {
+    const subject = async (expectedStatus: number = 200) => {
+      return request.get('//v1/pets', expectedStatus, {
+        headers: await addEndUserAuthHeader(request, user, {}),
+      })
+    }
+
+    it('returns the index of Pets', async () => {
+      const pet = await createPet({
+        user,
+        name: 'The Pet name',
+      })
+      const results = (await subject()).body
+
+      expect(results).toEqual([
+        expect.objectContaining({
+          id: pet.id,
+        }),
+      ])
+    })
+
+    context('Pets created by another User', () => {
+      it('are omitted', async () => {
+        await createPet()
+        const results = (await subject()).body
+
+        expect(results).toEqual([])
+      })
+    })
+  })
+
+  describe('GET show', () => {
+    const subject = async (pet: Pet, expectedStatus: number = 200) => {
+      return request.get(`//v1/pets/${pet.id}`, expectedStatus, {
+        headers: await addEndUserAuthHeader(request, user, {}),
+      })
+    }
+
+    it('returns the specified Pet', async () => {
+      const pet = await createPet({
+        user,
+        name: 'The Pet name',
+      })
+      const results = (await subject(pet)).body
+
+      expect(results).toEqual(
+        expect.objectContaining({
+          id: pet.id,
+          name: 'The Pet name',
+        }),
+      )
+    })
+
+    context('Pet created by another User', () => {
+      it('is not found', async () => {
+        const otherUserPet = await createPet()
+        await subject(otherUserPet, 404)
+      })
+    })
+  })
+
+  describe('POST create', () => {
+    const subject = async (
+      data: UpdateableProperties<Pet>,
+      expectedStatus: number = 201,
+    ) => {
+      return request.post('//v1/pets', expectedStatus, {
+        data,
+        headers: await addEndUserAuthHeader(request, user, {}),
+      })
+    }
+
+    it('creates a Pet for this User', async () => {
+      const results = (
+        await subject({
+          name: 'The Pet name',
+        })
+      ).body
+      const pet = await Pet.findOrFailBy({ userId: user.id })
+
+      expect(results).toEqual(
+        expect.objectContaining({
+          id: pet.id,
+          name: 'The Pet name',
+        }),
+      )
+    })
+  })
+
+  describe('PATCH update', () => {
+    const subject = async (
+      pet: Pet,
+      data: UpdateableProperties<Pet>,
+      expectedStatus: number = 204,
+    ) => {
+      return request.patch(`//v1/pets/${pet.id}`, expectedStatus, {
+        data,
+        headers: await addEndUserAuthHeader(request, user, {}),
+      })
+    }
+
+    it('updates the Pet', async () => {
+      const pet = await createPet({
+        user,
+        name: 'The Pet name',
+      })
+      await subject(pet, {
+        name: 'Updated Pet name',
+      })
+
+      await pet.reload()
+      expect(pet.name).toEqual('Updated Pet name')
+    })
+
+    context('a Pet created by another User', () => {
+      it('is not updated', async () => {
+        const pet = await createPet({
+          name: 'The Pet name',
+        })
+        await subject(
+          pet,
+          {
+            name: 'Updated Pet name',
+          },
+          404,
+        )
+
+        await pet.reload()
+        expect(pet.name).toEqual('The Pet name')
+      })
+    })
+  })
+
+  describe('DELETE destroy', () => {
+    const subject = async (pet: Pet, expectedStatus: number = 204) => {
+      return request.delete(`//v1/pets/${pet.id}`, expectedStatus, {
+        headers: await addEndUserAuthHeader(request, user, {}),
+      })
+    }
+
+    it('deletes the Pet', async () => {
+      const pet = await createPet({ user })
+      await subject(pet)
+
+      expect(await Pet.find(pet.id)).toBeNull()
+    })
+
+    context('a Pet created by another User', () => {
+      it('is not deleted', async () => {
+        const pet = await createPet()
+        await subject(pet, 404)
+
+        expect(await Pet.find(pet.id)).toMatchDreamModel(pet)
+      })
+    })
+  })
+})
+```
+
+Since we don't know exactly how you are going to authenticate within your application, we generate some boilerplate for you that you may or may not use to apply authentication logic to your requests when testing.
