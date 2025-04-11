@@ -6,61 +6,27 @@ import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # generating
 
-To generate a controller, use the provided cli tool as demonstrated below:
+## Generated controller inheritance chain
 
-```bash
-yarn psy g:controller Posts create update destroy
-generating controller: src/app/controllers/PostsController.ts
-generating controller spec: spec/unit/controllers/PostsController.spec.ts
-```
+Both the resource generator and the controller generator create base controllers in every nested directory along the path to the target controller being generated:
 
-The controller produced will automatically have the methods specified provided for you, with `OpenAPI` decorators automatically registered on your methods.
+- The controller will extend the base controller in its directory
+- The base controller will extend the base controller in its parent directory
+- The base controller in the outermost controller directory is either the `AuthedController` or the `UnauthedController` (the default of for generated routes is always the `AuthedController` to ensure that generated routes never accidentally expose controllers at unauthenticated routes)
+- When generating within the `admin` namespace (e.g., via `yarn psy g:controller admin/content/lessons`), the root controller in the inheritance chain will be the `AuthedAdminController`
 
-```ts
-import { OpenAPI } from '@rvoh/psychic'
-import AuthedController from './AuthedController'
+By using resource and controller generators and following these conventions, access controls will be automatically applied to new resources. To apply different access controls to all controllers rooted at a particular directory, simply add a [@BeforeAction](./before-action) method that calls `this.forbidden()` when the currently authenticated user does not have the necessary permissions.
 
-const openApiTags = ['posts']
+## Resources
 
-export default class PostsController extends AuthedController {
-  @OpenAPI({
-    response: {
-      200: {
-        tags: openApiTags,
-        description: '<tbd>',
-        // add openapi definition for your custom endpoint
-      },
-    },
-  })
-  public async create() {}
+A resource is a model with the one or more of the standard CRUD operations. The resource generator automatically creates everything needed to perform these basic actions on a model, including:
 
-  @OpenAPI({
-    status: 204,
-    tags: openApiTags,
-    description: '<tbd>',
-  })
-  public async update() {}
-
-  @OpenAPI({
-    status: 204,
-    tags: openApiTags,
-    description: '<tbd>',
-  })
-  public async destroy() {}
-}
-```
-
-Additionally, a spec file will be generated, which is empty by default, but ready for you to add tests to.
-
-```ts
-describe('PostsController', () => {
-  it.todo('add a test here to get started building PostsController')
-})
-```
-
-# Resources
-
-In addition to generating a controller directly, you can generate a resource. This is useful when you want to create a model, route, and a controller all at once.
+- model
+- serializer
+- controller scaffolding
+- routes
+- controller spec scaffolding
+- a model spec placeholder
 
 ```sh
 yarn psy g:resource v1/pets Pet User:belongs_to name:string
@@ -219,7 +185,7 @@ describe('/V1/PetsController', () => {
         expect.objectContaining({
           id: pet.id,
           name: 'The Pet name',
-        }),
+        })
       )
     })
 
@@ -234,7 +200,7 @@ describe('/V1/PetsController', () => {
   describe('POST create', () => {
     const subject = async (
       data: UpdateableProperties<Pet>,
-      expectedStatus: number = 201,
+      expectedStatus: number = 201
     ) => {
       return request.post('//v1/pets', expectedStatus, {
         data,
@@ -254,7 +220,7 @@ describe('/V1/PetsController', () => {
         expect.objectContaining({
           id: pet.id,
           name: 'The Pet name',
-        }),
+        })
       )
     })
   })
@@ -263,7 +229,7 @@ describe('/V1/PetsController', () => {
     const subject = async (
       pet: Pet,
       data: UpdateableProperties<Pet>,
-      expectedStatus: number = 204,
+      expectedStatus: number = 204
     ) => {
       return request.patch(`//v1/pets/${pet.id}`, expectedStatus, {
         data,
@@ -294,7 +260,7 @@ describe('/V1/PetsController', () => {
           {
             name: 'Updated Pet name',
           },
-          404,
+          404
         )
 
         await pet.reload()
@@ -330,3 +296,57 @@ describe('/V1/PetsController', () => {
 ```
 
 Since we don't know exactly how you are going to authenticate within your application, we generate some boilerplate for you that you may or may not use to apply authentication logic to your requests when testing.
+
+## Simple Controller
+
+To generate a controller, use the provided cli tool as demonstrated below:
+
+```bash
+yarn psy g:controller Posts create update destroy
+generating controller: src/app/controllers/PostsController.ts
+generating controller spec: spec/unit/controllers/PostsController.spec.ts
+```
+
+The controller produced will automatically have the methods specified provided for you, with `OpenAPI` decorators automatically registered on your methods.
+
+```ts
+import { OpenAPI } from '@rvoh/psychic'
+import AuthedController from './AuthedController'
+
+const openApiTags = ['posts']
+
+export default class PostsController extends AuthedController {
+  @OpenAPI({
+    response: {
+      200: {
+        tags: openApiTags,
+        description: '<tbd>',
+        // add openapi definition for your custom endpoint
+      },
+    },
+  })
+  public async create() {}
+
+  @OpenAPI({
+    status: 204,
+    tags: openApiTags,
+    description: '<tbd>',
+  })
+  public async update() {}
+
+  @OpenAPI({
+    status: 204,
+    tags: openApiTags,
+    description: '<tbd>',
+  })
+  public async destroy() {}
+}
+```
+
+Additionally, a spec file will be generated, which is empty by default, but ready for you to add tests to.
+
+```ts
+describe('PostsController', () => {
+  it.todo('add a test here to get started building PostsController')
+})
+```
