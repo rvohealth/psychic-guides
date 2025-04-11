@@ -1,0 +1,25 @@
+---
+sidebar_position: 9
+---
+
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
+# @BeforeAction
+
+Methods decorated with the `@BeforeAction` decorator are called prior to any actions.
+
+Calling one of the error status Psychic controller methods (e.g. `this.forbidden()`, [see status codes](./status-codes)) from within the BeforeAction prevents later BeforeAction methods from being called and prevents the action from being called.
+
+The exception raising Dream finders ([findOrFail](../models/querying/findOrFail), [findOrFailBy](../models/querying/findOrFailBy), [firstOrFail](../models/querying/firstOrFail), [lastOrFail](../models/querying/lastOrFail)) automatically cause Psychic to return 404 not found when no model is found and prevent later BeforeAction methods from being called and prevents the action from being called.
+
+BeforeAction can be limited to particular actions via `only`:
+
+```ts
+@BeforeAction({ only: ['create', 'destroy'] })
+```
+
+or can be removed from particular actions via `except`:
+
+```ts
+@BeforeAction({ except: ['index'] })
+```
