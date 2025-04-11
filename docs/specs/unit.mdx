@@ -14,6 +14,8 @@ The configuration for your unit specs is located in `spec/unit/vite.config.ts`. 
 ```js
 // spec/unit/vite.config.ts
 
+import '../../src/conf/global.js'
+
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -21,9 +23,9 @@ export default defineConfig({
     dir: './spec/unit',
     globals: true,
     setupFiles: ['luxon-jest-matchers', './spec/unit/setup/hooks.ts'],
-    fileParallelism: false,
-    maxConcurrency: 1,
-    maxWorkers: 1,
+    fileParallelism: true,
+    maxConcurrency: parseInt(process.env.DREAM_PARALLEL_TESTS || '1'),
+    maxWorkers: parseInt(process.env.DREAM_PARALLEL_TESTS || '1'),
     minWorkers: 1,
     mockReset: true,
     watch: false,
@@ -44,6 +46,47 @@ import { truncate } from '@rvoh/dream-spec-helpers'
 
 beforeEach(async () => {
   await truncate()
+})
+```
+
+## Parallelism
+
+Since each test needs a freshly-truncated database to operate on, vitest is ordinarily forced to run each test, one at a time, performing truncation between each run to clear out the database. However, Dream by default supports parallel spec runs by creating extra databases for you, provided you specify the necessary configuration in `conf/dream.ts`.
+
+```ts
+// conf/dream.ts
+
+export default async function configureDream(app: DreamApplication) {
+  ...
+  app.set('parallelTests', Number(process.env.DREAM_PARALLEL_TESTS))
+}
+```
+
+By default, the `DREAM_PARALLEL_TESTS` is set for you in your `.env.test` file, which will ensure that this feature is enabled out of the box for you. By specifying the `parallelTests` option, you are instructing dream to create that many parallel databases for you. Dream will then monitor the `VITEST_POOL_ID` var, which vitest will set to an integer between 1 and the number of tests you specified, and will use it to point to a specific duplicated database, allowing each test to run against a unique database.
+
+If you wish to circumvent this feature, simply adjust the `spec/unit/vite.config.ts` file, and set parallelism to false, like so:
+
+```ts
+// spec/unit/vite.config.ts
+
+import '../../src/conf/global.js'
+
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    dir: './spec/unit',
+    globals: true,
+    setupFiles: ['luxon-jest-matchers', './spec/unit/setup/hooks.ts'],
+    fileParallelism: false,
+    maxConcurrency: 1,
+    maxWorkers: 1,
+    minWorkers: 1,
+    mockReset: true,
+    watch: false,
+
+    globalSetup: './spec/unit/setup/globalSetup.ts',
+  },
 })
 ```
 

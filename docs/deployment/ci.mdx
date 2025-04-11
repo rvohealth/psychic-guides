@@ -69,6 +69,7 @@ jobs:
       run:
         working-directory: ./api
     env:
+      # we recommend you set this to the number of cores on your CI runner
       DREAM_PARALLEL_TESTS: 4
     steps:
       - uses: actions/checkout@v4
