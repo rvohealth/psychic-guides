@@ -115,8 +115,9 @@ h1 {
   margin-bottom: 40px;
 }
 
-.markdown > h3 {
-  font-weight: 600;
+.markdown > h3,
+.markdown > h3 > a {
+  font-style: normal;
 }
 
 .navbar {
