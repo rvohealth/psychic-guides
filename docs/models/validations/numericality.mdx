@@ -8,13 +8,13 @@ Use the numericality validator to clamp a number between two values
 
 ```ts
 export default class Rating extends Dream {
-  public readonly get table() {
+  public get table() {
     return 'users' as const
   }
 
   public id: DreamColumn<Rating, 'id'>
 
-  @Validates('numericality', { min: 1, max: 5 })
+  @deco.Validates('numericality', { min: 1, max: 5 })
   public rating: DreamColumn<Rating, 'rating'>
 }
 ```

@@ -1,6 +1,6 @@
-# removeDefaultScopes
+# removeDefaultScope and removeAllDefaultScopes
 
-The `removeDefaultScopes` method prevents all default scopes from applying. Consider a model where a soft delete pattern has been applied, like so:
+The `removeAllDefaultScopes` method prevents all default scopes from applying. Consider a model where a soft delete pattern has been applied, like so:
 
 ```ts
 @SoftDelete()
@@ -11,7 +11,7 @@ When a `Pet` record is destroyed, the SoftDelete decorator will kick in, prevent
 
 ```ts
 await Pet.count() // 0
-await Pet.removeDefaultScopes().count() // 1
+await Pet.removeAllDefaultScopes().count() // 1
 ```
 
 Additionally, you can use the `removeDefaultScope` method to target a particular scope for removal:

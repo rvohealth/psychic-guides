@@ -6,7 +6,7 @@ import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # destroying
 
-To destroy a model, simply call the #destroy method on the instance.
+To destroy a model, simply call the `destroy` method on the instance.
 
 ```ts
 import User from 'app/models/user'
@@ -15,12 +15,95 @@ const user = await User.first()
 await user.destroy()
 ```
 
-Destroying can also be done from the query builder for bulk deletion (though it should be known, this will not trigger model hooks like `BeforeSave`, `AfterCreate`, etc...).
+Associations can be destroyed using `destroyAssociation`:
 
 ```ts
-await user.update({ email: 'how@yadoin.biz' })
-import User from 'app/models/user'
-import { ops } from 'psychic'
+const place = await Place.first()
+await place.destroyAssociation('rooms')
+// OR
+await place.destroyAssociation('rooms', { on: { name: 'my room' } })
+```
 
-await User.where({ email: ops.like('%y@%') }).destroy()
+## Cascading
+
+Deletion will cascade through associations declared `dependent: 'destroy'`. If each associated model is decorated with @SoftDelete (see below), then the models corresponding to that association will be soft deleted.
+
+```ts
+const deco = new Decorators<InstanceType<typeof Place>>()
+
+export default class Place extends ApplicationModel {
+  @deco.HasMany('Room', { dependent: 'destroy' })
+  public rooms: Room[]
+}
+```
+
+```ts
+await Room.count()
+// 3
+const place = await Place.first()
+await place.associationQuery('rooms').count()
+// 3
+await place.destroy()
+await Room.count()
+// 0
+```
+
+## @SoftDelete
+
+Soft deletion enables a model to be hidden, by default, from all queries, without actually being deleted from the database. This is useful for providing a "undo" deletion and "trash" functionality.
+
+To activate soft deletion, first create a migration to add a `deleted_at` column to the database:
+
+```bash
+yarn psy g:migration add-deleted-at-to-rooms deleted_at:datetime
+```
+
+Then apply the `@SoftDelete` decorator to the Dream model class:
+
+```ts
+@SoftDelete()
+export default class Place extends ApplicationModel {
+  ...
+}
+```
+
+NOTE: when using soft deletion, it is recommended that the default foreign key deletion constraint of 'restrict' be used:
+
+```ts
+  await db.schema
+    .createTable('rooms')
+    .addColumn('id', 'bigserial', col => col.primaryKey())
+    .addColumn('place_id', 'bigint', col => col.references('places.id').onDelete('restrict').notNull())
+    .execute()
+}
+```
+
+## Loading soft deleted models
+
+Soft deleted models can be included in queries by removing all default scopes or specfically the soft delete scope:
+
+```ts
+await Place.create({ name: 'My Place' })
+await Place.count()
+// 1
+await Place.destroy()
+await Place.count()
+// 0
+await Place.removeAllDefaultScopes().count()
+// 1
+await Place.removeDefaultScope('dream:SoftDelete').count()
+// 1
+```
+
+## Deleting @SoftDelete models from the database
+
+A model marked `@SoftDelete` can be deleted with `reallyDestroy`. As with
+
+```ts
+await Place.create({ name: 'My Place' })
+await Place.count()
+// 1
+await Place.reallyDestroy()
+await Place.removeAllDefaultScopes().count()
+// 0
 ```
