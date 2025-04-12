@@ -11,7 +11,7 @@ Validity is an important concept in dream, since it can invalidate a record befo
 ```ts
 export default class User extends Dream {
   ...
-  @Validates('contains', '@')
+  @deco.Validates('contains', '@')
   public email: string
 }
 

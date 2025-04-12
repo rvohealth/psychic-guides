@@ -8,13 +8,13 @@ Use the contains validator to ensure a certain format is met against your model 
 
 ```ts
 export default class User extends Dream {
-  public readonly get table() {
+  public get table() {
     return 'users' as const
   }
 
   public id: string
 
-  @Validates('contains', '@')
+  @deco.Validates('contains', '@')
   public email: string
 }
 ```

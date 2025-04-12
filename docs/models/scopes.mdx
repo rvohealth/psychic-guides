@@ -17,7 +17,7 @@ export default class Post extends Dream {
   public name: string
   ...
 
-  @Scope()
+  @deco.Scope()
   public static withFunnyName(query: Query<Post>) {
     return query.where({ name: 'Chalupas jr' })
   }
@@ -39,7 +39,7 @@ export default class Post extends Dream {
   public name: string
   ...
 
-  @Scope({ default: true })
+  @deco.Scope({ default: true })
   public static hideDeleted(query: Query<Post>) {
     return query.where({ deletedAt: null })
   }

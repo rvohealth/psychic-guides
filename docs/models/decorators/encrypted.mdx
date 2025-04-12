@@ -1,10 +1,10 @@
-# Encrypted
+# @deco.Encrypted
 
-Leverage the `@Encrypted` decorator to automatically encrypt and decrypt values upon inserting and accessing values from the db. This works by defining a sudo-column, who's value is stored in a separate, encrypted field that is persisted to the db. Any time you access the decorated property, you will receive the payload of decrypting the corresponding encrypted field. Any time you make changes, those will persist to the db, encrypted and stored in the corresponding encrypted field.
+Leverage the `@deco.Encrypted` decorator to automatically encrypt and decrypt values upon inserting and accessing values from the db. This works by defining a sudo-column, who's value is stored in a separate, encrypted field that is persisted to the db. Any time you access the decorated property, you will receive the payload of decrypting the corresponding encrypted field. Any time you make changes, those will persist to the db, encrypted and stored in the corresponding encrypted field.
 
 ```ts
 export default class User extends ApplicationModel {
-  @Encrypted()
+  @deco.Encrypted()
   public secret: { token: string }
   public encryptedSecret: DreamColumn<User, 'encryptedSecret'>
   ...
@@ -19,7 +19,7 @@ console.log(reloaded.secret)
 // { token: 'abc123' }
 ```
 
-By default, a given property that is decorated with the `@Encrypted` decorator will be expected to have a column in the db with the same name, but with the word `encrypted` up front, and camel-cased. This means that if your decorated property is `secret`, the expected corresponding column in your database will need to be called `encryptedSecret`. This column will store the encrypted data for retreival later.
+By default, a given property that is decorated with the `@deco.Encrypted` decorator will be expected to have a column in the db with the same name, but with the word `encrypted` up front, and camel-cased. This means that if your decorated property is `secret`, the expected corresponding column in your database will need to be called `encryptedSecret`. This column will store the encrypted data for retreival later.
 
 ## Configuration
 

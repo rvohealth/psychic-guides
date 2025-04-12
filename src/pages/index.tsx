@@ -1,13 +1,11 @@
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext'
 import Layout from '@theme/Layout'
 import { useEffect, useState } from 'react'
-import CLI from '../components/home/sections/cli'
 import Controllers from '../components/home/sections/controllers'
 import FeatureTesting from '../components/home/sections/feature-testing'
 import Hero from '../components/home/sections/hero'
 import OpenAPI from '../components/home/sections/openapi'
 import ORM from '../components/home/sections/orm'
-import Repl from '../components/home/sections/repl'
 import Routing from '../components/home/sections/routing'
 import UnitTesting from '../components/home/sections/unit-testing'
 

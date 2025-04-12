@@ -188,7 +188,7 @@ export default class GraphNode extends ApplicationModel {
 export default class EdgeNode extends ApplicationModel {
   // ...
 
-  @Sortable({ scope: 'node' })
+  @deco.Sortable({ scope: 'node' })
   public position: DreamColumn<EdgeNode, 'position'>
 
   @deco.BelongsTo('GraphEdge', { foreignKey: 'edgeId' })
@@ -377,7 +377,7 @@ export default class ArtExhibit extends ApplicationModel {
 export default class Artwork extends ApplicationModel {
   // ...
 
-  @Sortable({ scope: 'artExhibit' })
+  @deco.Sortable({ scope: 'artExhibit' })
   public position: DreamColumn<Artwork, 'position'>
 
   @deco.BelongsTo('ArtExhibit')

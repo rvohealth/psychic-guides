@@ -21,7 +21,7 @@ Don't Repeat Yourself (DRY), is a guiding philosophy of Dream and Psychic, revea
 - model attribute types that are derived from the database, so when you write a migration that, for example, adds an enum, the one place that you define the change is in the migration, and it automatically cascades everywhere the enum is referenced or set
 - OpenAPI definitions that are fleshed out automatically from the routes file and model serializers
 - `HasOne`, `HasMany`, and `BelongsTo` association decorators that encapsulate all the complexity of an association into a single declaration that, once defined, becomes an abstraction in a well defined domain
-- powerful decorators like `@SoftDelete`, `@Sortable`, and `@ReplicaSafe` that automatically and universally handle common use cases which would otherwise introduce complexity into your application
+- powerful decorators like `@SoftDelete`, `@deco.Sortable`, and `@ReplicaSafe` that automatically and universally handle common use cases which would otherwise introduce complexity into your application
 - cli code generators that set up models, serializers, and controllers using best practice conventions, such as controllers inheriting from an authenticated ancestor right from the start
 - advanced association patterns such as has-many-through, single table inheritance (STI), and polymorphism
 
@@ -70,17 +70,17 @@ export default class User extends ApplicationModel {
   public updatedAt: DreamColumn<User, 'updatedAt'>
   public deletedAt: DreamColumn<User, 'deletedAt'>
 
-  @Validates('contains', '@')
-  @Validates('presence')
+  @deco.Validates('contains', '@')
+  @deco.Validates('presence')
   public email: string
 
-  @Validates('length', { min: 4, max: 18 })
+  @deco.Validates('length', { min: 4, max: 18 })
   public passwordDigest: string
 
-  @Virtual()
+  @deco.Virtual()
   public password?: string | null
 
-  @BeforeSave()
+  @deco.BeforeSave()
   public async hashPass() {
     if (this.password) this.passworDigest = await Hash.gen(this.password)
     this.password = undefined
@@ -177,7 +177,7 @@ export default class ApiV1IngredientsController extends AuthedController {
 
   public async update() {
     const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint'),
+      this.castParam('id', 'bigint')
     )
     await ingredient.update(this.paramsFor(Ingredient))
     this.noContent()
@@ -185,7 +185,7 @@ export default class ApiV1IngredientsController extends AuthedController {
 
   public async destroy() {
     const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint'),
+      this.castParam('id', 'bigint')
     )
     await ingredient.destroy()
     this.noContent()
@@ -246,7 +246,7 @@ describe('User', () => {
         expect(await UserSettings.count()).toEqual(0)
         const user = await createUser()
         expect(await UserSettings.firstOrFail()).toMatchDreamModel(
-          user.userSettings,
+          user.userSettings
         )
       })
     })
@@ -294,7 +294,7 @@ describe('ApiV1UsersController', () => {
       return await request.session(
         '/api/v1/signin',
         { email: 'how@yadoin', password: 'password' },
-        204,
+        204
       )
     }
 

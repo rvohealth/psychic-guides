@@ -345,7 +345,7 @@ This may seem counter intuitive, since why run the spec when you know it is goin
 
 ## Virtual attributes
 
-Taking advantage of one of the many decorators provided by dream, we can leverage the `@Virtual` decorator to indicate to dream that a field should behave, in principle, like a database column, even though it is not in the database. Using clever abstractions, you can take advantage of virtual attribtues in a miriad of ways.
+Taking advantage of one of the many decorators provided by dream, we can leverage the `@deco.Virtual` decorator to indicate to dream that a field should behave, in principle, like a database column, even though it is not in the database. Using clever abstractions, you can take advantage of virtual attribtues in a miriad of ways.
 
 Let's get started by leveraging it to build out our password hashing functionality:
 
@@ -355,7 +355,7 @@ import { Virtual } from '@rvoh/dream'
 class User extends ApplicationModel {
   ...
 
-  @Virtual()
+  @deco.Virtual()
   public password: string | undefined
 }
 ```

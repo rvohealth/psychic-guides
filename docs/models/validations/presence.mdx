@@ -8,13 +8,13 @@ Use the presence validator when you want to guarantee a field is not blank befor
 
 ```ts
 export default class Post extends Dream {
-  public readonly get table() {
+  public get table() {
     return 'posts' as const
   }
 
   public id: number
 
-  @Validates('presence')
+  @deco.Validates('presence')
   public content: string
 }
 ```

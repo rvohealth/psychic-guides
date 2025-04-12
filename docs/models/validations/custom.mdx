@@ -14,7 +14,7 @@ export default class User extends Dream {
 
   public id: string
 
-  @Validate()
+  @deco.Validate()
   public ensureEmailValid() {
     if (...) {
       throw new ValidationError(this.constructor.name, {
