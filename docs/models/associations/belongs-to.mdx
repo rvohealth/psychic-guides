@@ -35,6 +35,8 @@ export default class Post extends Dream {
 }
 ```
 
+IMPORTANT: `optional` belongs-to associations do _not_ automatically result in `optional` `RendersOne` declarations in serializers. In cases when a serializer is rendering an optional belongs-to association on a Dream model, [declare the RendersOne as optional](/docs/serializers/associations#optional-renders-one) (it is uncommon for model serializers to render belongs-to associations, so this is a rare requirement).
+
 ### Foreign key
 
 By default, the foreign key is derived from the association name. E.g., in the example below, the
