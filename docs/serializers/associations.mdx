@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # associations
 
-Like models, serializers also have a concept of association chaining, which enables you to express rich domains without getting tied in knots
+Like models, serializers also have a concept of association chaining, which enables you to express rich domains without getting tied in knots.
 
 ## renders many
 
@@ -12,7 +12,7 @@ Like models, serializers also have a concept of association chaining, which enab
 import { Attribute, DreamSerializer } from '@rvoh/dream'
 
 export default class UserSerializer<
-  DataType extends User,
+  DataType extends User
 > extends DreamSerializer<DataType> {
   @RendersMany(Pet)
   public pets: Pet[]
@@ -32,9 +32,21 @@ this.ok(user)
 import { Attribute, DreamSerializer } from '@rvoh/dream'
 
 export default class UserSerializer<
-  DataType extends User,
+  DataType extends User
 > extends DreamSerializer<DataType> {
   @RendersOne(Pet)
   public pet: Pet
+}
+```
+
+### optional renders one
+
+```ts
+export default class PostSerializer<
+  DataType extends Post,
+  Passthrough
+> extends PostSummarySerializer<DataType, Passthrough> {
+  @RendersOne(User, { optional: true })
+  public user: User
 }
 ```
