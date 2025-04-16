@@ -22,6 +22,14 @@ This command starts a local development server and opens up a browser window. Mo
 yarn build
 ```
 
+### Search
+
+To leverage the built-in local search locally, you must run the following:
+
+```sh
+yarn build && yarn serve
+```
+
 This command generates static content into the `build` directory and can be served using any static contents hosting service.
 
 ### Publishing

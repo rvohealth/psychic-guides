@@ -264,3 +264,35 @@ main > .container > .row > .col {
   font-size: 0.95rem;
   text-decoration: none;
 }
+
+.dsla-search-field button {
+  border: none;
+  border-radius: 4px;
+  /*background: red;*/
+}
+
+.dsla-search-field .aa-DetachedSearchButtonIcon {
+  color: gray;
+}
+
+.aa-DetachedCancelButton:focus,
+.aa-DetachedCancelButton:hover {
+  border: none !important;
+  box-shadow: none !important;
+  background: whitesmoke;
+}
+
+.aa-Form {
+  border: none !important;
+}
+
+.aa-Input:focus,
+.aa-Form:focus {
+  outline: none !important;
+  border-color: none !important;
+  box-shadow: none !important;
+}
+
+.aa-DetachedFormContainer {
+  border-bottom: none !important;
+}
