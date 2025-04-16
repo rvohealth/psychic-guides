@@ -4,28 +4,13 @@ sidebar_position: 1
 
 # Welcome
 
-In your grand search to find the perfect typescript web framework, we are humbled that you have stumbled upon us. We are new to the game, having just officially released in March of 2025, but we believe our offering to you was worth the wait.
+In your grand search to find the perfect typescript web framework, we are humbled that you have stumbled upon us. We are new to the game, having just officially released in April of 2025, but we believe our offering to you was worth the wait.
 
-## Philosophy
+## Overview
 
-There are many excellent tools for providing the bits and pieces of a web framework that you might need for your application. In the nodejs community, everything is very plug-and-play, allowing you to pick and choose tiny tools that are responsible for tiny jobs, and they do those jobs well, and if you don't need them, then you just don't use them.
+There are many excellent tools in nodejs for providing the bits and pieces of a web framework that you might need for your application. In the nodejs community, everything is very plug-and-play, allowing you to pick and choose tiny tools that are responsible for tiny jobs, and they do those jobs well, and if you don't need them, then you just don't use them.
 
 Though it tends to be quite a nerdy way to approach your software, we love this philosophy, and in Psychic and Dream, this philosophy is very much alive and well. However, we also attempt to provide some staple pieces to the puzzle, as well as the glue to bind them together, which will really make your experience in typescript more enjoyable, since adding types to the puzzle can put some strain on the plug-and-play ideology.
-
-Psychic is a web framework built on [Express](https://expressjs.com/), which is the backbone of the nodejs web community. Anything you can do with express, and any plugin you can use with express, should be compatible with Psychic, allowing you to extend it to whatever lengths you desire. Dream is an ORM built on the [Kysely query builder](https://kysely-org.github.io/kysely-apidoc/). Both Dream and Psychic are inspired by the elegance, expressiveness, and convention over configuration philosphy of [Ruby on Rails](https://rubyonrails.org/) and [ActiveRecord](https://guides.rubyonrails.org/active_record_basics.html), respectively, but with the power of Typescript types to add pure bliss to your dev experience.
-
-### Keeping DRY
-
-Don't Repeat Yourself (DRY), is a guiding philosophy of Dream and Psychic, revealing itself in:
-
-- model attribute types that are derived from the database, so when you write a migration that, for example, adds an enum, the one place that you define the change is in the migration, and it automatically cascades everywhere the enum is referenced or set
-- OpenAPI definitions that are fleshed out automatically from the routes file and model serializers
-- `HasOne`, `HasMany`, and `BelongsTo` association decorators that encapsulate all the complexity of an association into a single declaration that, once defined, becomes an abstraction in a well defined domain
-- powerful decorators like `@SoftDelete`, `@deco.Sortable`, and `@ReplicaSafe` that automatically and universally handle common use cases which would otherwise introduce complexity into your application
-- cli code generators that set up models, serializers, and controllers using best practice conventions, such as controllers inheriting from an authenticated ancestor right from the start
-- advanced association patterns such as has-many-through, single table inheritance (STI), and polymorphism
-
-Together, Psychic and Dream (or Dream alone, which can be used with other frameworks besides Psychic) provide an elegant framework for modeling complex domains, facilitating rapid development of maintainable applications.
 
 :::info
 In this guide, we will be covering the following:
@@ -55,10 +40,12 @@ You may be familiar with the concepts, and want to skip ahead to [installation](
 
 ## What is Dream?
 
-At the heart of any web application is a database, with, at least generally speaking, a tightly-defined set of table schemas to guard the integrity of its data. Dream follows the conventional [Active Record](https://en.wikipedia.org/wiki/Active_record_pattern) practices for modeling data, but provides a very powerful TypeScript-driven set of features to unleash powerful autocomplete mechanisms that make even the most dense applications possible to navigate.
+At the heart of most web applications is a database, with, at least generally speaking, a tightly-defined set of table schemas to guard the integrity of its data. Dream follows the conventional [Active Record](https://en.wikipedia.org/wiki/Active_record_pattern) practices for modeling data, but provides a very powerful TypeScript-driven set of features to unleash powerful autocomplete mechanisms that make even the most dense applications possible to navigate.
 
 ```ts
-@SoftDelete()
+const deco = new Decorators<typeof User>()
+
+@deco.SoftDelete()
 export default class User extends ApplicationModel {
   public get table() {
     return 'users' as const
@@ -79,16 +66,17 @@ export default class User extends ApplicationModel {
 
   @deco.Virtual()
   public password?: string | null
+  public passwordDigest: DreamColumn<User, 'passwordDigest'>
 
   @deco.BeforeSave()
   public async hashPass() {
-    if (this.password) this.passworDigest = await Hash.gen(this.password)
+    if (this.password) this.passworDigest = await argon2.hash(this.password)
     this.password = undefined
   }
 
   public async checkPassword(password: string) {
     if (!this.passworDigest) return false
-    return await Hash.check(password, this.passworDigest)
+    return await argon2.verify(this.passworDigest, password)
   }
 }
 ```
@@ -98,7 +86,7 @@ export default class User extends ApplicationModel {
 In addition to powerful decorators for describing validations and custom scoping on your models, Dream also provides a powerful association layer, enabling you to describe rich, intimate associations with elegant simplicity:
 
 ```ts
-const deco = Decorators<InstanceType<typeof Post>>
+const deco = new Decorators<typeof Post>()
 
 class Post extends ApplicationModel {
   ...
@@ -116,22 +104,20 @@ class Post extends ApplicationModel {
 const post = await Post.firstOrFail()
 await post
   .innerJoin('comments as c', { on: { body: ops.ilike('%oops%') } })
-  .where({ 'c.authorName': 'chalupa gooding jr' })
+  .where({ 'c.authorName': 'brittany' })
   .all()
 // [Post{ body: 'oops' }, Post{ body: 'oops, I did it again' }]
 ```
 
-> See the [Dream guides](/docs/models/overview) for more information on modeling in Dream and Psychic
+> See the [Dream guides](/docs/models/overview) for more information on modeling with Dream
 
 ## What is Psychic?
 
-Psychic is a fully-featured, TypeScript-driven web framework. It leverages the MVC (Model, View, Controller) paradigm, providing the Dream ORM under the hood for data modeling. Philisophically, Psychic and Dream use opinionated conventions to enable seamless development, allowing beautiful type integrations to flow throughout your app with ease. By following a strict convention-over-configuration philosophy throughout our design, we enable you to write less while following best practice design concepts.
+Psychic is a fully-featured, TypeScript-driven web framework built on [Express](https://expressjs.com/). It leverages the MVC (Model, View, Controller) paradigm, providing the Dream ORM under the hood for data modeling. Philosophically, Psychic and Dream use opinionated conventions to enable seamless development, allowing beautiful type integrations to flow throughout your app with ease. By following a strict convention-over-configuration philosophy throughout our design, we enable you to write less while following best practice design concepts.
 
 ### Routing
 
 Psychic enables you to programatically define routes, as well as their connections to controllers within your app. With these routes defined, your web server will automatically point any requests to these paths to the matching controllers.
-
-> See our [Routing guide](/docs/routing/crud) for more information on routing
 
 ```ts
 // conf/routes.ts
@@ -147,6 +133,8 @@ export default (r: PsychicRouter) => {
   })
 }
 ```
+
+> See our [Routing guide](/docs/routing/crud) for more information on routing
 
 ### Controllers
 
@@ -177,7 +165,7 @@ export default class ApiV1IngredientsController extends AuthedController {
 
   public async update() {
     const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint')
+      this.castParam('id', 'bigint'),
     )
     await ingredient.update(this.paramsFor(Ingredient))
     this.noContent()
@@ -185,7 +173,7 @@ export default class ApiV1IngredientsController extends AuthedController {
 
   public async destroy() {
     const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint')
+      this.castParam('id', 'bigint'),
     )
     await ingredient.destroy()
     this.noContent()
@@ -193,7 +181,7 @@ export default class ApiV1IngredientsController extends AuthedController {
 }
 ```
 
-As you can already see above, our Dream ORM is clearly at work to keep our code so tidy. Psychic will automatically respond with a `404` for any failures caused by `findOrFail`, and `castParam` will fail with a `400` if the incoming param does not match the described schema. These design patterns are designed to allow you to get ouot of your own way, enabling the composition of extremely simple design patterns with powerful intuitions about your needs.
+As you can already see above, our Dream ORM is clearly at work to keep our code so tidy. Psychic will automatically respond with a `404` for any failures caused by `findOrFail`, and `castParam` will fail with a `400` if the incoming param does not match the described schema. These design patterns are designed to allow you to get out of your own way, enabling the composition of extremely simple design patterns with powerful intuitions about your needs.
 
 > See our [Controller guides](/docs/controllers/generating) for more information on implementing controllers
 
@@ -203,24 +191,71 @@ Psychic and Dream provide an end-to-end solution for modern web applications, wi
 
 We do, however, provide a tools for composing a robust backend, as well as the testing infrastructure to cover any set of web client integrations you desire.
 
+### Keeping DRY
+
+Don't Repeat Yourself (DRY), is a guiding philosophy of Dream and Psychic, revealing itself in:
+
+- model attribute types that are derived from the database, so when you write a migration that, for example, adds an enum, the one place that you define the change is in the migration, and it automatically cascades everywhere the enum is referenced or set
+- OpenAPI definitions that are fleshed out automatically from the routes file and model serializers
+- `HasOne`, `HasMany`, and `BelongsTo` association decorators that encapsulate all the complexity of an association into a single declaration that, once defined, becomes an abstraction in a well defined domain
+- powerful decorators like `@SoftDelete`, `@Sortable`, and `@ReplicaSafe` that automatically and universally handle common use cases which would otherwise introduce complexity into your application
+- cli code generators that set up models, serializers, and controllers using best practice conventions, such as controllers inheriting from an authenticated ancestor right from the start
+- advanced association patterns such as has-many-through, single table inheritance (STI), and polymorphism
+
 ### Use familiar technologies
 
 In choosing to provide a framework, we were not interested in reinventing the wheel at every turn, which is why, like most in the nodejs world, have turned to leaning on popular open source tooling to provide the underlying mechanisms of our framework. This enables us to focus on providing the important features we care about, while leaning on tools everyone is familiar with for driving the rest.
 
 Considering, here is a breakdown of the technologies we are leaning on for our application stack:
 
-- kysely (used for driving the Dream ORM)
-- expressjs (drives the underlying web server)
-- node-pg (used for driving the ORM)
-- ioredis (adds node bindings to redis, enabling us to support both distributed websocket systems, as well as background job systems)
-- bullmq (used for driving background jobs)
-- socket.io (used for websockets)
-- vitest (used for driving unit and feature tests)
-- puppeteer (used for running a headless browser during your feature tests)
+- [kysely](https://kysely.dev) (used for driving the Dream ORM)
+- [expressjs](https://expressjs.com) (drives the underlying web server)
+- [openapi](https://www.openapis.org) (drives integration with front end clients)
+- [node-pg](https://node-postgres.com) (used for driving the ORM)
+- [ioredis](https://github.com/redis/ioredis) (adds node bindings to redis, enabling us to support both distributed websocket systems, as well as background job systems)
+- [bullmq](https://bullmq.io) (used for driving background jobs)
+- [socket.io](https://socket.io) (used for websockets)
+- [vitest](https://vitest.dev) (used for driving unit and feature tests)
+- [puppeteer](https://pptr.dev) (used for running a headless browser during your feature tests)
 
 ### Convention over configuration
 
 Since Psychic and Dream are meant to be used together, Psychic is well-fit to automatically absorb implicit configurations at the Dream layer, allowing you to define things once, rather than many times. These sensible expectations by our app enable you to compose with ease, and make changes that can flow through to the top level of your app without even needing to make changes.
+
+### Leverage openapi to simplify front end integration
+
+In the modern front end javascript ecosystem, there are simply too many options for developers for us to have any desire to try taking on direct integrations with any client framework directly. By not getting in the way, we believe we provide the most flexibility, integration-wise. However, we recognize there are a few points at which front end integrations become useful, and provide the binding mechanisms to make that possible.
+
+#### Auto-launching the client when a Psychic dev server starts
+
+If you opt into a client when provisioning your Psychic app, you will automatically have a few lines of code added to your `conf/app.ts` file, which will automatically launch your client server whenever your app launches with `NODE_ENV=development`.
+
+```ts
+// conf/app.ts
+
+export default async (psy: PsychicApplication) => {
+  ...
+  psy.on('server:start', async psychicServer => {
+    if (AppEnv.isDevelopment && AppEnv.boolean('CLIENT')) {
+      DreamCLI.logger.logStartProgress('client dev server starting...')
+      await PsychicDevtools.launchDevServer('client', { port: 3000, cmd: 'yarn client' })
+      DreamCLI.logger.logEndProgress()
+    }
+  })
+
+  psy.on('server:shutdown', () => {
+    if (AppEnv.isDevelopment && AppEnv.boolean('CLIENT')) {
+      DreamCLI.logger.logStartProgress('client dev server stopping...')
+      PsychicDevtools.stopDevServer('client')
+      DreamCLI.logger.logEndProgress()
+    }
+  })
+}
+```
+
+The `PsychicDevtools.launchDevServer` command is extremely flexible. Providing it with a command to run and a port to expect to be occupied once the command launches will enable psychic to side-launch your client server. If you have multiple servers you need to launch, there is nothing to prevent you from adding it. Just don't forget that any server launched in the `server:start` hook will need a corresponding `stopDevServer` call in `server:shutdown`.
+
+In addition, because of the flexibility provided, you are able to side-launch commands that are not in any way associated with your code repository, enabling you to achieve client integration without even enabling a client within Psychic, providing ultimate flexibility for devs.
 
 ## Testing
 
@@ -246,7 +281,7 @@ describe('User', () => {
         expect(await UserSettings.count()).toEqual(0)
         const user = await createUser()
         expect(await UserSettings.firstOrFail()).toMatchDreamModel(
-          user.userSettings
+          user.userSettings,
         )
       })
     })
@@ -294,7 +329,7 @@ describe('ApiV1UsersController', () => {
       return await request.session(
         '/api/v1/signin',
         { email: 'how@yadoin', password: 'password' },
-        204
+        204,
       )
     }
 
@@ -314,7 +349,7 @@ describe('ApiV1UsersController', () => {
 
 ### Feature (end-to-end) specs
 
-For those who opt into the client integration, Psychic will automatically bootstrap with [puppeteer](https://pptr.dev/guides/what-is-puppeteer) to provide a headless browser you can use to test a web application end-to-end. Whenever these tests run, a psychic server will automatically be started which can be used by your client application, allowing you to test your front end integration with your back end.
+Psychic will automatically bootstrap with [puppeteer](https://pptr.dev/guides/what-is-puppeteer) as a dev dependency to provide a headless browser you can use to test a web application end-to-end. Whenever these tests run, a psychic server will automatically be started which can be used by your client application, allowing you to test your front end integration with your back end.
 
 > For more information, see [The Feature spec guides](/docs/specs/feature).
 
@@ -322,22 +357,18 @@ For those who opt into the client integration, Psychic will automatically bootst
 // api/spec/features/visitor/signs-up.spec.ts
 
 import User from '../../../src/app/models/User'
-import clickButton from '../helpers/clickButton'
-import expectContent from '../helpers/expectContent'
-import fillInput from '../helpers/fillInput'
-import visit from '../helpers/visit'
 
 describe('visitor visits the signup page', () => {
   it('allows visitor to fill sign up for a new account and then log in with the same credentials', async () => {
     await visit('/signup')
-    await expect(page).toFill('#email', 'hello@world')
-    await expect(page).toFill('#password', 'mypassword')
-    await expect(page).toClickButton('sign up')
+    await fillIn('#email', 'hello@world')
+    await fillIn('#password', 'mypassword')
+    await clickButton('sign up')
 
     await expect(page).toMatchTextContent('Log in')
-    await expect(page).toFill('#email', 'hello@world')
-    await expect(page).toFill('#password', 'mypassword')
-    await expect(page).toClickButton('log in')
+    await fillIn('#email', 'hello@world')
+    await fillIn('#password', 'mypassword')
+    await clickButton('log in')
 
     await expect(page).toMatchTextContent('DASHBOARD')
 
