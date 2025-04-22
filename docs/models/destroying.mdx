@@ -21,7 +21,7 @@ Associations can be destroyed using `destroyAssociation`:
 const place = await Place.first()
 await place.destroyAssociation('rooms')
 // OR
-await place.destroyAssociation('rooms', { on: { name: 'my room' } })
+await place.destroyAssociation('rooms', { and: { name: 'my room' } })
 ```
 
 ## Cascading

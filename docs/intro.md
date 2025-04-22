@@ -103,7 +103,7 @@ class Post extends ApplicationModel {
 
 const post = await Post.firstOrFail()
 await post
-  .innerJoin('comments as c', { on: { body: ops.ilike('%oops%') } })
+  .innerJoin('comments as c', { and: { body: ops.ilike('%oops%') } })
   .where({ 'c.authorName': 'brittany' })
   .all()
 // [Post{ body: 'oops' }, Post{ body: 'oops, I did it again' }]
@@ -165,7 +165,7 @@ export default class ApiV1IngredientsController extends AuthedController {
 
   public async update() {
     const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint'),
+      this.castParam('id', 'bigint')
     )
     await ingredient.update(this.paramsFor(Ingredient))
     this.noContent()
@@ -173,7 +173,7 @@ export default class ApiV1IngredientsController extends AuthedController {
 
   public async destroy() {
     const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint'),
+      this.castParam('id', 'bigint')
     )
     await ingredient.destroy()
     this.noContent()
@@ -281,7 +281,7 @@ describe('User', () => {
         expect(await UserSettings.count()).toEqual(0)
         const user = await createUser()
         expect(await UserSettings.firstOrFail()).toMatchDreamModel(
-          user.userSettings,
+          user.userSettings
         )
       })
     })
@@ -329,7 +329,7 @@ describe('ApiV1UsersController', () => {
       return await request.session(
         '/api/v1/signin',
         { email: 'how@yadoin', password: 'password' },
-        204,
+        204
       )
     }
 
