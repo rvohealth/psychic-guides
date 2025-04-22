@@ -80,19 +80,19 @@ class User extends ApplicationModel {
 }
 ```
 
-### Where
+### And
 
-Sometimes it is necessary to further-narrow the scope of your association using a where statement. This can be done by passing an additional `where` argument to your association, like so:
+Sometimes it is necessary to further-narrow the scope of your association using ann `and` statement. This can be done by passing an additional `and` argument to your association, like so:
 
 ```ts
 class User extends ApplicationModel {
   ...
-  @deco.HasOne('Pet', { where: { name: 'Aster' } })
+  @deco.HasOne('Pet', { and: { name: 'Aster' } })
   public favoritePet: Pet | null
 }
 ```
 
-> Note: when using a where clause to create a HasOne, make sure to add a unique index on the the foreign key column (and the foreign key type column if a polymorphic association) and the column(s) in the where clause. For example:
+> Note: when using an `and` clause to create a HasOne, make sure to add a unique index on the the foreign key column (and the foreign key type column if a polymorphic association) and the column(s) in the `and` clause. For example:
 
 ```ts
 await db.schema
@@ -103,12 +103,12 @@ await db.schema
   .execute()
 ```
 
-In some cases, dynamic values will need to be permitted for the provided where statements. In these cases, you can leverage required where clauses to enforce the where clause to be present any time an association is loaded. If utilized, an exception will be raised if you attempt to load this association without passing the required where statements.
+In some cases, dynamic values will need to be permitted for the provided `and` statements. In these cases, you can leverage required `and` clauses to enforce the `and` clause to be present any time an association is loaded. If utilized, an exception will be raised if you attempt to load this association without passing the required `and` statements.
 
 ```ts
 class User extends ApplicationModel {
   ...
-  @deco.HasOne('Pet', { where: { species: DreamConst.required } })
+  @deco.HasOne('Pet', { and: { species: DreamConst.required } })
   public favoritePet: Pet | null
 }
 
@@ -125,7 +125,7 @@ Additionally, you can defer the passed arguments to a higher level by leveraging
 ```ts
 class User extends ApplicationModel {
   ...
-  @deco.HasOne('LocalizedText', { where: { locale: DreamConst.passthrough } })
+  @deco.HasOne('LocalizedText', { and: { locale: DreamConst.passthrough } })
   public currentLocalizedText: LocalizedText | null
 }
 
@@ -138,15 +138,27 @@ user.currentLocalizedText
 // LocalizedText{ locale: 'en-US' }
 ```
 
-### WhereNot
+### AndNot
 
-Similar to `where`, a `whereNot` statement can be provided to filter records:
+Similar to `and`, a `andNot` statement can be provided to filter records:
 
 ```ts
 class User extends ApplicationModel {
   ...
-  @deco.HasMany('LocalizedText', { whereNot: { deletedAt: null } })
+  @deco.HasMany('LocalizedText', { andNot: { deletedAt: null } })
   public deletedLocalizedTexts: LocalizedText[]
+}
+```
+
+### AndAny
+
+For and-ing with the result of an `or` statement:
+
+```ts
+class Balloon extends ApplicationModel {
+  ...
+  @deco.HasMany('Balloon', { andAny: [{ color: null }, { color: 'red' }] })
+  public redOrColorlessBalloons: Balloon
 }
 ```
 
@@ -348,9 +360,9 @@ class User extends ApplicationModel {
 
 In the above example, any time the `pets` association is loaded, it will automatically compare the `userId` field on the `Pet` model to the `uuid` field on the `User` model.
 
-### SelfWhere
+### SelfAnd
 
-`selfWhere` adds a `where` clause to an association between a column on the associated model and a column on this model.
+`selfAnd` adds a `and` clause to an association between a column on the associated model and a column on this model.
 
 For example, suppose we have an ArtExhibit, and that each day, we want to feature a different Artwork within that exhibit. Every day, we update the `featuredPosition` on the ArtExhibit. The `featuredArtwork` is the Artwork with that `position`.
 
@@ -367,7 +379,7 @@ export default class ArtExhibit extends ApplicationModel {
   public artworks: Artwork[]
 
   @deco.HasOne('Artwork', {
-    selfWhere: {
+    selfAnd: {
       position: 'featuredPosition',
     },
   })
@@ -386,9 +398,9 @@ export default class Artwork extends ApplicationModel {
 }
 ```
 
-### SelfWhereNot
+### SelfAndNot
 
-`selfWhereNot` adds a `whereNot` clause to an association between a column on the associated model and a column on this model.
+`selfAndNot` adds a `andNot` clause to an association between a column on the associated model and a column on this model.
 
 For example, the below `siblings` association matches all EdgeNodes attached to the same GraphNode that are not the current EdgeNode:
 
@@ -406,7 +418,7 @@ export default class EdgeNode extends ApplicationModel {
   @deco.HasMany('EdgeNode', {
     through: 'node',
     source: 'edgeNodes',
-    selfWhereNot: { id: 'id' },
+    selfAndNot: { id: 'id' },
   })
   public siblings: EdgeNode[]
 }

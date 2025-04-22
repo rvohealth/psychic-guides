@@ -6,7 +6,7 @@ import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # range
 
-Range is used in combination with `where` clauses in Dream.
+Range is used in combination with `where` and `and` clauses in Dream.
 
 ## range supports start, end, or start and end values
 
@@ -33,7 +33,7 @@ await user
   .where({
     adoptedOn: range(
       CalendarDate.today().minus({ months: 2 }),
-      CalendarDate.today().minus({ month: 1 }),
+      CalendarDate.today().minus({ month: 1 })
     ),
   })
   .order({ adoptedOn: 'desc' })
@@ -44,9 +44,22 @@ await user
   .where({
     adoptedOn: range(
       DateTime.now().minus({ months: 2 }),
-      DateTime.now().minus({ month: 1 }),
+      DateTime.now().minus({ month: 1 })
     ),
   })
   .order({ adoptedOn: 'desc' })
   .all()
+```
+
+## range can be used in association declaration `and` statements
+
+```ts
+const deco = new Decorators<typeof Post>()
+
+export default class Post extends ApplicationModel {
+...
+
+@deco.HasMany(Comment, { and: { createdAt: () => range(CalendarDate.today().minus({ weeks: 2 })) } })
+public recentComments: Comment[]
+}
 ```

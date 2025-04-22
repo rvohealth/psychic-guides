@@ -18,10 +18,10 @@ inner join "collars" on "pets"."id" = "collars"."pet_id"
   </pre>
 </RoutesOutput>
 
-You can also attach `where` clauses to join statements. The second argument (the object) in the following code generates a `where` clause on the `posts` model:
+You can also attach `and`, `andNot`, and `andAny` clauses to join statements. The second argument (the object) in the following code generates an `and` condition on the join:
 
 ```ts
-const users = await User.innerJoin('pets', { on: { name: 'Aster' } }).all()
+const users = await User.innerJoin('pets', { and: { name: 'Aster' } }).all()
 ```
 
 <RoutesOutput>
@@ -34,14 +34,14 @@ inner join "pets" on "users"."id" = "pets"."user_id" and "pets"."name" = $1
 </RoutesOutput>
 
 ```ts
-// A where statement on both `posts` and `comments`
+// An `and` statement on both `posts` and `comments`
 const users = await User.innerJoin(
   'posts',
-  { on: { category: 'travel' } },
+  { and: { category: 'travel' } },
   'comments',
-  { on: flagged: true },
+  { and: flagged: true },
 ).all()
 
-// A where statement on just `comments`
-const users = await User.innerJoin('posts', 'comments', { on: { flagged: true } }).all()
+// An `and` statement on just `comments`
+const users = await User.innerJoin('posts', 'comments', { and: { flagged: true } }).all()
 ```
