@@ -233,7 +233,7 @@ If you opt into a client when provisioning your Psychic app, you will automatica
 ```ts
 // conf/app.ts
 
-export default async (psy: PsychicApplication) => {
+export default async (psy: PsychicApp) => {
   ...
   psy.on('server:start', async psychicServer => {
     if (AppEnv.isDevelopment && AppEnv.boolean('CLIENT')) {

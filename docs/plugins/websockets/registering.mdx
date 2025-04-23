@@ -61,7 +61,7 @@ Finally, in your `conf/app.ts` file, you will need to register your users with `
 ```ts
 // conf/app.ts
 
-export default async (psy: PsychicApplication) => {
+export default async (psy: PsychicApp) => {
   ...
 
   psy.on('ws:start', io => {

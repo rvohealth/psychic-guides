@@ -19,11 +19,11 @@ yarn add @rvoh/psychic-workers
 
 ```ts
 import os from 'os'
-import { PsychicApplicationWorkers } from '@rvoh/psychic-workers'
+import { PsychicAppWorkers } from '@rvoh/psychic-workers'
 import Redis, { Cluster } from 'ioredis'
 import AppEnv from './AppEnv'
 
-export default (workersApp: PsychicApplicationWorkers) => {
+export default (workersApp: PsychicAppWorkers) => {
   workersApp.set('background', {
     defaultWorkstream: {
       // https://docs.bullmq.io/guide/parallelism-and-concurrency
@@ -48,7 +48,7 @@ export default (workersApp: PsychicApplicationWorkers) => {
               tls: AppEnv.isProduction ? {} : undefined,
             },
             enableOfflineQueue: false,
-          },
+          }
         )
       : new Redis({
           host: process.env.BACKGROUND_JOBS_REDIS_HOST || 'localhost',
@@ -62,35 +62,32 @@ export default (workersApp: PsychicApplicationWorkers) => {
     defaultWorkerConnection: !process.env.WORKER_SERVICE
       ? undefined
       : AppEnv.isProduction
-        ? new Cluster(
-            [
-              {
-                host: AppEnv.string('BG_JOBS_REDIS_HOST'),
-                port: AppEnv.integer('BG_JOBS_REDIS_PORT'),
-              },
-            ],
+      ? new Cluster(
+          [
             {
-              slotsRefreshTimeout: 5000,
-              dnsLookup: (address, callback) => callback(null, address),
-              redisOptions: {
-                username: AppEnv.string('BG_JOBS_REDIS_USERNAME'),
-                password: AppEnv.string('BG_JOBS_REDIS_PASSWORD'),
-                tls: AppEnv.isProduction ? {} : undefined,
-                maxRetriesPerRequest: null,
-              },
+              host: AppEnv.string('BG_JOBS_REDIS_HOST'),
+              port: AppEnv.integer('BG_JOBS_REDIS_PORT'),
             },
-          )
-        : new Redis({
-            host: process.env.BACKGROUND_JOBS_REDIS_HOST || 'localhost',
-            port: parseInt(
-              process.env.BACKGROUND_JOBS_REDIS_PORT || '6379',
-              10,
-            ),
-            username: process.env.BACKGROUND_JOBS_REDIS_USERNAME,
-            password: process.env.BACKGROUND_JOBS_REDIS_PASSWORD,
-            tls: AppEnv.isProduction ? {} : undefined,
-            maxRetriesPerRequest: null,
-          }),
+          ],
+          {
+            slotsRefreshTimeout: 5000,
+            dnsLookup: (address, callback) => callback(null, address),
+            redisOptions: {
+              username: AppEnv.string('BG_JOBS_REDIS_USERNAME'),
+              password: AppEnv.string('BG_JOBS_REDIS_PASSWORD'),
+              tls: AppEnv.isProduction ? {} : undefined,
+              maxRetriesPerRequest: null,
+            },
+          }
+        )
+      : new Redis({
+          host: process.env.BACKGROUND_JOBS_REDIS_HOST || 'localhost',
+          port: parseInt(process.env.BACKGROUND_JOBS_REDIS_PORT || '6379', 10),
+          username: process.env.BACKGROUND_JOBS_REDIS_USERNAME,
+          password: process.env.BACKGROUND_JOBS_REDIS_PASSWORD,
+          tls: AppEnv.isProduction ? {} : undefined,
+          maxRetriesPerRequest: null,
+        }),
   })
 
   // ******
@@ -103,27 +100,24 @@ export default (workersApp: PsychicApplicationWorkers) => {
 }
 ```
 
-3. You will need to register this plugin as part of the `initializePsychicApplication.ts` file within your project. It will need to look something like this:
+3. You will need to register this plugin as part of the `initializePsychicApp.ts` file within your project. It will need to look something like this:
 
 ```ts
-// initializePsychicApplication.ts
+// initializePsychicApp.ts
 
-import {
-  PsychicApplication,
-  PsychicApplicationInitOptions,
-} from '@rvoh/psychic'
-import { PsychicApplicationWorkers } from '@rvoh/psychic-workers'
+import { PsychicApp, PsychicAppInitOptions } from '@rvoh/psychic'
+import { PsychicAppWorkers } from '@rvoh/psychic-workers'
 import psychicConf from '../../conf/app'
 import dreamConf from '../../conf/dream'
 import workersConf from '../../conf/workers'
 
-export default async function initializePsychicApplication(
-  opts: PsychicApplicationInitOptions = {},
+export default async function initializePsychicApp(
+  opts: PsychicAppInitOptions = {}
 ) {
-  const psychicApp = await PsychicApplication.init(psychicConf, dreamConf, opts)
+  const psychicApp = await PsychicApp.init(psychicConf, dreamConf, opts)
 
   // add this line to integrate psychic workers with your app
-  await PsychicApplicationWorkers.init(psychicApp, workersConf)
+  await PsychicAppWorkers.init(psychicApp, workersConf)
 
   return psychicApp
 }

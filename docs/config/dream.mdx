@@ -15,7 +15,7 @@ A configuration file is used to configure dream, and can be found at the `conf/d
 In order for Dream to connect to your database, you need to provide it with explicit credentials. Dream supports both primary and replica db connections, and configuration for both can be provided. While this example taps into env vars, we recommend that in production, you switch to something more secure, like [AWS Secrets Manager](https://aws.amazon.com/secrets-manager).
 
 ```ts
-export default async function (dream: DreamApplication) {
+export default async function (dream: DreamApp) {
   dream.set('db', {
     primary: {
       user: process.env.DB_USER!,
@@ -49,7 +49,7 @@ In order for dream to function properly, it needs you to provide it folders to s
 To do so, every dream application must have the following lines provided in the dream configuration:
 
 ```ts
-export default async function (dream: DreamApplication) {
+export default async function (dream: DreamApp) {
   app.load('models', srcPath('app', 'models'), await importModels())
   app.load('serializers', srcPath('app', 'serializers'), await importSerializers())
   app.load('services', srcPath('app', 'services'), await importServices())
@@ -62,7 +62,7 @@ export default async function (dream: DreamApplication) {
 Dream requires you to provide it the path from your configuration file to the project's root file. This should be an absolute path, including the \_\_dirname variable provided by node.
 
 ```ts
-export default async function (dream: DreamApplication) {
+export default async function (dream: DreamApp) {
   dream.set('projectRoot', path.join(__dirname, '..', '..', '..'))
   ...
 }
@@ -73,7 +73,7 @@ export default async function (dream: DreamApplication) {
 The primaryKeyType configuration informs the cli how to generate your migrations for you when building out models using the cli generators provided by dream.
 
 ```ts
-export default async function (dream: DreamApplication) {
+export default async function (dream: DreamApp) {
   dream.set('primaryKeyType', 'bigserial')
   ...
 }
@@ -86,7 +86,7 @@ Provide inflections to your dream application to inform the dream cli generators
 ```ts
 import inflections from './inflections'
 
-export default async function (dream: DreamApplication) {
+export default async function (dream: DreamApp) {
   dream.set('inflections', inflections)
   ...
 }
@@ -100,7 +100,7 @@ Provide inflections to your dream application to inform the dream cli generators
 // conf/dream.ts
 import inflections from './inflections'
 
-export default async function (dream: DreamApplication) {
+export default async function (dream: DreamApp) {
   dream.set(
     'logger',
     winston.createLogger({
@@ -132,7 +132,7 @@ Provide information about the paths to the specific directories that dream cares
 
 ```ts
 // conf/dream.ts
-export default async function (dream: DreamApplication) {
+export default async function (dream: DreamApp) {
   // provides a list of path overrides for your app. This is optional, and will default
   // to the paths expected for a typical psychic application.
   dream.set('paths', {
@@ -153,7 +153,7 @@ export default async function (dream: DreamApplication) {
 Psychic tests can be slower than traditional vitest testing, since each test utilizes a connection to a single database, and that database must be truncated between each test run, preventing multiple test runs from being done at once. This means your tests _must_ run one at a time, which can be quite slow. To speed things up, we provide the ability for you to partition your test runs onto multiple databases, enabling you to run as many tests as you have databases at once.
 
 ```ts
-export default async function (dream: DreamApplication) {
+export default async function (dream: DreamApp) {
   dream.set('parallelTests', Number(process.env.DREAM_PARALLEL_TESTS))
   ...
 }

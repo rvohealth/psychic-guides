@@ -52,7 +52,7 @@ To set up workstreams in Psychic, all you need to do is add a basic workstream s
 ```ts
 // conf/workers.ts
 
-export default (workersApp: PsychicApplicationWorkers) => {
+export default (workersApp: PsychicAppWorkers) => {
   workersApp.set('background', {
     defaultWorkstream: {
       // https://docs.bullmq.io/guide/parallelism-and-concurrency
@@ -77,7 +77,7 @@ export default (workersApp: PsychicApplicationWorkers) => {
               tls: AppEnv.isProduction ? {} : undefined,
             },
             enableOfflineQueue: false,
-          },
+          }
         )
       : new Redis({
           host: process.env.BACKGROUND_JOBS_REDIS_HOST || 'localhost',
@@ -91,35 +91,32 @@ export default (workersApp: PsychicApplicationWorkers) => {
     defaultWorkerConnection: !process.env.WORKER_SERVICE
       ? undefined
       : AppEnv.isProduction
-        ? new Cluster(
-            [
-              {
-                host: AppEnv.string('BG_JOBS_REDIS_HOST'),
-                port: AppEnv.integer('BG_JOBS_REDIS_PORT'),
-              },
-            ],
+      ? new Cluster(
+          [
             {
-              slotsRefreshTimeout: 5000,
-              dnsLookup: (address, callback) => callback(null, address),
-              redisOptions: {
-                username: AppEnv.string('BG_JOBS_REDIS_USERNAME'),
-                password: AppEnv.string('BG_JOBS_REDIS_PASSWORD'),
-                tls: AppEnv.isProduction ? {} : undefined,
-                maxRetriesPerRequest: null,
-              },
+              host: AppEnv.string('BG_JOBS_REDIS_HOST'),
+              port: AppEnv.integer('BG_JOBS_REDIS_PORT'),
             },
-          )
-        : new Redis({
-            host: process.env.BACKGROUND_JOBS_REDIS_HOST || 'localhost',
-            port: parseInt(
-              process.env.BACKGROUND_JOBS_REDIS_PORT || '6379',
-              10,
-            ),
-            username: process.env.BACKGROUND_JOBS_REDIS_USERNAME,
-            password: process.env.BACKGROUND_JOBS_REDIS_PASSWORD,
-            tls: AppEnv.isProduction ? {} : undefined,
-            maxRetriesPerRequest: null,
-          }),
+          ],
+          {
+            slotsRefreshTimeout: 5000,
+            dnsLookup: (address, callback) => callback(null, address),
+            redisOptions: {
+              username: AppEnv.string('BG_JOBS_REDIS_USERNAME'),
+              password: AppEnv.string('BG_JOBS_REDIS_PASSWORD'),
+              tls: AppEnv.isProduction ? {} : undefined,
+              maxRetriesPerRequest: null,
+            },
+          }
+        )
+      : new Redis({
+          host: process.env.BACKGROUND_JOBS_REDIS_HOST || 'localhost',
+          port: parseInt(process.env.BACKGROUND_JOBS_REDIS_PORT || '6379', 10),
+          username: process.env.BACKGROUND_JOBS_REDIS_USERNAME,
+          password: process.env.BACKGROUND_JOBS_REDIS_PASSWORD,
+          tls: AppEnv.isProduction ? {} : undefined,
+          maxRetriesPerRequest: null,
+        }),
   })
 }
 ```
