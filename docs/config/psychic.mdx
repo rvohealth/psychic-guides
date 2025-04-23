@@ -159,7 +159,7 @@ export default (psy: Psyconf) => {
 
 ### json
 
-Use the `PsychicApplication#set` method to apply json (body parser) options. Json options are driven through the [body-parser](https://www.npmjs.com/package/body-parser) package.
+Use the `PsychicApp#set` method to apply json (body parser) options. Json options are driven through the [body-parser](https://www.npmjs.com/package/body-parser) package.
 
 ```ts
 export default (psy: Psyconf) => {
@@ -171,7 +171,7 @@ export default (psy: Psyconf) => {
 
 ### cookie
 
-Use the `PsychicApplication#set` method to apply cookie options. Cookie options are driven through the express-cookie package.
+Use the `PsychicApp#set` method to apply cookie options. Cookie options are driven through the express-cookie package.
 
 ```ts
 export default (psy: Psyconf) => {
@@ -205,7 +205,7 @@ export default (psy: Psyconf) => {
 
 ### encryption
 
-Use the `PsychicApplication#set` method to apply encryption options.
+Use the `PsychicApp#set` method to apply encryption options.
 
 ```ts
 export default (psy: Psyconf) => {
@@ -227,7 +227,7 @@ export default (psy: Psyconf) => {
 
 ### cors
 
-Use the `PsychicApplication#set` method to apply cors options. Cors options are driven through the express-cors package.
+Use the `PsychicApp#set` method to apply cors options. Cors options are driven through the express-cors package.
 
 ```ts
 export default (psy: Psyconf) => {
@@ -261,12 +261,12 @@ export default (psy: PsychicConfig) => {
           transports: [new winston.transports.Console()],
           format: winston.format.combine(
             winston.format.colorize(),
-            winston.format.json(),
+            winston.format.json()
           ),
           ignoredRoutes: ['/health_check'],
           bodyBlacklist: SENSITIVE_FIELDS,
           // ...etc
-        }),
+        })
       )
     }
   })

@@ -56,7 +56,7 @@ Since each test needs a freshly-truncated database to operate on, vitest is ordi
 ```ts
 // conf/dream.ts
 
-export default async function configureDream(app: DreamApplication) {
+export default async function configureDream(app: DreamApp) {
   ...
   app.set('parallelTests', Number(process.env.DREAM_PARALLEL_TESTS))
 }
@@ -131,7 +131,7 @@ describe('UserSerializer', () => {
   it('renders loginCount', async () => {
     const user = await createUser({ email: 'how@yadoin', password: 'password' })
     expect(new Serializer(user).render()).toEqual(
-      expect.objectContaining({ loginCount: 0 }),
+      expect.objectContaining({ loginCount: 0 })
     )
   })
 })
@@ -170,7 +170,7 @@ describe('an authed user attempts to hit an authed route', () => {
     const session = await request.session(
       '/api/v1/signin',
       { email: 'how@yadoin', password: 'password' },
-      204,
+      204
     )
     await session.get('/api/v1/users/me').expect(200)
   })

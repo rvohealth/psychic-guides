@@ -59,7 +59,7 @@ Psychic is a light-weight wrapper around express, and largely revolves around th
 
 - `PsychicServer` - this is the server which wraps express to produce your web server
 - `PsychicRouter` - the routing mechanism responsible for interpreting your `conf/routes.ts` file, as well as processing requests
-- `PsychicApplication` - The configuration class which understands and configures your application
+- `PsychicApp` - The configuration class which understands and configures your application
 - `cli/bin` - provides the cli utils for your application
 
 ### PsychicServer
@@ -70,11 +70,11 @@ The `PsychicServer` is the wrapper around express. It is responsible for managin
 
 `PsychicRouter` is responsible for interpreting your routes.ts file, as well as orchestrating your requests.
 
-### PsychicApplication
+### PsychicApp
 
-A high-level class called `PsychicApplication` is provided by psychic, which is responsible for loading all of your controllers, as well as configuring your server (i.e. cors, body-parser, etc...). It additionally wraps around the `DreamApplication` class, passing much of the shared configuration through so that it need not be provided twice.
+A high-level class called `PsychicApp` is provided by psychic, which is responsible for loading all of your controllers, as well as configuring your server (i.e. cors, body-parser, etc...). It additionally wraps around the `DreamApp` class, passing much of the shared configuration through so that it need not be provided twice.
 
-Any time anything related to a dream application is executed, the psychic application must be initialized first. This is done through a helper that is automatically provided in every psychic application, called `initializePsychicApplication`. This is the entry point to your app, and must be called before you do anything, whether it is run a spec, examine your application's routes, run migrations, use the repl...you get it, anything!
+Any time anything related to a dream application is executed, the psychic application must be initialized first. This is done through a helper that is automatically provided in every psychic application, called `initializePsychicApp`. This is the entry point to your app, and must be called before you do anything, whether it is run a spec, examine your application's routes, run migrations, use the repl...you get it, anything!
 
 ### cli/bin
 

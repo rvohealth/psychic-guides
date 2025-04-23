@@ -33,10 +33,10 @@ The configuration entry point is found at `spec/features/vite.config.ts`. This f
 // spec/features/setup/globalSetup.ts
 
 import { launchViteServer, stopViteServer } from '@rvoh/psychic-spec-helpers'
-import initializePsychicApplication from '../../../test-app/src/cli/helpers/initializePsychicApplication'
+import initializePsychicApp from '../../../test-app/src/cli/helpers/initializePsychicApp'
 
 export async function setup() {
-  await initializePsychicApplication()
+  await initializePsychicApp()
   await launchViteServer({ port: 3000, cmd: 'yarn client' })
 }
 
@@ -50,20 +50,20 @@ The second point of departure from unit specs can be found at `spec/features/set
 ```ts
 // spec/features/setup/hooks.ts
 
-import { DreamApplication } from '@rvoh/dream'
+import { DreamApp } from '@rvoh/dream'
 import { PsychicServer } from '@rvoh/psychic'
 import { truncate } from '@rvoh/dream-spec-helpers'
-import initializePsychicApplication from '../../../../src/app/helpers/initializePsychicApplication'
+import initializePsychicApp from '../../../../src/app/helpers/initializePsychicApp'
 
 let server: PsychicServer
 
 beforeEach(async () => {
-  await initializePsychicApplication()
+  await initializePsychicApp()
 
   server = new PsychicServer()
   await server.start(parseInt(process.env.DEV_SERVER_PORT || '7778'))
 
-  await truncate(DreamApplication)
+  await truncate(DreamApp)
 })
 
 afterEach(async () => {
@@ -133,13 +133,13 @@ Between each spec run, the database will be truncated to ensure a clean slate. S
 ```ts
 // api/spec/features/setup/hooks.ts
 
-import { DreamApplication } from '@rvoh/dream'
+import { DreamApp } from '@rvoh/dream'
 import { truncate } from '@rvoh/dream-spec-helpers'
 
 ...
 
 beforeEach(async () => {
-  await truncate(DreamApplication)
+  await truncate(DreamApp)
 })
 ```
 

@@ -20,10 +20,10 @@ yarn add @rvoh/psychic-websockets
 
 ```ts
 import { Encrypt } from '@rvoh/dream'
-import { PsychicApplicationWebsockets, Ws } from '@rvoh/psychic-websockets'
+import { PsychicAppWebsockets, Ws } from '@rvoh/psychic-websockets'
 import Redis from 'ioredis'
 
-export default (wsApp: PsychicApplicationWebsockets) => {
+export default (wsApp: PsychicAppWebsockets) => {
   wsApp.set('websockets', {
     connection: new Redis({
       username: process.env.REDIS_USER,
@@ -47,23 +47,20 @@ export default (wsApp: PsychicApplicationWebsockets) => {
 }
 ```
 
-3. Update your `initializePsychicApplication.ts` file to include the following:
+3. Update your `initializePsychicApp.ts` file to include the following:
 
 ```ts
-import {
-  PsychicApplication,
-  PsychicApplicationInitOptions,
-} from '@rvoh/psychic'
-import { PsychicApplicationWebsockets } from '@rvoh/psychic-websockets'
+import { PsychicApp, PsychicAppInitOptions } from '@rvoh/psychic'
+import { PsychicAppWebsockets } from '@rvoh/psychic-websockets'
 import psychicConf from '../../conf/app'
 import dreamConf from '../../conf/dream'
 import websocketsConf from '../../conf/websockets'
 
-export default async function initializePsychicApplication(
-  opts: PsychicApplicationInitOptions = {},
+export default async function initializePsychicApp(
+  opts: PsychicAppInitOptions = {}
 ) {
-  const psychicApp = await PsychicApplication.init(psychicConf, dreamConf, opts)
-  await PsychicApplicationWebsockets.init(psychicApp, websocketsConf)
+  const psychicApp = await PsychicApp.init(psychicConf, dreamConf, opts)
+  await PsychicAppWebsockets.init(psychicApp, websocketsConf)
   // ...
   return psychicApp
 }
@@ -87,14 +84,14 @@ The configuration for the `psychic-websockets` package is driven by the `conf/we
 
 ### Redis
 
-Redis, which is used to emit accross distributed websocket systems, can be configured using the `#set` method provided by `PsychicApplicationWebsockets`, like so:
+Redis, which is used to emit accross distributed websocket systems, can be configured using the `#set` method provided by `PsychicAppWebsockets`, like so:
 
 ```ts
 import { Encrypt } from '@rvoh/dream'
-import { PsychicApplicationWebsockets, Ws } from '@rvoh/psychic-websockets'
+import { PsychicAppWebsockets, Ws } from '@rvoh/psychic-websockets'
 import Redis from 'ioredis'
 
-export default (wsApp: PsychicApplicationWebsockets) => {
+export default (wsApp: PsychicAppWebsockets) => {
   wsApp.set('websockets', {
     connection: new Redis({
       username: process.env.REDIS_USER,
@@ -117,7 +114,7 @@ In addition to configuration, psychic-websockets also exposes hooks to tap into 
 The `ws:start` event is called whenever the psychic server is started. This allows you to establish socket bindings. Under the hood we are using [socket.io](https://socket.io) to power our websocket bindings, which means you can visit their documentation to understand more about setting up a websockets app within your application.
 
 ```ts
-export default (wsApp: PsychicApplicationWebsockets) => {
+export default (wsApp: PsychicAppWebsockets) => {
   // ...
   wsApp.on('ws:start', (io) => {
     // use socket.io to establish namespaced channels

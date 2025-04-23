@@ -65,7 +65,7 @@ There are only a few very important classes within the dream ecosystem, and most
 
 - `Dream/Query` - The two classes responsible for modeling and speaking to your database
 - `DreamSerializer` - The class responsible for translating your model's attributes into renderable JSON
-- `DreamApplication` - The configuration class which understands and configures your application
+- `DreamApp` - The configuration class which understands and configures your application
 - `cli/bin` - used to puppet [commanderjs](https://www.npmjs.com/package/commander), a node cli runner that enables you to perform helpful setup operations from the command line
 
 ### Dream/Query
@@ -76,11 +76,11 @@ The guts of Dream are primarily driven by two main classes: `Dream` and `Query`.
 
 While it is true that the dream library's primary asset is the `Dream` class itself, the `DreamSerializer` is a second class that enables you to represent you models in a variety of ways. Dreams and serializers are usually connected together through the `serializers` getter defined on any models you generate using the dream cli. The serializers getter returns an object, with key value pairs, where the keys are recognized as `serializerKeys` throughout our app, and their values point to actual serializers in our system.
 
-### DreamApplication
+### DreamApp
 
-Because dreams and serializers are connected together, we provide a high-level class called `DreamApplication`, which is responsible for loading all of your models and serializers, assigning global names to them, and bootstrapping their properties. This is all necessary to build an understanding of your app, as well as to pry any metadata off of the decorators applied to your models and serializers, since stage 3 decorators have thrown some very odd curveballs at our conventional understanding of what you can do with a decorator.
+Because dreams and serializers are connected together, we provide a high-level class called `DreamApp`, which is responsible for loading all of your models and serializers, assigning global names to them, and bootstrapping their properties. This is all necessary to build an understanding of your app, as well as to pry any metadata off of the decorators applied to your models and serializers, since stage 3 decorators have thrown some very odd curveballs at our conventional understanding of what you can do with a decorator.
 
-Any time anything related to a dream application is executed, the dream application must be initialized first. This is done through a helper that is automatically provided in every dream application, called `initializeDreamApplication`. This is the entry point to your app, and must be called before you do anything, whether it is run a spec, examine your application's routes, run migrations, use the repl...you get it, anything!
+Any time anything related to a dream application is executed, the dream application must be initialized first. This is done through a helper that is automatically provided in every dream application, called `initializeDreamApp`. This is the entry point to your app, and must be called before you do anything, whether it is run a spec, examine your application's routes, run migrations, use the repl...you get it, anything!
 
 ### cli/bin
 
