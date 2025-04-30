@@ -1,0 +1,45 @@
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
+# createOrUpdateBy
+
+The createOrUpdateBy static method attempts to create a model with the given attributes. If a unique constraint database error is raised, it then attempts to find and update the record.
+
+This is functionally equivalent to an upsert, except it is run in two database queries. This variation is useful in situations where we want to avoid a race condition creating duplicate records (as opposed to updateOrCreateBy).
+
+All lifecycle hooks are run for whichever action is taken, unless `skipHooks` is passed.
+
+
+```ts
+const user = await User.createOrUpdateBy(
+  { email: 'test@example.com' },
+  { with: { name: 'Alice' } }
+)
+// User{email: 'test@example.com', name: 'Alice'}
+```
+
+`createOrUpdateBy` cannot be chained with other chainable query methods.
+
+You can also choose to skip lifecycle hooks:
+
+```ts
+const user = await User.createOrUpdateBy(
+  { email: 'test@example.com' },
+  { with: { name: 'Alice' }, skipHooks: true }
+)
+// User{email: 'test@example.com', name: 'Alice'}
+```
+
+## Transactions
+
+`createOrUpdateBy` can be used with transactions:
+
+```ts
+let user: User
+await ApplicationModel.transaction(async txn => {
+  user = await User.txn(txn).createOrUpdateBy(
+    { email: 'test@example.com' },
+    { with: { name: 'Alice' } }
+  )
+})
+// User{email: 'test@example.com', name: 'Alice'}
+```
