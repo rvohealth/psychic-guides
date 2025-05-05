@@ -1,0 +1,43 @@
+# updateOrCreateBy
+
+The updateOrCreateBy static method attempts to find and update a model with the given attributes. If no record is found, then a new record is created.
+
+This is functionally equivalent to an upsert, except it is run in two database queries. Thus there is a risk of a race condition in the time between not finding a record and attempting to create one.
+
+All lifecycle hooks are run for whichever action is taken, unless `skipHooks` is passed.
+
+
+```ts
+const user = await User.updateOrCreateBy(
+  { email: 'test@example.com' },
+  { with: { name: 'Alice' } }
+)
+// User{email: 'test@example.com', name: 'Alice'}
+```
+
+`updateOrCreateBy` cannot be chained with other chainable query methods.
+
+You can also choose to skip lifecycle hooks:
+
+```ts
+const user = await User.updateOrCreateBy(
+  { email: 'test@example.com' },
+  { with: { name: 'Alice' }, skipHooks: true }
+)
+// User{email: 'test@example.com', name: 'Alice'}
+```
+
+## Transactions
+
+`updateOrCreateBy` can be used with transactions:
+
+```ts
+let user: User
+await ApplicationModel.transaction(async txn => {
+  user = await User.txn(txn).updateOrCreateBy(
+    { email: 'test@example.com' },
+    { with: { name: 'Alice' } }
+  )
+})
+// User{email: 'test@example.com', name: 'Alice'}
+```

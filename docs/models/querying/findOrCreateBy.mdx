@@ -1,0 +1,28 @@
+# findOrCreateBy
+
+The findOrCreateBy static method attempts to find a model with the given attributes. If no record is found, then a new record is created.
+
+```ts
+const user = await User.findOrCreateBy(
+  { email: 'test@example.com' },
+  { createWith: { name: 'Alice' } }
+)
+// User{email: 'test@example.com', name: 'Alice'}
+```
+
+`findOrCreateBy` cannot be chained with other chainable query methods.
+
+## Transactions
+
+`findOrCreateBy` can be used with transactions:
+
+```ts
+let user: User
+await ApplicationModel.transaction(async txn => {
+  user = await User.txn(txn).findOrCreateBy(
+    { email: 'test@example.com' },
+    { createWith: { name: 'Alice' } }
+  )
+})
+// User{email: 'test@example.com', name: 'Alice'}
+```
