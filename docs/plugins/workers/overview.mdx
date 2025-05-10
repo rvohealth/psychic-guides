@@ -5,6 +5,14 @@ title: overview
 
 # Workers - overview
 
+:::info
+tl;dr: Genearlly, web requests should fetch data from the database and serialize that data in the response. Hard work should be sent to a background job—either by backgrounding it explicitly or setting up a scheduled job. Backgrounding work provides:
+
+1. faster web responses
+2. automatic retry of work that fails
+3. rate-limiting certain types of work (when using named workstreams—requires a BullMQ Pro license)
+   :::
+
 A web application is like an ecosystem, with many different players interacting and responding to eachother's behavior. Much of this is done in the form of api requests being triggered from clients to your backend application servers, but some things are not. For example, you may find yourself needing a piece of code that runs every hour of every day, or something that just runs on the first monday of each 3rd month.
 
 Additionally, it is important to keep your web servers fluid. You don't want to expose any endpoints that respond slowly, because, while node concurrency is helpful, you don't want to lean on it to save you from slow endpoint responses, since this makes you vulnerable to DDoS.
