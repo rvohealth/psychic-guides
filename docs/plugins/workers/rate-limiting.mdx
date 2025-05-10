@@ -1,0 +1,53 @@
+---
+sidebar_position: 9
+title: rate limiting
+---
+
+# Rate Limiting
+
+When using a BullMQ Pro license, [Named workstreams](./named-workstreams) can be rate limited by adding a `rateLimit` configuration to each named workstream.
+
+Note that in order to use BullMQ Pro, `providers` must be configured to pass `QueuePro` and `WorkerPro`.
+
+```ts
+  import { QueuePro, WorkerPro } from '@taskforcesh/bullmq-pro'
+
+  workersApp.set('background', {
+    ...
+
+    providers: {
+      Queue: QueuePro,
+      Worker: WorkerPro,
+    },
+
+    namedWorkstreams: [
+      {
+        name: 'Iterable',
+        workerCount: 1,
+        concurrency: 10,
+
+        // `max` and `duration` map to the rate limit configuration supported by BullMQ Pro;
+        // see https://docs.bullmq.io/bullmq-pro/groups/rate-limiting for details.
+        rateLimit: {
+          max: 10,
+          duration: 1000,
+        },
+      },
+      {
+        name: 'Twilio',
+        workerCount: 1,
+        concurrency: 10,
+
+        // `max` and `duration` map to the rate limit configuration supported by BullMQ Pro;
+        // see https://docs.bullmq.io/bullmq-pro/groups/rate-limiting for details.
+        rateLimit: {
+          max: 20,
+          duration: 1000,
+        },
+      },
+    ],
+  })
+
+  ...
+})
+```

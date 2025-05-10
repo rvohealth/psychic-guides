@@ -1,0 +1,46 @@
+---
+sidebar_position: 8
+title: named wokstreams
+---
+
+# Named workstreams
+
+Named workstreams isolate certain work within a dedicated BullMQ Queue. Not only does this enable control over resource allocation to certain work, but it organizes visualization when using a dashboard such as the [Taskforce BullMQ dashboard](https://taskforce.sh) or the open source [Express Bull Dashboard](https://www.npmjs.com/package/@bull-board/express):
+
+![Bull Dashboard](/img/background-workers/bull-dashboard.png 'Bull Dashboard')
+
+Configure named workstreams in `conf/workers.ts` by adding a `namedWorkstreams` key:
+
+```ts
+  workersApp.set('background', {
+    ...
+
+    namedWorkstreams: [
+      {
+        name: 'Iterable',
+        // https://docs.bullmq.io/guide/parallelism-and-concurrency
+        workerCount: 1,
+        concurrency: 10,
+      },
+      {
+        name: 'Twilio',
+        // https://docs.bullmq.io/guide/parallelism-and-concurrency
+        workerCount: 1,
+        concurrency: 10,
+      },
+    ],
+  })
+
+  ...
+})
+```
+
+Then set the workstream used by the class:
+
+```ts
+class IntercomSync extends ApplicationBackgroundedService {
+  public static get backgroundJobConfig(): BackgroundJobConfig<ApplicationBackgroundedService> {
+    return { workstream: 'Iterable' }
+  }
+}
+```

@@ -1,0 +1,45 @@
+---
+sidebar_position: 7
+title: priority
+---
+
+# Priority
+
+Some work should be done sooner than others, so the priority of each backgrounded service is customizable to one of the following:
+`urgent`, `default`, `not_urgent`, `last`. If not overridden, the priority is `default`.
+
+```ts
+class IntercomSync extends ApplicationBackgroundedService {
+  public static get backgroundJobConfig(): BackgroundJobConfig<ApplicationBackgroundedService> {
+    return { priority: 'not_urgent' }
+  }
+}
+```
+
+One use case for `last` is sending check-in events to a service such as https://deadmanssnitch.com so that you get notified when your background services stop working (uses [scheduled jobs](./scheduled) to schedule calling the check-in every 5 minutes). By working these jobs off last, you can be confident that all of your other jobs are being worked off.
+
+```ts
+export default class ScheduledJobs extends ApplicationScheduledService {
+  public static async scheduleAllJobs() {
+    await this.schedule('*/5 * * * *', 'backgroundCheckin')
+  }
+
+  public static async backgroundCheckin() {
+    await BackgroundCheckin.checkIn()
+  }
+}
+
+export default class BackgroundCheckin extends ApplicationBackgroundedService {
+  public static get backgroundJobConfig(): BackgroundJobConfig<ApplicationBackgroundedService> {
+    return { priority: 'last' }
+  }
+
+  public static checkIn = async () => {
+    await this.background('_checkIn')
+  }
+
+  public static _checkIn = async () => {
+    await DeadMansSnitch.checkin('background_jobs_working')
+  }
+}
+```

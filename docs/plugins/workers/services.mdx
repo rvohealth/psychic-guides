@@ -1,15 +1,15 @@
 ---
-sidebar_position: 2
+sidebar_position: 4
 title: services
 ---
 
-# ApplicationBackgroundedService
+# Services
 
-Within any class extending your `ApplicationBackgroundedService` class, you will find both static and instance `background` methods. These methods are used to execute underlying methods on your model in the background. For instance, let's say you have a service that syncs your user data to a service like intercom, twilio, salesforce, helpdesk, etc...
+Any class that extends `ApplicationBackgroundedService` provides the `background` and `backgroundWithDelay` methods that are used to background methods on the class. For instance, let's say you have a service that syncs your user data to a service like intercom, twilio, salesforce, helpdesk, etc...
 
 ```ts
 class IntercomSync {
-  public static async syncUser(id: IdType) {
+  public static async syncUser(user: User) {
     // ...sync user to intercom
   }
 }
@@ -19,11 +19,13 @@ You can easily make this a backgroundable service. Simply extend `ApplicationBac
 
 ```ts
 class IntercomSync extends ApplicationBackgroundedService {
-  public static async syncUser(id: string) {
-    await this.background('_syncUser', id)
+  public static async syncUser(user: User) {
+    await this.background('_syncUser', user.id)
   }
 
   public static async _syncUser(id: IdType) {
+    const user = await User.find(id)
+    if (!user) return
     // ...sync user to intercom
   }
 }

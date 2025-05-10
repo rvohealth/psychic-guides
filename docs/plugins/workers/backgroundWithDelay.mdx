@@ -1,0 +1,50 @@
+---
+sidebar_position: 6
+title: backgroundWithDelay
+---
+
+# backgroundWithDelay
+
+In addition to `background`, `backgroundWithDelay` is also available to classes that extend `ApplicationBackgroundedService` or `ApplicationBackgroundedModel`. `backgroundWithDelay` backgrounds a job to be run at least the specified amount of time in the future (it is not guaranteed to work at exactly the specified time since background workers may be completely consumed processing other work).
+
+The syntax supports specifying the delay in `seconds`, `minutes`, `hours`, and `days`:
+
+```ts
+class IntercomSync extends ApplicationBackgroundedService {
+  public static async syncUser(user: User) {
+    await this.backgroundWithDelay({ seconds: 15 }, '_syncUser', user.id)
+  }
+
+  public static async _syncUser(id: IdType) {
+    const user = await User.find(id)
+    if (!user) return
+    // ...sync user to intercom
+  }
+}
+```
+
+## Debounce
+
+`backgroundWithDelay` supports debounce behavior to reduce the number of times a background job is run. For example, if our application syncs user data to Intercom every time the user changes, and we know that users may make multiple changes in quick succession, we might debounce to reduce the number of times we hit the Intercom API.
+
+Debounce works by specifying a `jobId`. If a job with that `jobId` has already been backgrounded with a delay, then backgrounding with that same `jobId` will overwrite the previous job information, but with the a delay from the current time.
+
+See https://docs.bullmq.io/patterns/throttle-jobs for implementation details.
+
+```ts
+class IntercomSync extends ApplicationBackgroundedService {
+  public static async syncUser(user: User) {
+    await this.backgroundWithDelay(
+      { minutes: 2, jobId: `intercom-sync-user-${user.id}` },
+      '_syncUser',
+      user.id
+    )
+  }
+
+  public static async _syncUser(id: IdType) {
+    const user = await User.find(id)
+    if (!user) return
+    // ...sync user to intercom
+  }
+}
+```
