@@ -1,0 +1,131 @@
+---
+sidebar_position: 6
+title: client
+---
+
+In addition to strict backend utilities, Psychic also exports a few cli utilities that can be used to help smooth out a client integration with psychic.
+
+## openapi redux
+
+Since the majority of the world is using React, we have provided a util which easily generates redux bindings for a given client application. The bindings provided will create a bridge that keeps client openapi integrations up to date with the latest openapi files, syncing the newly-generated bindings over to your client any time `yarn psy sync` is called.
+
+Under the hood, psychic uses the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) util to provision this for you, but also adds an initializer to your app that taps into lifecycle hooks within psychic to make sure that the codegen tool is run every time your app changes. With this utility in place, calling `yarn psy sync` is all you need to do to have the latest api endpoints available to you within your React app.
+
+To make use of this utility, you can run the following:
+
+```sh
+yarn psy g:openapi:redux
+```
+
+You will be prompted to answer a few questions, primarily to fill out the configuration file provided by the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) package. The configuration for this package is confusing, and also _must_ be set up using JSON as of now, due to limitiations in their own library when paired with an esm package. These nuances are hard to tango with and can lead to frustration, which is why we provided this generator to begin with.
+
+Nuances aside, the package does an incredible job at providing useful, redux-driven bindings to your application that will create a seamless integration between your client and back end applications. By default, psychic will attempt to sync to your `openapi/openapi.json` file, but you can redirect it to any openapi file of your choosing. Psychic will make a few other intelligent guesses as to a few of the configuration options, but feel free to override any of the defaults.
+
+It will automatically generate an initializer for you that will keep your client openapi file in sync:
+
+```ts
+// conf/initializers/openapi/myAppApi.ts
+
+import { DreamCLI } from '@rvoh/dream'
+import { PsychicApp } from '@rvoh/psychic'
+import AppEnv from '../AppEnv.js'
+
+export default function initializeMyAppApi(psy: PsychicApp) {
+  psy.on('sync', async () => {
+    if (AppEnv.isDevelopmentOrTest) {
+      DreamCLI.logger.logStartProgress(`[myAppApi] syncing...`)
+      await DreamCLI.spawn(
+        'npx @rtk-query/codegen-openapi src/conf/openapi/myAppApi.openapi-codegen.json',
+        {
+          onStdout: (message) => {
+            DreamCLI.logger.logContinueProgress(`[myAppApi]` + ' ' + message, {
+              logPrefixColor: 'green',
+            })
+          },
+        },
+      )
+      DreamCLI.logger.logEndProgress()
+    }
+  })
+}
+```
+
+It will additionally generate a configuration file for the @rtk-query/codegen-openapi util:
+
+```json
+// api/src/conf/openapi/myAppApi.openapi-codegen.json
+
+{
+  "schemaFile": "../../../openapi/openapi.json",
+  "apiFile": "../../../../client/app/api/api.ts",
+  "outputFile": "../../../../client/app/api/myAppApi.ts",
+  "apiImport": "emptyMyAppApi",
+  "exportName": "myAppApi"
+}
+```
+
+as well as a boilerplate api file to mix into the generated code provided by `@rtk-query/codegen-openapi`, enabling you to customize headers, etc...
+
+```ts
+// client/app/api/api.ts
+
+// Or from '@reduxjs/toolkit/query' if not using the auto-generated hooks
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { RootState } from '../store' // update this to the correct path to your app's store
+
+function baseUrl() {
+  // add custom code here for determining your application's baseUrl
+  // this would generally be something different, depending on if you
+  // are in dev/test/production environments. For dev, you might want
+  // http://localhost:7777, while test may be http://localhost:7778, or
+  // some other port, depending on how you have your spec hooks configured.
+  // for production, it should be the real host for your application, i.e.
+  // https://myapi.com
+
+  return 'http://localhost:7777'
+}
+
+// initialize an empty api service that we'll inject endpoints into later as needed
+export const emptyMyAppApi = createApi({
+  // forces cache to bust any time a component is mounted
+  refetchOnMountOrArgChange: true,
+  keepUnusedDataFor: 0,
+
+  baseQuery: fetchBaseQuery({
+    baseUrl: baseURL(),
+    credentials: 'include',
+
+    // we recommend that you use a function like this for preparing
+    // headers, so that you can make sure any necessary auth tokens
+    // used by your app can be applied to the headers when any requests
+    // are made to your backend api.
+    // prepareHeaders: (headers, { getState }) => {
+    //   return new Promise(resolve => {
+    //     function checkToken() {
+    //       const token = (getState() as RootState).app.authToken
+    //       if (token) {
+    //         headers.set('Authorization', `Bearer ${token}`)
+    //         resolve(headers)
+    //       } else {
+    //         setTimeout(checkToken, 500) // try again in 500ms
+    //       }
+    //     }
+    //     checkToken()
+    //   })
+    // },
+  }),
+  endpoints: () => ({}),
+})
+```
+
+## sync enums
+
+you may find yourself wishing to have access to your backend enums from your client, perhaps to populate a select box. Even if you are using the `@rtk-query/codegen-openapi` utility, it will not provide you with easy access to the enums that are generated from it. Rather than burden you with copying the enums manually by hand, psychic offers a helpful generator to bridge your backend enums to your client.
+
+To do this, simply run
+
+```sh
+yarn psy g:initializer:sync-enums ../client/src/enums.ts
+```
+
+This will generate an initializer that will tap into psychic lifecycle hooks, ensuring that any time `yarn psy sync` is run, the enums will be synced to the outfile destination of your choosing.

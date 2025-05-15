@@ -42,10 +42,14 @@ For the most part, your app can be spec'd using the general tools provided by [v
 ```ts
 // api/spec/unit/setup/hooks.ts
 
-import { truncate } from '@rvoh/dream-spec-helpers'
+provideDreamViteMatchers()
+
+beforeAll(async () => {
+  await initializePsychicApp()
+})
 
 beforeEach(async () => {
-  await truncate()
+  await truncate(DreamApp)
 })
 ```
 
@@ -131,7 +135,7 @@ describe('UserSerializer', () => {
   it('renders loginCount', async () => {
     const user = await createUser({ email: 'how@yadoin', password: 'password' })
     expect(new Serializer(user).render()).toEqual(
-      expect.objectContaining({ loginCount: 0 })
+      expect.objectContaining({ loginCount: 0 }),
     )
   })
 })
@@ -170,7 +174,7 @@ describe('an authed user attempts to hit an authed route', () => {
     const session = await request.session(
       '/api/v1/signin',
       { email: 'how@yadoin', password: 'password' },
-      204
+      204,
     )
     await session.get('/api/v1/users/me').expect(200)
   })
