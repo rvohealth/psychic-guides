@@ -1,0 +1,16 @@
+---
+sidebar_position: 1
+title: resources
+---
+
+# generating a resource
+
+Psychic considers a resource to be something that is both a database model and an entity that is accessible via an endpoint. Not all of the models you generate may need to have api endpoints for accessing them, so you will not need resource generators for these, and can instead lean on the [model generators](/docs/models/generating).
+
+The api for generating resources is very similar to the api for generating models, except that it takes an extra argument for the path that you want to use for this resource. This path is used in the routes file to point to a controller, which will be in the same folder namespace as the route. For example, if you were to run
+
+```sh
+yarn psy g:resource api/v1/users User email:string
+```
+
+Psychic would add a routes entry to your file at that namespace, and then generate a controller at `controllers/Api/V1/UsersController.ts`, as well as generating the model. For more information on generating models, see our [model generator guide](/docs/models/generating).

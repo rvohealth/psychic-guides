@@ -1,0 +1,50 @@
+---
+sidebar_position: 3
+---
+
+# initializers
+
+Initializers are psychic configuration files, very similar to the `conf/app.ts` file that is provided with a psychic app, which enable devs to package discreet application configurations into files. This is useful to organize the configuration of your psychic app, since having all the configuration in a single file can be verbose, and initializers enable the file system to clarify the configuration at the file name level, which can be really nice, especially if your app is large, i.e.
+
+```
+├── app
+│   ├── conf
+│   │   ├── initializers
+│   │   │   ├── cors.ts
+│   │   │   ├── dev-server.ts
+│   │   │   ├── openapi.ts
+│   │   │   ├── websockets.ts
+│   │   │   ├── workers.ts
+│   │   ├── app.ts             // main psychic config
+│   │   ├── dream.ts           // dream bindings
+...
+```
+
+Anything that you can put in the `conf/app.ts` file can also be put in an initializer. All of the initializers will be run immediately after the cb provided in `conf/app.ts` is finished running, but before plugins have run. This enables devs to register new plugins as part of their initializers, as is done by default with `@rvoh/psychic-workers` and `@rvoh/psychic-websockets`.
+
+Here is a simple example of an initializer for registering cors for your app:
+
+```ts
+// conf/initializers/cors.ts
+
+export default (psy: PsychicApp) => {
+  psy.set('cors', {
+    credentials: true,
+    origin: JSON.parse(AppEnv.string('CORS_HOSTS')) as string[],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  })
+}
+```
+
+## Loading
+
+In order for initializers to be loaded into your app correctly, you must make sure to load them in your `conf/app.ts` file, like so:
+
+```ts
+export default async (psy: PsychicApp) => {
+  await psy.load('initializers', srcPath('conf', 'initializers'), path => importDefault(path))
+  ...
+}
+```
+
+In a new psychic app, this is already done by default, but it is worth noting in case you are tempted to remove it for whatever reason.
