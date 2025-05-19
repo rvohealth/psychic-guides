@@ -165,7 +165,7 @@ export default class ApiV1IngredientsController extends AuthedController {
 
   public async update() {
     const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint')
+      this.castParam('id', 'bigint'),
     )
     await ingredient.update(this.paramsFor(Ingredient))
     this.noContent()
@@ -173,7 +173,7 @@ export default class ApiV1IngredientsController extends AuthedController {
 
   public async destroy() {
     const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint')
+      this.castParam('id', 'bigint'),
     )
     await ingredient.destroy()
     this.noContent()
@@ -281,7 +281,7 @@ describe('User', () => {
         expect(await UserSettings.count()).toEqual(0)
         const user = await createUser()
         expect(await UserSettings.firstOrFail()).toMatchDreamModel(
-          user.userSettings
+          user.userSettings,
         )
       })
     })
@@ -316,12 +316,13 @@ Psychic also provides helpers to enable easy endpoint testing, allowing you to h
 ```ts
 // api/spec/unit/controllers/Api/V1/UsersController.spec.ts
 
-import { specRequest as request } from '@rvoh/psychic/spec-helpers'
+import { PsychicServer } from '@rvoh/psychic'
+import { specRequest as request } from '@rvoh/psychic-spec-helpers'
 import createUser from '../../../../factories/UserFactory'
 
 describe('ApiV1UsersController', () => {
   beforeEach(async () => {
-    await request.init()
+    await request.init(PsychicServer)
   })
 
   describe('GET /api/v1/users/me', () => {
@@ -329,7 +330,7 @@ describe('ApiV1UsersController', () => {
       return await request.session(
         '/api/v1/signin',
         { email: 'how@yadoin', password: 'password' },
-        204
+        204,
       )
     }
 

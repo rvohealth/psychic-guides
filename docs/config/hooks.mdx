@@ -1,0 +1,185 @@
+---
+sidebar_position: 3
+title: hooks
+---
+
+Psychic and Dream expose hooks to enable developers to tap into core internal events. The majority of these events are lifecycle event hooks that fire off internally as the web server is bootstrapped, but there are other useful hooks to discuss as well. Due to the fact that Psychic and Dream are separate libraries, some of the hooks you will tap into will be in the `conf/dream.ts` file, while others will be in the `conf/app.ts` file.
+
+## Psychic hooks
+
+Psychic hooks can be tapped into in your `conf/app.ts` file, or in one of your initializers.
+
+### cli:sync
+
+The cli:sync event is called whenever the sync command is called in the cli. This will happen, for example, when calling `yarn psy sync` directly, but will also happen if you call `yarn psy db:migrate`, or `yarn psy db:reset`. You can tap into this lifecycle hook inside your `conf/app.ts` file, as well as in one of your initializers.
+
+```ts
+// conf/app.ts
+
+export default async (app: PsychicApp) => {
+  app.on('cli:sync', () => {
+    // this will be run after the latest types
+    // have been compiled.
+  })
+}
+```
+
+One interesting side-effect of the `cli:sync` hook is that you can actually append new types to the `types/psychic.ts` file by returning an object at the end of this callback, i.e.
+
+```ts
+// conf/app.ts, or any initializer
+
+export default async (app: PsychicApp) => {
+  app.on('cli:sync', () => {
+    return {
+      myField: 'my value',
+    }
+  })
+}
+```
+
+Doing this will splat the returned object into the end of the `types/psychic.ts` file, which is then fed into controllers and backgrounded services to help deliver useful types throughout your app using the `psychicTypes` getter.
+
+### server:init:before-middleware
+
+When the psychic web server is starting, this is the first hook to run. At this stage, Psychic has not processed any express middleware, nor has it processed your routes. It is the perfect spot to establish logging, or any other monitoring tools.
+
+```ts
+// conf/app.ts, or any initializer
+
+export default async (app: PsychicApp) => {
+  app.on('server:init:before-middleware', (psychicServer: PsychicServer) => {
+    // set up logging, or whatever else you need.
+    psychicServer.expressApp.use(...)
+  })
+}
+```
+
+### server:init:after-middleware
+
+This hook is run while the web server is starting. It specifically runs after the `server:init:before-middleware` hooks have run, the cors and body parser have been initialized, and the inflections have been initialized.
+
+```ts
+// conf/app.ts, or any initializer
+
+export default async (app: PsychicApp) => {
+  app.on('server:init:after-middleware', (psychicServer: PsychicServer) => {
+    // set up additional express middleware
+    psychicServer.expressApp.use(...)
+  })
+}
+```
+
+### server:init:after-routes
+
+This hook is run while the web server is starting. It specifically runs after the `server:init:after-middleware` hooks have run, and after the `conf/routes.ts` file has been processed. At this stage, both psychic and express will know about your application's routes.
+
+```ts
+// conf/app.ts, or any initializer
+
+export default async (app: PsychicApp) => {
+  app.on('server:init:after-routes', (psychicServer: PsychicServer) => {
+    // set up additional express middleware, or do something else
+    psychicServer.expressApp.use(...)
+  })
+}
+```
+
+### server:start
+
+This hook is run after the web server has started.
+
+```ts
+// conf/app.ts, or any initializer
+
+export default async (app: PsychicApp) => {
+  app.on('server:start', (psychicServer: PsychicServer) => {
+    console.log('hello world!')
+  })
+}
+```
+
+### server:shutdown
+
+This hook is run after the web server has stopped.
+
+```ts
+// conf/app.ts, or any initializer
+
+export default async (app: PsychicApp) => {
+  app.on('server:shutdown', (psychicServer: PsychicServer) => {
+    console.log('goodbye world!')
+  })
+}
+```
+
+### server:error
+
+This hook is run when the web server has errored.
+
+```ts
+// conf/app.ts, or any initializer
+
+export default async (app: PsychicApp) => {
+  app.on('server:error', (error, req, res) => {
+    // handle that error!
+  })
+}
+```
+
+## Dream hooks
+
+Dream exposes additional hooks that you can tap into, since Dream can technically be isolated from Psychic and brought into other projects.
+
+### db:log
+
+The underlying [kysely](https://kysely.dev) engine we use to provide our database driver exposes a log lifecycle event that we can tap into during configuration. We expose that to you via the `db:log` event, enabling you to add custom logging for sql queries, like so:
+
+```ts
+export default async function (app: DreamApp) {
+  app.on('db:log', event => {
+    if (AppEnv.isProduction || process.env.SQL_LOGGING !== '1') return
+
+    if (event.level === 'error') {
+      console.error('the following db query encountered an unexpected error: ', {
+        durationMs: event.queryDurationMillis,
+        error: event.error,
+        sql: event.query.sql,
+        params: event.query.parameters.map(maskPII),
+      })
+    } else {
+      console.log('db query completed:', {
+        durationMs: event.queryDurationMillis,
+        sql: event.query.sql,
+        params: event.query.parameters.map(maskPII),
+      })
+    }
+  })
+  ...
+}
+
+function maskPII(data: unknown) {
+  // yes, unfortunately you have to do this yourself. Will be quite cumbersome to get this right,
+  // but technically can be done. If you're never in production, or you have no data risk concerns,
+  // you can simply return the data here
+  return data
+}
+```
+
+### repl:start
+
+This lifecycle hook will fire when the repl is starting. It enables you to add additional globals to the repl context. Anything you attach to the top level of context will be available when you start the repl.
+
+```ts
+export default async function (app: DreamApp) {
+  app.on('repl:start', (context) => {
+    context.chalupas = 'delicious'
+  })
+}
+```
+
+```sh
+yarn console
+> chalupas
+// 'delicious'
+```

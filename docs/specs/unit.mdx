@@ -148,11 +148,12 @@ Anything else in the app should be fairly straight forward to test, with the exc
 Under the hood, psychic provides some test helpers to make our lives easier when needing to run controller/endpoint tests:
 
 ```ts
-import { specRequest as request } from '@rvoh/psychic/spec-helpers'
+import { PsychicServer } from '@rvoh/psychic'
+import { specRequest as request } from '@rvoh/psychic-spec-helpers'
 
 describe('a visitor attempts to hit an unauthed route', () => {
   beforeEach(async () => {
-    await request.init()
+    await request.init(PsychicServer)
   })
 
   it('accepts the request', async () => {
@@ -167,20 +168,16 @@ In addition to routine endpoint tests, one can also test authenticated endpoints
 describe('an authed user attempts to hit an authed route', () => {
   beforeEach(async () => {
     await createUser({ email: 'how@yadoin', password: 'password' })
-    await request.init()
+    await request.init(PsychicServer)
   })
 
   it('returns 200', async () => {
-    const session = await request.session(
-      '/api/v1/signin',
-      { email: 'how@yadoin', password: 'password' },
-      204,
-    )
+    const session = await request.session('/api/v1/signin', 204, {
+      data: { email: 'how@yadoin', password: 'password' },
+    })
     await session.get('/api/v1/users/me').expect(200)
   })
 })
 ```
 
-Calling `request.session` here is very similar to `request.post`, but with the caviat that a [supertest](https://www.npmjs.com/package/supertest) instance will be returned, which can be used to drive assertions on additional endpoints without losing access to the cookies established during the `send.session` call.
-
-For more information on how to do this, see our [authentication](/docs/tutorials/authenticating) guide, which wires up the mechanisms to enable this to happen.
+Calling `request.session` here is very similar to `request.post`, but with the caviat that any cookies attached during the first request will now be sent to all subsequent requests.
