@@ -20,6 +20,7 @@ In this guide, we will be covering the following:
 - [What is Psychic?](#what-is-psychic)
   - [Routing](#routing)
   - [Controllers](#controllers)
+  - [Openapi](#openapi)
 - [Philosophy](#philosophy)
   - [Use familiar technologies](#use-familiar-technologies)
   - [Convention over configuration](#convention-over-configuration)
@@ -184,6 +185,53 @@ export default class ApiV1IngredientsController extends AuthedController {
 As you can already see above, our Dream ORM is clearly at work to keep our code so tidy. Psychic will automatically respond with a `404` for any failures caused by `findOrFail`, and `castParam` will fail with a `400` if the incoming param does not match the described schema. These design patterns are designed to allow you to get out of your own way, enabling the composition of extremely simple design patterns with powerful intuitions about your needs.
 
 > See our [Controller guides](/docs/controllers/generating) for more information on implementing controllers
+
+### Openapi
+
+Psychic provides a full-throttle openapi engine that can autogenerate openapi documents for your app by examining your models and serializers. This is very powerful, since it prevents you from needing to manually update your openapi specs any time you make changes to your models or serializers. It can also infer request body shapes for models on `POST`, `PATCH`, and `PUT` requests, enabling automatic request body generation as well.
+
+```ts
+// controllers/Api/V1/IngredientsController.ts
+
+export default class ApiV1IngredientsController extends AuthedController {
+  // passing Ingredient will automatically generate an openapi request body
+  // containing all of the "safeParams" fields from the model.
+  @OpenAPI(Ingredient, {
+    status: 201,
+    responses: {
+      201: {
+        type: 'string',
+      },
+    },
+  })
+  public async create() {
+    const ingredient = await Ingredient.create(this.paramsFor(Ingredient))
+    this.created(ingredient.id)
+  }
+
+  // passing many: true will specify an openapi document that renders
+  // an array of ingredients. using the "summary" serializerKey will
+  // tell openapi to use the "summary" serializer, which should be
+  // defined somewhere in the inheritance chain for the Ingredient
+  // model, if not directly on the Ingredient model, as one of the
+  // `serializers` getter return value properties.
+  @OpenAPI(Ingredient, {
+    status: 200,
+    many: true,
+    serializerKey: 'summary',
+  })
+  public async index() {
+    const ingredients = await Ingredient.all()
+    this.ok(ingredients)
+  }
+}
+```
+
+The `create` method will automatically generate an openapi document for this endpoint which responds with a 201 status and a string, but has a request body that matches all of the `safeParams` getter on user. This will default to all of the attributes on the Ingredient model, except for any belongs to association foreign keys, the primary key, or the timestamp fields.
+
+The `index` method will automatically generate an openapi document that responds with a 200, and renders an array of Ingedients using the IngredientSummarySerializer. You can do quite a lot with the OpenAPI decorator, so it is worth reading up on the docs there to unlock the full potential of our powerful openapi integration.
+
+> See our [Openapi guides](/docs/openapi/overview) for more information on implementing controllers
 
 ## Philosophy
 
