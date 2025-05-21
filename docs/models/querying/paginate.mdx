@@ -7,6 +7,7 @@ await User.order('id').paginate({ pageSize: 10, page: 2 })
 // {
 //   recordCount: 20,
 //   pageCount: 2,
+//   currentPage: 2,
 //   results: [User{id: 11}, User{id: 12}, ...]
 // }
 ```
@@ -18,12 +19,13 @@ It is essential that you apply an order before paginating, since offset and limi
 Psychic will automatically provide a default pageSize of 25, enabling you to only provide the page number when calling paginate, like so:
 
 ```ts
-this.ok(
-  await User.order('id').paginate({ page: this.castParam('page', 'integer') }),
-)
+await User.order('id').paginate({
+  page: this.castParam('page', 'integer'),
+})
 // {
 //   recordCount: 25,
 //   pageCount: 1,
+//   currentPage: 1,
 //   results: [User{id: 1}, User{id: 2}, ..., User{id: 25}]
 // }
 ```
@@ -37,3 +39,7 @@ export default (app: DreamApp) => {
   app.set('paginationPageSize', 50)
 }
 ```
+
+:::tip
+Psychic provides helpful openapi controller bindings to simplify rendering paginated results from a Dream query. To learn more, see our [psychic openapi pagination guides](/docs/openapi/pagination)
+:::
