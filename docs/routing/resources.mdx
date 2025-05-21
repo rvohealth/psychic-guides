@@ -107,19 +107,39 @@ GET     /users/:id/edit  Users#edit
 
 If you do not wish for your nested endpoint to contain the id as part of its signature, you can use the `collection` method, like so:
 
+```ts
+r.resources('users', { only: ['show'] }, (r) => {
+  r.get('edit')
+  r.collection((r) => {
+    r.get('index2')
+  })
+})
+```
+
 <RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-GET     /users/:id   Users#show
-GET     /users/edit  Users#edit
+GET     /users/:id        Users#show
+GET     /users/:id/edit   Users#edit
+GET     /users/index2     Users#index2
 `}
   </pre>
 </RoutesOutput>
 
+To override the boilerplate resolution for a controller, you can specify a controller class yourself in the resource definition, like so:
+
 ```ts
-r.resources('users', { only: ['show'] }, (r) => {
-  r.collection((r) => {
-    r.get('edit')
+r.namespace('api', (r) => {
+  r.namespace('v1', (r) => {
+    r.resources('users', { controller: CustomUsersController, only: ['show'] })
   })
 })
 ```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+GET     /api/v1/users/:id   CustomUsers#show
+`}
+  </pre>
+</RoutesOutput>

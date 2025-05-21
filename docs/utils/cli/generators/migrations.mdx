@@ -1,0 +1,15 @@
+---
+sidebar_position: 1
+title: migrations
+---
+
+# generating migrations
+
+Use the built-in cli command for generating migrations to easily get up and running. Psychic will automatically timestamp the filename for your migrations, keeping them in sequential order, and will generate boilerplate to get you started with writing a migration.
+
+```bash
+# generate migration
+yarn psy g:migration add-deleted-at-to-posts
+```
+
+If you want to also generate a model for this migration, you can simply use the [g:model](/docs/models/generating) command instead.

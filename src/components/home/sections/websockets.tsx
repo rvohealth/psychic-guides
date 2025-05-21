@@ -47,7 +47,7 @@ export default function Websockets() {
         </div>
 
         <nav>
-          <Link to="/docs/utils/cli/generators">
+          <Link to="/docs/utils/cli/generators/models">
             See our generator guides &gt;&gt;&gt;
           </Link>
         </nav>

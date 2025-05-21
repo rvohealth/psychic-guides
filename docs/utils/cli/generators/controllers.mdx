@@ -1,0 +1,22 @@
+---
+sidebar_position: 2
+title: controllers
+---
+
+# generating controllers
+
+To generate a controller, you can use the `g:controller` cli command, like so:
+
+```bash
+yarn psy g:controller api/v1/users  create update destroy
+```
+
+If you are looking to generate both a model and a controller for that model, you can use the `g:resource` cli command, which will produce the model, a migration, a factory, boilerplate tests, a controller, and an entry in the routes.ts file.
+
+```bash
+yarn psy g:resource api/v1/users User email:string
+```
+
+:::tip
+For more information on generating controllers, see our [generating controller docs](/docs/controllers/generating).
+:::

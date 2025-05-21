@@ -1,0 +1,74 @@
+---
+sidebar_position: 9
+title: testing
+---
+
+# Workers - testing
+
+By default, your backgrounded methods will be immediately invoked during tests. This reduces the headache of understanding how your system would behave. However, this may in certain cases be undesirable for you, and you may instead want to opt into pushing things into BullMQ queues and utilizing special controls to manually work those jobs off.
+
+## config
+
+To do this, you will first need to set the `testInvocation` to `manual`. This can be done by setting it in your workers config, like so:
+
+```ts
+// conf/initializers/workers.ts
+
+...
+
+  workersApp.set('testInvocation', 'manual')
+```
+
+If you choose to do it here, you will be forced to manually invoke all backgrounded methods you are wishing to test. If instead, you wish to only turn this on for a single test, you can do it inside the test, like so:
+
+```ts
+beforeEach(async () => {
+  PsychicAppWorkers.getOrFail().set('testInvocation', 'manual')
+})
+
+afterEach(async () => {
+  PsychicAppWorkers.getOrFail().set('testInvocation', 'automatic')
+})
+```
+
+## cleanup
+
+Between test runs, it is important to reset redis, similar to the need to reset a database between runs. Each run should have a pristine copy of redis to manipulate. We export a special util to help make this easy for you, which you can use like so:
+
+```ts
+import { WorkerTestUtils } from '@rvoh/psychic-workers'
+
+beforeEach(async () => {
+  await WorkerTestUtils.clean()
+})
+```
+
+This will clean out all jobs for all your queues, including your completed, failed, and scheduled jobs.
+
+## working off jobs
+
+We also expose controls to enable you to manually work off jobs. When running in `manual` mode, this will be essential to testing the behavior of your jobs. Here is an example of how you can test the working off of a job:
+
+```ts
+it('does a thing', async () => {
+  await MyService.background('do it')
+
+  // this will work off your backgrounded job
+  await WorkerTestUtils.work()
+
+  // do your assertions here, after working off all jobs
+})
+```
+
+You may also have scheduled jobs in the mix. For this, we provide a special `workScheduled` method, which can target specific queues and classes.
+
+```ts
+// manually invokes all delayed jobs right now
+await WorkerTestUtils.workScheduled()
+
+// manually invokes all delayed jobs for the User class right now
+await WorkerTestUtils.workScheduled({ for: User })
+
+// manually invokes all delayed jobs for the 'cool' queue
+await WorkerTestUtils.workScheduled({ queue: 'cool' })
+```

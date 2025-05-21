@@ -8,6 +8,22 @@ import RoutesOutput from '@site/src/components/ui/routes-output'
 
 In a standard MVC (Model, View, Controller) paradigm, a controller represents the entity which responds to an HTTP request. Controllers in Psychic are classes which inherit from the base `PsychicController` class, which can be imported from Psychic. They will inherit many useful methods for responding to requests, as well as many useful helpers for setting and reading cookies, accessing request parameters, and much more.
 
+In order for a controller's methods to be reached, a corresponding route entry must be established to point to those methods, so the controllers and routes work hand-in-hand. You should never have a route that points to a controller method that doesn't exist, nor should you ever have a controller method with no corresponding route entry.
+
+```ts
+// conf/routes.ts
+export default (r: PsychicRouter) => {
+  r.get('helloworld', WelcomeController, 'helloWorld')
+}
+
+// controllers/WelcomeController.ts
+export default class WelcomeController extends ApplicationController {
+  public async helloWorld() {
+    this.ok('howyadoin')
+  }
+}
+```
+
 :::tip
 
 - To learn how to generate a new controller, see our [guides on generating a controller](/docs/controllers/generating)

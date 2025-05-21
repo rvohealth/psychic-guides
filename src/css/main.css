@@ -92,6 +92,41 @@ a {
   text-decoration: none;
 }
 
+.theme-doc-sidebar-container a::after {
+  display: none;
+}
+
+/*.theme-doc-sidebar-container .theme-doc-sidebar-item-link-level-2 a::before {*/
+/*  content: '';*/
+/*  /*display: block !important;*/
+*/
+/*  width: 6px;*/
+/*  height: 6px;*/
+/*  background: rgb(19, 237, 132);*/
+/*  /*border: solid 2px blue;*/*/
+/*  border-radius: 2px;*/
+/*  margin-right: 5px;*/
+/*  margin-top: 2px;*/
+/*}*/
+/**/
+/*.theme-doc-sidebar-container*/
+/*  .theme-doc-sidebar-item-link-level-2:nth-child(2)*/
+/*  a::before {*/
+/*  background: rgb(255, 0, 190);*/
+/*}*/
+/**/
+/*.theme-doc-sidebar-container*/
+/*  .theme-doc-sidebar-item-link-level-2:nth-child(3)*/
+/*  a::before {*/
+/*  background: rgb(255, 103, 0);*/
+/*}*/
+/**/
+/*.theme-doc-sidebar-container*/
+/*  .theme-doc-sidebar-item-link-level-2:nth-child(3)*/
+/*  a::before {*/
+/*  background: rgb(241, 7, 80);*/
+/*}*/
+/**/
 .alert a {
   color: #093727;
   text-decoration: none;
@@ -258,6 +293,10 @@ main > .container > .row > .col {
 .theme-code-block {
   margin: 30px 0;
   box-shadow: none !important;
+}
+
+.table-of-contents {
+  border-color: rgb(237, 237, 237);
 }
 
 .table-of-contents a {

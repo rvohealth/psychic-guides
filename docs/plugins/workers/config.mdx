@@ -77,7 +77,7 @@ export default (workersApp: PsychicAppWorkers) => {
               tls: AppEnv.isProduction ? {} : undefined,
             },
             enableOfflineQueue: false,
-          }
+          },
         )
       : new Redis({
           host: process.env.BACKGROUND_JOBS_REDIS_HOST || 'localhost',
@@ -91,32 +91,35 @@ export default (workersApp: PsychicAppWorkers) => {
     defaultWorkerConnection: !process.env.WORKER_SERVICE
       ? undefined
       : AppEnv.isProduction
-      ? new Cluster(
-          [
+        ? new Cluster(
+            [
+              {
+                host: AppEnv.string('BG_JOBS_REDIS_HOST'),
+                port: AppEnv.integer('BG_JOBS_REDIS_PORT'),
+              },
+            ],
             {
-              host: AppEnv.string('BG_JOBS_REDIS_HOST'),
-              port: AppEnv.integer('BG_JOBS_REDIS_PORT'),
+              slotsRefreshTimeout: 5000,
+              dnsLookup: (address, callback) => callback(null, address),
+              redisOptions: {
+                username: AppEnv.string('BG_JOBS_REDIS_USERNAME'),
+                password: AppEnv.string('BG_JOBS_REDIS_PASSWORD'),
+                tls: AppEnv.isProduction ? {} : undefined,
+                maxRetriesPerRequest: null,
+              },
             },
-          ],
-          {
-            slotsRefreshTimeout: 5000,
-            dnsLookup: (address, callback) => callback(null, address),
-            redisOptions: {
-              username: AppEnv.string('BG_JOBS_REDIS_USERNAME'),
-              password: AppEnv.string('BG_JOBS_REDIS_PASSWORD'),
-              tls: AppEnv.isProduction ? {} : undefined,
-              maxRetriesPerRequest: null,
-            },
-          }
-        )
-      : new Redis({
-          host: process.env.BACKGROUND_JOBS_REDIS_HOST || 'localhost',
-          port: parseInt(process.env.BACKGROUND_JOBS_REDIS_PORT || '6379', 10),
-          username: process.env.BACKGROUND_JOBS_REDIS_USERNAME,
-          password: process.env.BACKGROUND_JOBS_REDIS_PASSWORD,
-          tls: AppEnv.isProduction ? {} : undefined,
-          maxRetriesPerRequest: null,
-        }),
+          )
+        : new Redis({
+            host: process.env.BACKGROUND_JOBS_REDIS_HOST || 'localhost',
+            port: parseInt(
+              process.env.BACKGROUND_JOBS_REDIS_PORT || '6379',
+              10,
+            ),
+            username: process.env.BACKGROUND_JOBS_REDIS_USERNAME,
+            password: process.env.BACKGROUND_JOBS_REDIS_PASSWORD,
+            tls: AppEnv.isProduction ? {} : undefined,
+            maxRetriesPerRequest: null,
+          }),
   })
 }
 ```
@@ -162,3 +165,15 @@ export default class FileImporter extends ApplicationBackgroundedService {
   ...
 }
 ```
+
+## test invocation
+
+By default, anything you push to the background will be immediately invoked in tests. You may find this behavior to be undesirable, preferring to actually push background work to bullmq in your app. In these cases, we provide special utilities that you can use during tests to help you manually simulate the role of a worker, enabling you to manually run jobs whenever you see fit.
+
+To enable this behavior, you must set the `testInvocation` to `manual`, like so:
+
+```ts
+workersApp.set('testInvocation', 'manual')
+```
+
+Now you will be able to manually work off your queues using the `WorkerTestUtils`, exported from this package. For more information on testing with workers, see our [testing guides](/docs/plugins/workers/testing).

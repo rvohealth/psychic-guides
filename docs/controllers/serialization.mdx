@@ -2,29 +2,88 @@
 sidebar_position: 2
 ---
 
-import RoutesOutput from '@site/src/components/ui/routes-output'
-
 # serialization
+
+import RoutesOutput from '@site/src/components/ui/routes-output'
 
 Whenever rendering a dream instance, Psychic will always be smart enough to leverage the provided serializer, making these two lines equivilent:
 
 ```ts
-export default class HowyadoinsController extends PsychicController {
+export default class PostsController extends PsychicController {
   public async index() {
     ...
-    this.ok(things)
-    this.ok(things.map(thing => new ThingSerializer(thing).render()))
+    this.ok(posts)
+    this.ok(posts.map(post => new PostSerializer(post).render()))
   }
 }
 ```
 
-If desired, a custom serializer can be chosen. The custom serializer must match one of the keys in the `serializers` getter defined on your model class.
+Serialization is an essential step in rendering resourceful output from your application. This is, of course, fairly tricky, since there are many different ways that your application's models may need to be rendered. For example, you may want your `index` method to render a shortened version of your Post model, while the `show` method uses the default serializer, which includes nested comments
 
 ```ts
-export default class HowyadoinsController extends PsychicController {
+export default class PostsController extends PsychicController {
+  public async show() {
+    const post = await this.currentUser
+      .associationQuery('posts')
+      .leftJoinPreload('comments')
+      .find(this.castParam('id'))
+    this.ok(post)
+  }
+
   public async index() {
-    ...
-    this.ok(things, { serializer: 'summary' })
+    const post = await this.currentUser.associationQuery('posts')
+    this.ok(posts, { serializerKey: 'summary' })
+  }
+}
+```
+
+Note that when specifying a `serializerKey`, it must match one of the keys in that model's `serializers` getter.
+
+```ts
+class Post extends ApplicationModel {
+  public get serializers(): DreamSerializers<Post> {
+    return {
+      default: 'PostSerializer',
+      summary: 'PostSummarySerializer',
+    }
+  }
+}
+```
+
+In addition to being able to do implicit and explicit serilaizer lookups, psychic can also simply be handed a serializer (or an array of serializers), in which case it will simply call render on that serializer.
+
+```ts
+export default class PostsController extends PsychicController {
+  public async show() {
+    this.ok(new PostSerializer(post))
+  }
+}
+```
+
+## passthrough
+
+In some cases, you may need to send passthrough data to your serializers. This is useful, for example, if you have top level variables that you need to expose to all serializers, such as the locale for the current user.
+
+```ts
+// controllers/PostsController.ts
+
+export default class PostsController extends PsychicController {
+  public async show() {
+    this.ok(
+      new PostSerializer(post).passthrough({ locale: this.headers.locale }),
+    )
+  }
+}
+
+// serializers/PostSerializer.ts
+
+class PostSerializer<
+  DataType extends Post,
+  PassthroughData extends { locale: string },
+> extends DreamSerializer {
+  public get title() {
+    // this would be a custom function you write to process localizing a title.
+    return localizedTitle(this.$data.title, this.$passthroughData.locale)
   }
 }
 ```
