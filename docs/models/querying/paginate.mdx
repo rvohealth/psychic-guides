@@ -1,0 +1,39 @@
+# paginate
+
+The paginate method is similar to the [all](/docs/models/querying/all) method, except that it will automatically apply limit and offset based on the `page` and `pageSize` arguments that are provided. Additionally, unlike the `all` method, `paginate` will return extra metadata about the requests, which is useful for driving front-end pagination tools.
+
+```ts
+await User.order('id').paginate({ pageSize: 10, page: 2 })
+// {
+//   recordCount: 20,
+//   pageCount: 2,
+//   results: [User{id: 11}, User{id: 12}, ...]
+// }
+```
+
+It is essential that you apply an order before paginating, since offset and limit both only function correctly when the order is set.
+
+## implicit pageSize
+
+Psychic will automatically provide a default pageSize of 25, enabling you to only provide the page number when calling paginate, like so:
+
+```ts
+this.ok(
+  await User.order('id').paginate({ page: this.castParam('page', 'integer') }),
+)
+// {
+//   recordCount: 25,
+//   pageCount: 1,
+//   results: [User{id: 1}, User{id: 2}, ..., User{id: 25}]
+// }
+```
+
+If you would like to override the default pageSize of 25, you can do so in your `conf/dream.ts` file by setting the `paginationPageSize` field, like so:
+
+```ts
+// conf/dream.ts
+
+export default (app: DreamApp) => {
+  app.set('paginationPageSize', 50)
+}
+```
