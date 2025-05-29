@@ -85,5 +85,4 @@ export default function Home(): JSX.Element {
   )
 }
 
-// <Websockets />
 // <BackgroundJobs />
