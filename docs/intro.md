@@ -35,7 +35,7 @@ You may be familiar with the concepts, and want to skip ahead to [installation](
 - [models](/docs/models/overview)
 - [serializers](/docs/serializers/overview)
 - [specs](/docs/specs/overview)
-- [cli](/docs/utils/cli/overview)
+- [cli](/docs/cli/overview)
 
   :::
 
@@ -439,6 +439,6 @@ Otherwise, you may want to read up more on some of the major features provided b
 - [models](/docs/models/overview)
 - [serializers](/docs/serializers/overview)
 - [specs](/docs/specs/overview)
-- [cli](/docs/utils/cli/overview)
+- [cli](/docs/cli/overview)
 
   :::

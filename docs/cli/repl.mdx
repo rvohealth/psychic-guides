@@ -1,0 +1,36 @@
+---
+sidebar_position: 4
+---
+
+# repl
+
+The REPL (called `console`) enables you to inspect the database through the lense of your application. The code used to bootstrap your repl can be found in `conf/repl.ts`
+
+```ts
+# start local repl
+yarn console
+> u = await User.all()
+```
+
+By default, all of your models are loaded into the global namespace. However, to avoid class naming conflicts, all models will actually be namespaced based on their folder path, starting from the `models` directory. This means that if you have a model located at `Nutrition/LogEntry`, and another located at `Weight/LogEntry`, the class names in the repl will be `NutritionLogEntry` and `WeightLogEntry`, regardless of what their actual class names are.
+
+If you want to add additional globals to your repl, you can do so by modifying the `conf/repl.ts` file, adding any additional globals to the provided `context`, like so:
+
+```ts
+// conf/repl.ts
+import './global.js'
+
+import * as repl from 'node:repl'
+import { loadRepl } from '@rvoh/dream'
+import initializePsychicApp from './system/initializePsychicApp.js'
+import MyClass from '../services/MyClass'
+
+const replServer = repl.start('> ')
+export default (async function () {
+  await initializePsychicApp()
+  await loadRepl(replServer.context)
+
+  // add your additional globals here:
+  replServer.context.MyClass = MyClass
+})()
+```
