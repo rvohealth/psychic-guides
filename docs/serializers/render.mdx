@@ -11,18 +11,18 @@ Once you have defined your serializers, you'll use them in your Psychic controll
 You can explicitly use a serializer within your controller methods. This gives you direct control over which serializer is used and when its `.render()` method is called.
 
 ```typescript
-import { StuffSerializer } from 'app/serializers/stuff_serializer'; // Assuming StuffSerializer is your defined serializer function
-import Stuff from 'app/models/stuff'; // Your Dream model
+import { StuffSerializer } from 'app/serializers/stuff_serializer' // Assuming StuffSerializer is your defined serializer function
+import Stuff from 'app/models/stuff' // Your Dream model
 
 // In your controller
 export class StuffsController extends ApplicationController {
   public async show() {
-    const stuff = await Stuff.find(this.params.id);
+    const stuff = await Stuff.find(this.params.id)
     if (!stuff) {
-      return this.notFound();
+      return this.notFound()
     }
     // Explicitly create and render with the serializer
-    this.ok(StuffSerializer(stuff).render());
+    this.ok(StuffSerializer(stuff).render())
   }
 }
 ```
@@ -41,19 +41,22 @@ Your Dream model should have a `serializers` getter that returns an object. The 
 
 ```typescript
 // app/models/stuff.ts
-import ApplicationModel from './application_model';
-import { StuffSerializer, StuffSummarySerializer } from 'app/serializers/stuff_serializer'; // Import your serializer functions
+import ApplicationModel from './application_model'
+import {
+  StuffSerializer,
+  StuffSummarySerializer,
+} from 'app/serializers/stuff_serializer' // Import your serializer functions
 
 export default class Stuff extends ApplicationModel {
   // ... your model attributes and methods
 
   public get serializers() {
     return {
-      default: StuffSerializer,       // The function itself
-      summary: StuffSummarySerializer,  // Another serializer function
+      default: StuffSerializer, // The function itself
+      summary: StuffSummarySerializer, // Another serializer function
       // You can pass the instance or options if needed by the serializer
       // detail: (options?: MyOptions) => StuffDetailSerializer(this, options)
-    };
+    }
   }
 }
 ```
@@ -62,30 +65,30 @@ export default class Stuff extends ApplicationModel {
 
 Once the `serializers` getter is set up on the model:
 
-*   **Default Serializer**: If you pass a model instance or an array of instances directly to `this.ok()`, Psychic will look for a `default` serializer in the model's `serializers` getter and use it.
+- **Default Serializer**: If you pass a model instance or an array of instances directly to `this.ok()`, Psychic will look for a `default` serializer in the model's `serializers` getter and use it.
 
-    ```typescript
-    // In your controller
-    public async index() {
-      const stuffs = await Stuff.all();
-      this.ok(stuffs); // Automatically uses Stuff.prototype.serializers.default for each item
-    }
+  ```typescript
+  // In your controller
+  public async index() {
+    const stuffs = await Stuff.all();
+    this.ok(stuffs); // Automatically uses Stuff.prototype.serializers.default for each item
+  }
 
-    public async show() {
-      const stuff = await Stuff.find(this.params.id);
-      this.ok(stuff); // Automatically uses Stuff.prototype.serializers.default
-    }
-    ```
+  public async show() {
+    const stuff = await Stuff.find(this.params.id);
+    this.ok(stuff); // Automatically uses Stuff.prototype.serializers.default
+  }
+  ```
 
-*   **Named Serializer**: You can specify a different named serializer by passing its key in the options object to `this.ok()`.
+- **Named Serializer**: You can specify a different named serializer by passing its key in the options object to `this.ok()`.
 
-    ```typescript
-    // In your controller
-    public async indexSummary() {
-      const stuffs = await Stuff.all();
-      this.ok(stuffs, { serializer: 'summary' }); // Uses Stuff.prototype.serializers.summary for each item
-    }
-    ```
+  ```typescript
+  // In your controller
+  public async indexSummary() {
+    const stuffs = await Stuff.all();
+    this.ok(stuffs, { serializer: 'summary' }); // Uses Stuff.prototype.serializers.summary for each item
+  }
+  ```
 
 ## Serializer Passthrough Data
 
@@ -95,15 +98,17 @@ This method is typically called in a `BeforeAction` within a base controller or 
 
 ```typescript
 // app/controllers/application_controller.ts
-import { BeforeAction, PsychicController } from '@rvoh/psychic';
+import { BeforeAction, PsychicController } from '@rvoh/psychic'
 // Assume getLocaleFromHeaders is a utility function you have
-import { getLocaleFromHeaders } from 'app/helpers/i18n_helpers';
+import { getLocaleFromHeaders } from 'app/helpers/i18n_helpers'
 
 export default class ApplicationController extends PsychicController {
   @BeforeAction()
   public configureSerializers() {
     // Data passed here will be available to serializers
-    this.serializerPassthrough({ locale: getLocaleFromHeaders(this.req.headers) });
+    this.serializerPassthrough({
+      locale: getLocaleFromHeaders(this.req.headers),
+    })
   }
 }
 ```
@@ -114,23 +119,30 @@ The data provided via `serializerPassthrough()` is typically passed as an `optio
 
 ```typescript
 // app/serializers/my_data_serializer.ts
-import { ObjectSerializer } from '@rvoh/dream';
+import { ObjectSerializer } from '@rvoh/dream'
 
-interface MyData { /* ... */ }
+interface MyData {
+  /* ... */
+}
 interface SerializerOptions {
-  locale?: string;
+  locale?: string
   // other passthrough properties
 }
 
 export const MyDataSerializer = (data: MyData, options?: SerializerOptions) =>
   ObjectSerializer(data, options) // Pass options to ObjectSerializer
     .attribute('someProperty')
-    .customAttribute('localizedGreeting', (d, opts) => { // `opts` here contains the passthrough data
-      if (opts?.locale === 'es') {
-        return 'Hola desde el serializador!';
-      }
-      return 'Hello from the serializer!';
-    }, { openapi: 'string' });
+    .customAttribute(
+      'localizedGreeting',
+      (d, opts) => {
+        // `opts` here contains the passthrough data
+        if (opts?.locale === 'es') {
+          return 'Hola desde el serializador!'
+        }
+        return 'Hello from the serializer!'
+      },
+      { openapi: 'string' }
+    )
 
 // When MyDataSerializer is invoked (explicitly or implicitly),
 // the passthrough data (e.g., { locale: 'es' }) will be available in `opts`.

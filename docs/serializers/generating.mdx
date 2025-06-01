@@ -16,13 +16,13 @@ yarn psy g:model <modelName> [columnsWithTypes...]
 
 **Arguments:**
 
--   `<modelName>`: The name of the model to create (e.g., `Post` or `Settings/CommunicationPreferences`).
--   `[columnsWithTypes...]`: A list of model properties and their types (e.g., `email:string title:text`).
+- `<modelName>`: The name of the model to create (e.g., `Post` or `Settings/CommunicationPreferences`).
+- `[columnsWithTypes...]`: A list of model properties and their types (e.g., `email:string title:text`).
 
 **Serializer-specific Options:**
 
--   `--no-serializer`: Use this flag if you do not want to generate a serializer for this model.
--   `--sti-base-serializer`: This option omits the serializer link from the Dream model itself but still creates the serializer file. This is useful when the model will be a base for Single Table Inheritance (STI) children, and you want those children to extend a common serializer.
+- `--no-serializer`: Use this flag if you do not want to generate a serializer for this model.
+- `--sti-base-serializer`: This option omits the serializer link from the Dream model itself but still creates the serializer file. This is useful when the model will be a base for Single Table Inheritance (STI) children, and you want those children to extend a common serializer.
 
 **Example:**
 
@@ -44,14 +44,14 @@ yarn psy g:sti-child <childModelName> extends <parentModelName> [columnsWithType
 
 **Arguments:**
 
--   `<childModelName>`: The name of the child model.
--   `extends`: The literal word "extends".
--   `<parentModelName>`: The name of the parent model.
--   `[columnsWithTypes...]`: Additional properties specific to the child model.
+- `<childModelName>`: The name of the child model.
+- `extends`: The literal word "extends".
+- `<parentModelName>`: The name of the parent model.
+- `[columnsWithTypes...]`: Additional properties specific to the child model.
 
 **Serializer-specific Options:**
 
--   `--no-serializer`: Prevents the generation of a serializer for the child model. If the parent model has a serializer, the child model will typically use or extend that.
+- `--no-serializer`: Prevents the generation of a serializer for the child model. If the parent model has a serializer, the child model will typically use or extend that.
 
 **Example:**
 
@@ -73,13 +73,13 @@ yarn psy g:resource <path> <modelName> [columnsWithTypes...]
 
 **Arguments:**
 
--   `<path>`: The URL path for the resource (e.g., `/users`).
--   `<modelName>`: The name of the model.
--   `[columnsWithTypes...]`: Properties of the model.
+- `<path>`: The URL path for the resource (e.g., `/users`).
+- `<modelName>`: The name of the model.
+- `[columnsWithTypes...]`: Properties of the model.
 
 **Serializer-specific Options:**
 
--   `--sti-base-serializer`: Similar to `g:model`, this omits the serializer link from the model but creates the serializer file, intended for STI base models. Note that `g:resource` does not have a `--no-serializer` flag as it's designed to create a full set of resource files.
+- `--sti-base-serializer`: Similar to `g:model`, this omits the serializer link from the model but creates the serializer file, intended for STI base models. Note that `g:resource` does not have a `--no-serializer` flag as it's designed to create a full set of resource files.
 
 **Example:**
 
