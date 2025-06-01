@@ -149,14 +149,30 @@ const UserViewModelSerializerWithPets = (user: UserViewModel) =>
 - Similar to `rendersOne` regarding `source`, `serializer`, `dreamClass`, `viewModelClass`, `openapi`, `as`, `serializerKey`, and `associationKey`.
 - The `openapi` schema should describe an array, with `items` typically referencing the schema of individual objects.
 
-## Preloading Data (Crucial for `DreamSerializer`)
+## Ensuring Associations are Loaded
 
-When using `DreamSerializer` with associations, always preload the associated data in your controller or data-fetching logic to prevent N+1 query problems.
+As mentioned in the [Overview](./overview.mdx), serializers in Dream operate **synchronously**. This is a core design principle. It means that any data they need to serialize, including data from associated models, must already be loaded into memory _before_ the serializer is called. Dream will not (and cannot) automatically fetch missing associations during serialization. Attempting to access an unloaded association directly on a model instance will typically result in a `NonLoadedAssociation` error, adhering to the 'dead programs tell no lies' principle. When a serializer encounters an association that isn't loaded on the provided model instance, it will generally render it as `null` (for `rendersOne`) or an empty array (for `rendersMany`), or follow specific `optional` and `openapi` schema definitions.
 
-```typescript
-// In your controller:
-const user = await User.preload('pets').find(userId)
-// Now, UserSerializerWithPets(user) can efficiently access user.pets.
-```
+To make association data available, you have a few primary mechanisms:
+
+1.  **Preloading with `preload`**: When initially querying for your primary model(s), you can use the [`preload`](../../models/querying/preload.mdx) method to eagerly load specified associations. This is often the most efficient way to fetch all necessary data in advance.
+    ```typescript
+    const users = await User.preload('posts').take(5)
+    // users[0].posts is now loaded and available for serialization.
+    ```
+2.  **Preloading with `leftJoinPreload`**: Similar to `preload`, [`leftJoinPreload`](../../models/querying/leftjoinpreload.mdx) also loads associations, but it uses `LEFT JOIN`s in the SQL query. This can be more efficient in some cases but has different performance characteristics and might result in more complex queries.
+3.  **Instance-based Loading with `Dream#load`**: If you already have an instance of a model and you subsequently need to load one or more of its associations, you can use the [`Dream#load`](../../models/querying/load.mdx) method. This method fetches the associations for that specific instance and returns a _new instance_ with the associations populated.
+    ```typescript
+    let user = await User.firstOrFail() // User instance, posts not loaded
+    // ... some logic ...
+    if (needsPosts) {
+      user = await user.load('posts').execute() // user is now a new instance with posts loaded
+    }
+    // user.posts is now available for serialization.
+    ```
+
+For serializers, the key takeaway is that the data **must be present** on the model instance _before_ `render` or `renderAndWrap` is called.
+
+Refer to the documentation for [`preload`](../../models/querying/preload.mdx), [`leftJoinPreload`](../../models/querying/leftjoinpreload.mdx), and [`Dream#load`](../../models/querying/load.mdx) for more detailed information on their usage and options.
 
 By correctly specifying how associations are serialized and how their schemas are defined (especially the distinction between `DreamSerializer` inference and `ObjectSerializer` explicit definition), you can build robust and well-documented APIs.

@@ -4,9 +4,9 @@ sidebar_position: 0
 
 # Overview
 
-Dream serializers provide a powerful and flexible way to shape your data for API responses and automatically generate corresponding OpenAPI documentation. Instead of relying on decorators and class-based definitions, the new serializer DSL uses a fluent, programmatic API, making it more dynamic and expressive.
+Dream serializers provide a powerful and flexible way to shape your data for API responses and automatically generate corresponding OpenAPI documentation. The serializer DSL uses a fluent, programmatic API, making it dynamic and expressive when defining how your data is transformed.
 
-At its core, a serializer in Dream takes an object (often a Dream model instance or a plain JavaScript object/ViewModel) and defines how its properties should be transformed and which associated objects should be included in the output.
+At its core, a serializer in Dream takes an object (often a Dream model instance or a plain JavaScript object/[ViewModel](./view-models.mdx)) and defines how its properties should be transformed and which associated objects should be included in the output.
 
 ## Key Concepts:
 
@@ -15,6 +15,7 @@ At its core, a serializer in Dream takes an object (often a Dream model instance
 - **Explicit Definition**: You explicitly define what gets included and how it's transformed, giving you fine-grained control over the output.
 - **OpenAPI Generation**: A key feature is the automatic generation of OpenAPI response schemas based on your serializer definitions. This helps keep your API documentation consistent with its implementation.
 - **Flexibility**: You can define multiple serializers for the same model or object to cater to different use cases or endpoints (e.g., a `summary` view vs. a `detailed` view).
+- **Synchronous by Design**: Dream serializers are intentionally synchronous. This design prevents accidental introduction of N+1 query problems or other unintended side effects (like external API calls) during the serialization phase itself. Any asynchronous data fetching or preparation should occur _before_ data is passed to the serializer. For complex asynchronous data preparation, consider using a [ViewModel](./view-models.mdx).
 
 ## Basic Structure
 

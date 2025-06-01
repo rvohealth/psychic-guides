@@ -2,6 +2,8 @@
 
 Simlar to [leftJoinPreload](/docs/models/querying/leftJoinPreload), the preload method enables you to side-load other associations while executing a query. The difference is that preload executes its queries in stages, rather than all at once. The query below will produce 3 sql queries, one to load the users, one to load all of the users' posts, and one to load all of the posts' comments.
 
+For loading associations on an already existing model instance, see [`Dream#load`](./load.mdx).
+
 ```ts
 const users = await User.preload('posts', 'comments').all()
 const firstComments = users[0].posts[0].comments

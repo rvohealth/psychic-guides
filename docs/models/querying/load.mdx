@@ -1,0 +1,126 @@
+---
+sidebar_position: 2
+title: 'Dream#load: Loading Associations on Instances'
+---
+
+# `Dream#load`: Loading Associations on Instances
+
+The `Dream#load` method provides a way to load associations onto an already existing Dream model instance. This is particularly useful when you have an instance of a model and need to fetch its related data without re-querying the instance itself.
+
+The call signature for `load` is very similar to [`preload`](./preload.mdx), and it leverages the same underlying mechanisms for fetching associated data.
+
+## Basic Usage
+
+You can call `load` on a model instance, specifying the association name. The method returns a *new instance* of the model with the specified association(s) loaded. The original instance remains unchanged.
+
+```typescript
+// Assuming 'user' is an existing instance of a User model
+// and User has a 'posts' association.
+
+// If user.posts was not previously loaded, accessing it here would throw NonLoadedAssociation.
+// const user = await User.firstOrFail();
+
+const userWithPosts = await user.load('posts').execute();
+
+// userWithPosts is a new User instance.
+// userWithPosts.posts is now populated.
+// The original 'user' instance's 'posts' association remains unloaded.
+
+console.log(userWithPosts.posts); // [Post{}, Post{}, ...]
+```
+This is useful if you have an instance and decide you need more data for it.
+
+## Chaining `load` Calls
+
+You can chain multiple `load` calls to load several associations at once, or even nested associations:
+
+```typescript
+let user = await User.firstOrFail(); // Fetches a user without posts or pets
+
+// Load 'posts' (where body is null) and 'pets'
+user = await user.load('posts', { body: null }).load('pets').execute();
+
+console.log(user.posts);   // [Post{ body: null }, Post{ body: null }, ...]
+console.log(user.pets);    // [Cat{}, Dog{}]
+
+// Loading nested associations (e.g., posts and their comments)
+// Assuming Post model has a 'comments' association
+// And user already has 'posts' loaded from the previous step.
+// To load comments for the already loaded posts:
+user = await user.load('posts', 'comments').execute();
+// user.posts[0].comments is now accessible on the new 'user' instance.
+```
+
+## `load` vs. `preload`
+
+-   **[`preload`](./preload.mdx)**: Used when initially fetching model(s) from the database. It loads the primary model(s) *and* their specified associations in an optimized way (typically fewer queries). Use this when you know upfront what associated data you'll need.
+-   **`load`**: Used on an *existing model instance* to fetch additional associations. It always returns a new instance of the model. Use this when you already have a model instance and subsequently realize you need more of its associations.
+
+Both methods can take similar arguments for specifying which associations to load and any conditions for those associations.
+
+## Checking if an Association is Loaded: `Dream#loaded()`
+
+Before attempting to access an association, you might want to check if it has been loaded to avoid a `NonLoadedAssociation` error. The `Dream#loaded(associationName)` method can be used for this. It returns `true` if the association has been loaded (even if the result was, for example, an empty array or null), and `false` otherwise.
+
+```typescript
+const user = await User.find(1); // User instance without 'posts' loaded
+
+if (user.loaded('posts')) {
+  console.log(user.posts);
+} else {
+  console.log('Posts not loaded yet.');
+  // You might choose to load them now:
+  // const userWithPosts = await user.load('posts').execute();
+  // console.log(userWithPosts.posts);
+}
+
+// Example from loaded.spec.ts:
+const userWithPreload = await User.preload('mainComposition').find(user.id);
+console.log(userWithPreload.loaded('mainComposition')); // true
+
+const userWithoutPreload = await User.find(user.id);
+console.log(userWithoutPreload.loaded('mainComposition')); // false
+```
+
+## Important Considerations
+
+*   **New Instance:** `load().execute()` always returns a *new* instance of the model with the associations loaded. The original instance on which `load()` was called remains unchanged and will not have the newly loaded associations.
+    ```typescript
+    const freshUser = await User.create({ email: 'charlie@peanuts.com', password: 'howyadoin' });
+    const freshPet = await Pet.create({ user: freshUser, species: 'dog', name: 'Snoopy' });
+
+    const clone = await freshUser.load('pets').execute();
+    // clone has the same attributes as freshUser but is a different object.
+    // clone.pets is populated.
+    // freshUser.pets would throw NonLoadedAssociation.
+    ```
+*   **Transactions:** `load` can be used within a transaction by calling `txn(transaction)` on the instance first:
+    ```typescript
+    let petsOutput: Pet[] = [];
+    await ApplicationModel.transaction(async txn => {
+      const user = await User.create({ email: 'fred@fred.com', password: 'password' }, { txn });
+      await user.txn(txn).createAssociation('pets', { species: 'dog', name: 'violet' });
+      // Assuming 'user' might have other pets already, or this is the first.
+      const userWithPets = await user.txn(txn).load('pets').execute();
+      petsOutput = userWithPets.pets;
+    });
+
+    console.log(petsOutput.map(p => p.name)); // e.g., ['violet'] or ['existing_pet_name', 'violet']
+    ```
+*   **Freshness:** Each call to `load().execute()` fetches the association data fresh from the database at that moment. If the underlying data changes between `load` calls, subsequent `load` calls will reflect those changes on the newly returned instance.
+    ```typescript
+    const user = await User.create({ email: 'user@example.com', password: 'password' });
+    await Pet.create({ user, species: 'cat', name: 'aster' });
+
+    const clone1 = await user.load('pets').execute();
+    console.log(clone1.pets[0].name); // 'aster'
+
+    // Simulate an update to the pet's name in the database
+    await Pet.query().where({ name: 'aster' }).update({ name: 'Snoopy' });
+
+    const clone2 = await clone1.load('pets').execute(); // Re-load pets
+    console.log(clone2.pets[0].name); // 'Snoopy'
+    // Note: clone1.pets[0].name would still be 'aster' as clone1 is unchanged.
+    ```
+
+By using `load` judiciously, you can manage data fetching for your model instances effectively, retrieving related data only when necessary. Remember to also consider [`preload`](./preload.mdx) for scenarios where associated data is needed at the time of initial model retrieval.
