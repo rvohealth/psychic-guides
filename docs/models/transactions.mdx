@@ -4,14 +4,15 @@ sidebar_position: 5
 
 # transactions
 
-Transactions can be built using any model class, but typcally would be done from the base Dream class, like so:
+Transactions are useful if you want to tie the success of one query to another, enabling you to guarantee a valid state for your database in the event that anything might go wrong.
 
 ```ts
-...
-
 await ApplicationModel.transaction(async txn => {
   const user = await User.txn(txn).create({ ... })
-  await Post.txn(txn).create({ user })
-  const post = await Post.txn(txn).first()
+  await UserSettings.txn(txn).create({ user })
 })
 ```
+
+The pattern for this can seem strange at first, but you will get the hang of it in short order. To instantiate a transaction, you will call the static `transaction` method on your app's ApplicationModel, capturing the provided transaction in the callback function you provide, named `txn` by convention. With the txn variable on hand, you proceed to pass it to each subsequent query that might need it, as demonstrated above, using the `txn` method (named the same as the variable).
+
+Once in a transaction builder (done by calling the `txn` method), you will be prohibited from using methods that take advantage of errors with foreign key violations, like `createOrFindBy`, since they will not function properly in a transaction.

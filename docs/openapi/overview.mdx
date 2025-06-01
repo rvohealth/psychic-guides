@@ -11,7 +11,7 @@ title: overview
 1. the serializers you already use to turn models into JSON
 1. an `@OpenAPI` decorator in controllers
 
-The [resource generator](../utils/cli/generators) automatically adds `@OpenAPI` decorator declarations corresponding to each endpoint, and since serializer attributes are typed back to the database schema, these types will stay in sync as you add migrations. (For example, if you add a migration to change a column from not allowing `null` to allowing `null`, the OpenAPI spec will change to include `nullable: true` for the corresponding property.)
+The [resource generator](/docs/cli/generators/resources) automatically adds `@OpenAPI` decorator declarations corresponding to each endpoint, and since serializer attributes are typed back to the database schema, these types will stay in sync as you add migrations. (For example, if you add a migration to change a column from not allowing `null` to allowing `null`, the OpenAPI spec will change to include `nullable: true` for the corresponding property.)
 
 Serializers and the @OpenAPI decorator also support hand-written specs to provide added flexibility when needed. As with everything in Dream and Psychic, these hand-written specs are strongly typed.
 

@@ -1,9 +1,10 @@
 ---
 sidebar_position: 2
+title: Installation
 ---
 
 :::warning
-Dream and psychic are in a pre-release stage. We are still refining some cosmetic aspects to the framework, but that code is coming in rapidly, and we anticipate this will be ready for use sometime early April, 2025. In the mean time, feel free to tinker to your heart's desire!
+Dream and psychic are in a pre-release stage. We are still refining some cosmetic aspects to the framework, but that code is coming in rapidly, and we anticipate this will be ready for use sometime in the next month. In the mean time, feel free to tinker to your heart's desire!
 :::
 
 # Installation

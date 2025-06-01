@@ -32,16 +32,19 @@ The configuration entry point is found at `spec/features/vite.config.ts`. This f
 ```ts
 // spec/features/setup/globalSetup.ts
 
-import { launchViteServer, stopViteServer } from '@rvoh/psychic-spec-helpers'
-import initializePsychicApp from '../../../test-app/src/cli/helpers/initializePsychicApp'
+import '../../../src/conf/global.js'
+
+import { PsychicDevtools } from '@rvoh/psychic'
 
 export async function setup() {
-  await initializePsychicApp()
-  await launchViteServer({ port: 3000, cmd: 'yarn client' })
+  await PsychicDevtools.launchDevServer('client', {
+    port: 3000,
+    cmd: 'yarn client:fspec',
+  })
 }
 
 export function teardown() {
-  stopViteServer()
+  PsychicDevtools.stopDevServer('client')
 }
 ```
 
@@ -105,7 +108,6 @@ Psychic provides the following helpers:
 - `launchBrowser` - launches a new puppeteer browser with your provided configuration.
 - `launchPage` - launches a new browser and creates a new page from it.
 - `providePuppeteerViteMatchers` - a helper function that provides the assertion helpers for vite and puppeteer
-- `launchViteDevServer` - launches a dev server, used to launch your front end when running feature specs
 
 Additionally, Psychic provides the following assertion helpers:
 
@@ -125,6 +127,33 @@ Additionally, Psychic provides the following assertion helpers:
 - `toNotHaveSelector` - expects the page to not have the provided css selector
 - `toNotMatchTextContent` - expects the page to not match the provided text content
 - `toUncheck` - attempts to uncheck a checkbox with the provided text value
+- `toSelect` - attempts to select the option from the provided css selector
+
+To utilize these assertion matchers, you can tap into them via expect chaining, like so:
+
+```ts
+await expect(page).toClick('Submit')
+```
+
+In addition to these assertion matchers, `@rvoh/psychic-spec-helpers` also ships with some helpful global functions which essentially do the same thing, but are meant to be used in cases when you aren't meaning to make an assertion.
+
+```ts
+it('allows the user to click on the profile link', async () => {
+  await clickLink('Home')
+  await expect(page).toClickLink('Profile')
+})
+```
+
+the global helpers available to you are:
+
+- check
+- click
+- clickButton
+- clickSelector
+- fillIn
+- uncheck
+- select
+- visit
 
 ## Cleanup
 

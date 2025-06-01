@@ -92,6 +92,10 @@ a {
   text-decoration: none;
 }
 
+.theme-doc-sidebar-container a::after {
+  display: none;
+}
+
 .alert a {
   color: #093727;
   text-decoration: none;
@@ -258,6 +262,10 @@ main > .container > .row > .col {
 .theme-code-block {
   margin: 30px 0;
   box-shadow: none !important;
+}
+
+.table-of-contents {
+  border-color: rgb(237, 237, 237);
 }
 
 .table-of-contents a {

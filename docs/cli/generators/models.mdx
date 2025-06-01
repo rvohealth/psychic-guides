@@ -1,30 +1,25 @@
 ---
 sidebar_position: 1
+title: models
 ---
 
-# generators
+# generating models
 
-Psychic provides several generators for quickly building scaffolding for your app.
+If you are looking to generate a model, you can use the `g:model` command provided by dream, like so:
 
 ```bash
-# generate migration
-yarn psy g:migration add-deleted-at-to-posts
-
-# generate a model, serializer, and migration
 yarn psy g:model User email:string
+```
 
+This will also generate a migration, a spec, and a factory for you, with all necessary boilerplate filled out.
+
+## STI children
+
+When generating STI children, you can use a special generator to properly build out your child class, like so:
+
+```sh
 # generate an STI child model, serializer, and migration
 yarn psy g:sti-child Foo/Bar extends Foo/Base hello:string
-
-# generate a controller
-yarn psy g:controller api/v1/users  create update destroy
-
-# generate a serializer
-yarn psy g:serializer User email:string id:string
-
-# generate a model, serializer, migration, and controller and,
-# provided your app is not api-only, a client api module
-yarn psy g:resource api/v1/users User email:string
 ```
 
 ## Supported model generator data types
@@ -81,3 +76,7 @@ yarn psy g:model Post user:belongs_to
 // the optional modifier alters both the migration and the BelongsTo association in the model
 yarn psy g:model Post user:belongs_to:optional
 ```
+
+:::tip
+For more comprehensive documentation on generating models, see our [generating model docs](/docs/models/generating).
+:::

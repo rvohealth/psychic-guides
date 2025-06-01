@@ -1,5 +1,6 @@
 ---
-sidebar_position: 3
+sidebar_position: 1
+title: Monorepos
 ---
 
 When provisioning a new Psychic application, you will be asked if you want to build a monorepo or not. You may be wondering what this means and why you've been asked.
