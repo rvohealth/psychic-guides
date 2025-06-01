@@ -2,34 +2,52 @@
 sidebar_position: 0
 ---
 
-# overview
+# Overview
 
-Though the Dream ORM exclusively provides access to the database layer of your application, providing tools for abstracting those relational complexities into elegant domains, it also is aware that often you are going to want to serialize these models into different shapes, depending on the endpoint being hit, or other circumstances determined by your application logic.
+Dream serializers provide a powerful and flexible way to shape your data for API responses and automatically generate corresponding OpenAPI documentation. Instead of relying on decorators and class-based definitions, the new serializer DSL uses a fluent, programmatic API, making it more dynamic and expressive.
 
-To enable multiple potential serialization shapes, dream provides a simple pattern for defining such connections:
+At its core, a serializer in Dream takes an object (often a Dream model instance or a plain JavaScript object/ViewModel) and defines how its properties should be transformed and which associated objects should be included in the output.
 
-```ts
-class User extends ApplicationModel {
-  public get serializers() {
-    return {
-      default: 'UserSerializer',
-      summary: 'UserSummarySerializer',
-      admin: 'AdminUserSerializer',
-    } as const
-  }
+## Key Concepts:
+
+*   **Fluent API**: Serializers are constructed by chaining methods like `.attribute()`, `.customAttribute()`, `.delegatedAttribute()`, `.jsonAttribute()`, `.rendersOne()`, and `.rendersMany()`.
+*   **`ObjectSerializer` and `DreamSerializer`**: These are the primary functions you'll use to initiate a serializer. `DreamSerializer` is typically used for Dream model instances, offering some model-specific conveniences, while `ObjectSerializer` is more generic and can be used for any JavaScript object, including ViewModels.
+*   **Explicit Definition**: You explicitly define what gets included and how it's transformed, giving you fine-grained control over the output.
+*   **OpenAPI Generation**: A key feature is the automatic generation of OpenAPI response schemas based on your serializer definitions. This helps keep your API documentation consistent with its implementation.
+*   **Flexibility**: You can define multiple serializers for the same model or object to cater to different use cases or endpoints (e.g., a `summary` view vs. a `detailed` view).
+
+## Basic Structure
+
+A typical serializer definition might look like this:
+
+```typescript
+// For a Dream Model instance (e.g., user loaded from DB)
+import { DreamSerializer } from '@rvoh/dream';
+import User from 'app/models/user'; // Assuming User is a Dream model
+
+const UserSerializer = (user: User) =>
+  DreamSerializer(User, user)
+    .attribute('id')
+    .attribute('email')
+    .attribute('name', { openapi: { description: 'The full name of the user' } });
+
+// For a ViewModel or plain object
+import { ObjectSerializer } from '@rvoh/dream';
+
+interface UserViewModel {
+  id: string;
+  fullName: string;
+  isActive: boolean;
 }
+
+const UserViewModelSerializer = (userView: UserViewModel) =>
+  ObjectSerializer(userView)
+    .attribute('id')
+    .attribute('fullName')
+    .customAttribute('status', () => (userView.isActive ? 'Active' : 'Inactive'), { openapi: 'string' });
 ```
 
-In psychic, when a dream is encountered in the process of serialization, the dream is serialized using its default serializer, unless a different serializer is specified explicitly:
-
-```ts
-class UsersController extends AuthedController {
-  public async show() {
-    const user = await User.findOrFail(this.castParam('id', 'bigint'))
-    this.ok(user, { serializer: 'admin' })
-  }
-}
-```
+This documentation will guide you through defining attributes, handling associations, generating serializers, and using them to render data and produce OpenAPI schemas.
 
 :::info
 

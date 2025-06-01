@@ -2,38 +2,138 @@
 sidebar_position: 4
 ---
 
-# render
+# Rendering Data with Serializers
 
-From within a controller, one can use a serializer to restrict attributes, like so:
+Once you have defined your serializers, you'll use them in your Psychic controllers to shape the data for your API responses. Dream and Psychic offer both explicit and implicit ways to render data using these serializers.
 
-```ts
-  public myMethod() {
-    const stuff = await Stuff.first()
-    this.ok(new StuffSerializer(stuff).render())
-  }
-```
+## Explicit Rendering
 
-## implicit rendering
+You can explicitly use a serializer within your controller methods. This gives you direct control over which serializer is used and when its `.render()` method is called.
 
-When a psychic controller receives either a dream model or an array of dream models as an argument to the `ok` method, it will automatically infer the serializer by calling the record(s) serializer. This means that, given a model with a serializer getter established (like so:)
+```typescript
+import { StuffSerializer } from 'app/serializers/stuff_serializer'; // Assuming StuffSerializer is your defined serializer function
+import Stuff from 'app/models/stuff'; // Your Dream model
 
-```ts
-class Stuff extends ApplicationModel {
-  ...
-  public get serializers() {
-    return {
-      default: 'StuffSerializer',
-      summary: 'StuffSummarySerializer',
+// In your controller
+export class StuffsController extends ApplicationController {
+  public async show() {
+    const stuff = await Stuff.find(this.params.id);
+    if (!stuff) {
+      return this.notFound();
     }
+    // Explicitly create and render with the serializer
+    this.ok(StuffSerializer(stuff).render());
   }
 }
 ```
 
-The controller will implicitly render the model using it's `summary` serializer.
+In this example, `StuffSerializer(stuff)` creates the serializer instance with the data, and `.render()` generates the final JSON object to be sent in the response.
 
-```ts
-  public myMethod() {
-    const stuffs = await Stuff.all()
-    this.ok(stuffs, { serializer: 'summary' })
+## Implicit Rendering
+
+Psychic controllers can automatically infer and use serializers when you pass Dream model instances (or arrays of them) to response methods like `this.ok()`.
+
+To enable implicit rendering, your Dream model needs to define a `serializers` getter that provides access to its available serializer functions.
+
+**1. Defining Serializers on Your Model:**
+
+Your Dream model should have a `serializers` getter that returns an object. The keys of this object are names (like `default`, `summary`, `detail`), and the values are the serializer functions themselves.
+
+```typescript
+// app/models/stuff.ts
+import ApplicationModel from './application_model';
+import { StuffSerializer, StuffSummarySerializer } from 'app/serializers/stuff_serializer'; // Import your serializer functions
+
+export default class Stuff extends ApplicationModel {
+  // ... your model attributes and methods
+
+  public get serializers() {
+    return {
+      default: StuffSerializer,       // The function itself
+      summary: StuffSummarySerializer,  // Another serializer function
+      // You can pass the instance or options if needed by the serializer
+      // detail: (options?: MyOptions) => StuffDetailSerializer(this, options)
+    };
   }
+}
 ```
+
+**2. Using Implicit Rendering in Controllers:**
+
+Once the `serializers` getter is set up on the model:
+
+*   **Default Serializer**: If you pass a model instance or an array of instances directly to `this.ok()`, Psychic will look for a `default` serializer in the model's `serializers` getter and use it.
+
+    ```typescript
+    // In your controller
+    public async index() {
+      const stuffs = await Stuff.all();
+      this.ok(stuffs); // Automatically uses Stuff.prototype.serializers.default for each item
+    }
+
+    public async show() {
+      const stuff = await Stuff.find(this.params.id);
+      this.ok(stuff); // Automatically uses Stuff.prototype.serializers.default
+    }
+    ```
+
+*   **Named Serializer**: You can specify a different named serializer by passing its key in the options object to `this.ok()`.
+
+    ```typescript
+    // In your controller
+    public async indexSummary() {
+      const stuffs = await Stuff.all();
+      this.ok(stuffs, { serializer: 'summary' }); // Uses Stuff.prototype.serializers.summary for each item
+    }
+    ```
+
+## Serializer Passthrough Data
+
+Often, you'll want to make request-specific data available to all serializers invoked during the handling of that request (e.g., the current user's locale, permissions, or other contextual information). Psychic controllers provide the `this.serializerPassthrough()` method for this purpose.
+
+This method is typically called in a `BeforeAction` within a base controller or a specific controller to set data that should be accessible by any serializer used in that request lifecycle.
+
+```typescript
+// app/controllers/application_controller.ts
+import { BeforeAction, PsychicController } from '@rvoh/psychic';
+// Assume getLocaleFromHeaders is a utility function you have
+import { getLocaleFromHeaders } from 'app/helpers/i18n_helpers';
+
+export default class ApplicationController extends PsychicController {
+  @BeforeAction()
+  public configureSerializers() {
+    // Data passed here will be available to serializers
+    this.serializerPassthrough({ locale: getLocaleFromHeaders(this.req.headers) });
+  }
+}
+```
+
+**Accessing Passthrough Data in Serializers:**
+
+The data provided via `serializerPassthrough()` is typically passed as an `options` argument to your main serializer function. You can then access this data within your serializer logic, such as in `customAttribute` callbacks.
+
+```typescript
+// app/serializers/my_data_serializer.ts
+import { ObjectSerializer } from '@rvoh/dream';
+
+interface MyData { /* ... */ }
+interface SerializerOptions {
+  locale?: string;
+  // other passthrough properties
+}
+
+export const MyDataSerializer = (data: MyData, options?: SerializerOptions) =>
+  ObjectSerializer(data, options) // Pass options to ObjectSerializer
+    .attribute('someProperty')
+    .customAttribute('localizedGreeting', (d, opts) => { // `opts` here contains the passthrough data
+      if (opts?.locale === 'es') {
+        return 'Hola desde el serializador!';
+      }
+      return 'Hello from the serializer!';
+    }, { openapi: 'string' });
+
+// When MyDataSerializer is invoked (explicitly or implicitly),
+// the passthrough data (e.g., { locale: 'es' }) will be available in `opts`.
+```
+
+This mechanism allows for clean separation of concerns, keeping your serializers focused on data transformation while allowing contextual data to be injected from the controller layer.
