@@ -155,13 +155,23 @@ As mentioned in the [Overview](./overview.mdx), serializers in Dream operate **s
 
 To make association data available, you have a few primary mechanisms:
 
-1.  **Preloading with `preload`**: When initially querying for your primary model(s), you can use the [`preload`](../../models/querying/preload.mdx) method to eagerly load specified associations. This is often the most efficient way to fetch all necessary data in advance.
+1.  **Preloading with `preload`**: When initially querying for your primary model(s), you can use the [`preload`](../models/querying/preload.mdx) method to eagerly load specified associations. This is often the most efficient way to fetch all necessary data in advance.
     ```typescript
-    const users = await User.preload('posts').take(5)
-    // users[0].posts is now loaded and available for serialization.
+    const posts = await this.currentUser
+      .associationQuery('posts')
+      .preload('comments')
+      .limit(5)
+      .all()
     ```
-2.  **Preloading with `leftJoinPreload`**: Similar to `preload`, [`leftJoinPreload`](../../models/querying/leftjoinpreload.mdx) also loads associations, but it uses `LEFT JOIN`s in the SQL query. This can be more efficient in some cases but has different performance characteristics and might result in more complex queries.
-3.  **Instance-based Loading with `Dream#load`**: If you already have an instance of a model and you subsequently need to load one or more of its associations, you can use the [`Dream#load`](../../models/querying/load.mdx) method. This method fetches the associations for that specific instance and returns a _new instance_ with the associations populated.
+2.  **Preloading with `leftJoinPreload`**: Similar to `preload`, [`leftJoinPreload`](../models/querying/leftJoinPreload.mdx) also loads associations, but it uses `LEFT JOIN`s in the SQL query. This can be more efficient in some cases but has different performance characteristics and might result in more complex queries.
+    ```typescript
+    const posts = await this.currentUser
+      .associationQuery('posts')
+      .leftJoinPreload('comments')
+      .limit(5)
+      .all()
+    ```
+3.  **Instance-based Loading with `Dream#load`**: If you already have an instance of a model and you subsequently need to load one or more of its associations, you can use the [`Dream#load`](../models/querying/load.mdx) method. This method fetches the associations for that specific instance and returns a _new instance_ with the associations populated.
     ```typescript
     let user = await User.firstOrFail() // User instance, posts not loaded
     // ... some logic ...
@@ -171,8 +181,8 @@ To make association data available, you have a few primary mechanisms:
     // user.posts is now available for serialization.
     ```
 
-For serializers, the key takeaway is that the data **must be present** on the model instance _before_ `render` or `renderAndWrap` is called.
+For serializers, the key takeaway is that the data must be present on the model instance _before_ `render` is called.
 
-Refer to the documentation for [`preload`](../../models/querying/preload.mdx), [`leftJoinPreload`](../../models/querying/leftjoinpreload.mdx), and [`Dream#load`](../../models/querying/load.mdx) for more detailed information on their usage and options.
+Refer to the documentation for [`preload`](../models/querying/preload.mdx), [`leftJoinPreload`](../models/querying/leftJoinPreload.mdx), and [`Dream#load`](../models/querying/load.mdx) for more detailed information on their usage and options.
 
 By correctly specifying how associations are serialized and how their schemas are defined (especially the distinction between `DreamSerializer` inference and `ObjectSerializer` explicit definition), you can build robust and well-documented APIs.
