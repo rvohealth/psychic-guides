@@ -83,7 +83,7 @@ export default defineConfig({
 })
 ```
 
-### Models
+## Models
 
 Write model specs to enfore behavior for your models, like so:
 
@@ -126,7 +126,7 @@ describe('User', () => {
 })
 ```
 
-### Serializers
+## Serializers
 
 We don't generally encourage developers to write serializer specs (since this is normally covered by endpoint tests), but sometimes it can make sense if the rendering logic gets to be fairly complex. In that case, you can test your serializers like this:
 
@@ -181,3 +181,69 @@ describe('an authed user attempts to hit an authed route', () => {
 ```
 
 Calling `request.session` here is very similar to `request.post`, but with the caviat that any cookies attached during the first request will now be sent to all subsequent requests.
+
+### Openapi
+
+If you are taking advantage of the `OpenAPI` decorator in your controllers, you can leverage the `OpenapiSpecRequest` class to issue requests. The api is nearly identical to the `specRequest` api, except for the way it treats urls that have named uri segments.
+
+```ts
+import { PsychicServer } from '@rvoh/psychic'
+import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
+import { openapiPaths } from '../../../src/types/openapi.d.ts'
+import createPost from '../../factories/PostFactory'
+
+const request = new OpenapiSpecRequest<openapiPaths>(openapiPaths)
+
+describe('PostsController', () => {
+  beforeAll(async () => {
+    await request.init(PsychicServer)
+  })
+
+  describe('show', () => {
+    it('renders the post by id', async () => {
+      const post = await createPost({ title: 'my title', body: 'my body' })
+      const { body } = await request.get('/posts/{id}', 200, { id: post.id })
+      expect(body.title).toEqual('my title')
+      expect(body.body).toEqual('my body')
+    })
+  })
+})
+```
+
+The `OpenapiSpecRequest` will integrate with the output of `openapi-typescript`, which can be automatically activated in your `conf/app.ts` file during the `sync` hook, like so:
+
+```ts
+// conf/app.ts
+
+psy.set('openapi', {
+  syncTypes: true,
+  ...
+})
+```
+
+Since your app may have many different openapi settings, you can actually activate `syncTypes` on all of them. Typically, you may have one openapi file that covers all your routes, and then many segmented ones that can be read by others. This can be useful for request validation, since it can typically only read one openapi.json file. If this is the case, we recommend that you set `syncTypes: true` on your validation openapi file, since that one will be the most useful during specs.
+
+```ts
+// conf/app.ts
+
+psy.set('openapi', 'validation', {
+  syncTypes: true,
+  ...
+})
+```
+
+Then run `yarn psy sync` to sync the openapi types:
+
+```sh
+yarn psy sync
+```
+
+and then, in your specs, use the newly generated types:
+
+```ts
+import { validationOpenapiPaths } from '../../../src/types/validation.openapi.d.ts'
+
+const request = new OpenapiSpecRequest<validationOpenapiPaths>(openapiPaths)
+
+...
+```
