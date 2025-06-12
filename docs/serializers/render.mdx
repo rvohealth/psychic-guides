@@ -1,5 +1,6 @@
 ---
 sidebar_position: 4
+title: rendering
 ---
 
 # Rendering Data with Serializers
@@ -141,7 +142,7 @@ export const MyDataSerializer = (data: MyData, options?: SerializerOptions) =>
         }
         return 'Hello from the serializer!'
       },
-      { openapi: 'string' }
+      { openapi: 'string' },
     )
 
 // When MyDataSerializer is invoked (explicitly or implicitly),

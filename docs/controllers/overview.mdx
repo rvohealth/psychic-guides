@@ -10,6 +10,8 @@ In a standard MVC (Model, View, Controller) paradigm, a controller represents th
 
 In order for a controller's methods to be reached, a corresponding route entry must be established to point to those methods, so the controllers and routes work hand-in-hand. You should never have a route that points to a controller method that doesn't exist, nor should you ever have a controller method with no corresponding route entry.
 
+### Connecting routes to your controllers
+
 ```ts
 // conf/routes.ts
 export default (r: PsychicRouter) => {
@@ -24,12 +26,69 @@ export default class WelcomeController extends ApplicationController {
 }
 ```
 
+Ordinarily, controllers will be driven by resourceful patterns tied to underlying models. In these cases, we highly recommend you see our [generating resources guides](/docs/controllers/generating), since this will automatically compose sensible default functionality and testing for your controller, as well as the underlying model.
+
+```sh
+yarn psy g:resource v1/pets Pet User:belongs_to name:string
+```
+
+This will also produce route entries for the new Pets controller, using the `r.resources('pets')` call, which will automatically provide sensible routes for indexing, showing, creating, updating, and deleting a pet.
+
+### Status code responses
+
+Psychic leverages method names which correspond to http status codes to make rendering data a little more human for us.
+
+```ts
+export default class PetsController extends ApplicationController {
+  public async create() {
+    const pet = await Pet.create(this.paramsFor(Pet))
+    this.created(pet.id) // 201
+  }
+
+  public async update() {
+    const pet = await Pet.findOrFail(this.castParam('id', 'bigint'))
+    await pet.update(this.paramsFor(Pet))
+    this.noContent() // 204
+  }
+}
+```
+
+Learn more about how status codes work in psychic controllers by visiting our [status code guides](/docs/controllers/status-codes).
+
+### Openapi
+
+Psychic Controllers contains powerful bindings to openapi through the usage of the `@OpenAPI` decorator. This enables you to automatically generate openapi documents based on the shape of your models. The below example will auto-generate an openapi document with an array of serialized Posts as the response body for this endpoint.
+
+````ts
+```ts
+import { OpenAPI } from '@rvoh/psychic'
+
+export default class PostsController extends ApplicationController {
+  @OpenAPI(Post, {
+    many: true,
+    status: 200,
+    serializerKey: 'summary',
+  })
+  public async index() {
+    this.ok(await this.currentUser.associationQuery('posts').all())
+  }
+}
+````
+
+The OpenAPI decorator is incredibly robust in terms of capabilities, and we recommend diving deep on how to leverage it to empower yourself to write less. See our [Openapi guides](/docs/openapi/controllers) to learn more.
+
 :::tip
 
 - To learn how to generate a new controller, see our [guides on generating a controller](/docs/controllers/generating)
 - To learn about how controller serialize data, see our [serialization](/docs/controllers/serialization) guide
+- To learn about how controllers use params, see our [status code](/docs/controllers/params) guide
 - To learn about how controllers use http status codes, see our [status code](/docs/controllers/status-codes) guide
 - To learn about handling exceptions, see our [exception handling](/docs/controllers/exception-handling) guide
+- To learn about cookies, see our [cookies](/docs/controllers/cookies) guide
 - To learn about openapi integration, see our [openapi](/docs/openapi/overview) guide
 
   :::
+
+```
+
+```
