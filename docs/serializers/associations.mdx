@@ -1,5 +1,6 @@
 ---
 sidebar_position: 3
+title: associations
 ---
 
 # Handling Associations
@@ -155,7 +156,8 @@ As mentioned in the [Overview](./overview.mdx), serializers in Dream operate **s
 
 To make association data available, you have a few primary mechanisms:
 
-1.  **Preloading with `preload`**: When initially querying for your primary model(s), you can use the [`preload`](../models/querying/preload.mdx) method to eagerly load specified associations. This is often the most efficient way to fetch all necessary data in advance.
+1. **Preloading with `preload`**: When initially querying for your primary model(s), you can use the [`preload`](../models/querying/preload.mdx) method to eagerly load specified associations. This is often the most efficient way to fetch all necessary data in advance.
+
     ```typescript
     const posts = await this.currentUser
       .associationQuery('posts')
@@ -163,7 +165,9 @@ To make association data available, you have a few primary mechanisms:
       .limit(5)
       .all()
     ```
-2.  **Preloading with `leftJoinPreload`**: Similar to `preload`, [`leftJoinPreload`](../models/querying/leftJoinPreload.mdx) also loads associations, but it uses `LEFT JOIN`s in the SQL query. This can be more efficient in some cases but has different performance characteristics and might result in more complex queries.
+
+2. **Preloading with `leftJoinPreload`**: Similar to `preload`, [`leftJoinPreload`](../models/querying/leftJoinPreload.mdx) also loads associations, but it uses `LEFT JOIN`s in the SQL query. This can be more efficient in some cases but has different performance characteristics and might result in more complex queries.
+
     ```typescript
     const posts = await this.currentUser
       .associationQuery('posts')
@@ -171,7 +175,9 @@ To make association data available, you have a few primary mechanisms:
       .limit(5)
       .all()
     ```
-3.  **Instance-based Loading with `Dream#load`**: If you already have an instance of a model and you subsequently need to load one or more of its associations, you can use the [`Dream#load`](../models/querying/load.mdx) method. This method fetches the associations for that specific instance and returns a _new instance_ with the associations populated.
+
+3. **Instance-based Loading with `Dream#load`**: If you already have an instance of a model and you subsequently need to load one or more of its associations, you can use the [`Dream#load`](../models/querying/load.mdx) method. This method fetches the associations for that specific instance and returns a _new instance_ with the associations populated.
+
     ```typescript
     let user = await User.firstOrFail() // User instance, posts not loaded
     // ... some logic ...

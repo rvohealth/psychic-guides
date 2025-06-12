@@ -1,5 +1,6 @@
 ---
 sidebar_position: 2
+title: attributes
 ---
 
 # Defining Attributes
@@ -107,7 +108,7 @@ const UserSerializerWithCustom = (user: User) =>
         `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase(),
       {
         openapi: { type: 'string', description: 'User initials' },
-      }
+      },
     )
 ```
 

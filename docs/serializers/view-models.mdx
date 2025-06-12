@@ -1,5 +1,6 @@
 ---
 sidebar_position: 5
+title: view models
 ---
 
 # ViewModels in Serialization
@@ -12,17 +13,17 @@ A ViewModel is essentially a class or interface designed specifically to shape d
 
 Consider using a ViewModel in the following situations:
 
-1.  **Composite Output from Multiple Models:**
+1. **Composite Output from Multiple Models:**
     When your API response needs to combine data from several different Dream models or data sources into a single, cohesive structure. A ViewModel can act as an aggregator, providing a clean interface for the serializer.
 
     _Example:_ An API endpoint for a dashboard might need to display a user's profile information, a summary of their recent activity, and some site-wide statistics. A `DashboardViewModel` could gather and structure this disparate data before it's passed to an `ObjectSerializer`.
 
-2.  **Complex Data Transformations:**
+2. **Complex Data Transformations:**
     If the logic to derive certain fields for your API response is complex, involving multiple steps, calculations, or conditional logic, embedding this directly into serializer `customAttribute` functions can become unwieldy and hard to test. A ViewModel can encapsulate this complex transformation logic within its constructor or methods. The serializer then simply reads pre-computed properties from the ViewModel.
 
     _Example:_ Generating a complex "status" field for an order that depends on its payment history, shipment status, and return requests. An `OrderViewModel` could have a method or constructor logic to determine this status, and the serializer would just render `viewModel.status`.
 
-3.  **Needing Asynchronous Operations for Data Preparation:**
+3. **Needing Asynchronous Operations for Data Preparation:**
     Dream serializers are **intentionally synchronous** (see [Overview](./overview.mdx#key-concepts) for more details). This design choice helps prevent accidental N+1 query problems or other side effects during the serialization phase itself, which should be a straightforward data transformation step.
     If you need to perform asynchronous operations (e.g., fetching additional data from an external API, performing an async calculation) to prepare data for an API response, this asynchronous work should happen _before_ serialization. A ViewModel is an excellent place to orchestrate these async operations. You can populate the ViewModel instance, performing any necessary async calls in its constructor or dedicated async factory method, and then pass the fully populated, synchronous ViewModel instance to an `ObjectSerializer`.
 
@@ -45,7 +46,7 @@ Consider using a ViewModel in the following situations:
       }
 
       public static async create(
-        user: /* User */ any
+        user: /* User */ any,
       ): Promise<UserProfileViewModel> {
         let gravatarUrl: string | undefined
         // const fetchGravatar = async (email: string) => Promise.resolve(`https://gravatar.com/avatar/${email}?d=identicon`);
