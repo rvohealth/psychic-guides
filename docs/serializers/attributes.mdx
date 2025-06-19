@@ -33,15 +33,19 @@ const UserViewModelSerializer = (user: UserViewModel) =>
       openapi: { type: 'string', description: 'The unique identifier' },
     })
     .attribute('email', { openapi: { type: 'string', format: 'email' } })
+    .attribute('name', {
+      openapi: { type: 'string' },
+      default: 'Anonymous User', // Used when name is null or undefined
+    })
 
 // Example usage:
 const userInstance: UserViewModel = {
   id: '123',
   email: 'test@example.com',
-  name: 'Test User',
+  name: undefined, // Will use default value
 }
 const serializedUser = UserViewModelSerializer(userInstance).render()
-// serializedUser will be: { id: '123', email: 'test@example.com' }
+// serializedUser will be: { id: '123', email: 'test@example.com', name: 'Anonymous User' }
 ```
 
 **With `DreamSerializer` (type inference for database columns):**
@@ -56,12 +60,26 @@ const UserSerializer = (user: User) =>
   DreamSerializer(User, user)
     .attribute('id') // OpenAPI type inferred from DB schema (e.g., integer)
     .attribute('email') // OpenAPI type inferred (e.g., string)
+    .attribute('displayName', {
+      default: 'Guest User', // Used when displayName is null or undefined
+    })
     .attribute('lastLoginAt', {
       openapi: {
         description: 'Timestamp of the last login',
         format: 'date-time',
       },
     }) // DB type inferred, but adding description and format
+```
+
+**Using `default` with `attribute()`:**
+
+The `default` option provides a fallback value when the attribute is `null` or `undefined`. The default value undergoes the same transformations as regular data (e.g., decimals are rounded, dates are converted to ISO format).
+
+```typescript
+const UserSerializerWithDefaults = (user: User) =>
+  DreamSerializer(User, user)
+    .attribute('score', { default: 0 }) // Integer default for null/undefined scores
+    .attribute('status', { default: 'active' }) // String default
 ```
 
 For a **virtual attribute** (e.g., a getter) on a Dream model, `openapi` is required:
@@ -155,4 +173,41 @@ const PetWithUserEmailSerializer = (pet: Pet) =>
     })
 // While 'user.email' type might be inferable if 'user' is a direct association
 // and 'email' a direct column, explicitly providing openapi is robust.
+```
+
+**Using `default` with `delegatedAttribute()`:**
+
+The `default` option provides a fallback value when either the target object is `null`/`undefined` OR when the delegated attribute itself is `null`/`undefined`.
+
+```typescript
+const PetWithOwnerInfoSerializer = (pet: Pet) =>
+  DreamSerializer(Pet, pet)
+    .attribute('name') // Inferred from Pet's schema
+    .delegatedAttribute('user', 'email', {
+      openapi: { type: 'string', format: 'email' },
+      default: 'no-owner@example.com', // Used when pet.user is null OR pet.user.email is null/undefined
+    })
+    .delegatedAttribute('user', 'displayName', {
+      openapi: { type: 'string' },
+      default: 'Unknown Owner', // Used when pet.user is null OR pet.user.displayName is null/undefined
+    })
+```
+
+```typescript
+// ObjectSerializer example
+interface PetViewModel {
+  name: string
+  owner?: {
+    email?: string
+    displayName?: string
+  }
+}
+
+const PetViewModelSerializer = (pet: PetViewModel) =>
+  ObjectSerializer(pet)
+    .attribute('name', { openapi: { type: 'string' } })
+    .delegatedAttribute('owner', 'email', {
+      openapi: { type: 'string', format: 'email' },
+      default: 'no-owner@example.com', // Used when pet.owner is null OR pet.owner.email is null/undefined
+    })
 ```
