@@ -5,11 +5,11 @@ title: attributes
 
 # Defining Attributes
 
-Serializers in Dream allow you to precisely control which attributes of an object are included in the output and how they are represented in the OpenAPI schema. This is primarily done using the `.attribute()`, `.customAttribute()`, `.delegatedAttribute()`, and `.jsonAttribute()` methods.
+Serializers in Dream allow you to precisely control which attributes of an object are included in the output and how they are represented in the OpenAPI schema. This is primarily done using the `.attribute()`, `.customAttribute()`, and `.delegatedAttribute()` methods.
 
 A key difference arises when using `ObjectSerializer` versus `DreamSerializer`:
 
-- **`ObjectSerializer`**: When serializing plain objects or ViewModels, you **must always** provide an `openapi` option for attribute-defining methods (`.attribute()`, `.customAttribute()`, `.delegatedAttribute()`, `.jsonAttribute()`). This is because `ObjectSerializer` has no underlying schema information to infer types from.
+- **`ObjectSerializer`**: When serializing plain objects or ViewModels, you **must always** provide an `openapi` option for attribute-defining methods (`.attribute()`, `.customAttribute()`, `.delegatedAttribute()`). This is because `ObjectSerializer` has no underlying schema information to infer types from.
 - **`DreamSerializer`**: When serializing Dream model instances, `DreamSerializer` can often infer the OpenAPI type for attributes that directly correspond to database columns defined in your model's schema. For these, the `openapi` option is not strictly mandatory but can be used to override the inferred type or add more details (like `description` or `format`). For virtual attributes (e.g., getters on your model) or when you need to be explicit, the `openapi` option is required.
 
 ## Basic Attributes: `.attribute()`
@@ -108,7 +108,7 @@ const UserSerializerWithCustom = (user: User) =>
         `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase(),
       {
         openapi: { type: 'string', description: 'User initials' },
-      },
+      }
     )
 ```
 
@@ -156,29 +156,3 @@ const PetWithUserEmailSerializer = (pet: Pet) =>
 // While 'user.email' type might be inferable if 'user' is a direct association
 // and 'email' a direct column, explicitly providing openapi is robust.
 ```
-
-## JSON Attributes: `.jsonAttribute()`
-
-For properties stored as JSON strings but rendered as JSON objects/arrays. The `openapi` option is **always mandatory** for both `ObjectSerializer` and `DreamSerializer` to define the structure of the JSON data.
-
-```typescript
-import { DreamSerializer } from '@rvoh/dream'
-import ModelWithJson from 'app/models/model_with_json' // Has a 'settings' text column storing JSON
-
-const JsonDemoSerializer = (data: ModelWithJson) =>
-  DreamSerializer(ModelWithJson, data)
-    .attribute('id') // Inferred
-    .jsonAttribute('settings', {
-      // `settings` is a text column in DB
-      openapi: {
-        type: 'object',
-        properties: {
-          theme: { type: 'string' },
-          notifications: { type: 'boolean' },
-        },
-        required: ['theme'],
-      },
-    })
-```
-
-By understanding these nuances, especially the `openapi` requirements, you can effectively use both `ObjectSerializer` and `DreamSerializer` to create well-defined and documented API responses.

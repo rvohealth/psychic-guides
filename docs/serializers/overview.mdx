@@ -11,7 +11,7 @@ At its core, a serializer in Dream takes an object (often a Dream model instance
 
 ## Key Concepts
 
-- **Fluent API**: Serializers are constructed by chaining methods like `.attribute()`, `.customAttribute()`, `.delegatedAttribute()`, `.jsonAttribute()`, `.rendersOne()`, and `.rendersMany()`.
+- **Fluent API**: Serializers are constructed by chaining methods like `.attribute()`, `.customAttribute()`, `.delegatedAttribute()`, `.rendersOne()`, and `.rendersMany()`.
 - **`ObjectSerializer` and `DreamSerializer`**: These are the primary functions you'll use to initiate a serializer. `DreamSerializer` is typically used for Dream model instances, offering some model-specific conveniences, while `ObjectSerializer` is more generic and can be used for any JavaScript object, including ViewModels.
 - **Explicit Definition**: You explicitly define what gets included and how it's transformed, giving you fine-grained control over the output.
 - **OpenAPI Generation**: A key feature is the automatic generation of OpenAPI response schemas based on your serializer definitions. This helps keep your API documentation consistent with its implementation.
@@ -51,7 +51,7 @@ const UserViewModelSerializer = (userView: UserViewModel) =>
     .customAttribute(
       'status',
       () => (userView.isActive ? 'Active' : 'Inactive'),
-      { openapi: 'string' },
+      { openapi: 'string' }
     )
 ```
 
