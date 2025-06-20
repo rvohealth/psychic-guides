@@ -174,30 +174,72 @@ export default class PostsController extends PsychicController {
 }
 ```
 
-## requestBody
+Request bodies will by default be inferred from the serializable argument, if it is provided and is pointing to a dream model, like so:
 
-Using the `requestBody` option, we can inform OpenAPI what the shape of our incoming request will be, using standard OpenAPI notation.
+```ts
+export default class UsersController extends PsychicController {
+  @OpenAPI(User, {
+    status: 204,
+  })
+  public async create() {
+    await User.create(this.paramsFor(User))
+    this.noContent()
+  }
+}
+```
+
+### for
+
+For more granular specification, you can take advantage of the `for`, `only`, and `including` options, which allow you to explicitly provide certain params for a model class.
 
 ```ts
 export default class UsersController extends PsychicController {
   @OpenAPI({
+    status: 204,
     requestBody: {
-      type: 'object',
-      required: ['firstName', 'lastName'],
-      properties: {
-        firstName: {
-          type: 'string',
-          description: "The user's first name",
-        },
-        lastName: {
-          type: 'string',
-          description: "The user's first name",
-        },
-      },
+      for: User,
+      only: ['email'],
     },
   })
   public async create() {
-    await User.create(this.paramsFor(User, { only: ['firstName', 'lastName'] }))
+    await User.create(this.paramsFor(User, { only: ['email'] }))
+    this.noContent()
+  }
+}
+```
+
+If the `for` argument is left off, the allowed fields will fall back to the base model provided to the decorator, i.e.
+
+```ts
+export default class UsersController extends PsychicController {
+  @OpenAPI(User, {
+    status: 204,
+    requestBody: {
+      only: ['email'],
+    },
+  })
+  public async create() {
+    await User.create(this.paramsFor(User, { only: ['email'] }))
+    this.noContent()
+  }
+}
+```
+
+Tapping into the `including` arg, we can explicitly provide params that would otherwise be excluded (i.e. foreign keys, primary keys, and timestamp fields).
+
+```ts
+export default class PetsController extends PsychicController {
+  @OpenAPI(Pet, {
+    status: 204,
+    requestBody: {
+      only: ['species'],
+      including: ['userId'],
+    },
+  })
+  public async create() {
+    await Pet.create(
+      this.paramsFor(Pet, { only: ['species'], including: ['userId'] }),
+    )
     this.noContent()
   }
 }

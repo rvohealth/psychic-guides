@@ -97,3 +97,16 @@ export default class PostsController extends AuthedController {
   }
 }
 ```
+
+Additionally, the `including` option can be provided to enable columns to flow through that would otherwise be blocked, such as foreign keys, primary keys, timestamps, etc...
+
+```ts
+export default class PostsController extends AuthedController {
+  public create() {
+    await this.currentUser.createAssociation(
+      'posts',
+      this.paramsFor(Post, { only: ['title', 'body'], including: ['userId'] }),
+    )
+  }
+}
+```
