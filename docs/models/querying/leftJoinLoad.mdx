@@ -1,12 +1,12 @@
-# load
+# leftJoinLoad
 
-The `Dream#load` method provides a way to load associations onto an already existing Dream model instance. This is particularly useful when you have an instance of a model and need to fetch its related data without re-querying the instance itself.
+The `Dream#leftJoinLoad` method provides a way to load associations onto an already existing Dream model instance. This is particularly useful when you have an instance of a model and need to fetch its related data without re-querying the instance itself.
 
-The call signature for `load` is very similar to [`preload`](./preload.mdx), and it leverages the same underlying mechanisms for fetching associated data.
+The call signature for `leftJoinLoad` is very similar to [`leftJoinPreload`](./leftJoinPreload.mdx), and it leverages the same underlying mechanisms for fetching associated data.
 
 ## Basic Usage
 
-You can call `load` on a model instance, specifying the association name. The method returns a _new instance_ of the model with the specified association(s) loaded. The original instance remains unchanged.
+You can call `leftJoinLoad` on a model instance, specifying the association name. The method returns a _new instance_ of the model with the specified association(s) loaded. The original instance remains unchanged.
 
 ```typescript
 // Assuming 'user' is an existing instance of a User model
@@ -15,7 +15,7 @@ You can call `load` on a model instance, specifying the association name. The me
 // If user.posts was not previously loaded, accessing it here would throw NonLoadedAssociation.
 // const user = await User.firstOrFail();
 
-const userWithPosts = await user.load('posts').execute()
+const userWithPosts = await user.leftJoinLoad('posts').execute()
 
 // userWithPosts is a new User instance.
 // userWithPosts.posts is now populated.
@@ -26,15 +26,15 @@ console.log(userWithPosts.posts) // [Post{}, Post{}, ...]
 
 This is useful if you have an instance and decide you need more data for it.
 
-## Chaining `load` Calls
+## Chaining `leftJoinLoad` Calls
 
-You can chain multiple `load` calls to load several associations at once, or even nested associations:
+You can chain multiple `leftJoinLoad` calls to load several associations at once, or even nested associations:
 
 ```typescript
 let user = await User.firstOrFail() // Fetches a user without posts or pets
 
 // Load 'posts' (where body is null) and 'pets'
-user = await user.load('posts', { body: null }).load('pets').execute()
+user = await user.leftJoinLoad('posts', { body: null }).leftJoinLoad('pets').execute()
 
 console.log(user.posts) // [Post{ body: null }, Post{ body: null }, ...]
 console.log(user.pets) // [Cat{}, Dog{}]
@@ -43,14 +43,14 @@ console.log(user.pets) // [Cat{}, Dog{}]
 // Assuming Post model has a 'comments' association
 // And user already has 'posts' loaded from the previous step.
 // To load comments for the already loaded posts:
-user = await user.load('posts', 'comments').execute()
+user = await user.leftJoinLoad('posts', 'comments').execute()
 // user.posts[0].comments is now accessible on the new 'user' instance.
 ```
 
 ## `load` vs. `preload`
 
-- **[`preload`](./preload.mdx)**: Used when initially fetching model(s) from the database. It loads the primary model(s) _and_ their specified associations in an optimized way (typically fewer queries). Use this when you know upfront what associated data you'll need.
-- **`load`**: Used on an _existing model instance_ to fetch additional associations. It always returns a new instance of the model. Use this when you already have a model instance and subsequently realize you need more of its associations.
+- **[`leftJoinPreload`](./leftJoinPreload.mdx)**: Used when initially fetching model(s) from the database. It loads the primary model(s) _and_ their specified associations in an optimized way (typically fewer queries). Use this when you know upfront what associated data you'll need.
+- **`leftJoinLoad`**: Used on an _existing model instance_ to fetch additional associations. It always returns a new instance of the model. Use this when you already have a model instance and subsequently realize you need more of its associations.
 
 Both methods can take similar arguments for specifying which associations to load and any conditions for those associations.
 
@@ -80,7 +80,7 @@ console.log(userWithoutPreload.loaded('mainComposition')) // false
 
 ## Important Considerations
 
-- **New Instance:** `load().execute()` always returns a _new_ instance of the model with the associations loaded. The original instance on which `load()` was called remains unchanged and will not have the newly loaded associations.
+- **New Instance:** `leftJoinLoad().execute()` always returns a _new_ instance of the model with the associations loaded. The original instance on which `load()` was called remains unchanged and will not have the newly loaded associations.
 
   ```typescript
   const freshUser = await User.create({
@@ -93,7 +93,7 @@ console.log(userWithoutPreload.loaded('mainComposition')) // false
     name: 'Snoopy',
   })
 
-  const clone = await freshUser.load('pets').execute()
+  const clone = await freshUser.leftJoinLoad('pets').execute()
   // clone has the same attributes as freshUser but is a different object.
   // clone.pets is populated.
   // freshUser.pets would throw NonLoadedAssociation.
@@ -112,14 +112,14 @@ console.log(userWithoutPreload.loaded('mainComposition')) // false
       .txn(txn)
       .createAssociation('pets', { species: 'dog', name: 'violet' })
     // Assuming 'user' might have other pets already, or this is the first.
-    const userWithPets = await user.txn(txn).load('pets').execute()
+    const userWithPets = await user.txn(txn).leftJoinLoad('pets').execute()
     petsOutput = userWithPets.pets
   })
 
   console.log(petsOutput.map((p) => p.name)) // e.g., ['violet'] or ['existing_pet_name', 'violet']
   ```
 
-- **Freshness:** Each call to `load().execute()` fetches the association data fresh from the database at that moment. If the underlying data changes between `load` calls, subsequent `load` calls will reflect those changes on the newly returned instance.
+- **Freshness:** Each call to `leftJoinLoad().execute()` fetches the association data fresh from the database at that moment. If the underlying data changes between `leftJoinLoad` calls, subsequent `leftJoinLoad` calls will reflect those changes on the newly returned instance.
 
   ```typescript
   const user = await User.create({
@@ -128,15 +128,15 @@ console.log(userWithoutPreload.loaded('mainComposition')) // false
   })
   await Pet.create({ user, species: 'cat', name: 'aster' })
 
-  const clone1 = await user.load('pets').execute()
+  const clone1 = await user.leftJoinLoad('pets').execute()
   console.log(clone1.pets[0].name) // 'aster'
 
   // Simulate an update to the pet's name in the database
   await Pet.query().where({ name: 'aster' }).update({ name: 'Snoopy' })
 
-  const clone2 = await clone1.load('pets').execute() // Re-load pets
+  const clone2 = await clone1.leftJoinLoad('pets').execute() // Re-load pets
   console.log(clone2.pets[0].name) // 'Snoopy'
   // Note: clone1.pets[0].name would still be 'aster' as clone1 is unchanged.
   ```
 
-By using `load` judiciously, you can manage data fetching for your model instances effectively, retrieving related data only when necessary. Remember to also consider [`preload`](./preload.mdx) for scenarios where associated data is needed at the time of initial model retrieval.
+By using `leftJoinLoad` judiciously, you can manage data fetching for your model instances effectively, retrieving related data only when necessary. Remember to also consider [`leftJoinPreload`](./leftJoinPreload.mdx) for scenarios where associated data is needed at the time of initial model retrieval.

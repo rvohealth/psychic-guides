@@ -1,0 +1,68 @@
+# leftJoinPreloadFor
+
+Simlar to [leftJoinPreloadFor](/docs/models/querying/preloadFor), the leftJoinPreloadFor method enables you to side-load all associations bound to the load chain for a particular serializer. This means that, if a serializer in your system has a nested chain of renderable associations, you can preload them all safely with the same call.
+
+To tap into this functionality, simply provide a valid serializer key as the first argument, like so:
+
+```ts
+const users = await User.leftJoinPreloadFor('summary').firstOrFail()
+```
+
+Using the provided serializer key, Dream will extrapolate the entire preload chain necessary to satisfy all nested associations and delegated attributes, and will preload all of them for you automatically, handing back a query that you can continue to modify before execution, if you so desire.
+
+for clarification, this means that you can have nested layers of associations, and they can all be brought in with a single method call, which means that, given the following serializer chain:
+
+```ts
+const UserSerializer = (user: User) => DreamSerializer(User, user)
+  .rendersMany('posts')
+
+const PostSerializer = (post: Post) => DreamSerializer(Post, post)
+  .rendersMany('comments')
+  .rendersMany('likes')
+  .rendersMany('similarPosts')
+
+const CommentSerializer = (post: Post) => DreamSerializer(Post, post)
+  .rendersMany('images')
+  .rendersMany('videos')
+
+class User extends ApplicationModel {
+  public get serializers() {
+    return {
+      // ...
+      detail: UserSerializer,
+    } as const
+  }
+}
+```
+
+the following two expressions are equivalent:
+
+```ts
+// manually loading everything necessary for serialization
+const user = await User
+  .leftJoinPreload('posts', 'comments', ['images', 'videos'])
+  .leftJoinPreload('posts', ['likes', 'similarPosts'])
+  .firstOrFail()
+
+// or tap into leftJoinPreloadFor to do this with ease!
+const user = await User.leftJoinPreloadFor('detail').firstOrFail()
+```
+
+This additionally means that, when using leftJoinPreloadFor, your preload statements will automatically grow to accomodate new serializer `rendersOne`, `rendersMany`, or `delegatedAttribute` statements, preventing you from manually needing to maintain the loading logic, which can be a brittle process when done manually.
+
+## modiferFn
+
+You may come accross edge-case associations in your preload chain which you must supply additional arguments to satisfy. In these cases, Dream provides the ability for you to intervene using the `modifierFn`, which enables you to inject custom preload clauses into the preload chain as you desire.
+
+```ts
+const users = await User.leftJoinPreloadFor('detail', (dreamClass, associationName) => {
+  if (dreamClass.typeof(Post) && associationName === 'currentPosts') return { and: { userId: user.id }}
+  if (dreamClass.typeof(Image) && associationName === 'legacyImage') return 'omit'
+}).firstOrFail()
+```
+
+The modifierFn handles return values in a unique way, enabling you to inject into a position within a preload statement. The modifierFn is called for each association found, and if anything is returned, the encapsulating preload execution context will check the return value:
+
+* if the return value is the word `omit` as a string, it will intentionally omit the current association from the preload clause.
+* if the return value is a join clause, such as `{ and: { userId: 123 }}`, it will be applied to that particular position in the preload statement.
+* if the value is falsey, Dream will do nothing and move onto the next association in the preload statement
