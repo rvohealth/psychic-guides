@@ -1,0 +1,51 @@
+# vscode
+
+The psychic team provides an open source vscode extension to make working in psychic much smoother for you. It will handle automatically syncing for you any time you save a file in your `src` directory, since it can be easy to forget to do this after making changes, in addition to providing useful navigation utils for jumping to the definition of related files (i.e. jumping from a file to the corresponding unit spec), running specs, and more.
+
+## Installing
+
+:::warning
+As of now, the plugin is only available to internal RVOH employees, but will be released to the public soon, and installation docs will be published here.
+:::
+
+## autosync
+
+As soon as you activate the plugin, autosync will automatically be enabled. This can be turned on and off by clicking the eyeball icon in the bottom right corner of the status bar. Whenever a file change is detected in the `src` directory of your filesystem, it will trigger an autosync, which is debounced by default to 3 seconds.
+
+## sync button
+
+Next to the autosync eyeball, you will see a sync icon, which can be clicked to activate a manual sync. You shouldn't need to do this, given that any file change will automatically trigger this, but it is there for easy access.
+
+## Run button
+
+Adjacent to the sync and eyeball icons is a play icon, or an x icon, depending on which file is loaded in your current buffer. If you are on a file which has a corresponding spec that we can locate, or itself is a spec, then the play icon will display, indicating that you can click the play button to run that test. Doing so will pop open a terminal at the bottom of your editor, where the spec will be run. This feature is nuanced enough to handle the distinction between unit and feature specs.
+
+## Hot Keys
+
+The Psychic-VSCode plugin offers several hot keys to make your dev experience in your editor top-notch.
+
+* `cmd + opt + s`: Run the open buffer as a spec file (similar to clicking the "Run" button).
+* `cmd + opt + j`: Jump between a unit spec and it's corresponding file.
+* `cmd + opt + 1`: Jump from the current buffer to it's corresponding model.
+* `cmd + opt + 2`: Jump from the current buffer to it's corresponding spec.
+* `cmd + opt + 3`: Jump from the current buffer to it's corresponding serializer.
+* `cmd + opt + 4`: Jump from the current buffer to it's corresponding controller.
+
+## Jump To Definition
+
+Use cmd + click to click through serializer getters and model associations to be taken to the corresponding serializer or model they point to.
+
+```ts
+class User extends ApplicationModel {
+  public get serializers() {
+    return {
+      // You can "cmd + click" these strings!
+      default: 'UserSerializer',
+    }
+  }
+
+  // these as well!
+  @deco.HasMany('Post')
+  public posts: Post[]
+}
+```
