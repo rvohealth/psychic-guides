@@ -151,15 +151,12 @@ export default class ApiV1IngredientsController extends AuthedController {
   }
 
   public async index() {
-    const ingredients = await Ingredient.all()
+    const ingredients = await Ingredient.preloadFor('summary').all()
     this.ok(ingredients)
   }
 
   public async show() {
-    const ingredient = await Ingredient.preload([
-      'nutrition',
-      'macros',
-    ]).findOrFail(this.castParam('id', 'bigint'))
+    const ingredient = await Ingredient.preloadFor('default').findOrFail(this.castParam('id', 'bigint'))
 
     this.ok(ingredient)
   }
@@ -217,19 +214,21 @@ export default class ApiV1IngredientsController extends AuthedController {
   // `serializers` getter return value properties.
   @OpenAPI(Ingredient, {
     status: 200,
-    many: true,
+    paginate: true,
     serializerKey: 'summary',
   })
   public async index() {
-    const ingredients = await Ingredient.all()
-    this.ok(ingredients)
+    const paginated = await Ingredient.preloadFor('summary').paginate()
+    this.ok(paginated)
   }
 }
 ```
 
 The `create` method will automatically generate an openapi document for this endpoint which responds with a 201 status and a string, but has a request body that matches all of the `safeParams` getter on user. This will default to all of the attributes on the Ingredient model, except for any belongs to association foreign keys, the primary key, or the timestamp fields.
 
-The `index` method will automatically generate an openapi document that responds with a 200, and renders an array of Ingedients using the IngredientSummarySerializer. You can do quite a lot with the OpenAPI decorator, so it is worth reading up on the docs there to unlock the full potential of our powerful openapi integration.
+Utilizing the `preloadFor` method, we can load all nested association chains required to serve up the model for this particular serializer.
+
+The `index` method will automatically generate an openapi document that responds with a 200, and renders an array of Ingedients using the IngredientSummarySerializer, paginated automatically by dream using the `paginate` method. Passing the `paginate: true` flag, we indicate that the response will also contain additional aside from the data payload to help support pagination flows for a client. You can do quite a lot with the OpenAPI decorator, so it is worth reading up on the docs there to unlock the full potential of our powerful openapi integration.
 
 > See our [Openapi guides](/docs/openapi/overview) for more information on implementing controllers
 
@@ -249,6 +248,7 @@ Don't Repeat Yourself (DRY), is a guiding philosophy of Dream and Psychic, revea
 - powerful decorators like `@SoftDelete`, `@Sortable`, and `@ReplicaSafe` that automatically and universally handle common use cases which would otherwise introduce complexity into your application
 - cli code generators that set up models, serializers, and controllers using best practice conventions, such as controllers inheriting from an authenticated ancestor right from the start
 - advanced association patterns such as has-many-through, single table inheritance (STI), and polymorphism
+- utilities like paramsFor and preloadFor, which allow you to stay DRY when defining new associations on your serializers, or add or edit columns on your table.
 
 ### Use familiar technologies
 
@@ -365,8 +365,11 @@ Psychic also provides helpers to enable easy endpoint testing, allowing you to h
 // api/spec/unit/controllers/Api/V1/UsersController.spec.ts
 
 import { PsychicServer } from '@rvoh/psychic'
-import { specRequest as request } from '@rvoh/psychic-spec-helpers'
+import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
 import createUser from '../../../../factories/UserFactory'
+import { validationOpenapiPaths } from '../../../../../src/types/openapi/validation.openapi.js'
+
+const request = new OpenapiSpecRequest<validationOpenapiPaths>()
 
 describe('ApiV1UsersController', () => {
   beforeEach(async () => {
@@ -377,8 +380,13 @@ describe('ApiV1UsersController', () => {
     async function getSession() {
       return await request.session(
         '/api/v1/signin',
-        { email: 'how@yadoin', password: 'password' },
         204,
+        {
+          data: {
+            email: 'how@yadoin',
+            password: 'password'
+          }
+        }
       )
     }
 

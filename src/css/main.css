@@ -7,7 +7,7 @@
 body {
   /*background: #e0e0d1;*/
   /*background: #d5dae2;*/
-  background: #f7f3f3;
+  background: #f5eff7;
 }
 
 [data-theme='dark'] body {
@@ -15,13 +15,13 @@ body {
 }
 
 body[data-location='home'] {
-  background: #f7f3f3;
+  background: #f5eff7;
 }
 
 /* You can override the default Infima variables here. */
 :root,
 .alert {
-  --ifm-background-color: #f7f3f3;
+  --ifm-background-color: #f5eff7;
   --ifm-heading-color: #453f44;
   --ifm-toc-border-color: #5c5f62;
   --ifm-heading-font-weight: 300;
@@ -36,8 +36,9 @@ body[data-location='home'] {
   --ifm-code-background: color(srgb 0.93 0.93 0.93);
   --ifm-h1-font-size: 70px;
   --ifm-navbar-link-color: rgb(251, 67, 233);
-  --ifm-alert-background-color: rgb(193, 254, 234);
-  --ifm-alert-border-color: rgb(96, 237, 147);
+  /* --ifm-alert-background-color: rgb(193, 254, 234); */
+  --ifm-alert-background-color: rgb(238, 213, 255);
+  --ifm-alert-border-color: rgb(245, 164, 238);
   --ifm-blockquote-border-color: #63666a;
   --ifm-link-color: black;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
@@ -55,9 +56,9 @@ body[data-location='home'] {
   --ifm-color-primary-light: #29d5b0;
   --ifm-color-primary-lighter: #32d8b4;
   --ifm-color-primary-lightest: #4fddbf;
-  --ifm-alert-background-color: rgb(26, 198, 172);
-  --ifm-alert-foreground-color: color(srgb 0.022 0.275 0.238);
-  --ifm-alert-border-color: rgb(145, 235, 221);
+  --ifm-alert-background-color: rgb(22, 2, 42); /*rgb(26, 198, 172) */
+  --ifm-alert-foreground-color: rgb(207, 165, 203); /* color(srgb 0.022 0.275 0.238); */
+  --ifm-alert-border-color: rgb(138, 8, 161); /* rgb(145, 235, 221); */
   --ifm-link-color: white;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
@@ -67,8 +68,16 @@ body[data-location='home'] {
 }
 
 .alert.alert--warning {
-  background: rgb(240, 235, 108);
-  border-color: rgb(237, 232, 100);
+  background: rgb(219, 219, 208);
+  border-color: rgb(219, 219, 208);
+  padding: 25px;
+  margin-bottom: 60px;
+}
+
+[data-theme='dark'] .alert.alert--warning {
+  background: rgb(113, 113, 108);
+  border-color: rgb(113, 113, 108);
+  padding: 25px;
 }
 
 code {
@@ -97,11 +106,11 @@ a {
 }
 
 .alert a {
-  color: #093727;
+  color: #cb11cb;
   text-decoration: none;
   font-style: italic;
   text-decoration: underline;
-  text-decoration-color: #093727;
+  /* text-decoration-color: #093727; */
 }
 
 body {
@@ -127,7 +136,7 @@ h1 {
 .navbar {
   border-bottom: none !important;
   box-shadow: none;
-  background: #f7f3f3;
+  background: #f5eff7;
 }
 
 [data-theme='dark'] .navbar {
@@ -265,7 +274,8 @@ main > .container > .row > .col {
 }
 
 .table-of-contents {
-  border-color: rgb(237, 237, 237);
+  /* border-color: rgb(237, 237, 237); */
+  border-color: transparent;
 }
 
 .table-of-contents a {

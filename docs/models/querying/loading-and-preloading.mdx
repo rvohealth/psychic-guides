@@ -21,7 +21,7 @@ console.log(posts.flatMap(post => post.comments))
 
 By leveraging `associationQuery`, for example, we don't have to worry about manually applying a foreign key clause to target the correct userId on posts, that is done automatically for us by Dream. Additionally, by `preload`ing comments, we are ensuring that each post will have a `comments` property attached, pointing to a list of comments in the DB that have `null` bodies. Each of the loaded comments will only be loaded if the foreign key pointing to that post is present, and Dream will do this automatically without you needing to specify anything.
 
-# serializing
+## preloading to serialize
 
 Serializing, in short, is the act of representing your backend models to some kind of client. In most systems, there will be many different serializers in place all to represent a single model. For example, you might have a `PostSerializer`, and then an `AdminPostSerializer`. You may find that you need to sync these posts to an RSS feed, so you build another `RSSPostSerializer`. You may want to partition your serializers out based on if you are rendering them for an index endpoint, vs a show. In Dream, we will automatically encourage this pattern in our generators by auto-generating both a summary and detail variant for each serializer we generate. We encourage you to lean into this practice, withholding from rendering deeply-nested model chains onto your summary serializers, since this can force you to eager-load a mind-bending number of associations before hand to make it happen.
 
@@ -68,22 +68,6 @@ While this approach may be fine, it is brittle, since any changes to the seriali
 
 Additionally, you will need to keep an eye out and make sure to prune unneeded preload statements as your serialization needs shrink, to help keep your endpoints responding as quickly as possible. This can also be hard to do, so Dream offers a few tools to help make this a little bit better. 
 
-## inspect:serialization
-
-A CLI command can be run which will spell out the serialization needs of a provided model.
-
-```sh
-yarn psy inspect:serialization Post
-```
-
-A helpful printout will be displayed, indicating which serializers are requiring which, in a tree-like structure.
-
-If you would like to specify a specific serializer key (other than the default), you can provide an optional second argument to the command, like so:
-
-```sh
-yarn psy inspect:serialization Post summary
-```
-
 ## preloadFor
 
 Dream provides helpful bindings to the serialization layer, enabling developers to eager load all associations required for serialization up front, without needing to specify what they are. To tap into them, try using the `preloadFor`, which eager loads all associations required for serialization.
@@ -102,3 +86,19 @@ const user = await User.preloadFor('detail').findOrFail(userId)
 Both of these statements are technically equivilent at this moment, but the first one is not only cluttered with preload statements that you otherwise couldn't care less about seeing, it is also only narrowly satisfying your serialization requirements.
 
 By using preloadFor, we manage to both clean up code, and ensure that we never have to refactor it, no matter how much the serialization chains shift beneath us over time.
+
+## inspect:serialization
+
+A CLI command can be run which will spell out the serialization needs of a provided model. This is useful if you are trying to get a quick window into the dense layer of nested associations you may be trying to render.
+
+```sh
+yarn psy inspect:serialization Post
+```
+
+A helpful printout will be displayed, indicating which serializers are requiring which, in a tree-like structure.
+
+If you would like to specify a specific serializer key (other than the default), you can provide an optional second argument to the command, like so:
+
+```sh
+yarn psy inspect:serialization Post summary
+```
