@@ -39,21 +39,143 @@ await User.all()
 // [User{ email: 'how@yadoin' }]
 ```
 
+## generators
+
+Use generators to quickly prop up the scaffolding for your application. Using the provided CLI utils, you can customize the shape of your models without writing a line of code.
+
+```sh
+yarn psy g:dream User name:string email:string birthdate:date
+yarn psy g:dream Post user:belongs_to body:string
+```
+
+To learn more about generators, see our [generating guide](/docs/models/generating).
+
+## Querying records
+
+Searching your database has never been so intuitive using the suite of Dream tools provided.
+
+```ts
+// find many records by condition
+const users = await User
+  .where({ email: null })
+  .whereNot({ name: null })
+  .order('createdAt')
+  .all()
+
+// find first record, or null if not found
+const user = await User.order('createdAt').first()
+
+// find first record, or raise exception. Psychic will
+// automatically raise a 404 if this exception is thrown.
+const user = await User.order('createdAt').firstOrFail()
+```
+
+To learn how to query records, see our [creating guide](/docs/models/querying/overview)
+
+## Creating new records
+
+Tap into the underlying power of Dream to insert new records into your database
+
+```ts
+// create in one call
+await User.create({ email: 'how@yadoin' })
+
+// build and save
+const user = User.new({ email: 'how@yadoin' })
+if (something) {
+  user.name = 'chalupajoe'
+}
+await user.save()
+
+// attempts to create, but if it runs into a foreign key
+// violation, it returns the violating record instead.
+// requires a unique index on the column you are looking up
+await User.createOrFindBy({ email: 'how@yadoin' }, { createWith: { name: 'chalupajoe'}})
+```
+
+To learn how to create new records, see our [creating guide](/docs/models/creating)
+
+## Updating existing records
+
+With records that are already in the database, making changes to that data is made trivial by Dream.
+
+```ts
+// in a single call
+await user.update({ email: 'how@yadoin' })
+
+// build and save
+if (something) {
+  user.name = 'chalupajoe'
+}
+await user.save()
+```
+
+To learn how to update records, see our [updating guide](/docs/models/updating).
+
+## Destroying
+
+With records that are already in the database, making changes to that data is made trivial by Dream.
+
+```ts
+// in a single call
+await user.destroy()
+
+// in a bulk query
+await User.where({ email: ops.ilike('%burpcollaborator%')}).destroy()
+```
+
+To learn how to delete records, see our [destroying guide](/docs/models/destroying).
+
+## Associations
+
+Take advantage of powerful association mechanisms within Dream to forge relationships between your models
+
+```ts
+class Post extends ApplicationModel {
+  @deco.BelongsTo('User')
+  public user: User
+
+  @deco.HasMany('Comment')
+  public comments: Comment[]
+
+  @deco.HasMany('Comment', { through: 'comments', source: 'replies' })
+  public replies: Comment[]
+}
+```
+
+To learn how to build associations, see our [associations guide](/docs/models/associations/overview)
+
+## Validations
+
+Use validations to ensure the integrity of data entering your system, empowering psychic to automatically raise clean validation errors to the client in contexts where these validation criterion fail.
+
+```ts
+class User extends ApplicationModel {
+  @deco.Validates('contains', '@')
+  @deco.Validates('length', { min: 4 })
+  public email: DreamColumn<User, 'email'>
+
+  @deco.Validates('numericality', { min: 1, max: 5 })
+  public numCoachingSessions: DreamColumn<User, 'numCoachingSessions'>
+}
+```
+
+To learn how to leverage validations, see our [validations guide](/docs/models/validations/overview)
+
 :::tip
 Dream provides a rich set of features for interacting with your database. We have only begun to get into it here, so we encourage you to explore the model guides to learn more.
 
 ### Basic model interactions
 
 - To learn how to generate a new model, see our [generating guide](/docs/models/generating)
+- To learn how to query records, see our [querying guide](/docs/models/querying/overview)
 - To learn how to create new records, see our [creating guide](/docs/models/creating)
 - To learn how to update records, see our [updating guide](/docs/models/updating)
 - To learn how to destroy records, see our [destroying guide](/docs/models/destroying)
-- To learn how to query records, see our [querying guide](/docs/models/querying/overview)
 - To learn how to build associations, see our [associations guide](/docs/models/associations/overview)
 - To learn how to leverage validations, see our [validations guide](/docs/models/validations/overview)
 
 ### Advanced concepts
-
 - To learn how to leverage postgres transactions, see our [transactions guide](/docs/models/transactions)
 - To learn how to leverage STI (single table inheritence), see our [STI guide](/docs/models/sti)
 - To learn how to leverage model hooks, see our [hooks guide](/docs/models/hooks)

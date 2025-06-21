@@ -21,10 +21,308 @@ await User.where({ email: null }).count()
 await User.pluck('email')
 ```
 
+## all
+
+Retrieves all records from the database that match the query criteria.
+
+```ts
+// Get all users
+const allUsers = await User.all()
+
+// Get all active users
+const activeUsers = await User.where({ active: true }).all()
+```
+
+[Learn more about retrieving all records](/docs/models/querying/all)
+
+## find, findBy, findEach, findOrFailBy, findOrFail
+
+Methods for retrieving selective records from the database with various strategies.
+
+```ts
+// Find by primary key
+const user = await User.find(123)
+
+// Find by specific field
+const user = await User.findBy({ email: 'user@example.com' })
+
+// Process records one by one
+await User.findEach({ active: true }, (user) => {
+  console.log(user.email)
+})
+
+// Find or throw error
+const user = await User.findOrFail(123)
+const user2 = await User.findOrFailBy({ email: 'user@example.com' })
+```
+
+[Learn more about find methods](/docs/models/querying/find) • [findBy](/docs/models/querying/findBy) • [findEach](/docs/models/querying/findEach) • [findOrFailBy](/docs/models/querying/findOrFailBy) • [findOrFail](/docs/models/querying/findOrFail)
+
+## first, firstOrFail
+
+Retrieves the first record from the database based on the query criteria.
+
+```ts
+// Get the first user
+const firstUser = await User.first()
+
+// Get the first active user
+const firstActiveUser = await User.where({ active: true }).first()
+
+// Get first user or throw error if none found
+const user = await User.where({ active: true }).firstOrFail()
+```
+
+[Learn more about first](/docs/models/querying/first) • [firstOrFail](/docs/models/querying/firstOrFail)
+
+## last, lastOrFail
+
+Retrieves the last record from the database based on the query criteria.
+
+```ts
+// Get the last user
+const lastUser = await User.last()
+
+// Get the last created user
+const lastCreatedUser = await User.order({ createdAt: 'desc' }).last()
+
+// Get last user or throw error if none found
+const user = await User.where({ active: true }).lastOrFail()
+```
+
+[Learn more about last](/docs/models/querying/last) • [lastOrFail](/docs/models/querying/lastOrFail)
+
+## count
+
+Counts the number of records that match the query criteria.
+
+```ts
+// Count all users
+const totalUsers = await User.count()
+
+// Count active users
+const activeUserCount = await User.where({ active: true }).count()
+
+// Count users with posts
+const usersWithPosts = await User.innerJoin('posts').count()
+```
+
+[Learn more about counting records](/docs/models/querying/count)
+
+## exists
+
+Determines if any records exist that match the query criteria.
+
+```ts
+// Check if any users exist
+const hasUsers = await User.exists()
+
+// Check if active users exist
+const hasActiveUsers = await User.where({ active: true }).exists()
+
+// Check if user with specific email exists
+const emailExists = await User.where({ email: 'user@example.com' }).exists()
+```
+
+[Learn more about checking existence](/docs/models/querying/exists)
+
+## max, min
+
+Gets the maximum or minimum value from a specified column.
+
+```ts
+// Get the highest user ID
+const maxId = await User.max('id')
+
+// Get the most recent creation date
+const latestCreation = await User.max('createdAt')
+
+// Get the lowest score
+const minScore = await User.min('score')
+
+// Get min/max for filtered records
+const maxActiveUserAge = await User.where({ active: true }).max('age')
+```
+
+[Learn more about max](/docs/models/querying/max) • [min](/docs/models/querying/min)
+
+## pluck
+
+Retrieves specific column values from matching records.
+
+```ts
+// Get all user emails
+const emails = await User.pluck('email')
+
+// Get emails of active users
+const activeEmails = await User.where({ active: true }).pluck('email')
+
+// Get multiple columns
+const userData = await User.pluck(['email', 'name'])
+```
+
+[Learn more about plucking values](/docs/models/querying/pluck)
+
+## distinct
+
+Ensures only unique records are returned by eliminating duplicates.
+
+```ts
+// Get distinct user roles
+const roles = await User.distinct().pluck('role')
+
+// Get distinct active users
+const uniqueActiveUsers = await User.where({ active: true }).distinct().all()
+```
+
+[Learn more about distinct records](/docs/models/querying/distinct)
+
+## innerJoin
+
+Joins associated records using an inner join, only returning records that have matching associations.
+
+```ts
+// Get users who have posts
+const usersWithPosts = await User.innerJoin('posts').all()
+
+// Get users with posts containing specific content
+const users = await User.innerJoin('posts', {
+  content: ops.ilike('tutorial')
+}).all()
+
+// Multiple joins
+const activeUsersWithComments = await User
+  .where({ active: true })
+  .innerJoin('posts')
+  .innerJoin('posts.comments')
+  .all()
+```
+
+[Learn more about inner joins](/docs/models/querying/innerJoin)
+
+## limit
+
+Limits the number of records returned by the query.
+
+```ts
+// Get first 10 users
+const firstTenUsers = await User.limit(10).all()
+
+// Get 5 most recent users
+const recentUsers = await User.order({ createdAt: 'desc' }).limit(5).all()
+
+// Combine with other conditions
+const topActiveUsers = await User.where({ active: true }).limit(3).all()
+```
+
+[Learn more about limiting records](/docs/models/querying/limit)
+
+## offset
+
+Skips a specified number of records before returning results.
+
+```ts
+// Skip first 10 users
+const usersAfterTen = await User.offset(10).all()
+
+// Pagination: skip 20, take 10
+const page3Users = await User.offset(20).limit(10).all()
+
+// Combined with ordering
+const sortedUsers = await User.order({ name: 'asc' }).offset(5).limit(10).all()
+```
+
+[Learn more about offsetting records](/docs/models/querying/offset)
+
+## order
+
+Orders the results by specified columns and directions.
+
+```ts
+// Order by name ascending
+const usersByName = await User.order({ name: 'asc' }).all()
+
+// Order by creation date descending
+const newestUsers = await User.order({ createdAt: 'desc' }).all()
+
+// Multiple order criteria
+const sortedUsers = await User.order({ 
+  active: 'desc', 
+  name: 'asc' 
+}).all()
+```
+
+[Learn more about ordering records](/docs/models/querying/order)
+
+## preload
+
+Eagerly loads associated records to avoid N+1 query problems.
+
+```ts
+// Preload user posts
+const usersWithPosts = await User.preload('posts').all()
+
+// Preload nested associations
+const usersWithPostsAndComments = await User
+  .preload('posts.comments')
+  .all()
+
+// Preload with conditions
+const usersWithRecentPosts = await User
+  .preload('posts', (query) => 
+    query.where({ createdAt: ops.gte(new Date('2024-01-01')) })
+  )
+  .all()
+```
+
+[Learn more about preloading associations](/docs/models/querying/preload)
+
+## leftJoinPreload
+
+Performs a left join while preloading associated records, including records without associations.
+
+```ts
+// Left join preload posts (includes users without posts)
+const allUsersWithPosts = await User.leftJoinPreload('posts').all()
+
+// Left join with conditions
+const usersWithOptionalRecentPosts = await User
+  .leftJoinPreload('posts', (query) => 
+    query.where({ createdAt: ops.gte(new Date('2024-01-01')) })
+  )
+  .all()
+```
+
+[Learn more about left join preloading](/docs/models/querying/leftJoinPreload)
+
+## passthrough
+
+Adds additional data to be passed through with query results.
+
+```ts
+// Add computed values
+const usersWithExtra = await User
+  .passthrough({ 
+    isVip: true,
+    computedAt: new Date()
+  })
+  .all()
+
+// Dynamic passthrough data
+const usersWithMetadata = await User
+  .passthrough((user) => ({
+    displayName: `${user.firstName} ${user.lastName}`,
+    accountAge: Date.now() - user.createdAt.getTime()
+  }))
+  .all()
+```
+
+[Learn more about passthrough data](/docs/models/querying/passthrough)
+
 :::tip
 The query building engine provided by Dream provides an enormous API. We recommend you poke around to get a feel for what is possible within Dream.
 
-#### Executing methods
+### Executing methods
 
 Executing methods are those that will actually cause a query to run. Prior to one of these methods being called, the query is being built up for execution. Executing the query will cause an sql query to compile with the given parameters and summon the matching records from the database.
 
@@ -38,7 +336,7 @@ Executing methods are those that will actually cause a query to run. Prior to on
 - To learn about getting the min value from a given table, see the [min guide](/docs/models/querying/min).
 - To learn about plucking values, see the [pluck](/docs/models/querying/pluck) guides
 
-#### Query building methods
+### Query building methods
 
 Query building methods are those that do not execute a query, but instead modify the query to contain new statements, which will then be executed upon executing using one of the above executing statements.
 
@@ -51,4 +349,4 @@ Query building methods are those that do not execute a query, but instead modify
 - To learn about left joining associated records, see the [leftJoinPreload guide](/docs/models/querying/leftJoinPreload)
 - To learn about passthrough data, see the [passthrough guide](/docs/models/querying/passthrough)
 
-  :::
+:::
