@@ -10,7 +10,7 @@
   --ifm-background-color: #efeff6;
   --ifm-heading-color: #453f44;
   --ifm-toc-border-color: #5c5f62;
-  --ifm-heading-font-weight: 300;
+  --ifm-heading-font-weight: 500;
   --ifm-color-primary: black;
   --ifm-color-primary-dark: #29784c;
   --ifm-color-primary-darker: #277148;
@@ -22,7 +22,7 @@
   --ifm-code-background: color(srgb 0.93 0.93 0.93);
   --ifm-h1-font-size: 70px;
   --ifm-navbar-link-color: rgb(251, 67, 233);
-  --ifm-font-family-base: monospace;
+  --ifm-font-family-base: "Inconsolata";
   /* --ifm-alert-background-color: rgb(193, 254, 234); */
   /* --ifm-alert-background-color: rgb(238, 213, 255); */
   --ifm-alert-background-color: rgba(184, 139, 240, 0.96);
@@ -95,7 +95,8 @@ body {
   /*background: #e0e0d1;*/
   /*background: #d5dae2;*/
   background: var(--ifm-background-color);
-  font-size: 18px;
+  font-size: 22px;
+  font-weight: 400;
 }
 
 /* [data-theme='dark'] body {
@@ -164,7 +165,7 @@ a {
 
 h1 {
   font-size: 60px;
-  font-weight: 200;
+  font-weight: 500;
   margin-bottom: 50px !important;
 }
 
@@ -463,5 +464,5 @@ main > .container > .row > .col {
 }
 
 p {
-  letter-spacing: 1.25px;
+  /* letter-spacing: 1.25px; */
 }
