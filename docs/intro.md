@@ -438,7 +438,6 @@ describe('visitor visits the signup page', () => {
 
 :::tip
 Wondering how to get started? A good place to go next is our [installation](/docs/installation) guide.
-Not quite ready for a deep dive just yet? You can visit our [authenticating](/docs/tutorials/authenticating) guide, which will give you an idea of what it's like to build in this framework.
 
 Otherwise, you may want to read up more on some of the major features provided by Dream and Psychic:
 

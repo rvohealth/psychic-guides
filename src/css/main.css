@@ -4,20 +4,6 @@
  * work well for content-centric websites.
  */
 
-body {
-  /*background: #e0e0d1;*/
-  /*background: #d5dae2;*/
-  background: #efeff6;
-}
-
-[data-theme='dark'] body {
-  background: #030313;
-}
-
-body[data-location='home'] {
-  background: #efeff6;
-}
-
 /* You can override the default Infima variables here. */
 :root,
 .alert {
@@ -25,7 +11,7 @@ body[data-location='home'] {
   --ifm-heading-color: #453f44;
   --ifm-toc-border-color: #5c5f62;
   --ifm-heading-font-weight: 300;
-  --ifm-color-primary: #ff1ad3;
+  --ifm-color-primary: black;
   --ifm-color-primary-dark: #29784c;
   --ifm-color-primary-darker: #277148;
   --ifm-color-primary-darkest: #205d3b;
@@ -36,39 +22,97 @@ body[data-location='home'] {
   --ifm-code-background: color(srgb 0.93 0.93 0.93);
   --ifm-h1-font-size: 70px;
   --ifm-navbar-link-color: rgb(251, 67, 233);
+  --ifm-font-family-base: monospace;
   /* --ifm-alert-background-color: rgb(193, 254, 234); */
-  --ifm-alert-background-color: rgb(238, 213, 255);
-  --ifm-alert-border-color: rgb(245, 164, 238);
+  /* --ifm-alert-background-color: rgb(238, 213, 255); */
+  --ifm-alert-background-color: rgba(184, 139, 240, 0.96);
+  --ifm-alert-foreground-color: black;
+  --ifm-alert-border-color: rgba(184, 139, 240, 0.96);
   --ifm-blockquote-border-color: #63666a;
   --ifm-link-color: black;
+  --alternate-font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif, BlinkMacSystemFont,
+  'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji',
+  'Segoe UI Emoji', 'Segoe UI Symbol';
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+
+  --ifm-menu-link-margin-horizontal: 15px;
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'],
 [data-theme='dark'] .alert {
-  --ifm-background-color: #030313 !important;
-  --ifm-heading-color: rgb(168, 255, 224);
-  --ifm-color-primary: #25c2a0;
+  --ifm-background-color: #0c0c0c !important;
+  --ifm-heading-color: rgb(255, 255, 255);
+  --ifm-menu-color-active: rgb(148, 148, 148);
+  /* --ifm-heading-color: rgb(168, 255, 224); */
+  --ifm-color-primary: rgb(148, 148, 148);
   --ifm-color-primary-dark: #21af90;
   --ifm-color-primary-darker: #1fa588;
   --ifm-color-primary-darkest: #1a8870;
   --ifm-color-primary-light: #29d5b0;
   --ifm-color-primary-lighter: #32d8b4;
   --ifm-color-primary-lightest: #4fddbf;
-  --ifm-alert-background-color: rgb(22, 2, 42); /*rgb(26, 198, 172) */
-  --ifm-alert-foreground-color: rgb(207, 165, 203); /* color(srgb 0.022 0.275 0.238); */
-  --ifm-alert-border-color: rgb(138, 8, 161); /* rgb(145, 235, 221); */
+  --ifm-alert-background-color: rgba(184, 139, 240, 0.96);
+  --ifm-alert-foreground-color: black; /* color(srgb 0.022 0.275 0.238); */
+  --ifm-alert-border-color: rgb(14, 14, 14); /* rgb(145, 235, 221); */
   --ifm-link-color: white;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
+.theme-doc-sidebar-menu ul .menu__link {
+  margin-left: 10px;
+}
+
+.theme-doc-sidebar-menu ul li ul .menu__link {
+  margin-left: 20px;
+  text-transform: none;
+}
+
+.theme-doc-sidebar-menu ul .menu__link::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgb(134, 229, 249);
+  margin-right: 8px;
+  border: none;
+}
+
+.theme-doc-sidebar-menu ul li ul .menu__link::before {
+  background: rgb(72, 200, 255);
+}
+
+[data-theme=dark] .theme-doc-sidebar-menu ul .menu__link::before {
+  background: rgb(126, 233, 255);
+}
+
+[data-theme=dark] .theme-doc-sidebar-menu ul li ul .menu__link::before {
+  background: rgb(72, 200, 255);
+}
+
+body {
+  /*background: #e0e0d1;*/
+  /*background: #d5dae2;*/
+  background: var(--ifm-background-color);
+  font-size: 18px;
+}
+
+/* [data-theme='dark'] body {
+  background: #030313;
+} */
+
+body[data-location='home'] {
+  background: #efeff6;
+}
+
 .alert {
   margin-top: 100px;
+  border-radius: 10px;
 }
 
 .alert.alert--warning {
-  background: rgb(219, 219, 208);
+  background: rgb(227, 227, 227);
   border-color: rgb(219, 219, 208);
   padding: 25px;
   margin-bottom: 60px;
@@ -99,6 +143,7 @@ a {
 .theme-doc-sidebar-container a {
   font-style: inherit;
   text-decoration: none;
+  text-transform: uppercase;
 }
 
 .theme-doc-sidebar-container a::after {
@@ -106,15 +151,15 @@ a {
 }
 
 .alert a {
-  color: #cb11cb;
+  color: #424242;
   text-decoration: none;
   font-style: italic;
   text-decoration: underline;
   /* text-decoration-color: #093727; */
 }
 
-body {
-  font-size: 20px;
+[data-theme=dark] .alert a {
+  color: #000000;
 }
 
 h1 {
@@ -124,7 +169,12 @@ h1 {
 }
 
 .markdown > h2 {
-  margin-top: 40px;
+  margin-top: 80px;
+  margin-bottom: 40px;
+}
+
+.markdown > h3 {
+  margin-top: 80px;
   margin-bottom: 40px;
 }
 
@@ -136,11 +186,7 @@ h1 {
 .navbar {
   border-bottom: none !important;
   box-shadow: none;
-  background: #efeff6;
-}
-
-[data-theme='dark'] .navbar {
-  background: #030313;
+  background: var(--ifm-background-color);
 }
 
 .theme-doc-sidebar-container {
@@ -160,15 +206,33 @@ html[data-theme='light'] {
 
 .theme-code-block {
   border-radius: 20px !important;
-  margin-top: 30px !important;
-  margin-bottom: 30px !important;
+  /* margin-top: 80px !important; */
+  margin-bottom: 80px !important;
 }
 
 .theme-code-block pre {
-  background: #0e0928 !important;
+  background: var(--ifm-background-color) !important;
   padding: 20px;
-  border-radius: 20px !important;
+  border-radius: 6px !important;
   font-size: 18px;
+  border: solid 2px black;
+}
+
+.theme-code-block.language-bash pre {
+  border: none;
+}
+
+[data-theme='dark'] .theme-code-block pre {
+  /* background: #0e0928 !important; */
+  border: solid 2px white;
+}
+
+[data-theme='light'] .theme-code-block.language-bash pre {
+  background: black !important;
+}
+[data-theme='light'] .theme-code-block.language-bash pre,
+[data-theme='light'] .theme-code-block.language-bash pre * {
+  color: white;
 }
 
 .theme-doc-markdown {
@@ -250,15 +314,32 @@ main > .container > .row > .col {
 }
 
 .routes-output {
-  background: #0e0928;
-  color: #25ffb8;
+  border: solid 2px black;
+  /* background: #0e0928; */
+  color: #d91aea;
   padding: 20px;
-  border-radius: 20px;
+  border-radius: 8px;
   margin-bottom: 57px;
+  position: relative;
+  text-align: center;
+}
+
+.routes-output::before {
+  content: '';
+  height: 77px;
+  border: solid 1px white;
+  position: absolute;
+  top: -82px;
+}
+
+[data-theme=dark] .routes-output {
+  border-color: white;
+  color: #c796fb;
 }
 
 .routes-output pre {
   font-size: 16px;
+  text-align: left;
 }
 
 .theme-doc-footer,
@@ -313,4 +394,74 @@ main > .container > .row > .col {
 
 .aa-DetachedFormContainer {
   border-bottom: none !important;
+}
+
+.triangle {
+  width: 0; 
+  height: 0; 
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  
+  border-bottom: 5px solid black;
+}
+
+.theme-admonition li + li {
+  margin-top: 0;
+}
+
+.theme-admonition div ul {
+  padding: 0;
+}
+
+.theme-admonition > div > ul {
+  margin-top: 50px;
+  margin-bottom: 50px;
+}
+
+.theme-admonition ul a:hover {
+  background: #efeff6;
+  color: black;
+  font-style: normal;
+  font-weight: 500;
+  border-bottom: none;
+}
+
+.theme-admonition ul li {
+  list-style: none;
+  font-size: 26px;
+  font-family: var(--alternate-font-family);
+}
+
+.theme-admonition > div > ul > li:first-child {
+  border-top: solid 2px var(--ifm-color-primary);
+}
+
+[data-theme=dark] .theme-admonition > div > ul > li:first-child {
+  border-color: black;
+}
+
+.theme-admonition ul li > a {
+  display: block;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: solid 2px var(--ifm-color-primary);
+  text-decoration: none;
+  padding-left: 30px;
+  text-transform: uppercase;
+}
+
+[data-theme=dark] .theme-admonition ul li a {
+  border-color: black;
+}
+.theme-admonition ul li ul li a {
+  padding-left: 60px;
+}
+
+[data-theme=dark] .theme-admonition h2,
+[data-theme=dark] .theme-admonition h3 {
+  color: black;
+}
+
+p {
+  letter-spacing: 1.25px;
 }
