@@ -80,11 +80,12 @@ const config: Config = {
     // Replace with your project's social card
     image: 'img/docusaurus-social-card.jpg',
     navbar: {
-      title: 'psychic',
-      // logo: {
-      //   alt: "My Site Logo",
-      //   src: "img/logo.svg",
-      // },
+      // title: 'PSY',
+      logo: {
+        alt: "My Site Logo",
+        src: "img/logo-sm.svg",
+        srcDark: "img/logo-sm-dark.svg"
+      },
       items: [
         // {
         //   type: "docSidebar",
@@ -133,7 +134,7 @@ const config: Config = {
       copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
     },
     prism: {
-      theme: prismThemes.nightOwl,
+      theme: prismThemes.oneLight,
       darkTheme: prismThemes.dracula,
     },
   } satisfies Preset.ThemeConfig,

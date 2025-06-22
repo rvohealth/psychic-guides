@@ -11,8 +11,8 @@ Given the constraints, we chose to use [vitest](https://vitest.dev) as our test 
 The entire vitest configuration is exposed at the top level of your app, but has already been set up to be enhanced by Psychic and Dream to add extra assertion helpers for working in a Psychic app. In the spec folder, you will find two separate folders, one called `unit` and one called `features`. The `unit` and `features` folders will both contain special configurations that can be used to set up your tests.
 
 :::info
+For more info, see our detailed guides
 
-- For more information on unit specs, see our [unit spec](/docs/specs/unit)
-- For more information on feature specs, see our [feature spec](/docs/specs/feature)
-
-  :::
+- [unit spec](/docs/specs/unit)
+- [feature spec](/docs/specs/feature)
+:::

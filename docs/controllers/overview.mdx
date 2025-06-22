@@ -4,7 +4,7 @@ sidebar_position: 0
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
-# overview
+# Overview
 
 In a standard MVC (Model, View, Controller) paradigm, a controller represents the entity which responds to an HTTP request. Controllers in Psychic are classes which inherit from the base `PsychicController` class, which can be imported from Psychic. They will inherit many useful methods for responding to requests, as well as many useful helpers for setting and reading cookies, accessing request parameters, and much more.
 
@@ -55,7 +55,7 @@ export default class PetsController extends ApplicationController {
 
 Learn more about how status codes work in psychic controllers by visiting our [status code guides](/docs/controllers/status-codes).
 
-### Openapi
+### OPENAPI
 
 Psychic Controllers contains powerful bindings to openapi through the usage of the `@OpenAPI` decorator. This enables you to automatically generate openapi documents based on the shape of your models. The below example will auto-generate an openapi document with an array of serialized Posts as the response body for this endpoint.
 
@@ -79,16 +79,12 @@ The OpenAPI decorator is incredibly robust in terms of capabilities, and we reco
 
 :::tip
 
-- To learn how to generate a new controller, see our [guides on generating a controller](/docs/controllers/generating)
-- To learn about how controller serialize data, see our [serialization](/docs/controllers/serialization) guide
-- To learn about how controllers use params, see our [status code](/docs/controllers/params) guide
-- To learn about how controllers use http status codes, see our [status code](/docs/controllers/status-codes) guide
-- To learn about handling exceptions, see our [exception handling](/docs/controllers/exception-handling) guide
-- To learn about cookies, see our [cookies](/docs/controllers/cookies) guide
-- To learn about openapi integration, see our [openapi](/docs/openapi/overview) guide
+- [generating guide](/docs/controllers/generating)
+- [serialization guide](/docs/controllers/serialization)
+- [params guide](/docs/controllers/params)
+- [status code guide](/docs/controllers/status-codes)
+- [exception handling guide](/docs/controllers/exception-handling)
+- [cookies guide](/docs/controllers/cookies)
+- [openapi guide](/docs/openapi/overview)
 
-  :::
-
-```
-
-```
+:::
