@@ -38,6 +38,12 @@ r.namespace('api', (r) => {
     // providing an explicit controller to the namespace
     r.namespace('users', { controller: HelloWorldController } (r) => {
       r.get('hi')
+
+      // you can even provide nested express middleware
+      r.get('my-middleware', (req, res, next) => {
+        console.log('hello from GET:/api/v1/users/my-middleware')
+        next()
+      })
     })
   })
 })

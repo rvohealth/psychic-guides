@@ -1,0 +1,35 @@
+---
+sidebar_position: 3
+title: hooks
+---
+
+
+## use
+
+In addition to the [hooks](/docs/config/hooks) provided by psychic, you can tap into express middleware directly by leveraging the `use` method. This method acts similarly to the express `use` api for most use cases.
+
+```ts
+psy.use((req, res, next) => {
+  res.json({ hello: 'world' })
+})
+```
+
+If you need to inject at a specific point during the build cycle, you can provide an optional first argument, which will cause your middleware to run at the specified point:
+
+
+```ts
+// runs before any psychic middleware (i.e. cors) has been processed
+psy.use('before-middleware', (req, res, next) => {
+  res.json({ hello: 'world' })
+})
+
+// runs after all psychic middleware has been provided
+psy.use('after-middleware', (req, res, next) => {
+  res.json({ hello: 'world' })
+})
+
+// runs after all routes in the conf/routes.ts file have been processed
+psy.use('after-routes', (req, res, next) => {
+  res.json({ hello: 'world' })
+})
+```
