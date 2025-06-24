@@ -57,6 +57,8 @@
   --ifm-alert-border-color: rgb(14, 14, 14); /* rgb(145, 235, 221); */
   --ifm-link-color: white;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+
+  --aa-muted-color-rgb: rgb(255, 255, 255);
 }
 
 .theme-doc-sidebar-menu ul .menu__link {
@@ -362,19 +364,20 @@ main > .container > .row > .col {
   background: whitesmoke;
 }
 
-.aa-Form {
-  border: none !important;
-}
-
+.aa-Input,
+.aa-Form,
 .aa-Input:focus,
 .aa-Form:focus {
+  border: none !important;
   outline: none !important;
-  border-color: none !important;
   box-shadow: none !important;
+  background-color: transparent !important;
 }
-
 .aa-DetachedFormContainer {
   border-bottom: none !important;
+}
+.aa-DetachedSearchButton {
+  color: white !important;
 }
 
 .triangle {
