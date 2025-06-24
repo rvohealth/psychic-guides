@@ -40,6 +40,18 @@ const config: Config = {
       href: 'https://fonts.googleapis.com/css2?family=Inconsolata:wght@200..900&display=swap',
       type: 'text/css',
     },
+    {
+      href: 'https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap',
+      type: 'text/css',
+    },
+    {
+      href: 'https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap',
+      type: 'text/css',
+    },
+    {
+      href: 'https://fonts.googleapis.com/css2?family=Sono:wght@200..800&display=swap',
+      type: 'text/css',
+    },
   ],
 
   // Even if you don't use internationalization, you can use this field to set

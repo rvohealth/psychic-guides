@@ -22,7 +22,7 @@
   --ifm-code-background: color(srgb 0.93 0.93 0.93);
   --ifm-h1-font-size: 70px;
   --ifm-navbar-link-color: rgb(251, 67, 233);
-  --ifm-font-family-base: "Inconsolata";
+  --ifm-font-family-base: "Inconsolata", monospace;
   /* --ifm-alert-background-color: rgb(193, 254, 234); */
   /* --ifm-alert-background-color: rgb(238, 213, 255); */
   --ifm-alert-background-color: #f0e1fff5;
@@ -95,7 +95,7 @@ body {
   /*background: #e0e0d1;*/
   /*background: #d5dae2;*/
   background: var(--ifm-background-color);
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 400;
 }
 
@@ -294,26 +294,6 @@ main > .container > .row > .col {
   -webkit-text-stroke-color: none !important;
 }
 
-@media (max-width: 700px) {
-  .routes-output {
-    display: none;
-    /*position: relative;*/
-    /*width: calc(35% - 25px);*/
-  }
-}
-
-@media (max-width: 1000px) {
-  .routes-output {
-    width: calc(35% - 25px);
-  }
-}
-
-@media (max-width: 1500px) {
-  .routes-output {
-    /*width: 15%;*/
-  }
-}
-
 .routes-output {
   border: solid 2px black;
   /* background: #0e0928; */
@@ -328,7 +308,7 @@ main > .container > .row > .col {
 .routes-output::before {
   content: '';
   height: 77px;
-  border: solid 1px white;
+  border: solid 1px var(--ifm-color-primary);
   position: absolute;
   top: -82px;
 }
