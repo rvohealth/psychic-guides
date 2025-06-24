@@ -34,3 +34,13 @@ DELETE  /ping  Ping#ping
 </RoutesOutput>
 
 Whenever providing a top-level route, Psychic will not attempt to infer the controller name for you. This means that you are forced to explicitly provide a controller and action in these cases. Once providing a controller, typescript autocomplete helpers will aid you in selecting an action (i.e. a public method on your controller) to call when that route is hit.
+
+## middleware
+
+You can provide express middleware directly to a route by sending a callback function as the second argument to any method, i.e.
+
+```ts
+r.get('ping', (req, res, next) => {
+  res.json({ hello: 'world' })
+})
+```
