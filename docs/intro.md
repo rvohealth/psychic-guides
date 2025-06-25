@@ -12,33 +12,6 @@ There are many excellent tools in nodejs for providing the bits and pieces of a 
 
 Though it tends to be quite a nerdy way to approach your software, we love this philosophy, and in Psychic and Dream, this philosophy is very much alive and well. However, we also attempt to provide some staple pieces to the puzzle, as well as the glue to bind them together, which will really make your experience in typescript more enjoyable, since adding types to the puzzle can put some strain on the plug-and-play ideology.
 
-:::info
-In this guide, we will be covering the following:
-
-- [What is Dream?](#what-is-dream)
-  - [Powerful associations](#powerful-associations)
-- [What is Psychic?](#what-is-psychic)
-  - [Routing](#routing)
-  - [Controllers](#controllers)
-  - [Openapi](#openapi)
-- [Philosophy](#philosophy)
-  - [Use familiar technologies](#use-familiar-technologies)
-  - [Convention over configuration](#convention-over-configuration)
-- [Testing](#testing)
-  - [Unit specs](#unit-specs)
-  - [Feature specs](#feature-end-to-end-specs)
-
-You may be familiar with the concepts, and want to skip ahead to [installation](/docs/installation), or to one of the primary sections of the documentation, such as:
-
-- [routing](/docs/routing/overview)
-- [controllers](/docs/controllers/overview)
-- [models](/docs/models/overview)
-- [serializers](/docs/serializers/overview)
-- [specs](/docs/specs/overview)
-- [cli](/docs/cli/overview)
-
-  :::
-
 ## What is Dream?
 
 At the heart of most web applications is a database, with, at least generally speaking, a tightly-defined set of table schemas to guard the integrity of its data. Dream follows the conventional [Active Record](https://en.wikipedia.org/wiki/Active_record_pattern) practices for modeling data, but provides a very powerful TypeScript-driven set of features to unleash powerful autocomplete mechanisms that make even the most dense applications possible to navigate.
@@ -111,6 +84,26 @@ await post
 ```
 
 > See the [Dream guides](/docs/models/overview) for more information on modeling with Dream
+
+## Serialization
+
+Dream provides first-class serialization support, empowering devs to easily bind serializers to models, and then exploit those connections throughout your application.
+
+```ts
+class User extends ApplicationModel {
+  public get serializers(): DreamSerializers<User> {
+    return {
+      default: 'UserSerializer',
+      summary: 'UserSummarySerializer',
+    }
+  }
+}
+
+// somewhere, maybe in a controller...
+await User.preloadFor('summary').findOrFail(this.castParam('id', 'uuid'))
+```
+
+> To learn more about automatic preloading, see our [preloadFor](/docs/models/querying/preloadFor) documentation. 
 
 ## What is Psychic?
 
@@ -285,17 +278,13 @@ export default async (psy: PsychicApp) => {
   ...
   psy.on('server:start', async psychicServer => {
     if (AppEnv.isDevelopment && AppEnv.boolean('CLIENT')) {
-      DreamCLI.logger.logStartProgress('client dev server starting...')
       await PsychicDevtools.launchDevServer('client', { port: 3000, cmd: 'yarn client' })
-      DreamCLI.logger.logEndProgress()
     }
   })
 
   psy.on('server:shutdown', () => {
     if (AppEnv.isDevelopment && AppEnv.boolean('CLIENT')) {
-      DreamCLI.logger.logStartProgress('client dev server stopping...')
       PsychicDevtools.stopDevServer('client')
-      DreamCLI.logger.logEndProgress()
     }
   })
 }
