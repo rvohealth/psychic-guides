@@ -221,7 +221,8 @@ html[data-theme='light'] {
   border: solid 2px black;
 }
 
-.theme-code-block.language-bash pre {
+.theme-code-block.language-bash pre,
+.theme-code-block.language-sh pre {
   border: none;
 }
 
@@ -230,11 +231,14 @@ html[data-theme='light'] {
   border: solid 2px white;
 }
 
-[data-theme='light'] .theme-code-block.language-bash pre {
+[data-theme='light'] .theme-code-block.language-bash pre,
+[data-theme='light'] .theme-code-block.language-sh pre {
   background: black !important;
 }
 [data-theme='light'] .theme-code-block.language-bash pre,
-[data-theme='light'] .theme-code-block.language-bash pre * {
+[data-theme='light'] .theme-code-block.language-bash pre *,
+[data-theme='light'] .theme-code-block.language-sh pre,
+[data-theme='light'] .theme-code-block.language-sh pre * {
   color: white;
 }
 
