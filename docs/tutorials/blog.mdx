@@ -69,7 +69,7 @@ Once complete, Psychic will begin installing the necessary dependencies to provi
 
 ## First time application setup
 
-With the new app in place, let's poke around the file system a bit to understand what has been generated for you. Opening the `blog` folder that was generated, you will see both an `api` folder, as well as a `client` folder. The api folder is where your Psychic application lives, while the client folder contains an isolated react application, provisioned with vite.
+With the new app in place, let's poke around the file system a bit to understand what has been generated for you. Opening the `myblog` folder that was generated, you will see both an `api` folder, as well as a `client` folder. The api folder is where your Psychic application lives, while the client folder contains an isolated react application, provisioned with vite.
 
 ```
 ├── myblog
@@ -595,6 +595,8 @@ describe('AuthSessionController', () => {
 })
 ```
 
+We will return a 409 (conflict) if the email is taken, however, this can be considered bad practice, since it can indirectly inform an attacker of a valid email address, granting them an unwanted view into your systems. It may be also appropriate to just throw a 500, so that it is not clear what happened to an attacker, but for the purposes of this tutorial, we will leave it as a 409, since that status code most accurately represents the dilemma.
+
 Let's also modify the controller that was generated. By default, all controllers will extend the `AuthedController`, which sets your app up to be secure by default. However, this is one controller that will need to explicitly _not_ require authentication, since it will be the controller that _establishes_ authentication.
 
 ```ts
@@ -744,7 +746,13 @@ With our controller specs passing, we can work our way back to the client to com
 Let's start by adding redux to our client project dependencies.
 
 ```sh
+# switch to client folder to install new packages
+cd ../client
+
 yarn add @reduxjs/toolkit react-redux
+
+# switch back to api folder afterwards
+cd ../api
 ```
 
 With redux installed, we can begin integrating into our client application. We will need to start with a provider, like so:
@@ -846,7 +854,7 @@ yarn psy setup:sync:openapi-redux
 
 This is going to give you a prompt to configure the openapi-redux setup. This setup can be quite confusing, though the prompts provided by psychic do their best to explain the complexities of this process.
 
-For the first prompt, I just accepted the default value of `./openapi/openapi.json`, since I want my application's openapi.json file to be the source of truth for my redux bindings.
+For the first prompt, I just accepted the default value of `./src/openapi/openapi.json`, since I want my application's openapi.json file to be the source of truth for my redux bindings.
 
 ```sh
 What would you like the schemaFile to be?
@@ -854,7 +862,7 @@ What would you like the schemaFile to be?
 The schemaFile is the openapi file that @rtk-query/codegen-openapi will read to produce
 all of its redux bindings. If not provided, it will default to
 
-  ./openapi/openapi.json
+  ./src/openapi/openapi.json
 ```
 
 For the exportName, I also accepted the default value:
@@ -920,7 +928,7 @@ The output from the command we just ran is also alerting us to another set of up
 yarn psy sync
 ```
 
-Now, let's make our changes to the store.ts file:
+Now, let's make our changes to the store.ts file, which were requested in the CLI output of our redux setup:
 
 ```ts
 // client/src/store.ts
@@ -1447,13 +1455,192 @@ git add --all
 git commit -m 'add functioning auth system'
 ```
 
+## Post scaffolding
+
 Next, we will set up the scaffolding for our blog. To do anything, we will need to start by generating a Post model. This model will belong to a User, and it will have a title and a body. We can now tap into psychic's resource generator to make this very trivial for ourselves.
 
 ```sh
 yarn psy g:resource api/v1/posts Post user:belongs_to title:text body:text
 ```
 
-This automatically generates a controller, model, serializer, controller spec, and model spec. It additionally adds the necessary route entry to build this route in our routes file. Opening the `api/spec/unit/controllers/Api/V1/PostsController.spec.ts` spec, you will find it has basically exactly what we need to test our new resource.
+This automatically generates a controller, model, serializer, controller spec, and model spec. It additionally adds the necessary route entry to build this route in our routes file. Opening the `api/spec/unit/controllers/Api/V1/PostsController.spec.ts` spec, you will find it has basically exactly what we need to test our new resource. Here is a copy of that file, for reference:
+
+```ts
+// api/spec/unit/controllers/Api/V1/PostsController.spec.ts
+
+import { UpdateableProperties } from '@rvoh/dream'
+import Post from '../../../../../src/app/models/Post.js'
+import User from '../../../../../src/app/models/User.js'
+import createPost from '../../../../factories/PostFactory.js'
+import createUser from '../../../../factories/UserFactory.js'
+import { session, SpecRequestType } from '../../../helpers/authentication.js'
+
+describe('Api/V1/PostsController', () => {
+  let request: SpecRequestType
+  let user: User
+
+  beforeEach(async () => {
+    user = await createUser()
+    request = await session(user)
+  })
+
+  describe('GET index', () => {
+    const subject = async <StatusCode extends 200 | 400>(expectedStatus: StatusCode) => {
+      return request.get('/api/v1/posts', expectedStatus)
+    }
+
+    it('returns the index of Posts', async () => {
+      const post = await createPost({ user })
+
+      const { body } = await subject(200)
+
+      expect(body).toEqual([
+        expect.objectContaining({
+          id: post.id,
+        }),
+      ])
+    })
+
+    context('Posts created by another User', () => {
+      it('are omitted', async () => {
+        await createPost()
+
+        const { body } = await subject(200)
+
+        expect(body).toEqual([])
+      })
+    })
+  })
+
+  describe('GET show', () => {
+    const subject = async <StatusCode extends 200 | 400 | 404>(post: Post, expectedStatus: StatusCode) => {
+      return request.get('/api/v1/posts/{id}', expectedStatus, {
+        id: post.id,
+      })
+    }
+
+    it('returns the specified Post', async () => {
+      const post = await createPost({ user })
+
+      const { body } = await subject(post, 200)
+
+      expect(body).toEqual(
+        expect.objectContaining({
+          id: post.id,
+          title: post.title,
+          body: post.body,
+        }),
+      )
+    })
+
+    context('Post created by another User', () => {
+      it('is not found', async () => {
+        const otherUserPost = await createPost()
+
+        await subject(otherUserPost, 404)
+      })
+    })
+  })
+
+  describe('POST create', () => {
+    const subject = async <StatusCode extends 201 | 400>(
+      data: UpdateableProperties<Post>,
+      expectedStatus: StatusCode
+    ) => {
+      return request.post('/api/v1/posts', expectedStatus, { data })
+    }
+
+    it('creates a Post for this User', async () => {
+      const { body } = await subject({
+        title: 'The Post title',
+        body: 'The Post body',
+      }, 201)
+
+      const post = await user.associationQuery('posts').firstOrFail()
+      expect(post.title).toEqual('The Post title')
+      expect(post.body).toEqual('The Post body')
+
+      expect(body).toEqual(
+        expect.objectContaining({
+          id: post.id,
+          title: post.title,
+          body: post.body,
+        }),
+      )
+    })
+  })
+
+  describe('PATCH update', () => {
+    const subject = async <StatusCode extends 204 | 400 | 404>(
+      post: Post,
+      data: UpdateableProperties<Post>,
+      expectedStatus: StatusCode
+    ) => {
+      return request.patch('/api/v1/posts/{id}', expectedStatus, {
+        id: post.id,
+        data,
+      })
+    }
+
+    it('updates the Post', async () => {
+      const post = await createPost({ user })
+
+      await subject(post, {
+        title: 'Updated Post title',
+        body: 'Updated Post body',
+      }, 204)
+
+      await post.reload()
+      expect(post.title).toEqual('Updated Post title')
+      expect(post.body).toEqual('Updated Post body')
+    })
+
+    context('a Post created by another User', () => {
+      it('is not updated', async () => {
+        const post = await createPost()
+        const originalTitle = post.title
+        const originalBody = post.body
+
+        await subject(post, {
+          title: 'Updated Post title',
+          body: 'Updated Post body',
+        }, 404)
+
+        await post.reload()
+        expect(post.title).toEqual(originalTitle)
+        expect(post.body).toEqual(originalBody)
+      })
+    })
+  })
+
+  describe('DELETE destroy', () => {
+    const subject = async <StatusCode extends 204 | 400 | 404>(post: Post, expectedStatus: StatusCode) => {
+      return request.delete('/api/v1/posts/{id}', expectedStatus, {
+        id: post.id,
+      })
+    }
+
+    it('deletes the Post', async () => {
+      const post = await createPost({ user })
+
+      await subject(post, 204)
+
+      expect(await Post.find(post.id)).toBeNull()
+    })
+
+    context('a Post created by another User', () => {
+      it('is not deleted', async () => {
+        const post = await createPost()
+
+        await subject(post, 404)
+
+        expect(await Post.find(post.id)).toMatchDreamModel(post)
+      })
+    })
+  })
+})
+
+```
 
 Let's first run our migrations to capture the new model
 
@@ -1734,6 +1921,8 @@ git add --all
 git commit -m 'generate Post resource, satisfy controller specs'
 ```
 
+## Post index scaffolding
+
 Before we begin, let's abstract some of our sign in logic to a helper, so we can reuse it going forward:
 
 ```ts
@@ -1832,6 +2021,7 @@ export default function PostsIndexPage() {
 
   return (
     <div>
+      <h1>Posts index</h1>
       {posts.map(post => (
         <div key={post.id}>{post.title}</div>
       ))}
@@ -1932,4 +2122,633 @@ git add --all
 git commit -m 'add Posts index'
 ```
 
-I have run out of time to complete this, so I will revisit later to complete the remaining functionality for Posts. In the mean time, this should be enough for anyone to get their feet wet with how to build a new app in Psychic. Hope you enjoyed!
+## Post show scaffolding
+
+Next, let's add a show page for one of our blog entries. We'll start with a feature spec:
+
+```ts
+import createPost from '../../factories/PostFactory.js'
+import createUser from '../../factories/UserFactory.js'
+import signIn from '../helpers/signIn.js'
+
+describe('show Post', () => {
+  it('allows a user to show a Post', async () => {
+    const user = await createUser()
+    await createPost({ user, title: 'my post title' })
+    await signIn(user)
+
+    await clickLink('Posts')
+    await clickLink('my post title')
+    await expect(page).toHaveSelector('h1::-p-text("my post title")')
+  })
+})
+```
+
+Running it, we will get our expected failure, since there is no link on the index page to click:
+
+```sh
+ ❯ spec/features/posts/show.spec.ts (1 test | 1 failed) 8516ms
+   × show Post > allows a user to show a Post 6235ms
+     → Expected page to have clickable link with matching text: "my post title"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  spec/features/posts/show.spec.ts > show Post > allows a user to show a Post
+Error: Expected page to have clickable link with matching text: "my post title"
+ ❯ clickLink node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/feature/helpers/matcher-globals/clickLink.js:2:5
+ ❯ spec/features/posts/show.spec.ts:12:5
+     10|
+     11|     await clickLink('Posts')
+     12|     await clickLink('my post title')
+       |     ^
+     13|     await expect(page).toHaveSelector('h1::-p-text("my post title")')
+     14|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  20:52:40
+   Duration  9.95s (transform 175ms, setup 756ms, collect 20ms, tests 8.52s, environment 0ms, prepare 59ms)
+```
+
+Let's go add that link to the index page.
+
+```ts
+import { Link } from 'react-router'
+import { useGetApiV1PostsQuery } from '../../../api/myblogApi'
+
+export default function PostsIndexPage() {
+  const { data: posts } = useGetApiV1PostsQuery()
+  if (!posts) return <div>loading...</div>
+
+  return (
+    <div>
+      {posts.map(post => (
+        <div key={post.id}>
+          <Link to={`/posts/${post.id}`}>{post.title}</Link>
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+
+Now, with the index in place, let's run our spec again:
+
+```sh
+ ❯ spec/features/posts/show.spec.ts (1 test | 1 failed) 8174ms
+   × show Post > allows a user to show a Post 6123ms
+     →
+expected selector: h1::-p-text("my post title")
+but no selector was found
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  spec/features/posts/show.spec.ts > show Post > allows a user to show a Post
+Error:
+expected selector: h1::-p-text("my post title")
+but no selector was found
+
+ ❯ spec/features/posts/show.spec.ts:13:5
+     11|     await clickLink('Posts')
+     12|     await clickLink('my post title')
+     13|     await expect(page).toHaveSelpector('h1::-p-text("my post title")')
+       |     ^
+     14|   })
+     15| })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  20:54:18
+   Duration  9.64s (transform 189ms, setup 805ms, collect 17ms, tests 8.17s, environment 0ms, prepare 58ms)
+```
+
+We get a failure, this time because we are missing an h1 on the page with the title "my post title". This will come when we add the show page. Let's do that next.
+
+```ts
+// client/src/pages/authed/posts/PostShowPage.tsx
+
+import { useParams } from 'react-router'
+import { useGetApiV1PostsByIdQuery } from '../../../api/myblogApi'
+
+export default function PostShowPage() {
+  const { id } = useParams()
+  const { data: post } = useGetApiV1PostsByIdQuery({ id: id as string })
+  if (!post) return <div>loading...</div>
+
+  return (
+    <div>
+      <h1>{post.title}</h1>
+      <p>{post.body}</p>
+    </div>
+  )
+}
+```
+
+and then add the new route to App.tsx in the AuthedApp:
+
+```ts
+function AuthedApp() {
+  return (
+    <Routes>
+      ...
+      <Route path="/posts/:id" element={<PostShowPage />} />
+    </Routes>
+  )
+}
+```
+
+With this in place, our show spec should now be passing.
+
+```sh
+ ✓ spec/features/posts/show.spec.ts (1 test) 3351ms
+   ✓ show Post > allows a user to show a Post  1127ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  21:56:27
+   Duration  4.69s (transform 173ms, setup 723ms, collect 17ms, tests 3.35s, environment 0ms, prepare 59ms)
+```
+
+## Post create scaffolding
+
+With a show page in place, it will be easier to write a create test, since that will need somewhere to redirect afterwards. Let's write that now.
+
+```ts
+// api/spec/features/posts/create.spec.ts
+
+import createUser from '../../factories/UserFactory.js'
+import signIn from '../helpers/signIn.js'
+
+describe('create a Post', () => {
+  it('allows a user to create a Post', async () => {
+    const user = await createUser()
+    await signIn(user)
+
+    await clickLink('Posts')
+    await clickLink('New post')
+
+    await fillIn('#title', 'my title')
+    await fillIn('#body', 'my body')
+    await clickButton('Submit')
+    await expect(page).toHaveSelector('h1::-p-text("my title")')
+
+    const post = await user.associationQuery('posts').firstOrFail()
+    expect(post.title).toEqual('my title')
+    expect(post.body).toEqual('my body')
+  })
+})
+
+```
+
+with this in place, running the spec gives us, predictable, an error about a missing link "New post"
+
+```sh
+
+ ❯ spec/features/posts/create.spec.ts (1 test | 1 failed) 7931ms
+   × create a Post > allows a user to create a Post 6025ms
+     → Expected page to have clickable link with matching text: "New post"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  spec/features/posts/create.spec.ts > create a Post > allows a user to create a Post
+Error: Expected page to have clickable link with matching text: "New post"
+ ❯ clickLink node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/feature/helpers/matcher-globals/clickLink.js:2:5
+ ❯ spec/features/posts/create.spec.ts:10:5
+      8|
+      9|     await clickLink('Posts')
+     10|     await clickLink('New post')
+       |     ^
+     11|
+     12|     await fillIn('#title', 'my title')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  22:01:47
+   Duration  9.30s (transform 192ms, setup 761ms, collect 10ms, tests 7.93s, environment 0ms, prepare 58ms)
+```
+
+Let's go add the missing link, and the page it points to to create a new Post.
+
+```ts
+// client/src/pages/authed/posts/PostsIndexPage.tsx
+
+import { Link } from 'react-router'
+import { useGetApiV1PostsQuery } from '../../../api/myblogApi'
+
+export default function PostsIndexPage() {
+  const { data: posts } = useGetApiV1PostsQuery()
+  if (!posts) return <div>loading...</div>
+
+  return (
+    <div>
+      <Link to="/posts/new">New post</Link>
+
+      {posts.map(post => (
+        <div key={post.id}>
+          <Link to={`/posts/${post.id}`}>{post.title}</Link>
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+
+And the corresponding new post page:
+
+```ts
+// client/src/pages/authed/posts/PostNewPage.tsx
+
+import { useState } from 'react'
+import { useNavigate } from 'react-router'
+import { usePostApiV1PostsMutation } from '../../../api/myblogApi'
+
+export default function PostNewPage() {
+  const navigate = useNavigate()
+  const [title, setTitle] = useState('')
+  const [body, setBody] = useState('')
+  const [createPost] = usePostApiV1PostsMutation()
+
+  return (
+    <div>
+      <input type="text" value={title} onChange={e => setTitle(e.target.value)} />
+      <textarea value={body} onChange={e => setBody(e.target.value)}></textarea>
+      <button
+        onClick={async () => {
+          const res = await createPost({ body: { title, body } })
+          const id = res.data!.id
+          navigate(`/posts/${id}`)
+        }}
+      >
+        Submit
+      </button>
+    </div>
+  )
+}
+```
+
+Let's not forget the addition to the AuthedApp, above the /posts/:id route:
+
+```ts
+function AuthedApp() {
+  return (
+    <Routes>
+      ...
+      <Route path="/posts/new" element={<PostNewPage />} />
+      <Route path="/posts/:id" element={<PostShowPage />} />
+    </Routes>
+  )
+}
+```
+
+now, running the create spec again should pass:
+
+```sh
+ ✓ spec/features/posts/create.spec.ts (1 test) 3692ms
+   ✓ create a Post > allows a user to create a Post  1337ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  22:16:07
+   Duration  5.13s (transform 200ms, setup 744ms, collect 9ms, tests 3.69s, environment 0ms, prepare 59ms)
+```
+
+## Post update scaffolding
+
+With all of this in place, adding the scaffolding for updating should be relatively simple. Again, let's start with a spec:
+
+```ts
+// api/spec/features/posts/update.spec.ts
+
+import createPost from '../../factories/PostFactory.js'
+import createUser from '../../factories/UserFactory.js'
+import signIn from '../helpers/signIn.js'
+
+describe('update a Post', () => {
+  it('allows a user to update a Post', async () => {
+    const user = await createUser()
+    const post = await createPost({ user, title: 'original title', body: 'original body' })
+    await signIn(user)
+
+    await clickLink('Posts')
+    await clickLink('original title')
+    await clickLink('Edit')
+
+    await expect(page).toMatchTextContent('Edit original title')
+    await fillIn('#title', 'new title')
+    await fillIn('#body', 'new body')
+    await clickButton('Submit')
+    await expect(page).toNotMatchTextContent('Edit original title')
+
+    await post.reload()
+    expect(post.title).toEqual('new title')
+    expect(post.body).toEqual('new body')
+  })
+})
+```
+
+Running this spec, we get the error:
+
+```sh
+ ❯ spec/features/posts/update.spec.ts (1 test | 1 failed) 8170ms
+   × update a Post > allows a user to update a Post 6132ms
+     → Expected page to have clickable link with matching text: "Edit"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  spec/features/posts/update.spec.ts > update a Post > allows a user to update a Post
+Error: Expected page to have clickable link with matching text: "Edit"
+ ❯ clickLink node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/feature/helpers/matcher-globals/clickLink.js:2:5
+ ❯ spec/features/posts/update.spec.ts:13:5
+     11|     await clickLink('Posts')
+     12|     await clickLink('original title')
+     13|     await clickLink('Edit')
+       |     ^
+     14|
+     15|     await fillIn('#title', 'new title')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  22:27:11
+   Duration  9.56s (transform 169ms, setup 759ms, collect 18ms, tests 8.17s, environment 0ms, prepare 57ms)
+```
+
+This is because, predictably, we have not added the Edit link to our page yet. Let's go add that, and then the corresponding edit page.
+
+```ts
+// client/src/pages/authed/posts/PostShowPage.tsx
+
+import { Link, useParams } from 'react-router'
+import { useGetApiV1PostsByIdQuery } from '../../../api/myblogApi'
+
+export default function PostShowPage() {
+  const { id } = useParams()
+  const { data: post } = useGetApiV1PostsByIdQuery({ id: id as string })
+  if (!post) return <div>loading...</div>
+
+  // Add the Edit link below:
+  return (
+    <div>
+      <Link to={`/posts/${post.id}/edit`}>Edit</Link>
+      <h1>{post.title}</h1>
+      <p>{post.body}</p>
+    </div>
+  )
+}
+```
+
+Before creating the update page, let's abstract our Post form into a component, so it can be reused when updating.
+
+```ts
+// client/src/components/forms/PostForm.tsx
+
+import { useNavigate } from 'react-router'
+import { usePatchApiV1PostsByIdMutation, usePostApiV1PostsMutation, type Post } from '../../api/myblogApi'
+import { useState } from 'react'
+
+export default function PostForm({ post }: { post?: Post }) {
+  const navigate = useNavigate()
+  const [title, setTitle] = useState(post?.title || '')
+  const [body, setBody] = useState(post?.body || '')
+  const [createPost] = usePostApiV1PostsMutation()
+  const [updatePost] = usePatchApiV1PostsByIdMutation()
+
+  return (
+    <div>
+      <input id="title" type="text" value={title} onChange={e => setTitle(e.target.value)} />
+      <textarea id="body" value={body} onChange={e => setBody(e.target.value)}></textarea>
+      <button
+        onClick={async () => {
+          if (post) {
+            await updatePost({ id: post.id, body: { title, body } })
+            navigate(`/posts/${post.id}`)
+          } else {
+            const res = await createPost({ body: { title, body } })
+            const id = res.data!.id
+            navigate(`/posts/${id}`)
+          }
+        }}
+      >
+        Submit
+      </button>
+    </div>
+  )
+}
+
+```
+
+Next, let's go update the existing new page to leverage this form:
+
+```ts
+// client/src/pages/authed/posts/PostNewPage.tsx
+
+import PostForm from '../../../components/forms/PostForm'
+
+export default function PostNewPage() {
+  return (
+    <div>
+      <PostForm />
+    </div>
+  )
+}
+```
+
+After this abstraction, let's double back on our create spec to make sure we didn't introduce a regression:
+
+```sh
+
+ ✓ spec/features/posts/create.spec.ts (1 test) 3350ms
+   ✓ create a Post > allows a user to create a Post  1246ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  22:36:48
+   Duration  4.58s (transform 178ms, setup 720ms, collect 11ms, tests 3.35s, environment 0ms, prepare 53ms)
+```
+
+Next, let's add the update page, leveraging the new form component we just built:
+
+```ts
+import { useParams } from 'react-router'
+import { useGetApiV1PostsByIdQuery } from '../../../api/myblogApi'
+import PostForm from '../../../components/forms/PostForm'
+
+export default function PostEditPage() {
+  const { id } = useParams()
+  const { data: post } = useGetApiV1PostsByIdQuery({ id: id as string })
+
+  if (!post) return <div>loading...</div>
+
+  return (
+    <div>
+      <h1>Edit {post.title}</h1>
+      <PostForm post={post} />
+    </div>
+  )
+}
+```
+
+And then make sure our post edit page is included in our application routes:
+
+```ts
+function AuthedApp() {
+  return (
+    <Routes>
+      ...
+      <Route path="/posts/:id/edit" element={<PostEditPage />} />
+    </Routes>
+  )
+}
+```
+
+With this in place, our update spec should be passing:
+
+```sh
+ ✓ spec/features/posts/update.spec.ts (1 test) 3320ms
+   ✓ update a Post > allows a user to update a Post  1325ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  22:57:00
+   Duration  4.70s (transform 195ms, setup 733ms, collect 22ms, tests 3.32s, environment 0ms, prepare 61ms)
+```
+
+let's commit this
+
+```sh
+git add --all
+git commit -m 'add create and update scaffolding'
+```
+
+## Post delete scaffolding
+
+Now let's add a delete spec to get going on our ability to delete existing posts.
+
+```ts
+// api/spec/features/posts/delete.spec.ts
+
+import Post from '../../../src/app/models/Post.js'
+import createPost from '../../factories/PostFactory.js'
+import createUser from '../../factories/UserFactory.js'
+import signIn from '../helpers/signIn.js'
+
+describe('delete a Post', () => {
+  it('allows a user to delete a Post', async () => {
+    const user = await createUser()
+    await createPost({ user, title: 'original title', body: 'original body' })
+    await signIn(user)
+
+    await clickLink('Posts')
+    await clickLink('original title')
+    await clickButton('Delete')
+
+    await expect(page).toMatchTextContent('Posts index')
+    expect(await Post.count()).toEqual(0)
+  })
+})
+```
+
+Running this will give us a predictable error:
+
+
+```sh
+ ❯ spec/features/posts/delete.spec.ts (1 test | 1 failed) 8120ms
+   × delete a Post > allows a user to delete a Post 6135ms
+     → Expected page to have clickable link with matching text: "Delete"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  spec/features/posts/delete.spec.ts > delete a Post > allows a user to delete a Post
+Error: Expected page to have clickable link with matching text: "Delete"
+ ❯ clickButton node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/feature/helpers/matcher-globals/clickButton.js:2:5
+ ❯ spec/features/posts/delete.spec.ts:14:5
+     12|     await clickLink('Posts')
+     13|     await clickLink('original title')
+     14|     await clickButton('Delete')
+       |     ^
+     15|
+     16|     await expect(page).toMatchTextContent('Posts index')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  23:01:11
+   Duration  9.52s (transform 189ms, setup 744ms, collect 18ms, tests 8.12s, environment 0ms, prepare 59ms)
+```
+
+Let's add the missing Delete button and wire it up to solve for this:
+
+
+```ts
+// client/src/pages/authed/posts/PostShowPage.tsx
+
+import { Link, useNavigate, useParams } from 'react-router'
+import { useDeleteApiV1PostsByIdMutation, useGetApiV1PostsByIdQuery } from '../../../api/myblogApi'
+
+export default function PostShowPage() {
+  const navigate = useNavigate()
+  const { id } = useParams()
+  const { data: post } = useGetApiV1PostsByIdQuery({ id: id as string })
+  const [deletePost] = useDeleteApiV1PostsByIdMutation()
+  if (!post) return <div>loading...</div>
+
+  return (
+    <div>
+      <Link to={`/posts/${post.id}/edit`}>Edit</Link>
+      <button
+        onClick={async () => {
+          await deletePost({ id: post.id })
+          navigate('/posts')
+        }}
+      >
+        Delete
+      </button>
+      <h1>{post.title}</h1>
+      <p>{post.body}</p>
+    </div>
+  )
+}
+```
+
+With this in place, our specs will pass:
+
+```sh
+
+ ✓ spec/features/posts/delete.spec.ts (1 test) 3137ms
+   ✓ delete a Post > allows a user to delete a Post  1106ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  23:05:41
+   Duration  4.63s (transform 204ms, setup 829ms, collect 17ms, tests 3.14s, environment 0ms, prepare 56ms)
+```
+
+## Conclusions
+
+Psychic and Dream provide tools for you to stich together tests that cover the entire spectrum of your app, enabling you to always have a backend-centric view of your app, but without tampering in any way with your front end build, nor introducing or enforcing any patterns on you. Philosophically, the aim of Psychic and Dream is to provide a powerful, type-driven backend that can be tested end-to-end (via feature specs), but is otherwise decoupled. This means that you will deploy your front end client separately from your backend.
+
+### BDD
+
+The Dream and Psychic team practices BDD religiously, and wanted to be sure to provide a framework that could do the same under a multitude of circumstances. In order for this to work, it is important to be able to drive all of new code with feature tests, so that you can work your way in to individual controllers and services, which will all be tested via unit tests. This is why all of the code written in this tutorial is also written with tests up front, in addition to my running of the tests, even though I knew they were going to fail. Seeing a test fail, and then watching it succeed after your implementation, gives you great confidence that your test truly covers the behavior you are testing.
+
+### Auth strategies
+
+The auth strategies provided here are not recommended for production grade authentication, this is merely meant to be a window into how one might use Psychic and Dream to build any variety of resource-driven applications. Hooking into utilities like passport may provide more succinct auth integrations than we are providing in this example, but there is always a trade off when dealing with such a broadly-scoped tutorial, is I don't want to spend any time getting hung up on any one thing, as much as I do on how to stitch it up bare bones, and let you start modifying it however you like, in the traditional spirit of a javascript adventurist. Under the hood Psychic is just running express, which means you can easily tap into express at various lifecycle stages and add middleware, or integrate your custom express-based plugin.
+
+### Final thoughts
+
+Thanks for following along, and I hope you found this informative. There are many more tutorials to come in the near future, but alas it is late and my bed is calling. If I weren't being so abbreviated here, I would have additionally added specs to double check that users could not tamper with other user's posts, as well as specs to make sure unauthenticated users cannot access those routes, but I didn't want to increase the complexity of this already vast tutorial. Anyways, there's always more to yammer on about, so I'm just ganna call it. Good night to you, and thanks for reading!
