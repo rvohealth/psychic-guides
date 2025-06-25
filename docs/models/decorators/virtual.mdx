@@ -33,16 +33,21 @@ class BodyMeasurement extends ApplicationModel {
 ```
 
 ```ts
+import argon2 from 'argon2'
+
 class User extends ApplicationModel {
   @deco.Virtual()
-  public password: string
+  public password: string | undefined
 
   @deco.BeforeSave()
-  public hasPassword() {
-    this.setAttribute(
-      'hashedPassword',
-      preferredHashingAlgorithm(this.password)
-    )
+  public async hashPassword(this: User) {
+    if (this.password) {
+      this.setAttribute(
+        'passwordDigest',
+        await argon2.hash(this.password)
+      )
+      this.password = undefined
+    }
   }
 }
 ```

@@ -1,0 +1,1935 @@
+# Build a blog
+
+In this tutorial, we will use Psychic to provision a new blog application. To keep this tutorial simple, this blog will enable users to sign up and add posts, but nothing else. We will focus on the scaffolding techniques necessary to support this approach. The application will be fully spec'd, including feature spec coverage on the front end application we are generating.
+
+## Provisioning
+
+The first step to building our app is to provision a new Psychic application. To do this, we will use the app provisioning tool provided by psychic. Before this is done, let's make sure we are using a modern version of nodejs, and have the required dependencies installed.
+
+```sh
+which node
+# ~/.nodenv/shims/node
+
+node --version
+# v22.14.0
+
+postgres --version
+# postgres (PostgreSQL) 13.20
+```
+
+With a modern node version and a valid version of postgres installed, we are ready to provision our new psychic application. Run the following in the terminal (from the directory of your choice) to provision a new Psychic app
+
+```sh
+cd ~/Sites
+npx @rvoh/create-psychic myblog
+```
+
+This will prompt you with a few questions, which I will answer thusly, providing the scaffolding for a client react app and no admin app:
+
+```sh
+what package manager would you like to use?
+ > yarn
+   pnpm
+   npm
+
+what primary key type would you like to use?
+ > bigserial
+   serial
+   uuid
+
+Would you like a monorepo?
+For more info, see https://psychicframework.com/docs/monorepo
+ > yes
+   no
+
+which front end client would you like to use?
+   nextjs
+ > react
+   vue
+   nuxt
+   none
+
+which front end client would you like to use for your admin app?
+   nextjs
+   react
+   vue
+   nuxt
+ > none
+
+background workers?
+   yes
+ > no
+
+websockets? (beta)
+ > no
+   yes
+```
+
+Once complete, Psychic will begin installing the necessary dependencies to provision both your Psychic app, as well as the react client app. Once it finishes, you can cd into the `api` folder within your new project to begin setting up your app
+
+## First time application setup
+
+With the new app in place, let's poke around the file system a bit to understand what has been generated for you. Opening the `blog` folder that was generated, you will see both an `api` folder, as well as a `client` folder. The api folder is where your Psychic application lives, while the client folder contains an isolated react application, provisioned with vite.
+
+```
+├── myblog
+│   ├── api                 # this is where your Psychic app lives
+│   ├── client              # this is where your React app lives
+```
+
+### .env files
+
+Navigating into the api folder, there are a few files worth examining right out the gate. The first files to examine are the `.env` and `.env.test` files. These files provide your application with environment variables for the development and test environments, which are the two environments you will be utilizing when you are building your app locally. The `.env` file will be used to provide env variables for the `NODE_ENV=development` environment, while the `.env.test` file will be used to provide env variables for the `NODE_ENV=test` environment.
+
+```sh
+DB_USER=fred # this may need to be changed
+DB_NAME=myblog_development
+DB_PORT=5432
+DB_HOST=localhost
+REPLICA_DB_PORT=5432
+REPLICA_DB_HOST=localhost
+DB_NO_SSL=1
+APP_ENCRYPTION_KEY="Paifn7F7cNToDs5zCgCR0/LGsj1Ar3c8WJz3VXXDioY="
+WEB_SERVICE=1
+WORKER_SERVICE=1
+CORS_HOSTS='["http://localhost:3000"]'
+TZ=UTC
+DREAM_PARALLEL_TESTS=3
+```
+
+Opening these files up, you should see database credentials for your application. By default, the DB_USER _should_ be the username of your current user. This is because when you provision a new postgres database using homebrew, it automatically creates a new DB user with the username on your machine. If you are provisioning your postgres version a different way, you may need to adjust the `DB_USER` value found in both of these files. Otherwise, let's move on.
+
+### Setting up your database
+
+With the .env files set up correctly, we are now ready to provision the database. To do this, you can run the following commands to set up both a development and a test database:
+
+```sh
+# always make sure you are in the api folder before running any psy commands
+cd api
+
+NODE_ENV=test yarn psy db:create
+NODE_ENV=development yarn psy db:create
+```
+
+This command will create new postgres databases for your test and development environments.
+
+```sh
+✺ ┌ creating myblog_test...
+  └ complete
+✺ ┌ creating myblog_development...
+  └ complete
+```
+
+## Generating the User model
+
+Since we are creating a blog, we are going to need at minimum a users and blogs table in our database, so that we can allow users to sign up, sign in, and create new blog posts. To get started, let's generate the user model and begin building out the scaffolding for authentication.
+
+```sh
+yarn psy g:dream User email:string passwordDigest:string
+```
+
+This will spit out a model, spec, factory, serializer, and migration for the new User model.
+
+```sh
+generating dream: src/app/models/User.ts
+generating spec: spec/unit/models/User.spec.ts
+generating factory: spec/factories/UserFactory.ts
+generating serializer: src/app/serializers/UserSerializer.ts
+generating migration: src/db/migrations/1750783840641-create-user.ts
+```
+
+Examining the generated model at `src/app/models/User.ts`, we will see that there are a few errors showing in this file. This is expected, since we have not run a type sync since generating this model. Type syncing is essential to Dream and Psychic, since not all type guards can be generated by examining the application code alone. Dream and Psychic both provide a `sync` process, which will scan your entire application and rebuild these types. Any time you generate a new model, add a new association, or do anything that will modify OpenAPI output, you will need to re-sync your application.
+
+Lucky for us, running migrations will automatically re-sync these types, so let's start by making some tweaks to our migration file. Let's open the migration file and examine its contents:
+
+```ts
+// src/db/migrations/1750783840641-create-user.ts
+
+import { Kysely, sql } from 'kysely'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function up(db: Kysely<any>): Promise<void> {
+  await db.schema
+    .createTable('users')
+    .addColumn('id', 'bigserial', col => col.primaryKey())
+    .addColumn('email', 'varchar(255)', col => col.notNull())
+    .addColumn('password_digest', 'varchar(255)', col => col.notNull())
+    .addColumn('created_at', 'timestamp', col => col.notNull())
+    .addColumn('updated_at', 'timestamp', col => col.notNull())
+    .execute()
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function down(db: Kysely<any>): Promise<void> {
+  await db.schema.dropTable('users').execute()
+}
+```
+
+Everything looks good in here, except we need to add a unique index to the email. Let's do that now:
+
+```ts
+    // modify this line to add unique()
+    .addColumn('email', 'varchar(255)', col => col.notNull().unique())
+```
+
+Let's also switch the `password_digest` column to utilize `text` instead of `varchar(255)`
+
+```ts
+    // modify this line to replace varchar(255) with 'text'
+    .addColumn('password_digest', 'text', col => col.notNull())
+```
+
+With the migration updated, we can run migrations using the cli:
+
+```sh
+NODE_ENV=test yarn psy db:migrate
+NODE_ENV=development yarn psy db:migrate
+```
+
+With the migrations run, you can re-open the `src/app/models/User.ts` file, and all type errors should now be cleared.
+
+this is a pretty good spot for us to make our first commit:
+
+```sh
+git add --all
+git commit -m 'Add User model'
+```
+
+## Adding a Virtual password field
+
+Next, we want to add a `password` field, which, when updated, will be converted to a hashed password field in the database. To do this, we can utilize the `@deco.Virtual` decorator to add a virtual column to our model. Virtual columns are fields that act like columns, but do not persist to the actual database.
+
+To do this, let's first add argon2 as a dependency. We will use this package to generate one-way hashes of our user's passwords.
+
+```sh
+yarn add argon2
+```
+
+With the package added, let's first write a spec to cover the new behavior for our virtual column:
+
+```ts
+// api/spec/unit/models/User.spec.ts
+
+import argon2 from 'argon2'
+import createUser from "../../factories/UserFactory.js"
+
+describe('User', () => {
+  describe('upon save', () => {
+    context('password is saved', () => {
+      it('hashes the user password', async () => {
+        const user = await createUser({ password: 'abc123' })
+        expect(user.password).toBeUndefined()
+
+        expect(await argon2.verify(user.passwordDigest, 'abc123'))
+      })
+    })
+  })
+})
+```
+
+This spec should already contain type errors, since our user model does not yet have a virtual password field. Let's go ahead and run the spec anyway to make sure we get a failure. Once we see a failure, let's go and add implementation to solve for this spec.
+
+```ts
+// api/src/app/models/User.ts
+
+import argon2 from 'argon2' // add this import
+
+export default class User extends ApplicationModel {
+  ...
+  // add the below lines
+  @deco.Virtual('string')
+  public password: string | undefined
+
+  @deco.BeforeSave()
+  public async hashPassword(this: User) {
+    if (this.password) {
+      this.setAttribute(
+        'passwordDigest',
+        await argon2.hash(this.password)
+      )
+      this.password = undefined
+    }
+  }
+}
+```
+
+with the new Virtual decorator applied, we can now run `sync` to rebuild types for our app:
+
+```sh
+yarn psy sync
+```
+
+With the new virtual attribute in place, re-running our specs should produce a successful run:
+
+```sh
+✓ spec/unit/models/User.spec.ts (1 test) 341ms
+  ✓ User > upon save > password is saved > hashes the user password 126ms
+```
+
+Let's also update our `createUser` factory to automatically supply a password field, so that we don't always have to remember to provide one when we are creating users for specs.
+
+```ts
+import { UpdateableProperties } from '@rvoh/dream'
+import User from '../../src/app/models/User.js'
+
+let counter = 0
+
+export default async function createUser(attrs: UpdateableProperties<User> = {}) {
+  return await User.create({
+    email: `User email ${++counter}`,
+    // remove passwordDigest, add password here:
+    password: 'abc123',
+    ...attrs,
+  })
+}
+```
+
+## Add User#checkPassword
+
+In order to simplify password comparison in the future, let's add a method to the User model called `checkPassword`, which will return true if the provided password matches the passwordDigest hash.
+
+```ts
+// api/spec/unit/models/User.spec.ts
+
+describe('User', () => {
+  ...
+
+  describe('#checkPassword', () => {
+    it('returns true with a valid password', async () => {
+      const user = await createUser({ password: 'abc123' })
+      expect(await user.checkPassword('invalid')).toBe(false)
+    })
+
+    it('returns false with an invalid password', async () => {
+      const user = await createUser({ password: 'abc123' })
+      expect(await user.checkPassword('abc123')).toBe(true)
+    })
+  })
+})
+```
+
+Let's run the spec to get a failure:
+
+```sh
+yarn uspec spec/unit/models/User.spec.ts
+
+❯ spec/unit/models/User.spec.ts (3 tests | 2 failed) 613ms
+  ✓ User > upon save > password is saved > hashes the user password 189ms
+  × User > #checkPassword > returns true with a valid password 64ms
+    → user.checkPassword is not a function
+  × User > #checkPassword > returns false with an invalid password 64ms
+    → user.checkPassword is not a function
+```
+
+Now, let's add implementation to get our spec passing:
+
+```ts
+// api/src/app/models/User.ts
+
+export default class User extends ApplicationModel {
+  ...
+
+  public async checkPassword(password: string) {
+    return await argon2.verify(this.passwordDigest, password)
+  }
+}
+ ```
+
+Running specs again, we should be passing now:
+
+```sh
+✓ spec/unit/models/User.spec.ts (3 tests) 661ms
+  ✓ User > upon save > password is saved > hashes the user password 143ms
+  ✓ User > #checkPassword > returns true with a valid password 142ms
+  ✓ User > #checkPassword > returns false with an invalid password 109ms
+```
+
+
+## Add Sign up functionality
+
+Now that we have a user with a functioning password field, we can begin wiring up a client flow to create new users in our application. Let's start by adding a feature spec:
+
+```ts
+// api/spec/features/signup.spec.ts
+
+import { visit } from '@rvoh/psychic-spec-helpers'
+import User from '../../src/app/models/User.js'
+
+describe('Signup', () => {
+  it('allows user to sign up', async () => {
+    await visit('/')
+    await clickLink('Sign up')
+    await fillIn('#email', 'my@email')
+    await fillIn('#password', 'password123')
+    await click('Submit')
+
+    await expect(page).toMatchTextContent('Sign in')
+    const user = await User.findOrFailBy({ email: 'my@email' })
+    expect(await user.checkPassword('password123')).toBe(true)
+  })
+})
+```
+
+Running our feature spec, we should get failures:
+
+```sh
+yarn fspec spec/features/signup.spec.ts
+
+ RUN  v3.2.4 /Users/fgarbutt/Sites/sandbox/myblog/api
+
+ ❯ spec/features/signup.spec.ts (1 test | 1 failed) 10615ms
+   × Signup > allows user to sign up 7344ms
+     → Expected page to have clickable link with matching text: "Sign up"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  spec/features/signup.spec.ts > Signup > allows user to sign up
+Error: Expected page to have clickable link with matching text: "Sign up"
+ ❯ clickLink node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/feature/helpers/matcher-globals/clickLink.js:2:5
+ ❯ spec/features/signup.spec.ts:7:5
+      5|   it('allows user to sign up', async () => {
+      6|     await visit('/')
+      7|     await clickLink('Sign up')
+       |     ^
+      8|     await fillIn('#email', 'my@email')
+      9|     await fillIn('#password', 'password123')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  10:51:25
+   Duration  12.10s (transform 147ms, setup 804ms, collect 38ms, tests 10.62s, environment 0ms, prepare 59ms)
+```
+
+Let's proceed by beginning to modify our client react application, to add routing and links for our sign up page. To do so, we will start by changing into our client directory and adding the `react-router` dependency, since vite and react do not ship by default with routing mechanisms. If you have chosen to use Nextjs, or another client that provides routing, you can skip this.
+
+```sh
+cd ../client
+yarn add react-router
+
+# switch back to the api folder afterwards so you can continue
+# to run psy scripts.
+cd ../api
+```
+
+With react-router installed, let's configure react router in our `client/src/main.tsx` file.
+
+```ts
+// client/src/main.tsx
+
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from "react-router" // add this line
+import './index.css'
+import App from './App.tsx'
+
+// add missing <BrowserRouter> tags to encapsulate <App />:
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </StrictMode>,
+)
+```
+
+Next, let's add a few new pages to our app. We will start with a sign up page. I am using very simple structures here to keep the example easy to understand, but feel free to build out your forms however you'd like here. This signup page is not complete just yet, we will need to add functionality for the submission, but since we don't have a backend endpoint to submit to just yet, we will keep the submit implementation blank for now.
+
+```ts
+// client/src/pages/unauthed/SignupPage.tsx
+
+import { useState } from "react"
+
+export default function SignupPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
+  return (
+    <div>
+      <input id="email" onChange={e => setEmail(e.target.value)} />
+      <input id="password" onChange={e => setPassword(e.target.value)}/>
+      <button
+        onClick={() => {
+          // submit login
+        }}
+      >Submit</button>
+    </div>
+  )
+}
+```
+
+Let's also add a home page, so that we have a landing page that can navigate to the signup page for unauthenticated users.
+
+```ts
+// client/src/pages/unauthed/HomePage.tsx
+
+import { Link } from "react-router"
+
+export default function HomePage() {
+  return (
+    <div>
+      <Link to="/signup">Sign up</Link>
+    </div>
+  )
+}
+```
+
+With these two pages in place, we can now update the `App.tsx` file to incorporate both react-router, and the new pages we just added. We will add both an AuthedApp and UnauthedApp component, though for now we will only use the UnauthedApp component, since we don't currently have a way to determine if a user is signed in.
+
+```ts
+// client/src/App.tsx
+
+import { Route, Routes } from "react-router"
+import HomePage from './pages/unauthed/HomePage'
+import SignupPage from './pages/unauthed/SignupPage'
+
+import './App.css'
+
+function App() {
+  // TODO: add ability to detect authenticated users
+  return (
+    <UnauthedApp />
+  )
+}
+
+function UnauthedApp() {
+  return (
+    <Routes>
+      <Route path='/' element={<HomePage />} />
+      <Route path='/signup' element={<SignupPage />} />
+    </Routes>
+  )
+}
+
+function AuthedApp() {
+  return (
+    <Routes></Routes>
+  )
+}
+
+export default App
+```
+
+With these pages in place, we can run our feature spec again to get a new failure:
+
+```sh
+ ❯ spec/features/signup.spec.ts (1 test | 1 failed) 7790ms
+   × Signup > allows user to sign up 5773ms
+     →
+expected body with text:
+        Sign in
+
+but no text was found within that selector
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  spec/features/signup.spec.ts > Signup > allows user to sign up
+Error:
+expected body with text:
+        Sign in
+
+but no text was found within that selector
+
+ ❯ spec/features/signup.spec.ts:12:5
+     10|     await click('Submit')
+     11|
+     12|     await expect(page).toMatchTextContent('Sign in')
+       |     ^
+     13|     const user = await User.findOrFailBy({ email: 'my@email' })
+     14|     expect(await user.checkPassword('password123')).toBe(true)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  11:08:19
+   Duration  9.13s (transform 134ms, setup 707ms, collect 28ms, tests 7.79s, environment 0ms, prepare 58ms)
+```
+
+It is now failing because it successfully filled out the form and clicked Submit, but no text with the words "Sign in" have appeared on the page. Once we establish a successful signup pattern, we can redirect to the sign in page to enable this spec to move forward. To do this, we will need to create a backend endpoint to create a new user.
+
+### Sign up endpoint
+
+Let's add a new endpoint to handle signup. This endpoint will take an email and a password, and it will create a new user in the database. We'll start by generating a new controller.
+
+```sh
+yarn psy g:controller AuthSessionController
+```
+
+This will generate both a controller and spec for us. Let's start by editing the controller spec that was generated, to add tests to make sure the endpoint behaves correctly.
+
+```ts
+// api/spec/unit/controllers/AuthSessionController.spec.ts
+
+import { OpenapiSpecRequest } from "@rvoh/psychic-spec-helpers"
+import { paths } from "../../../src/types/openapi/validation.openapi.js"
+import { PsychicServer } from "@rvoh/psychic"
+import createUser from "../../factories/UserFactory.js"
+
+const request = new OpenapiSpecRequest<paths>()
+
+describe('AuthSessionController', () => {
+  beforeEach(async () => {
+    await request.init(PsychicServer)
+  })
+
+  describe('POST sign-up', () => {
+    it('allows a user to sign up', async () => {
+      await request.post('/sign-up', 204, { data: { email: 'how@yadoin', password: 'mypassword' } })
+    })
+
+    context('with an email address that is already in use', () => {
+      beforeEach(async () => {
+        await createUser({ email: 'how@yadoin' })
+      })
+
+      it('blocks sign up', async () => {
+        await request.post('/sign-up', 409, { data: { email: 'how@yadoin', password: 'mypassword' } })
+      })
+    })
+  })
+})
+```
+
+Let's also modify the controller that was generated. By default, all controllers will extend the `AuthedController`, which sets your app up to be secure by default. However, this is one controller that will need to explicitly _not_ require authentication, since it will be the controller that _establishes_ authentication.
+
+```ts
+// api/src/app/controllers/AuthSessionController.ts
+
+// change `AuthedController` to `ApplicationController` on the below line:
+export default class AuthSessionController extends ApplicationController {
+```
+
+By default, there will be some errors in this file. This is because the `OpenapiSpecRequest` class is type-guarded to the endpoints in your app. You have not written this endpoint yet, so OpenapiSpecRequest is not aware of it, and delivers errors to you until you fix this. However, these are only type errors, and you are still able to run the test and see results. Running the spec will give us 404 errors, since we have not implemented the code yet.
+
+```sh
+stderr | spec/unit/controllers/AuthSessionController.spec.ts > AuthSessionController > POST sign-up > allows a user to sign up
+Error: expected 204 "No Content", got 404 "Not Found"
+    at OpenapiSpecRequest.makeRequest (file:///Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/unit/OpenapiSpecRequest.js:416:39)
+    at OpenapiSpecRequest.post (file:///Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/unit/OpenapiSpecRequest.js:129:27)
+    at /Users/fgarbutt/Sites/sandbox/myblog/api/spec/unit/controllers/AuthSessionController.spec.ts:15:21
+    at file:///Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)
+----
+    at Test._assertStatus (/Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/supertest/lib/test.js:267:14)
+    at /Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/supertest/lib/test.js:323:13
+    at Test._assertFunction (/Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/supertest/lib/test.js:300:13)
+    at Test.assert (/Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/supertest/lib/test.js:179:23)
+    at Server.localAssert (/Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/supertest/lib/test.js:135:14)
+    at Object.onceWrapper (node:events:632:28)
+    at Server.emit (node:events:518:28)
+    at emitCloseNT (node:net:2416:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)
+ ❯ OpenapiSpecRequest.makeRequest node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/unit/OpenapiSpecRequest.js:422:21
+ ❯ OpenapiSpecRequest.post node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/unit/OpenapiSpecRequest.js:129:16
+ ❯ spec/unit/controllers/AuthSessionController.spec.ts:15:7
+
+stderr | spec/unit/controllers/AuthSessionController.spec.ts > AuthSessionController > POST sign-up > allows a user to sign up
+Trace:
+    at OpenapiSpecRequest.makeRequest (file:///Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/unit/OpenapiSpecRequest.js:423:21)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at OpenapiSpecRequest.post (file:///Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/unit/OpenapiSpecRequest.js:129:16)
+    at /Users/fgarbutt/Sites/sandbox/myblog/api/spec/unit/controllers/AuthSessionController.spec.ts:15:7
+    at file:///Users/fgarbutt/Sites/sandbox/myblog/api/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+ ❯ spec/unit/controllers/AuthSessionController.spec.ts (2 tests | 1 failed | 1 skipped) 393ms
+   × AuthSessionController > POST sign-up > allows a user to sign up 138ms
+     → expected 204 "No Content", got 404 "Not Found"
+   ↓ AuthSessionController > POST sign-up > with an email address that is already in use > blocks sign up
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  spec/unit/controllers/AuthSessionController.spec.ts > AuthSessionController > POST sign-up > allows a user to sign up
+Error: expected 204 "No Content", got 404 "Not Found"
+ ❯ OpenapiSpecRequest.makeRequest node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/unit/OpenapiSpecRequest.js:416:39
+ ❯ OpenapiSpecRequest.post node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/unit/OpenapiSpecRequest.js:129:27
+ ❯ spec/unit/controllers/AuthSessionController.spec.ts:15:21
+     13|   describe('POST sign-up', () => {
+     14|     it.only('allows a user to sign up', async () => {
+     15|       await request.post('/sign-up', 204, { data: { email: 'how@yadoin', password: 'mypassword' } })
+       |                     ^
+     16|     })
+     17|
+ ❯ Test._assertStatus node_modules/supertest/lib/test.js:267:14
+ ❯ node_modules/supertest/lib/test.js:323:13
+ ❯ Test._assertFunction node_modules/supertest/lib/test.js:300:13
+ ❯ Test.assert node_modules/supertest/lib/test.js:179:23
+ ❯ Server.localAssert node_modules/supertest/lib/test.js:135:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 skipped (2)
+   Start at  19:12:46
+   Duration  1.42s (transform 144ms, setup 589ms, collect 225ms, tests 393ms, environment 0ms, prepare 48ms)
+```
+
+To solve this error, let's add our implementation for sign up. To start with, we will need to add a route to our routes file:
+
+```ts
+// conf/routes.ts
+
+import { PsychicRouter } from '@rvoh/psychic'
+import AuthSessionController from '../app/controllers/AuthSessionController.js'
+
+export default (r: PsychicRouter) => {
+  r.post('/sign-up', AuthSessionController, 'signUp')
+}
+```
+
+Next, let's add the implementation for the sign-up endpoint in our new controller:
+
+```ts
+// api/src/app/controllers/AuthSessionController.ts
+
+import { OpenAPI } from '@rvoh/psychic'
+import AuthedController from './AuthedController.js'
+import User from '../models/User.js'
+
+const openApiTags = ['auth-session']
+
+export default class AuthSessionController extends AuthedController {
+  @OpenAPI(User, {
+    status: 204,
+    tags: openApiTags,
+    requestBody: {
+      only: ['email', 'password']
+    }
+  })
+  public async signUp() {
+    const email = this.castParam('email', 'string')
+    const password = this.castParam('password', 'string')
+    try {
+      await User.create({ email, password })
+    } catch {
+      this.conflict()
+    }
+
+    this.noContent()
+  }
+}
+```
+
+With this controller in place, we can now run `yarn psy sync` to update our types to acknowledge the new endpoint.
+
+```sh
+yarn psy sync
+```
+
+With types sycned, we should now see all our errors disappear in our spec file, since it is now aware of the new endpoint we added. Running the spec again, we should see our endpoint tests passing.
+
+```sh
+ ✓ spec/unit/controllers/AuthSessionController.spec.ts (2 tests) 605ms
+   ✓ AuthSessionController > POST sign-up > allows a user to sign up 198ms
+   ✓ AuthSessionController > POST sign-up > with an email address that is already in use > blocks sign up 114ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  19:26:07
+   Duration  1.73s (transform 126ms, setup 614ms, collect 262ms, tests 605ms, environment 0ms, prepare 56ms)
+```
+
+### redux bridge
+
+With our controller specs passing, we can work our way back to the client to complete our sign up spec. Before we do this, however, we can tap into special openapi integrations to automatically build an api bridge between our backend and client.
+
+Let's start by adding redux to our client project dependencies.
+
+```sh
+yarn add @reduxjs/toolkit react-redux
+```
+
+With redux installed, we can begin integrating into our client application. We will need to start with a provider, like so:
+
+```ts
+// client/src/main.tsx
+
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { Provider } from 'react-redux' // add this line
+import { BrowserRouter } from "react-router"
+import App from './App.tsx'
+import { store } from './store.ts'
+
+import './index.css'
+
+// add <Provider store={store}> below:
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <Provider store={store}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </Provider>
+  </StrictMode>,
+)
+```
+
+Next, let's add our app reducer, which we will use to keep track of the user's authenticated state:
+
+```ts
+// client/src/reducers/appReducer.ts
+
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+
+interface AppState {
+  authed: boolean
+}
+
+const initialState: AppState = {
+  authed: false
+}
+
+export const appSlice = createSlice({
+  name: 'app',
+  initialState,
+  reducers: {
+    setAuthed: (state, action: PayloadAction<boolean>) => {
+      state.authed = action.payload
+    }
+  }
+})
+
+export const { setAuthed } = appSlice.actions
+
+export default appSlice.reducer
+```
+
+Finally, let's add a the store.ts and hooks.ts files needed to integrate your client seamlessly with redux in typescript:
+
+```ts
+// client/src/store.ts
+
+import { configureStore } from '@reduxjs/toolkit'
+import appReducer from './reducers/appReducer'
+
+export const store = configureStore({
+  reducer: {
+    app: appReducer,
+  }
+})
+
+// Get the type of our store variable
+export type AppStore = typeof store
+// Infer the `RootState` and `AppDispatch` types from the store itself
+export type RootState = ReturnType<AppStore['getState']>
+// Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
+export type AppDispatch = AppStore['dispatch']
+```
+
+```ts
+// client/src/hooks.ts
+
+import type { TypedUseSelectorHook } from 'react-redux'
+import { useDispatch, useSelector, useStore } from 'react-redux'
+import type { AppDispatch, AppStore, RootState } from './store'
+
+// Use throughout your app instead of plain `useDispatch` and `useSelector`
+export const useAppDispatch: () => AppDispatch = useDispatch
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
+export const useAppStore: () => AppStore = useStore
+```
+
+Now that we have redux integrated into our application, let's add an openapi-redux bridge to enable us to sync our backend openapi to redux whenever the openapi document is synced. To do this, let's use the `setup:sync:openapi-redux` cli command, like so:
+
+```sh
+yarn psy setup:sync:openapi-redux
+```
+
+This is going to give you a prompt to configure the openapi-redux setup. This setup can be quite confusing, though the prompts provided by psychic do their best to explain the complexities of this process.
+
+For the first prompt, I just accepted the default value of `./openapi/openapi.json`, since I want my application's openapi.json file to be the source of truth for my redux bindings.
+
+```sh
+What would you like the schemaFile to be?
+
+The schemaFile is the openapi file that @rtk-query/codegen-openapi will read to produce
+all of its redux bindings. If not provided, it will default to
+
+  ./openapi/openapi.json
+```
+
+For the exportName, I also accepted the default value:
+
+```sh
+What would you like the exportName to be?
+
+The exportName is used to name the final output of the @rtk-query/codegen-openapi utility.
+It will encase all of the backend endpoints that have been consumed via the specified openapi
+file. We recommend naming it something like the name of your app, i.e.
+
+  myblogApi
+```
+
+For the outputFile, I customized the path to make more sense for my application:
+
+```sh
+What would you like the outputFile to be?
+
+The outputFile is the path to the generated openapi redux bindings. If not provided,
+it will default to:
+
+  ../client/app/api/myblogApi.ts
+../client/src/api/myblogApi.ts # <- this is what I provided
+```
+
+for the apiFile path, I also provided my own path:
+
+```sh
+What would you like the path to your apiFile to be?
+
+The apiFile option specifies which base api file to use to mix in your backend endpoints with.
+This option is provided by the @rtk-query/codegen-openapi library to enable you to define
+custom api behavior, such as defining a base url, adding header preparation steps, etc...
+
+We expect you to provide this path with the api root in mind, so you will need to consider
+how to travel to the desired filepath from within your psychic project, i.e.
+
+  ../client/app/api/api.ts
+../client/src/api/api.ts # <-- this is what I provided
+```
+
+Finally, for the apiImport, I just accepted the default (`emptyMyblogApi`):
+
+```sh
+What would you like the path to your apiImport to be?
+
+The apiImport option specifies the export key for the api module being exported from the
+file found at the apiFile path.
+
+This option is provided by the @rtk-query/codegen-openapi library to inform it of which
+named export in your apiFile it should be mixing your backend api with. If not provided,
+it will default to
+
+  emptyMyblogApi
+```
+
+With these arguments provided, psychic proceeds to generate the necessary boilerplate to automatically sync a redux-openapi bridge to your client any time your application syncs. This means that any time your backend api changes, the redux api bindings to your client will automatically change as well.
+
+The output from the command we just ran is also alerting us to another set of updates we need to make to our redux configuration. First, let's run sync:
+
+```sh
+yarn psy sync
+```
+
+Now, let's make our changes to the store.ts file:
+
+```ts
+// client/src/store.ts
+
+import { configureStore } from '@reduxjs/toolkit'
+import appReducer from './reducers/appReducer'
+import { myblogApi } from './api/myblogApi'
+
+export const store = configureStore({
+  reducer: {
+    app: appReducer,
+    [myblogApi.reducerPath]: myblogApi.reducer,
+  },
+  middleware: gDM => gDM().concat(myblogApi.middleware),
+})
+
+export type AppStore = typeof store
+export type RootState = ReturnType<AppStore['getState']>
+export type AppDispatch = AppStore['dispatch']
+```
+
+Finally, we will need to update the generated api file to correctly point to port 7778 during test runs. To do that, we can add an env helper to aid is while in vite:
+
+```ts
+// client/src/helpers/viteEnvValue.ts
+
+export default function viteEnvValue(envVar: ViteEnvVar) {
+  return (import.meta as unknown as { env: Record<ViteEnvVar, string> }).env[envVar]
+}
+
+export type ViteEnvVar =
+  | 'VITE_PSYCHIC_ENV'
+  | 'VITE_API_HOST'
+
+```
+
+With that env helper in place, we can now use it to determine if test, and then return a different base url, like so:
+
+```ts
+// client/src/api/api.ts
+
+...
+import viteEnvValue from '../helpers/viteEnvValue'
+
+function baseUrl() {
+  ...
+  if (viteEnvValue('VITE_PSYCHIC_ENV') === 'test') return 'http://localhost:7778'
+  return 'http://localhost:7777'
+}
+
+...
+```
+
+With this all in place, we should be ready to start utilizing our redux bindings within our signup page.
+
+```ts
+// client/src/pages/unauthed/SignupPage.tsx
+
+import { useState } from "react"
+import { usePostSignUpMutation } from "../../api/myblogApi" // add this import
+import { useNavigate } from "react-router"
+
+export default function SignupPage() {
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [signUp] = usePostSignUpMutation() // add this line
+
+  return (
+    <div>
+      <input id="email" onChange={e => setEmail(e.target.value)} />
+      <input id="password" onChange={e => setPassword(e.target.value)}/>
+      <button
+        onClick={async () => {
+          // add the below two lines
+          await signUp({ body: { email, password }})
+          navigate('/signin')
+        }}
+      >Submit</button>
+    </div>
+  )
+}
+```
+
+This will set us up to call to our backend and sign up the user. Let's also set up a SigninPage for our app to redirect to after signing up:
+
+```ts
+// client/src/pages/unauthed/SigninPage.tsx
+
+import { useState } from "react"
+
+export default function SigninPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
+  return (
+    <div>
+      <h1>Sign in</h1>
+
+      <input id="email" onChange={e => setEmail(e.target.value)} />
+      <input id="password" onChange={e => setPassword(e.target.value)}/>
+      <button
+          // submit login
+      >Submit</button>
+    </div>
+  )
+}
+```
+
+Now, let's wire up the SigninPage into our app within the `App.tsx` file:
+
+```ts
+// client/src/App.tsx
+
+import SigninPage from "./pages/unauthed/SigninPage" // add this import
+
+...
+
+// add signin route below:
+function UnauthedApp() {
+  return (
+    <Routes>
+      ...
+      <Route path='/signin' element={<SigninPage />} />
+    </Routes>
+  )
+}
+...
+```
+
+With this all in place, we should be able to get a passing feature spec for signup:
+
+```sh
+ ✓ spec/features/signup.spec.ts (1 test) 3293ms
+   ✓ Signup > allows user to sign up  910ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  15:36:51
+   Duration  4.71s (transform 217ms, setup 744ms, collect 5ms, tests 3.29s, environment 0ms, prepare 60ms)
+```
+
+## Sign in functionality
+
+With signup working, we are ready to implement our sign in strategy. There is no one-size-fits-all solution to this, so I will go with a very simnple authentication strategy here to keep this tutorial simple. In the modern era, a basic username-password authentication scheme is outdated, so I would recommend swapping this strategy for something more sophisticated.
+
+To start with, let's write a feature spec to capture the behavior of our login flow.
+
+```ts
+// api/spec/features/signin.spec.ts
+
+import { visit } from '@rvoh/psychic-spec-helpers'
+
+describe('Signin', () => {
+  it('allows user to sign in', async () => {
+    await visit('/')
+    await clickLink('Sign in')
+    await fillIn('#email', 'my@email')
+    await fillIn('#password', 'password123')
+    await click('Submit')
+
+    await expect(page).toMatchTextContent('Dashboard')
+  })
+})
+```
+
+if we run this spec, we will get the following error:
+
+```sh
+ ❯ spec/features/signin.spec.ts (1 test | 1 failed) 8196ms
+   × Signin > allows user to sign in 5831ms
+     → Expected page to have clickable link with matching text: "Sign in"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  spec/features/signin.spec.ts > Signin > allows user to sign in
+Error: Expected page to have clickable link with matching text: "Sign in"
+ ❯ clickLink node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/feature/helpers/matcher-globals/clickLink.js:2:5
+ ❯ spec/features/signin.spec.ts:6:5
+      4|   it('allows user to sign in', async () => {
+      5|     await visit('/')
+      6|     await clickLink('Sign in')
+       |     ^
+      7|     await fillIn('#email', 'my@email')
+      8|     await fillIn('#password', 'password123')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  16:11:09
+   Duration  9.66s (transform 161ms, setup 794ms, collect 3ms, tests 8.20s, environment 0ms, prepare 58ms)
+```
+
+This is because we have not hooked up a Sign in link to the home page yet. Let's do that now:
+
+```ts
+// client/src/pages/unauthed/HomePage.tsx
+
+import { Link } from "react-router"
+
+// add signin link below
+export default function HomePage() {
+  return (
+    <div>
+      <Link to="/signup">Sign up</Link>
+      <Link to="/signin">Sign in</Link>
+    </div>
+  )
+}
+```
+
+Running it again, we will watch our error move forward. Now it is complaining because there is no "Dashboard" text on the page. The dashboard text is kind of a placeholder, since we don't totally know what we will show when the user logs in yet. We will eventually make a dashboard page that contains that missing text to pass the test. First, however, we will need to complete the sign in endpoint, so that we have somewhere to send the login data from our inputs.
+
+### Sign in endpoint
+
+To build our signin endpoint, let's add a method to our `AuthSessionController` to receive the signin and process it. Let's start with a controller spec to cover the behavior:
+
+```ts
+// api/spec/unit/controllers/AuthSessionController.spec.ts
+
+  ...
+
+  describe('POST sign-in', () => {
+    beforeEach(async () => {
+      await createUser({ email: 'how@yadoin', password: 'mypassword' })
+    })
+
+    it('allows a user to sign in', async () => {
+      await request.post('/sign-in', 204, { data: { email: 'how@yadoin', password: 'mypassword' } })
+    })
+
+    context('with an email address that is not in our system', () => {
+      it('blocks sign in', async () => {
+        await request.post('/sign-in', 401, { data: { email: 'non@existingemail', password: 'mypassword' } })
+      })
+    })
+
+    context('with an invalid password', () => {
+      it('blocks sign in', async () => {
+        await request.post('/sign-in', 401, { data: { email: 'how@yadoin', password: 'invalidpassword' } })
+      })
+    })
+  })
+```
+
+Immediately, we should see errors in this file, since the OpenapiSpecRequest class we are leveraging does not recognize this `sign-in` endpoint yet. Running the test, we get an error saying it expected 204, but got a 404. Let's add the endpoint to our controller now to fix this, as well as the type errors:
+
+```ts
+// api/src/app/controllers/AuthSessionController.ts
+
+  ...
+
+  @OpenAPI(User, {
+    status: 204,
+    tags: openApiTags,
+    requestBody: {
+      only: ['email', 'password']
+    }
+  })
+  public async signIn() {
+    const email = this.castParam('email', 'string')
+    const password = this.castParam('password', 'string')
+
+    const user = await User.findBy({ email })
+    if (!user) return this.unauthorized()
+
+    const passwordsMatch = await user.checkPassword(password)
+    if (!passwordsMatch) return this.unauthorized()
+
+    this.setCookie('authSession', user.id.toString())
+    this.noContent()
+  }
+```
+
+Additionally, let's add a corresponding route to our routes file:
+
+```ts
+// api/src/conf/routes.ts
+
+import { PsychicRouter } from '@rvoh/psychic'
+import AuthSessionController from '../app/controllers/AuthSessionController.js'
+
+export default (r: PsychicRouter) => {
+  r.post('/sign-up', AuthSessionController, 'signUp')
+  r.post('/sign-in', AuthSessionController, 'signIn') // add this line
+}
+```
+
+Next, let's run `sync` so we can generate types for the new endpoint:
+
+```sh
+yarn psy sync
+```
+
+Now we can run our endpoint test again, and it should be passing.
+
+```sh
+ ✓ spec/unit/controllers/AuthSessionController.spec.ts (5 tests) 920ms
+   ✓ AuthSessionController > POST sign-up > allows a user to sign up 203ms
+   ✓ AuthSessionController > POST sign-up > with an email address that is already in use > blocks sign up 127ms
+   ✓ AuthSessionController > POST sign-in > allows a user to sign in 122ms
+   ✓ AuthSessionController > POST sign-in > with an email address that is not in our system > blocks sign in 91ms
+   ✓ AuthSessionController > POST sign-in > with an invalid password > blocks sign in 128ms
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  23:31:56
+   Duration  1.97s (transform 135ms, setup 600ms, collect 225ms, tests 920ms, environment 0ms, prepare 49ms)
+```
+
+### Auth status endpoint
+
+Let's add a new endpoint for determining if the user _is_ authenticated. You may or may not need this endpoint for your app, but it will be helpful for our very basic app, since it can easily be a switch to use to determine if the user is authenticated or not.
+
+To set this up, let's add a new endpoint called `GET /auth/status`, which will return either a 204 if the user's auth session is set, or 401 if the user's auth session is not set. First, let's add a new spec:
+
+```ts
+// api/spec/unit/controllers/AuthSessionController.spec.ts
+
+  ...
+
+  describe('GET /auth/status', () => {
+    beforeEach(async () => {
+      await createUser({ email: 'how@yadoin', password: 'mypassword' })
+    })
+
+    context('with an authenticated user', () => {
+      it('returns a 204', async () => {
+        const session = await request.session('post', '/sign-in', 204, { data: { email: 'how@yadoin', password: 'mypassword' } })
+        await session.get('/auth/status', 204)
+      })
+    })
+
+    context('without an authenticated user', () => {
+      it('returns a 401', async () => {
+        await request.get('/auth/status', 401)
+      })
+    })
+  })
+```
+
+Running this spec should give us a 404. We can fix that by adding both a route and matching action on our controller:
+
+```ts
+// api/src/conf/routes.ts
+
+import { PsychicRouter } from '@rvoh/psychic'
+import AuthSessionController from '../app/controllers/AuthSessionController.js'
+
+export default (r: PsychicRouter) => {
+  r.post('/sign-up', AuthSessionController, 'signUp')
+  r.post('/sign-in', AuthSessionController, 'signIn')
+  r.get('/auth/status', AuthSessionController, 'status') // add this line
+}
+```
+
+Our routes file will show a type error because the `status` arg, which will be cleared once we add the method to the AuthSessionController. Let's add that now.
+
+```ts
+// api/src/app/controllers/AuthSessionController.ts
+
+  ...
+
+  @OpenAPI({
+    status: 204,
+    tags: openApiTags,
+  })
+  public async status() {
+    if (!this.getCookie('authSession')) return this.unauthorized()
+    this.noContent()
+  }
+```
+
+let's sync, since we have added a new endpoint, then check our controller spec again. The errors will have cleared now.
+
+```sh
+yarn psy sync
+```
+
+Running our controller spec again, we got all successes:
+
+```sh
+ ✓ spec/unit/controllers/AuthSessionController.spec.ts (7 tests) 1300ms
+   ✓ AuthSessionController > POST sign-up > allows a user to sign up 227ms
+   ✓ AuthSessionController > POST sign-up > with an email address that is already in use > blocks sign up 129ms
+   ✓ AuthSessionController > POST sign-in > allows a user to sign in 108ms
+   ✓ AuthSessionController > POST sign-in > with an email address that is not in our system > blocks sign in 147ms
+   ✓ AuthSessionController > POST sign-in > with an invalid password > blocks sign in 117ms
+   ✓ AuthSessionController > GET /auth/status > with an authenticated user > returns a 204 147ms
+   ✓ AuthSessionController > GET /auth/status > without an authenticated user > returns a 401 78ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  23:49:04
+   Duration  2.36s (transform 130ms, setup 606ms, collect 240ms, tests 1.30s, environment 0ms, prepare 53ms)
+```
+
+This should be enough for us to get going on our sign in flow for the front end. Let's start by bringing in our new signin endpoint to our SigninPage component, so we can submit our data. Let's update our signin page:
+
+```ts
+// client/src/pages/unauthed/SigninPage.tsx
+
+import { useState } from 'react'
+import { usePostSignInMutation } from '../../api/myblogApi'
+import { useNavigate } from 'react-router'
+
+export default function SigninPage() {
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [signIn] = usePostSignInMutation()
+
+  return (
+    <div>
+      <h1>Sign in</h1>
+
+      <input id="email" onChange={e => setEmail(e.target.value)} />
+      <input id="password" onChange={e => setPassword(e.target.value)} />
+      <button
+        onClick={async () => {
+          await signIn({
+            body: {
+              email,
+              password,
+            },
+          })
+          navigate('/')
+        }}
+      >
+        Submit
+      </button>
+    </div>
+  )
+}
+```
+
+Now, running our spec again, we should be getting the same error. But, if we run it in visual mode, we will see that we _do_ in fact get redirected to the home page after signing in, it just doesn't show us a dashboard page. Use the `fspec:visible` command to run it in a browser, so you can observe the behavior for yourself:
+
+```sh
+yarn fspec:visible spec/features/signin.spec.ts
+```
+
+Let's fix this by adding the ability to detect authenticated users. First, let's add a dashboard page to the `pages/authed` folder, which we will also create:
+
+```ts
+// client/src/pages/authed/DashboardPage.tsx
+
+export default function DashboardPage() {
+  return <div>Dashboard</div>
+}
+```
+
+Next, we will tap into the `GET /auth/status` endpoint I mentioned before to determine if the user is authenticated or not within our App.tsx file, and use it to conditionally render the Dashboard when the user is authenticated.
+
+```ts
+// client/src/App.tsx
+
+import './App.css'
+
+import { Route, Routes } from 'react-router'
+import HomePage from './pages/unauthed/HomePage'
+import SignupPage from './pages/unauthed/SignupPage'
+import SigninPage from './pages/unauthed/SigninPage'
+import DashboardPage from './pages/authed/DashboardPage'
+import { useAppSelector } from './hooks'
+import { useGetAuthStatusQuery } from './api/myblogApi'
+import { useEffect } from 'react'
+import { setAuthed } from './reducers/appReducer'
+import { useDispatch } from 'react-redux'
+
+function App() {
+  const dispatch = useDispatch()
+  const authed = useAppSelector(state => state.app.authed)
+  const { isSuccess: authSucceeded } = useGetAuthStatusQuery()
+
+  useEffect(() => {
+    if (authSucceeded) {
+      dispatch(setAuthed(true))
+    }
+  }, [authSucceeded])
+
+  return authed ? <AuthedApp /> : <UnauthedApp />
+}
+
+function UnauthedApp() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/signin" element={<SigninPage />} />
+    </Routes>
+  )
+}
+
+function AuthedApp() {
+  return (
+    <Routes>
+      <Route path="/" element={<DashboardPage />} />
+    </Routes>
+  )
+}
+
+export default App
+```
+
+With these files in place, we can run our signin feature spec again and it should pass
+
+```sh
+ ✓ spec/features/signin.spec.ts (1 test) 3173ms
+   ✓ Signin > allows user to sign in  1045ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  17:23:38
+   Duration  4.42s (transform 129ms, setup 736ms, collect 7ms, tests 3.17s, environment 0ms, prepare 55ms)
+```
+
+Finally, a functioning auth system. I haven't been commiting at all, so I am going to make another commit now. Hopefully you have been commiting more often than me.
+
+```sh
+git add --all
+git commit -m 'add functioning auth system'
+```
+
+Next, we will set up the scaffolding for our blog. To do anything, we will need to start by generating a Post model. This model will belong to a User, and it will have a title and a body. We can now tap into psychic's resource generator to make this very trivial for ourselves.
+
+```sh
+yarn psy g:resource api/v1/posts Post user:belongs_to title:text body:text
+```
+
+This automatically generates a controller, model, serializer, controller spec, and model spec. It additionally adds the necessary route entry to build this route in our routes file. Opening the `api/spec/unit/controllers/Api/V1/PostsController.spec.ts` spec, you will find it has basically exactly what we need to test our new resource.
+
+Let's first run our migrations to capture the new model
+
+```sh
+NODE_ENV=test yarn psy db:migrate
+NODE_ENV=development yarn psy db:migrate
+```
+
+Examining the spec file now, most of our type errors will have gone away, but a few remain. Let's fix them by adding the reverse association to the User model.
+
+```ts
+// api/src/app/models/User.ts
+export default class User extends ApplicationModel {
+  // add these 2 lines somewhere:
+  @deco.HasMany('Post')
+  public posts: Post[]
+}
+```
+
+Now let's run sync again to sync the new associations to our type layer.
+
+```sh
+yarn psy sync
+```
+
+With sync having been run, the specs are now completely free of type errors. That doesn't mean they will pass when being run, however. Let's give it a try:
+
+```sh
+yarn uspec spec/unit/controllers/Api/V1/PostsController.spec.ts
+```
+
+What you will get, unfortunately, is specs that take forever to fail. This is funny, why are we experiencing this? Well, if we open the controller that was generated for us, we will see:
+
+```ts
+// api/src/app/controllers/Api/V1/PostsController.ts
+
+import { OpenAPI } from '@rvoh/psychic'
+import ApiV1BaseController from './BaseController.js'
+import Post from '../../../models/Post.js'
+
+const openApiTags = ['posts']
+
+export default class ApiV1PostsController extends ApiV1BaseController {
+  @OpenAPI(Post, {
+    status: 200,
+    tags: openApiTags,
+    description: 'Fetch multiple Posts',
+    many: true,
+    serializerKey: 'summary',
+  })
+  public async index() {
+    // const posts = await this.currentUser.associationQuery('posts')
+    //   .preloadFor('summary')
+    //   .all()
+    // this.ok(posts)
+  }
+
+  @OpenAPI(Post, {
+    status: 200,
+    tags: openApiTags,
+    description: 'Fetch a Post',
+  })
+  public async show() {
+    // const post = await this.post()
+    // this.ok(post)
+  }
+
+  @OpenAPI(Post, {
+    status: 201,
+    tags: openApiTags,
+    description: 'Create a Post',
+  })
+  public async create() {
+    // let post = await this.currentUser.createAssociation('posts', this.paramsFor(Post))
+    // if (post.isPersisted) post = await post.loadFor('default').execute()
+    // this.created(post)
+  }
+
+  @OpenAPI(Post, {
+    status: 204,
+    tags: openApiTags,
+    description: 'Update a Post',
+  })
+  public async update() {
+    // const post = await this.post()
+    // await post.update(this.paramsFor(Post))
+    // this.noContent()
+  }
+
+  @OpenAPI({
+    status: 204,
+    tags: openApiTags,
+    description: 'Destroy a Post',
+  })
+  public async destroy() {
+    // const post = await this.post()
+    // await post.destroy()
+    // this.noContent()
+  }
+
+  private async post() {
+    // return await this.currentUser.associationQuery('posts')
+    //   .preloadFor('default')
+    //   .findOrFail(this.castParam('id', 'string'))
+  }
+}
+```
+
+Examining this controller, all of the methods we need are here, but the implementation is commented out by default. In order to implement these endpoints, you will need to explicitly uncomment them, like so:
+
+```ts
+// api/src/app/controllers/Api/V1/PostsController.ts
+
+import { OpenAPI } from '@rvoh/psychic'
+import ApiV1BaseController from './BaseController.js'
+import Post from '../../../models/Post.js'
+
+const openApiTags = ['posts']
+
+export default class ApiV1PostsController extends ApiV1BaseController {
+  @OpenAPI(Post, {
+    status: 200,
+    tags: openApiTags,
+    description: 'Fetch multiple Posts',
+    many: true,
+    serializerKey: 'summary',
+  })
+  public async index() {
+    const posts = await this.currentUser.associationQuery('posts').preloadFor('summary').all()
+    this.ok(posts)
+  }
+
+  @OpenAPI(Post, {
+    status: 200,
+    tags: openApiTags,
+    description: 'Fetch a Post',
+  })
+  public async show() {
+    const post = await this.post()
+    this.ok(post)
+  }
+
+  @OpenAPI(Post, {
+    status: 201,
+    tags: openApiTags,
+    description: 'Create a Post',
+  })
+  public async create() {
+    let post = await this.currentUser.createAssociation('posts', this.paramsFor(Post))
+    if (post.isPersisted) post = await post.loadFor('default').execute()
+    this.created(post)
+  }
+
+  @OpenAPI(Post, {
+    status: 204,
+    tags: openApiTags,
+    description: 'Update a Post',
+  })
+  public async update() {
+    const post = await this.post()
+    await post.update(this.paramsFor(Post))
+    this.noContent()
+  }
+
+  @OpenAPI({
+    status: 204,
+    tags: openApiTags,
+    description: 'Destroy a Post',
+  })
+  public async destroy() {
+    const post = await this.post()
+    await post.destroy()
+    this.noContent()
+  }
+
+  private async post() {
+    return await this.currentUser
+      .associationQuery('posts')
+      .preloadFor('default')
+      .findOrFail(this.castParam('id', 'string'))
+  }
+}
+```
+
+With the implementations uncommented, we can immediately see that we will be wrangling with how to set "currentUser" on our controller, so we'll get to that soon. Let's run our spec first:
+
+```sh
+yarn uspec spec/unit/controllers/Api/V1/PostsController.spec.ts
+```
+
+Now we get a much quicker host of 500 errors, the result of `currentUser` not being defined:
+
+```sh
+error: TypeError: Cannot read properties of undefined (reading 'associationQuery')
+```
+
+let's solve for this error now, by updating our AuthedController. Uncommenting a few lines and simplifying our authedUserId, we end up with this:
+
+```ts
+import { BeforeAction } from '@rvoh/psychic'
+import User from '../models/User.js'
+import ApplicationController from './ApplicationController.js'
+
+export default class AuthedController extends ApplicationController {
+  protected currentUser: User
+
+  @BeforeAction()
+  protected async authenticate() {
+    const userId = this.authedUserId()
+    if (!userId) return this.unauthorized()
+
+    const user = await User.find(userId)
+    if (!user) return this.unauthorized()
+
+    this.currentUser = user
+  }
+
+  protected authedUserId(): string | null {
+    return this.getCookie('authSession')
+  }
+}
+```
+
+Now, we can revisit our PostsController and find that, oh lovely, no more type errors. It will still continue to fail, however, unless we do one more thing. When you first generate a psychic application, it builds out a `session` function into your unit tests. This is a general purpose function, with many different strategies commented and uncommented, allowing you to easily go whichever route you want. We will utilize the bottom route of taking advantage of the `session` method on request, which works well for cookie-based authentication, since the `session` method will successfully capture cookies and carry them through to subsequent requests.
+
+Let's update our session function to be more relevant to our app. In the end, we will arrive at something much simpler.
+
+```ts
+import { PsychicServer } from '@rvoh/psychic'
+import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
+import User from '../../../src/app/models/User.js'
+import { paths as OpenapiPaths } from '../../../src/types/openapi/validation.openapi.js'
+
+export type SpecRequestType = Awaited<ReturnType<typeof session>>
+
+export async function session(user: User, password: string = 'abc123') {
+  const request = new OpenapiSpecRequest<OpenapiPaths>()
+  await request.init(PsychicServer)
+  return await request.session('post', '/sign-in', 204, {
+    data: {
+      email: user.email,
+      password: 'abc123',
+    },
+  })
+}
+```
+
+Now, we can run our PostsController spec again and find it passing!
+
+```sh
+ ✓ spec/unit/controllers/Api/V1/PostsController.spec.ts (9 tests) 2102ms
+   ✓ Api/V1/PostsController > GET index > returns the index of Posts 268ms
+   ✓ Api/V1/PostsController > GET index > Posts created by another User > are omitted 216ms
+   ✓ Api/V1/PostsController > GET show > returns the specified Post 180ms
+   ✓ Api/V1/PostsController > GET show > Post created by another User > is not found 225ms
+   ✓ Api/V1/PostsController > POST create > creates a Post for this User 182ms
+   ✓ Api/V1/PostsController > PATCH update > updates the Post 165ms
+   ✓ Api/V1/PostsController > PATCH update > a Post created by another User > is not updated 216ms
+   ✓ Api/V1/PostsController > DELETE destroy > deletes the Post 172ms
+   ✓ Api/V1/PostsController > DELETE destroy > a Post created by another User > is not deleted 194ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  00:58:20
+   Duration  3.14s (transform 189ms, setup 593ms, collect 231ms, tests 2.10s, environment 0ms, prepare 49ms)
+```
+
+This makes our life much easier. Now, we can simply run sync to make sure our front end openapi types are totally compiled, and then we can begin to write our feature specs, which will now be much easier to solve, since our Post endpoints are already built, and their redux bindings are already available to us.
+
+```sh
+yarn psy sync
+```
+
+For good measure, let's commit
+
+```sh
+git add --all
+git commit -m 'generate Post resource, satisfy controller specs'
+```
+
+Before we begin, let's abstract some of our sign in logic to a helper, so we can reuse it going forward:
+
+```ts
+// api/spec/features/helpers/signIn.ts
+
+import User from '../../../src/app/models/User.js'
+
+export default async function signIn(user: User, password: string = 'abc123') {
+  await visit('/')
+  await clickLink('Sign in')
+  await fillIn('#email', user.email)
+  await fillIn('#password', password)
+  await clickButton('Submit')
+  await expect(page).toMatchTextContent('Dashboard')
+}
+```
+
+Now, let's use this spec helper in our index spec:
+
+```ts
+// api/spec/features/posts/index.spec.ts
+
+import createPost from '../../factories/PostFactory.js'
+import createUser from '../../factories/UserFactory.js'
+import signIn from '../helpers/signIn.js'
+
+describe('index Posts', () => {
+  it('allows a user to index Posts', async () => {
+    const user = await createUser()
+    await createPost({ user, title: 'my post title' })
+    await signIn(user)
+
+    await clickLink('Posts')
+    await expect(page).toMatchTextContent('my post title')
+  })
+})
+```
+
+Running this spec, we get an error about a missing Posts link:
+
+```sh
+ ❯ spec/features/posts/index.spec.ts (1 test | 1 failed) 8156ms
+   × index Posts > allows a user to index Posts 6035ms
+     → Expected page to have clickable link with matching text: "Posts"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  spec/features/posts/index.spec.ts > index Posts > allows a user to index Posts
+Error: Expected page to have clickable link with matching text: "Posts"
+ ❯ clickLink node_modules/@rvoh/psychic-spec-helpers/dist/esm/src/feature/helpers/matcher-globals/clickLink.js:2:5
+ ❯ spec/features/posts/index.spec.ts:11:5
+      9|     await signIn(user)
+     10|
+     11|     await clickLink('Posts')
+       |     ^
+     12|     await expect(page).toMatchTextContent('my post title')
+     13|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  18:11:28
+   Duration  9.58s (transform 184ms, setup 785ms, collect 26ms, tests 8.16s, environment 0ms, prepare 60ms)
+```
+
+Let's solve for that by adding a Posts link on the Dashboard page, and then adding a Posts page for it to link to. Let's list the posts on that page.
+
+First, add the link to the dashboard page:
+
+```ts
+import { Link } from 'react-router'
+
+export default function DashboardPage() {
+  return (
+    <div>
+      <span>Dashboard</span>
+      <Link to="/posts">Posts</Link>
+    </div>
+  )
+}
+```
+
+Next, let's add a PostsIndexPage at `client/src/pages/authed/posts/PostsIndexPage.tsx`
+
+```ts
+// client/src/pages/authed/posts/PostsIndexPage.tsx
+
+import { Link } from 'react-router'
+import { useGetApiV1PostsQuery } from '../../../api/myblogApi'
+
+export default function PostsIndexPage() {
+  const { data: posts } = useGetApiV1PostsQuery()
+  if (!posts) return <div>loading...</div>
+
+  return (
+    <div>
+      {posts.map(post => (
+        <div key={post.id}>{post.title}</div>
+      ))}
+    </div>
+  )
+}
+```
+
+Let's also update the PostSerializer, so that the summary serializer contains more than just an id property, since we can see that it doesn't recognize `post.title`.
+
+```ts
+import { DreamSerializer } from '@rvoh/dream'
+import Post from '../models/Post.js'
+
+export const PostSummarySerializer = (post: Post) =>
+  DreamSerializer(Post, post).attribute('id').attribute('title').attribute('body')
+
+export const PostSerializer = (post: Post) => PostSummarySerializer(post)
+```
+
+Now re-sync to update the openapi files on your frontend
+
+```sh
+yarn psy sync
+```
+
+Revisiting our `PostsIndex`, we should see our type error has been vanquished! Psychic is intelligent about syncing serializer shapes down through the openapi decorators on your controller, which informs the redux bindings that sync to your client, keeping the whole process pretty much hands-off for you.
+
+Next, add the PostsIndexPage to our `App.tsx` file:
+
+```ts
+import './App.css'
+
+import { Route, Routes } from 'react-router'
+import HomePage from './pages/unauthed/HomePage'
+import SignupPage from './pages/unauthed/SignupPage'
+import SigninPage from './pages/unauthed/SigninPage'
+import DashboardPage from './pages/authed/DashboardPage'
+import { useAppSelector } from './hooks'
+import { useGetAuthStatusQuery } from './api/myblogApi'
+import { useEffect } from 'react'
+import { setAuthed } from './reducers/appReducer'
+import { useDispatch } from 'react-redux'
+import PostsIndexPage from './pages/authed/posts/PostsIndexPage'
+
+function App() {
+  const dispatch = useDispatch()
+  const authed = useAppSelector(state => state.app.authed)
+  const { isSuccess: authSucceeded } = useGetAuthStatusQuery()
+
+  useEffect(() => {
+    if (authSucceeded) {
+      dispatch(setAuthed(true))
+    }
+  }, [authSucceeded])
+
+  return authed ? <AuthedApp /> : <UnauthedApp />
+}
+
+function UnauthedApp() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/signin" element={<SigninPage />} />
+    </Routes>
+  )
+}
+
+function AuthedApp() {
+  return (
+    <Routes>
+      <Route path="/" element={<DashboardPage />} />
+      <Route path="/posts" element={<PostsIndexPage />} />
+    </Routes>
+  )
+}
+
+export default App
+```
+
+With the PostsIndex in place, let's re-run our spec, which is now green!
+
+```sh
+ ✓ spec/features/posts/index.spec.ts (1 test) 3074ms
+   ✓ index Posts > allows a user to index Posts  1109ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  18:20:23
+   Duration  4.48s (transform 169ms, setup 718ms, collect 19ms, tests 3.07s, environment 0ms, prepare 72ms)
+```
+
+Let's commit our changes.
+
+```sh
+git add --all
+git commit -m 'add Posts index'
+```
+
+I have run out of time to complete this, so I will revisit later to complete the remaining functionality for Posts. In the mean time, this should be enough for anyone to get their feet wet with how to build a new app in Psychic. Hope you enjoyed!
