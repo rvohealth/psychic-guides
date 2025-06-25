@@ -3,141 +3,159 @@ sidebar_position: 2
 title: attributes
 ---
 
-# Defining Attributes
+# Serializing Attributes
 
-Serializers in Dream allow you to precisely control which attributes of an object are included in the output and how they are represented in the OpenAPI schema. This is primarily done using the `.attribute()`, `.customAttribute()`, and `.delegatedAttribute()` methods.
+## Basic Attributes
 
-A key difference arises when using `ObjectSerializer` versus `DreamSerializer`:
+The `attribute` method includes a property from your source object in the serialized output.
 
-- **`ObjectSerializer`**: When serializing plain objects or ViewModels, you **must always** provide an `openapi` option for attribute-defining methods (`.attribute()`, `.customAttribute()`, `.delegatedAttribute()`). This is because `ObjectSerializer` has no underlying schema information to infer types from.
-- **`DreamSerializer`**: When serializing Dream model instances, `DreamSerializer` can often infer the OpenAPI type for attributes that directly correspond to database columns defined in your model's schema. For these, the `openapi` option is not strictly mandatory but can be used to override the inferred type or add more details (like `description` or `format`). For virtual attributes (e.g., getters on your model) or when you need to be explicit, the `openapi` option is required.
+```ts
+export const PlaceSummarySerializer = (place: Place) =>
+  DreamSerializer(Place, place).attribute('id').attribute('name')
 
-## Basic Attributes: `.attribute()`
+export const PlaceSerializer = (place: Place) =>
+  PlaceSummarySerializer(place).attribute('style').attribute('sleeps')
 
-The `.attribute()` method includes a property from your source object in the serialized output.
-
-**With `ObjectSerializer` (openapi option is mandatory):**
-
-```typescript
-import { ObjectSerializer } from '@rvoh/dream'
-
-interface UserViewModel {
-  id: string
-  email: string
-  name?: string
-}
-
-const UserViewModelSerializer = (user: UserViewModel) =>
-  ObjectSerializer(user)
-    .attribute('id', {
-      openapi: { type: 'string', description: 'The unique identifier' },
-    })
-    .attribute('email', { openapi: { type: 'string', format: 'email' } })
-    .attribute('name', {
-      openapi: { type: 'string' },
-      default: 'Anonymous User', // Used when name is null or undefined
-    })
-
-// Example usage:
-const userInstance: UserViewModel = {
-  id: '123',
-  email: 'test@example.com',
-  name: undefined, // Will use default value
-}
-const serializedUser = UserViewModelSerializer(userInstance).render()
-// serializedUser will be: { id: '123', email: 'test@example.com', name: 'Anonymous User' }
+// PlaceSummarySerializer serializes to:
+// { id: 1234, name: 'My place' }
+// and PlaceSerializer serializes to:
+// { id: 1234, name: 'My place', style: 'cabin', sleeps: 5 }
 ```
 
-**With `DreamSerializer` (type inference for database columns):**
+:::info
+CalendarDate and DateTime attributes (even arrays of CalendarDate and DateTime values) are automatically converted to their ISO values as part of serialization.
+:::
 
-Assuming `User` is a Dream model with `id` (e.g., integer) and `email` (e.g., string) columns defined in its schema:
+### `openapi` option
 
-```typescript
-import { DreamSerializer } from '@rvoh/dream'
-import User from 'app/models/user' // Your Dream model
+When serializing a Dream model with DreamSerializer, the OpenAPI shape of attributes corresponding to database columns is determined automatically (except for json and jsonb columns). However, you may still want to include an openapi description:
 
-const UserSerializer = (user: User) =>
-  DreamSerializer(User, user)
-    .attribute('id') // OpenAPI type inferred from DB schema (e.g., integer)
-    .attribute('email') // OpenAPI type inferred (e.g., string)
-    .attribute('displayName', {
-      default: 'Guest User', // Used when displayName is null or undefined
-    })
-    .attribute('lastLoginAt', {
+```ts
+.attribute('name', { openapi: { description: 'The name of the Place' } })`
+```
+
+:::info
+ObjectSerializer serializer attributes always requires the `openapi` option.
+:::
+
+For a [virtual attribute](/docs/models/decorators/virtual) on a Dream model, `openapi` is required even for DreamSerializer:
+
+```ts
+export const PlaceSerializer = (place: Place) =>
+  DreamSerializer(Place, place)
+    .attribute('id')
+    .attribute('myVirtualAttribute', { openapi: ['string', 'null'] })
+```
+
+This example leverages [OpenAPI shorthand](/docs/openapi/serializers#shorthand), but the full OpenAPI shape is available for representing complex shapes, as one must do for attributes that correspond to json/jsonb columns:
+
+```ts
+export const PlaceSerializer = (place: Place) =>
+  DreamSerializer(Place, place)
+    .attribute('id')
+    .attribute('myJsonAttribute', {
       openapi: {
-        description: 'Timestamp of the last login',
-        format: 'date-time',
+        type: 'object',
+        properties: {
+          label: 'string',
+          value: 'decimal',
+        },
       },
-    }) // DB type inferred, but adding description and format
+    })
 ```
 
-**Using `default` with `attribute()`:**
+### `default` option
 
 The `default` option provides a fallback value when the attribute is `null` or `undefined`. The default value undergoes the same transformations as regular data (e.g., decimals are rounded, dates are converted to ISO format).
 
-```typescript
-const UserSerializerWithDefaults = (user: User) =>
-  DreamSerializer(User, user)
-    .attribute('score', { default: 0 }) // Integer default for null/undefined scores
-    .attribute('status', { default: 'active' }) // String default
+```ts
+export const PlaceSerializer = (place: Place) =>
+  DreamSerializer(Place, place)
+    .attribute('id')
+    .attribute('name', { default: 'unnamed' })
+    .attribute('sleeps', { default: 0 })
 ```
 
-For a **virtual attribute** (e.g., a getter) on a Dream model, `openapi` is required:
-
-```typescript
-// In User.ts (Dream model)
-// public get fullName(): string { return `${this.firstName} ${this.lastName}`; }
-
-const UserWithVirtualSerializer = (user: User) =>
-  DreamSerializer(User, user)
-    .attribute('firstName') // Inferred
-    .attribute('lastName') // Inferred
-    .attribute('fullName', {
-      openapi: { type: 'string', description: 'The full name of the user.' },
-    }) // `openapi` required for virtual attribute
-```
-
-**Customizing the Output Key (applies to both):**
+### renaming attributes with `as`
 
 Use the `as` option to change the name of the attribute in the output.
 
-```typescript
-const UserSerializerWithAlias = (user: User) =>
-  DreamSerializer(User, user).attribute('email', { as: 'userEmail' }) // Type inferred if 'email' is a DB column
+```ts
+export const PlaceSerializer = (place: Place) =>
+  DreamSerializer(Place, place).attribute('id').attribute('sleeps', { as: 'accomodates' })
 
-// For ObjectSerializer, openapi would still be needed:
-// ObjectSerializer(userVm).attribute('email', { as: 'userEmail', openapi: { type: 'string' } });
+// PlaceSerializer serializes to:
+// { id: 1234, accomodates: 5 }
 ```
 
-## Custom Attributes: `.customAttribute()`
+### precision
 
-For computed values. The `openapi` option is **always mandatory** for `.customAttribute()` with both `ObjectSerializer` and `DreamSerializer`, as the type cannot be inferred.
+Decimal values can be automatically rounded with the `precision` option.
 
-```typescript
-import { DreamSerializer } from '@rvoh/dream'
-import User from 'app/models/user'
+```ts
+export const PlaceSerializer = (place: Place) =>
+  DreamSerializer(Place, place).attribute('id').attribute('rating', { precision: 1 })
 
-const UserSerializerWithCustom = (user: User) =>
-  DreamSerializer(User, user)
-    .attribute('email') // Inferred
-    .customAttribute(
-      'initials',
-      () =>
-        `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase(),
-      {
-        openapi: { type: 'string', description: 'User initials' },
-      }
-    )
+// A place with rating 4.66666 would serialize to:
+// { id: 1234, rating: 4.7 }
 ```
 
-**Flattening (applies to both):**
+## Delegated Attributes
 
-If the callback returns an object and `flatten: true` is used, its properties are merged. You must define the OpenAPI shape for these flattened properties.
+The `delegatedAttribute` method renders an attribute from a nested object into the serialized output. `delegatedAttribute` attributes are automatically inspected as part of [preloadFor](/docs/models/querying/preloadFor) (so when delegating to an association, that association will be automatically preloaded).
 
-```typescript
-const UserWithFlattenedDataSerializer = (user: User) =>
+```ts
+export const PlaceSummaryForGuestsSerializer = (place: Place) =>
+  DreamSerializer(Place, place)
+    .attribute('id')
+    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
+
+// A place with currentLocalizedText with { title: 'Hello world' } will render:
+// { id: 1234, title: 'Hello world' }
+```
+
+### `default` option
+
+All options from the `attribute` method are supported on `delegatedAttribute`. On a delegated attribute, the default will be applied whether then association is null or the attribute on the association is null:
+
+```ts
+export const PlaceSummaryForGuestsSerializer = (place: Place) =>
+  DreamSerializer(Place, place).attribute('id').delegatedAttribute('currentLocalizedText', 'title', {
+    openapi: 'string',
+    default: 'Untitled',
+  })
+
+// A place without a currentLocalizedText or a currentLocalizedText with { title: null } will render:
+// { id: 1234, title: 'Untitled' }
+```
+
+The `default` option provides a fallback value when either the target object is `null`/`undefined` OR when the delegated attribute itself is `null`/`undefined`.
+
+## Custom Attributes
+
+`customAttribute` is used for arbitrary data transformation. It is especially useful for rendering or leveraging passthrough data into the serialized output. `customAttribute` always requires the `openapi` option.
+
+```ts
+export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
+  PlaceSummaryForGuestsSerializer(place).customAttribute(
+    'style',
+    () => i18n(passthrough.locale, `places.style.${place.style}`),
+    {
+      openapi: 'string',
+    }
+  )
+```
+
+See the [passthrough setting documentation](/docs/serializers/render#serializer-passthrough-data) for details on how to set passthrough data on automatically rendered serializers.
+
+### `flatten`
+
+When `flatten: true` is included, the attributes of the returned object are flattened into the serialized results.
+
+```ts
+const UserSerializer = (user: User) =>
   DreamSerializer(User, user)
-    .attribute('id') // Inferred
+    .attribute('id')
     .customAttribute('profileInfo', () => ({ age: 30, city: 'Metropolis' }), {
       flatten: true,
       openapi: {
@@ -145,69 +163,6 @@ const UserWithFlattenedDataSerializer = (user: User) =>
         city: { type: 'string' },
       },
     })
-// Output: { id: 1, age: 30, city: 'Metropolis' }
-```
 
-## Delegated Attributes: `.delegatedAttribute()`
-
-This pulls up an attribute from a nested object.
-
-- With `ObjectSerializer`, the `openapi` option is **mandatory**.
-- With `DreamSerializer`, if delegating from a known Dream association to an attribute with an inferable type (like a DB column on the associated model), the type _might_ be inferred. However, it's often clearer and safer to provide the `openapi` option, especially if the delegated attribute itself is virtual or its type isn't straightforward.
-
-```typescript
-import { DreamSerializer } from '@rvoh/dream'
-import Pet from 'app/models/pet' // Assume Pet has a 'user' association to User model
-import User from 'app/models/user' // User has 'email'
-
-const PetWithUserEmailSerializer = (pet: Pet) =>
-  DreamSerializer(Pet, pet)
-    .attribute('name') // Inferred from Pet's schema
-    // Assuming 'user.email' is a standard string column on the User model
-    .delegatedAttribute('user', 'email', {
-      openapi: {
-        type: 'string',
-        format: 'email',
-        description: "Owner's email",
-      },
-    })
-// While 'user.email' type might be inferable if 'user' is a direct association
-// and 'email' a direct column, explicitly providing openapi is robust.
-```
-
-**Using `default` with `delegatedAttribute()`:**
-
-The `default` option provides a fallback value when either the target object is `null`/`undefined` OR when the delegated attribute itself is `null`/`undefined`.
-
-```typescript
-const PetWithOwnerInfoSerializer = (pet: Pet) =>
-  DreamSerializer(Pet, pet)
-    .attribute('name') // Inferred from Pet's schema
-    .delegatedAttribute('user', 'email', {
-      openapi: { type: 'string', format: 'email' },
-      default: 'no-owner@example.com', // Used when pet.user is null OR pet.user.email is null/undefined
-    })
-    .delegatedAttribute('user', 'displayName', {
-      openapi: { type: 'string' },
-      default: 'Unknown Owner', // Used when pet.user is null OR pet.user.displayName is null/undefined
-    })
-```
-
-```typescript
-// ObjectSerializer example
-interface PetViewModel {
-  name: string
-  owner?: {
-    email?: string
-    displayName?: string
-  }
-}
-
-const PetViewModelSerializer = (pet: PetViewModel) =>
-  ObjectSerializer(pet)
-    .attribute('name', { openapi: { type: 'string' } })
-    .delegatedAttribute('owner', 'email', {
-      openapi: { type: 'string', format: 'email' },
-      default: 'no-owner@example.com', // Used when pet.owner is null OR pet.owner.email is null/undefined
-    })
+// renders { id: 1, age: 30, city: 'Metropolis' }
 ```

@@ -1,5 +1,6 @@
 ---
 sidebar_position: 0
+pagination_prev: null
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -26,47 +27,39 @@ GET     /health-check  HealthCheck#ping
   </pre>
 </RoutesOutput>
 
-## CRUD routing mechanisms
+## RESTful routing
 
-CRUD (Create, Read, Update, Delete) verbs are the backbone of expressive routing in a web paradigm, since all web requests sent must choose an HTTP verb matching one of these verbs when sending a request. This is fundamental to the HTTP spec, which governs all requests into your web server.
+The RESTful verbs (GET, POST, PATCH, PUT, and DELETE) are the backbone of expressive routing in a web application.
 
-In the HTTP world, these verbs are translated into the following:
-
-- POST - Create
-- GET - Read
-- PUT - Update
-- PATCH - Update
-- DELETE - Delete
-
-Here is an example, demonstrating how these verbs might be used to clearly express a resourcefully-driven application, i.e. for a blog
+Here is an example, demonstrating how these verbs might be used to clearly express a resourcefully-driven application:
 
 ```ts // conf/routes.ts
 import { PsychicRouter } from 'psychic'
 
 export default (r: PsychicRouter) => {
-  r.post('posts', PostsController, 'create')
-  r.get('posts', PostsController, 'index')
-  r.get('posts/:id', PostsController, 'show')
-  r.patch('posts/:id', PostsController, 'update')
-  r.put('posts/:id', PostsController, 'update')
-  r.delete('posts/:id', PostsController, 'destroy')
+  r.post('places', PlacesController, 'create')
+  r.get('places', PlacesController, 'index')
+  r.get('places/:id', PlacesController, 'show')
+  r.patch('places/:id', PlacesController, 'update')
+  r.put('places/:id', PlacesController, 'update')
+  r.delete('places/:id', PlacesController, 'destroy')
 }
 ```
 
 <RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-POST     /posts      Posts#create
-GET      /posts      Posts#index
-GET      /posts/:id  Posts#show
-PATCH    /posts/:id  Posts#update
-PUT      /posts/:id  Posts#update
-DELETE   /posts/:id  Posts#destroy
+POST     /places      Places#create
+GET      /places      Places#index
+GET      /places/:id  Places#show
+PATCH    /places/:id  Places#update
+PUT      /places/:id  Places#update
+DELETE   /places/:id  Places#destroy
 `}
   </pre>
 </RoutesOutput>
 
-To learn more about CRUD-driven routing mechanisms, see our [crud guide](/docs/routing/crud).
+To learn more about REST-driven routing mechanisms, see our [REST guide](/docs/routing/rest).
 
 ## Resourceful routing
 
@@ -76,19 +69,19 @@ Since this type of routing pattern is quite common, Psychic provides encapsulate
 import { PsychicRouter } from 'psychic'
 
 export default (r: PsychicRouter) => {
-  r.resources('posts')
+  r.resources('places')
 }
 ```
 
 <RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-POST     /posts      Posts#create
-GET      /posts      Posts#index
-GET      /posts/:id  Posts#show
-PATCH    /posts/:id  Posts#update
-PUT      /posts/:id  Posts#update
-DELETE   /posts/:id  Posts#destroy
+POST     /places      Places#create
+GET      /places      Places#index
+GET      /places/:id  Places#show
+PATCH    /places/:id  Places#update
+PUT      /places/:id  Places#update
+DELETE   /places/:id  Places#destroy
 `}
   </pre>
 </RoutesOutput>
@@ -103,9 +96,9 @@ The Psychic router also provides techniques for namespacing your application, us
 import { PsychicRouter } from 'psychic'
 
 export default (r: PsychicRouter) => {
-  r.namespace('api', (r) => {
-    r.namespace('v1', (r) => {
-      r.resources('posts')
+  r.namespace('v1', r => {
+    r.namespace('host', r => {
+      r.resources('places')
     })
   })
 }
@@ -114,22 +107,14 @@ export default (r: PsychicRouter) => {
 <RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-POST     /api/v1/posts      Api/V1/Posts#create
-GET      /api/v1/posts      Api/V1/Posts#index
-GET      /api/v1/posts/:id  Api/V1/Posts#show
-PATCH    /api/v1/posts/:id  Api/V1/Posts#update
-PUT      /api/v1/posts/:id  Api/V1/Posts#update
-DELETE   /api/v1/posts/:id  Api/V1/Posts#destroy
+POST     /v1/host/places      V1/Host/Places#create
+GET      /v1/host/places      V1/Host/Places#index
+GET      /v1/host/places/:id  V1/Host/Places#show
+PATCH    /v1/host/places/:id  V1/Host/Places#update
+PUT      /v1/host/places/:id  V1/Host/Places#update
+DELETE   /v1/host/places/:id  V1/Host/Places#destroy
 `}
   </pre>
 </RoutesOutput>
 
 To learn more about techniques for namespacing, see our [namespacing guide](/docs/routing/namespacing).
-
-:::tip
-See our detailed guides for more information
-
-- [crud guide](/docs/routing/crud)
-- [resourceful guide](/docs/routing/resources)
-- [namespacing guide](/docs/routing/namespacing)
-:::

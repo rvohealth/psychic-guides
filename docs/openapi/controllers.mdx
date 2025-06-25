@@ -12,14 +12,14 @@ To leverage the OpenAPI decorator in your controllers, simply import it and use 
 ```ts
 import { OpenAPI } from '@rvoh/psychic'
 
-export default class PostsController extends PsychicController {
-  @OpenAPI(Post, {
+export default class PlacesController extends PsychicController {
+  @OpenAPI(Place, {
     many: true,
     status: 200,
     serializerKey: 'summary',
   })
   public async index() {
-    this.ok(await this.currentUser.associationQuery('posts').all())
+    this.ok(await this.currentHost.associationQuery('places').all())
   }
 }
 ```
@@ -29,30 +29,30 @@ By default, Psychic will match this endpoint to the corresponding route entry in
 ```ts
 // conf/routes.ts
 export default function routes(r: PsychicRouter) {
-  r.resources('posts', { only: ['index'] })
+  r.resources('places', { only: ['index'] })
   // OR
-  r.get('/posts', PostsController, 'index')
+  r.get('/places', PlacesController, 'index')
 }
 ```
 
 ## Implicit serialization
 
-If a serializable class is provided as the first argument to the `@OpenAPI` decorator, it will automatically read all related `@Attribute` decorators on the corresponding serializer, formulating an object shape that it injects into the openapi document.
+If a serializable class is provided as the first argument to the `@OpenAPI` decorator, it will automatically read all related attribute definitions on the corresponding serializer, formulating an object shape that it injects into the openapi document.
 
 ```ts
-export default class PostsController extends PsychicController {
-  // by providing Post here, we are telling OpenAPI to locate the default
-  // serializer attached to the Post model and serialize its attribute shapes
+export default class PlacesController extends PsychicController {
+  // by providing Place here, we are telling OpenAPI to locate the default
+  // serializer attached to the Place model and serialize its attribute shapes
   // into an openapi document, which will become the 200 response shape for
   // this endpoint
-  @OpenAPI(Post, {
+  @OpenAPI(Place, {
     status: 200,
   })
   public async show() {
     this.ok(
-      await this.currentUser
-        .associationQuery('posts')
-        .findOrFail(this.castParam('id', 'bigint')),
+      await this.currentHost
+        .associationQuery('places')
+        .findOrFail(this.castParam('id', 'bigint'))
     )
   }
 }
@@ -61,7 +61,7 @@ export default class PostsController extends PsychicController {
 In addition to providing a model class as the first argument, you can also specify a serializer directly, which takes away the implicit decision making that Psychic does to decide on a serializer for you.
 
 ```ts
-@OpenAPI(PostSerializer, {
+@OpenAPI(PlaceSerializer, {
   status: 200,
 })
 ```
@@ -71,32 +71,33 @@ In addition to providing a model class as the first argument, you can also speci
 You can provide a `serializerKey` option, which will inform the decorator to use a specific serializer attached to your model, like so:
 
 ```ts
-// models/Post.ts
-export default class Post extends ApplicationModel {
+// models/Place.ts
+export default class Place extends ApplicationModel {
   public get table() {
-    return 'posts' as const
+    return 'places' as const
   }
 
-  public get serializers(): DreamSerializers<Post> {
-    return { default: 'PostSerializer', admin: 'Admin/PostSerializer' }
+  public get serializers(): DreamSerializers<Place> {
+    return { default: 'PlaceSerializer', summary: 'PlaceSummarySerializer' }
   }
 
   // ...
 }
 
-// controllers/Admin/PostsController
-export default class AdminPostsController extends PsychicController {
-  // by specifying the "admin" serializerKey, we are telling OpenAPI
-  // to use the `Admin/PostSerializer`.
-  @OpenAPI(Post, {
-    serializerKey: 'admin',
+// controllers/V1/Host/PlacesController
+export default class V1HostPlacesController extends PsychicController {
+  // by specifying the "summary" serializerKey, we are telling OpenAPI
+  // to use the `PlaceSummarySerializer`.
+  @OpenAPI(Place, {
+    serializerKey: 'summary',
     status: 200,
   })
-  public async show() {
+  public async index() {
     this.ok(
-      await this.currentUser
-        .associationQuery('posts')
-        .findOrFail(this.castParam('id', 'bigint')),
+      await this.currentHost
+        .associationQuery('places')
+        .preloadFor('summary')
+        .all()
     )
   }
 }
@@ -107,13 +108,13 @@ export default class AdminPostsController extends PsychicController {
 Use the `many` option when you are providing a serializable class, and you want the endpoint to render an array of them. This can be done like so:
 
 ```ts
-export default class AdminPostsController extends PsychicController {
-  @OpenAPI(Post, {
+export default class AdminPlacesController extends PsychicController {
+  @OpenAPI(Place, {
     many: true,
     status: 200,
   })
   public async index() {
-    this.ok(await this.currentUser.associationQuery('posts').limit(100).all())
+    this.ok(await this.currentHost.associationQuery('places').limit(100).all())
   }
 }
 ```
@@ -123,13 +124,13 @@ export default class AdminPostsController extends PsychicController {
 As expected, the `nullable` option enables you to specify that the default response can also be null.
 
 ```ts
-export default class AdminPostsController extends PsychicController {
-  @OpenAPI(Post, {
+export default class AdminPlacesController extends PsychicController {
+  @OpenAPI(Place, {
     nullable: true,
     status: 200,
   })
   public async show() {
-    this.ok(await this.currentUser.associationQuery('posts').first())
+    this.ok(await this.currentHost.associationQuery('places').first())
   }
 }
 ```
@@ -190,7 +191,7 @@ export default class UsersController extends PsychicController {
 
 ### for
 
-For more granular specification, you can take advantage of the `for`, `only`, and `including` options, which allow you to explicitly provide certain params for a model class.
+For more granular specification, you can take advantage of the `for`, `only`, and `including` options, which enable you to explicitly provide certain params for a model class.
 
 ```ts
 export default class UsersController extends PsychicController {
@@ -238,7 +239,7 @@ export default class PetsController extends PsychicController {
   })
   public async create() {
     await Pet.create(
-      this.paramsFor(Pet, { only: ['species'], including: ['userId'] }),
+      this.paramsFor(Pet, { only: ['species'], including: ['userId'] })
     )
     this.noContent()
   }
@@ -396,9 +397,9 @@ export default class PostsController extends PsychicController {
   })
   public async show() {
     this.ok(
-      await this.currentUser
-        .associationQuery('posts')
-        .findOrFail(this.castParam('id', 'bigint')),
+      await this.currentHost
+        .associationQuery('places')
+        .findOrFail(this.castParam('id', 'bigint'))
     )
   }
 }

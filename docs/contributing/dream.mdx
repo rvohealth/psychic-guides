@@ -14,7 +14,7 @@ In order to get started working on dream locally, you will first need to install
 
 Once done, you can clone the repo locally:
 
-```bash
+```sh
 git clone https://github.com/rvohealth/dream
 ```
 
@@ -54,7 +54,7 @@ In each of these files, you will want to replace `WHO_AM_I` with the result of r
 
 Once this is done, you should be able to reset the test database and run specs:
 
-```bash
+```sh
 yarn dream db:reset
 yarn spec
 ```
@@ -122,6 +122,6 @@ the `test-app` folder at the root of the project contains an example app that is
 
 The `yarn dream` command is used for interacting with the dummy application located in the test-app folder. Anything you might want to test, like for example generating a model, will be done to the test-app folder. For example, if you wanted to generate a new model, `ChalupaSupreme`, running the following command would generate your model in the `test-app/app/models` folder.
 
-```bash
+```sh
 yarn dream g:model ChalupaSupreme deliciousness:boolean
 ```

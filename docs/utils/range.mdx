@@ -13,14 +13,14 @@ Range is used in combination with `where` and `and` clauses in Dream.
 ```ts
 import { range } from '@rvoh/dream'
 
-// search Recipes with a rating of at least 3
-await Recipe.where({ rating: range(3) }).count()
+// search Places that sleep at least 3 people
+await Place.where({ sleeps: range(3) }).count()
 
-// search Recipes with a rating of 2 or less
-await Recipe.where({ rating: range(null, 2) }).count()
+// search Places that sleep 2 or fewer people
+await Place.where({ sleeps: range(null, 2) }).count()
 
-// search Recipes with a rating between 2 and 4, inclusive
-await Recipe.where({ rating: range(2, 4) }).count()
+// search Places that sleep between 2 and 4 people, inclusive
+await Place.where({ sleeps: range(2, 4) }).count()
 ```
 
 ## range supports CalendarDate, DateTime, and number values

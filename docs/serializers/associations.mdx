@@ -3,192 +3,75 @@ sidebar_position: 3
 title: associations
 ---
 
-# Handling Associations
+# Serializing Associations
 
-Dream serializers use `.rendersOne()` and `.rendersMany()` to include and shape associated data. A key aspect is how they determine the OpenAPI schema for these associations.
+## Rendering Associated Objects
 
-**Schema Definition for Associations:**
+Use `.rendersOne()` and `.rendersMany()` to include associated models in serialized output.
 
-- **`DreamSerializer`**: When rendering associations (e.g., `HasOne`, `HasMany`, `BelongsTo`) defined on a Dream model, `DreamSerializer` can often infer the schema. It does this by looking at the associated model and attempting to use its default serializer or a specified one (via `serializerKey`). The `dreamClass` option is implicitly the associated model class.
-  - You **must** ensure the associated model has a resolvable serializer (e.g., in its `serializers` getter or by providing a `serializerKey`).
-  - The `associationKey` option can be used if the property name on your current model (the first argument to `rendersOne`/`rendersMany`) is different from the actual association name defined in the Dream model. For example, if your `User` model has `this.pets` but the Dream association is named `userPets`, you might use `.rendersMany('pets', PetSerializer, { associationKey: 'userPets' })`.
-- **`ObjectSerializer`**: Since `ObjectSerializer` works with plain objects or ViewModels without inherent schema or association metadata, you **must always** provide one of the following options to define the schema of the rendered association:
-  - `serializer`: The serializer function for the associated object(s).
-  - `dreamClass`: The Dream model class, if the associated data maps to a Dream model.
-  - `viewModelClass`: The ViewModel class, if the associated data maps to a ViewModel (often used with a corresponding ViewModel serializer).
-    And, you must also provide an `openapi` option (e.g., `{ $ref: '#/components/schemas/AssociatedModel' }`) to link to the correct OpenAPI schema component.
+```ts
+// From BearBnB: Place with rooms
+export const PlaceForGuestsSerializer = (place: Place) =>
+  DreamSerializer(Place, place)
+    .attribute('id')
+    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
+    .rendersMany('rooms', { serializerKey: 'forGuests' })
 
-## Rendering a Single Associated Object: `.rendersOne()`
-
-**With `DreamSerializer` (inferring from Dream associations):**
-
-```typescript
-import { DreamSerializer } from '@rvoh/dream'
-import Pet from 'app/models/pet' // Pet model
-import User from 'app/models/user' // User model, Pet `belongsTo` User
-// Assume User model has a UserSerializer defined in its `serializers` getter as `default`
-
-const PetSerializerWithUser = (pet: Pet) =>
-  DreamSerializer(Pet, pet)
-    .attribute('name') // Inferred from Pet's schema
-    // 'user' is a BelongsTo association on Pet model. Schema inferred from User's default serializer.
-    .rendersOne('user')
-
-// If 'user' association on Pet model was named 'owner', but property is 'user':
-// .rendersOne('user', { associationKey: 'owner' })
-
-// To use a specific serializer for the User, e.g., 'UserSummarySerializer'
-// .rendersOne('user', { serializerKey: 'summary' })
+// Room with place
+export const RoomWithPlaceSerializer = (room: Room) =>
+  DreamSerializer(Room, room).attribute('id').attribute('name').rendersOne('place')
 ```
 
-**With `ObjectSerializer` (explicit schema definition required):**
+### `serializerKey` option
 
-```typescript
-import { ObjectSerializer } from '@rvoh/dream'
+Specify which serializer to use for the associated model (defaults to 'default'):
 
-interface UserViewModel {
-  id: string
-  name: string
-}
-interface PetViewModel {
-  id: string
-  name: string
-  species: string
-  owner?: UserViewModel // The associated user view model
-}
-
-const UserViewModelSerializer = (user: UserViewModel) =>
-  ObjectSerializer(user)
-    .attribute('id', { openapi: 'string' })
-    .attribute('name', { openapi: 'string' })
-
-const PetViewModelSerializerWithUser = (pet: PetViewModel) =>
-  ObjectSerializer(pet)
-    .attribute('id', { openapi: 'string' })
-    .attribute('name', { openapi: 'string' })
-    .rendersOne('owner', UserViewModelSerializer, {
-      // Serializer function provided
-      // viewModelClass: UserViewModel, // Optionally provide ViewModel class
-      openapi: { $ref: '#/components/schemas/UserViewModel' },
-      optional: true,
-    })
+```ts
+export const PlaceDetailSerializer = (place: Place) =>
+  DreamSerializer(Place, place)
+    .attribute('id')
+    .attribute('name')
+    .rendersMany('rooms', { serializerKey: 'forGuests' })
+    .rendersMany('bookings') // renders using the default serializer
 ```
 
-**Key Options for `rendersOne`:**
+### `as` option
 
-- `source` (Implicit first argument): The key on the parent object for the associated data.
-- `serializer` (Function, for `ObjectSerializer`): The serializer function for the associated object.
-- `dreamClass` (Class, for `ObjectSerializer`): The associated Dream Model class.
-- `viewModelClass` (Class, for `ObjectSerializer`): The associated ViewModel class.
-- `openapi` (Object, mandatory for `ObjectSerializer`): OpenAPI schema for the association.
-- `as` (Optional): Renames the key in the output.
-- `serializerKey` (Optional, for `DreamSerializer`): Specifies a named serializer from the associated Dream model.
-- `associationKey` (Optional, for `DreamSerializer`): Specifies the actual Dream association name if different from the source key.
-- `flatten` (Optional): Merges attributes of the rendered object into the parent.
-- `optional` (OpenAPI related): Use `type: ['object', 'null']` or similar in the `openapi` definition if the association can be null.
+Rename the association in the output:
 
-## Rendering Many Associated Objects: `.rendersMany()`
+```ts
+export const PlaceSerializer = (place: Place) =>
+  DreamSerializer(Place, place).attribute('id').rendersMany('rooms', { as: 'accommodations' })
 
-**With `DreamSerializer` (inferring from Dream associations):**
-
-```typescript
-import { DreamSerializer } from '@rvoh/dream'
-import User from 'app/models/user' // User model
-import Pet from 'app/models/pet' // Pet model, User `hasMany` Pets
-// Assume Pet model has a PetSerializer defined in its `serializers` getter as `default`
-
-const UserSerializerWithPets = (user: User) =>
-  DreamSerializer(User, user)
-    .attribute('name') // Inferred from User's schema
-    // 'pets' is a HasMany association on User model. Schema inferred from Pet's default serializer.
-    .rendersMany('pets')
-
-// If 'pets' association on User model was named 'animals', but property is 'pets':
-// .rendersMany('pets', { associationKey: 'animals' })
-
-// To use a specific serializer for Pet, e.g., 'PetSummarySerializer'
-// .rendersMany('pets', { serializerKey: 'summary' })
+// Output: { id: 1234, accommodations: [...] }
 ```
 
-**With `ObjectSerializer` (explicit schema definition required):**
+### `flatten` option (for `rendersOne` only)
 
-```typescript
-import { ObjectSerializer } from '@rvoh/dream'
+When `flatten: true` is included, the attributes of the serialized, associated object are flattened into the serialized results.
 
-interface PetViewModel {
-  id: string
-  name: string
-  species: string
-}
-interface UserViewModel {
-  id: string
-  name: string
-  animals?: PetViewModel[] // Array of associated pet view models
-}
+```ts
+export const PlaceSerializer = (place: Place) =>
+  DreamSerializer(Place, place).attribute('id').rendersOne('currentLocalizedText', {
+    flatten: true,
+    serializerKey: 'forPlaces',
+  })
 
-const PetViewModelSerializer = (pet: PetViewModel) =>
-  ObjectSerializer(pet)
-    .attribute('id', { openapi: 'string' })
-    .attribute('name', { openapi: 'string' })
-
-const UserViewModelSerializerWithPets = (user: UserViewModel) =>
-  ObjectSerializer(user)
-    .attribute('id', { openapi: 'string' })
-    .attribute('name', { openapi: 'string' })
-    .rendersMany('animals', PetViewModelSerializer, {
-      // Serializer function provided
-      // viewModelClass: PetViewModel, // Optionally provide ViewModel class
-      openapi: {
-        type: 'array',
-        items: { $ref: '#/components/schemas/PetViewModel' },
-      },
-    })
+// Output: { id: 1234, title: 'My localized title', markdown: 'My localized markdown' }
 ```
 
-**Key Options for `rendersMany`:**
+:::info
+When the goal is to incorporate a property or two from the associated model, a [delegatedAttribute](./attributes.mdx#delegated-attributes) may be a simpler approach than creating a new named serializer.
+:::
 
-- Similar to `rendersOne` regarding `source`, `serializer`, `dreamClass`, `viewModelClass`, `openapi`, `as`, `serializerKey`, and `associationKey`.
-- The `openapi` schema should describe an array, with `items` typically referencing the schema of individual objects.
+## Loading Associations
 
-## Ensuring Associations are Loaded
+Associations must be loaded before serialization. Use [preloadFor](/docs/models/querying/preloadFor) to automatically load everything needed for a serializer:
 
-As mentioned in the [Overview](./overview.mdx), serializers in Dream operate **synchronously**. This is a core design principle. It means that any data they need to serialize, including data from associated models, must already be loaded into memory _before_ the serializer is called. Dream will not (and cannot) automatically fetch missing associations during serialization. Attempting to access an unloaded association directly on a model instance will typically result in a `NonLoadedAssociation` error, adhering to the 'dead programs tell no lies' principle. When a serializer encounters an association that isn't loaded on the provided model instance, it will generally render it as `null` (for `rendersOne`) or an empty array (for `rendersMany`), or follow specific `optional` and `openapi` schema definitions.
+```ts
+// Loads all associations needed for PlaceForGuestsSerializer
+const places = await Place.preloadFor('forGuests').all()
 
-To make association data available, you have a few primary mechanisms:
-
-1. **Preloading with `preload`**: When initially querying for your primary model(s), you can use the [`preload`](../models/querying/preload.mdx) method to eagerly load specified associations. This is often the most efficient way to fetch all necessary data in advance.
-
-    ```typescript
-    const posts = await this.currentUser
-      .associationQuery('posts')
-      .preload('comments')
-      .limit(5)
-      .all()
-    ```
-
-2. **Preloading with `leftJoinPreload`**: Similar to `preload`, [`leftJoinPreload`](../models/querying/leftJoinPreload.mdx) also loads associations, but it uses `LEFT JOIN`s in the SQL query. This can be more efficient in some cases but has different performance characteristics and might result in more complex queries.
-
-    ```typescript
-    const posts = await this.currentUser
-      .associationQuery('posts')
-      .leftJoinPreload('comments')
-      .limit(5)
-      .all()
-    ```
-
-3. **Instance-based Loading with `Dream#load`**: If you already have an instance of a model and you subsequently need to load one or more of its associations, you can use the [`Dream#load`](../models/querying/load.mdx) method. This method fetches the associations for that specific instance and returns a _new instance_ with the associations populated.
-
-    ```typescript
-    let user = await User.firstOrFail() // User instance, posts not loaded
-    // ... some logic ...
-    if (needsPosts) {
-      user = await user.load('posts').execute() // user is now a new instance with posts loaded
-    }
-    // user.posts is now available for serialization.
-    ```
-
-For serializers, the key takeaway is that the data must be present on the model instance _before_ `render` is called.
-
-Refer to the documentation for [`preload`](../models/querying/preload.mdx), [`leftJoinPreload`](../models/querying/leftJoinPreload.mdx), and [`Dream#load`](../models/querying/load.mdx) for more detailed information on their usage and options.
-
-By correctly specifying how associations are serialized and how their schemas are defined (especially the distinction between `DreamSerializer` inference and `ObjectSerializer` explicit definition), you can build robust and well-documented APIs.
+// Better than manually specifying:
+// const places = await Place.preload('rooms', 'currentLocalizedText').all()
+```

@@ -37,7 +37,7 @@ export default defineConfig({
 
 ## General specs
 
-For the most part, your app can be spec'd using the general tools provided by [vitest](http://vitest.dev). We provide some boilerplate setup for your unit spec runs to make sure that the database is truncated between runs, which allows you to freely seed the db for each test without worrying about running into data from a previous test run:
+For the most part, your app can be spec'd using the general tools provided by [vitest](http://vitest.dev). We provide some boilerplate setup for your unit spec runs to make sure that the database is truncated between runs, which enables you to freely seed the db for each test without worrying about running into data from a previous test run:
 
 ```ts
 // api/spec/unit/setup/hooks.ts
@@ -135,7 +135,7 @@ describe('UserSerializer', () => {
   it('renders loginCount', async () => {
     const user = await createUser({ email: 'how@yadoin', password: 'password' })
     expect(new Serializer(user).render()).toEqual(
-      expect.objectContaining({ loginCount: 0 }),
+      expect.objectContaining({ loginCount: 0 })
     )
   })
 })

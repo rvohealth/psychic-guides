@@ -11,7 +11,7 @@ Once you have defined your serializers, you'll use them in your Psychic controll
 
 You can explicitly use a serializer within your controller methods. This gives you direct control over which serializer is used and when its `.render()` method is called.
 
-```typescript
+```ts
 import { StuffSerializer } from 'app/serializers/stuff_serializer' // Assuming StuffSerializer is your defined serializer function
 import Stuff from 'app/models/stuff' // Your Dream model
 
@@ -28,7 +28,7 @@ export class StuffsController extends ApplicationController {
 }
 ```
 
-In this example, `StuffSerializer(stuff)` creates the serializer instance with the data, and `.render()` generates the final JSON object to be sent in the response.
+In this example, `StuffSerializer(stuff)` creates the serializer instance with the data, and `.render()` generates the final json object to be sent in the response.
 
 ## Implicit Rendering
 
@@ -40,13 +40,10 @@ To enable implicit rendering, your Dream model needs to define a `serializers` g
 
 Your Dream model should have a `serializers` getter that returns an object. The keys of this object are names (like `default`, `summary`, `detail`), and the values are the serializer functions themselves.
 
-```typescript
+```ts
 // app/models/stuff.ts
 import ApplicationModel from './application_model'
-import {
-  StuffSerializer,
-  StuffSummarySerializer,
-} from 'app/serializers/stuff_serializer' // Import your serializer functions
+import { StuffSerializer, StuffSummarySerializer } from 'app/serializers/stuff_serializer' // Import your serializer functions
 
 export default class Stuff extends ApplicationModel {
   // ... your model attributes and methods
@@ -68,7 +65,7 @@ Once the `serializers` getter is set up on the model:
 
 - **Default Serializer**: If you pass a model instance or an array of instances directly to `this.ok()`, Psychic will look for a `default` serializer in the model's `serializers` getter and use it.
 
-  ```typescript
+  ```ts
   // In your controller
   public async index() {
     const stuffs = await Stuff.all();
@@ -83,7 +80,7 @@ Once the `serializers` getter is set up on the model:
 
 - **Named Serializer**: You can specify a different named serializer by passing its key in the options object to `this.ok()`.
 
-  ```typescript
+  ```ts
   // In your controller
   public async indexSummary() {
     const stuffs = await Stuff.all();
@@ -97,11 +94,11 @@ Often, you'll want to make request-specific data available to all serializers in
 
 This method is typically called in a `BeforeAction` within a base controller or a specific controller to set data that should be accessible by any serializer used in that request lifecycle.
 
-```typescript
+```ts
 // app/controllers/application_controller.ts
 import { BeforeAction, PsychicController } from '@rvoh/psychic'
 // Assume getLocaleFromHeaders is a utility function you have
-import { getLocaleFromHeaders } from 'app/helpers/i18n_helpers'
+import { getLocaleFromHeaders } from 'app/helpers/i18n-helpers'
 
 export default class ApplicationController extends PsychicController {
   @BeforeAction()
@@ -118,7 +115,7 @@ export default class ApplicationController extends PsychicController {
 
 The data provided via `serializerPassthrough()` is typically passed as an `options` argument to your main serializer function. You can then access this data within your serializer logic, such as in `customAttribute` callbacks.
 
-```typescript
+```ts
 // app/serializers/my_data_serializer.ts
 import { ObjectSerializer } from '@rvoh/dream'
 
@@ -142,7 +139,7 @@ export const MyDataSerializer = (data: MyData, options?: SerializerOptions) =>
         }
         return 'Hello from the serializer!'
       },
-      { openapi: 'string' },
+      { openapi: 'string' }
     )
 
 // When MyDataSerializer is invoked (explicitly or implicitly),

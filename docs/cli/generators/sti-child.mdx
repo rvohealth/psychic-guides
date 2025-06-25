@@ -1,0 +1,119 @@
+---
+sidebar_position: 5
+title: sti-child
+---
+
+# STI Child Model Generator
+
+The STI (Single Table Inheritance) child generator creates new Dream models that extend another Dream model, enabling you to leverage single table inheritance patterns. **This generator creates complete models**, just like the regular model generator, but with inheritance relationships.
+
+## Prerequisites: Creating the STI Parent
+
+Before generating STI children, you must first create the parent model, and it is recommended to use the `--sti-base-serializer` flag when doing so:
+
+```sh
+yarn psy g:resource --sti-base-serializer --owning-model=Place \
+  v1/host/places/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
+  Place:belongs_to position:integer:optional deleted_at:datetime:optional
+```
+
+**Why `--sti-base-serializer`?** This flag creates the base serializer in a format that child serializers can properly extend, ensuring the inheritance hierarchy works correctly.
+
+You can also create an STI parent using the model generator:
+
+```sh
+yarn psy g:model --sti-base-serializer \
+  Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
+  Place:belongs_to position:integer:optional deleted_at:datetime:optional
+```
+
+## Usage
+
+```sh
+yarn psy g:sti-child <childModelName> extends <parentModelName> [columnsWithTypes...]
+```
+
+**Arguments:**
+
+- `<childModelName>`: The name of the child model to create (e.g., `AdminUser` or `Premium/Account`)
+- `extends`: The literal word "extends" (required)
+- `<parentModelName>`: Fully qualified name of the parent model (e.g., `User` or `Health/Coach`)
+- `[columnsWithTypes...]`: Additional properties specific to the child model
+
+**Options:**
+
+- `--no-serializer`: Skip generating a serializer for the child model
+
+## STI Example
+
+This example creates an STI model for various rooms.
+
+### STI Base
+
+Create the base `Room` using the resource generator with the `--sti-base-serializer` flag:
+
+```sh
+yarn psy g:resource --sti-base-serializer --owning-model=Place \
+  v1/host/places/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
+  Place:belongs_to position:integer:optional deleted_at:datetime:optional
+```
+
+Note that you’ll need to run `yarn psy db:migrate` after generating in order to run the next generator.
+
+### STI Child: Bathroom
+
+Then create an STI child:
+
+```sh
+yarn psy g:sti-child Room/Bathroom extends Room bath_or_shower_type:enum:bath_or_shower_types:bath,shower,bath_and_shower,none
+```
+
+## Supported Column Types
+
+STI child models support the same column types as the model generator:
+
+### Basic Types
+
+- **citext**: Case insensitive text
+- **string**: VARCHAR (default 255, customizable: `name:string:128`)
+- **text**: TEXT type for longer content
+- **date**: Date only
+- **datetime**: Timestamp with timezone
+- **integer**: Integer numbers
+
+### Advanced Types
+
+- **decimal**: `price:decimal:10,2` (10 total digits, 2 after decimal)
+- **enum**: `status:enum:user_status:active,inactive,suspended`
+- **belongs_to**: `Role:belongs_to` (creates foreign key and association)
+
+### Optional Columns
+
+Add `:optional` to make any column nullable:
+
+```sh
+yarn psy g:sti-child AdminUser extends User role:string:optional last_login:datetime:optional
+```
+
+## How STI Works with Generators
+
+Single Table Inheritance allows multiple models to share the same database table while having different behaviors and attributes. The generators work together to create this setup:
+
+### Generator Workflow
+
+1. **Parent Model**: Created with `g:model` or `g:resource` using `--sti-base-serializer`
+2. **Child Models**: Created with `g:sti-child` extending the parent
+
+### Database Structure
+
+- **Parent table**: Contains columns for all child models
+- **Type column**: Automatically used to distinguish between child types (discriminator)
+- **Shared columns**: Common attributes inherited by all children
+- **Child-specific columns**: Additional columns added by child generators
+
+:::tip Related Documentation
+
+- [STI Models guide](/docs/models/sti)
+- [Model Generator](./model)
+- [Migration documentation](/docs/cli/migrations)
+  :::

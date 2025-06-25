@@ -5,7 +5,7 @@ title: overview
 
 # @Snapshotable - overview
 
-The `@Snapshotable()` class decorator adds the instance method `takeSnapshot` to the decorated Dream model. When called, `takeSnapshot` builds a simple object of all the database fields for the model. It also traverses the association tree rooted at the model, following `HasMany` and `HasOne` associations, recursively calling `takeSnapshot` on each. This is useful for converting an entire model tree to JSON to, for example, store a user's data in compliance with HIPAA retention requirements.
+The `@Snapshotable()` class decorator adds the instance method `takeSnapshot` to the decorated Dream model. When called, `takeSnapshot` builds a simple object of all the database fields for the model. It also traverses the association tree rooted at the model, following `HasMany` and `HasOne` associations, recursively calling `takeSnapshot` on each. This is useful for converting an entire model tree to json to, for example, store a user's data in compliance with HIPAA retention requirements.
 
 Snapshotable automatically skips associations with `required` or `passthrough` `on` clauses.
 

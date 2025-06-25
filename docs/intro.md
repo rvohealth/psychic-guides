@@ -6,12 +6,6 @@ sidebar_position: 1
 
 In your grand search to find the perfect typescript web framework, we are humbled that you have stumbled upon us. We are new to the game, having just officially released in April of 2025, but we believe our offering to you was worth the wait.
 
-## Overview
-
-There are many excellent tools in nodejs for providing the bits and pieces of a web framework that you might need for your application. In the nodejs community, everything is very plug-and-play, allowing you to pick and choose tiny tools that are responsible for tiny jobs, and they do those jobs well, and if you don't need them, then you just don't use them.
-
-Though it tends to be quite a nerdy way to approach your software, we love this philosophy, and in Psychic and Dream, this philosophy is very much alive and well. However, we also attempt to provide some staple pieces to the puzzle, as well as the glue to bind them together, which will really make your experience in typescript more enjoyable, since adding types to the puzzle can put some strain on the plug-and-play ideology.
-
 ## What is Dream?
 
 At the heart of most web applications is a database, with, at least generally speaking, a tightly-defined set of table schemas to guard the integrity of its data. Dream follows the conventional [Active Record](https://en.wikipedia.org/wiki/Active_record_pattern) practices for modeling data, but provides a very powerful TypeScript-driven set of features to unleash powerful autocomplete mechanisms that make even the most dense applications possible to navigate.
@@ -103,7 +97,7 @@ class User extends ApplicationModel {
 await User.preloadFor('summary').findOrFail(this.castParam('id', 'uuid'))
 ```
 
-> To learn more about automatic preloading, see our [preloadFor](/docs/models/querying/preloadFor) documentation. 
+> To learn more about automatic preloading, see our [preloadFor](/docs/models/querying/preloadFor) documentation.
 
 ## What is Psychic?
 
@@ -120,59 +114,55 @@ import { PsychicRouter } from '@rvoh/psychic'
 
 export default (r: PsychicRouter) => {
   r.get('', 'Welcome#index')
-  r.namespace('api', (r) => {
-    r.namespace('v1', (r) => {
-      r.resources('ingredients')
+  r.namespace('v1', r => {
+    r.namespace('host', r => {
+      r.resources('places')
     })
   })
 }
 ```
 
-> See our [Routing guide](/docs/routing/crud) for more information on routing
+> See our [Routing guide](/docs/routing/rest) for more information on routing
 
 ### Controllers
 
 With routes defined, you can build matching controllers to add functionality to your endpoints. Psychic deals strictly in json, so all endpoints will generally just be rendering json, if anything.
 
 ```ts
-// controllers/Api/V1/IngredientsController.ts
+// controllers/V1/Host/PlacesController.ts
 
-export default class ApiV1IngredientsController extends AuthedController {
+export default class V1HostPlacesController extends AuthedController {
   public async create() {
-    const ingredient = await Ingredient.create(this.paramsFor(Ingredient))
-    this.created(ingredient.id)
+    const place = await Place.create(this.paramsFor(Place))
+    this.created(place.id)
   }
 
   public async index() {
-    const ingredients = await Ingredient.preloadFor('summary').all()
-    this.ok(ingredients)
+    const places = await Place.preloadFor('summary').all()
+    this.ok(places)
   }
 
   public async show() {
-    const ingredient = await Ingredient.preloadFor('default').findOrFail(this.castParam('id', 'bigint'))
+    const place = await Place.preloadFor('default').findOrFail(this.castParam('id', 'bigint'))
 
-    this.ok(ingredient)
+    this.ok(place)
   }
 
   public async update() {
-    const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint'),
-    )
-    await ingredient.update(this.paramsFor(Ingredient))
+    const place = await Place.findOrFail(this.castParam('id', 'bigint'))
+    await place.update(this.paramsFor(Place))
     this.noContent()
   }
 
   public async destroy() {
-    const ingredient = await Ingredient.findOrFail(
-      this.castParam('id', 'bigint'),
-    )
-    await ingredient.destroy()
+    const place = await Place.findOrFail(this.castParam('id', 'bigint'))
+    await place.destroy()
     this.noContent()
   }
 }
 ```
 
-As you can already see above, our Dream ORM is clearly at work to keep our code so tidy. Psychic will automatically respond with a `404` for any failures caused by `findOrFail`, and `castParam` will fail with a `400` if the incoming param does not match the described schema. These design patterns are designed to allow you to get out of your own way, enabling the composition of extremely simple design patterns with powerful intuitions about your needs.
+As you can already see above, our Dream ORM is clearly at work to keep our code so tidy. Psychic will automatically respond with a `404` for any failures caused by `findOrFail`, and `castParam` will fail with a `400` if the incoming param does not match the described schema. These design patterns enable you to get out of your own way, enabling the composition of extremely simple design patterns with powerful intuitions about your needs.
 
 > See our [Controller guides](/docs/controllers/generating) for more information on implementing controllers
 
@@ -181,12 +171,12 @@ As you can already see above, our Dream ORM is clearly at work to keep our code 
 Psychic provides a full-throttle openapi engine that can autogenerate openapi documents for your app by examining your models and serializers. This is very powerful, since it prevents you from needing to manually update your openapi specs any time you make changes to your models or serializers. It can also infer request body shapes for models on `POST`, `PATCH`, and `PUT` requests, enabling automatic request body generation as well.
 
 ```ts
-// controllers/Api/V1/IngredientsController.ts
+// controllers/V1/Host/PlacesController.ts
 
-export default class ApiV1IngredientsController extends AuthedController {
-  // passing Ingredient will automatically generate an openapi request body
+export default class V1HostPlacesController extends AuthedController {
+  // passing Place will automatically generate an openapi request body
   // containing all of the "safeParams" fields from the model.
-  @OpenAPI(Ingredient, {
+  @OpenAPI(Place, {
     status: 201,
     responses: {
       201: {
@@ -195,8 +185,8 @@ export default class ApiV1IngredientsController extends AuthedController {
     },
   })
   public async create() {
-    const ingredient = await Ingredient.create(this.paramsFor(Ingredient))
-    this.created(ingredient.id)
+    const place = await Place.create(this.paramsFor(Place))
+    this.created(place.id)
   }
 
   // passing many: true will specify an openapi document that renders
@@ -217,17 +207,17 @@ export default class ApiV1IngredientsController extends AuthedController {
 }
 ```
 
-The `create` method will automatically generate an openapi document for this endpoint which responds with a 201 status and a string, but has a request body that matches all of the `safeParams` getter on user. This will default to all of the attributes on the Ingredient model, except for any belongs to association foreign keys, the primary key, or the timestamp fields.
+The `create` method will automatically generate an openapi document for this endpoint which responds with a 201 status and a string, but has a request body that matches all of the `safeParams` getter on user. This will default to all of the attributes on the Place model, except for any belongs to association foreign keys, the primary key, or the timestamp fields.
 
 Utilizing the `preloadFor` method, we can load all nested association chains required to serve up the model for this particular serializer.
 
-The `index` method will automatically generate an openapi document that responds with a 200, and renders an array of Ingedients using the IngredientSummarySerializer, paginated automatically by dream using the `paginate` method. Passing the `paginate: true` flag, we indicate that the response will also contain additional aside from the data payload to help support pagination flows for a client. You can do quite a lot with the OpenAPI decorator, so it is worth reading up on the docs there to unlock the full potential of our powerful openapi integration.
+The `index` method will automatically generate an openapi document that responds with a 200, and renders an array of Places using the PlaceSummarySerializer, paginated automatically by dream using the `paginate` method. Passing the `paginate: true` flag, we indicate that the response will also contain additional aside from the data payload to help support pagination flows for a client. You can do quite a lot with the OpenAPI decorator, so it is worth reading up on the docs there to unlock the full potential of our powerful openapi integration.
 
 > See our [Openapi guides](/docs/openapi/overview) for more information on implementing controllers
 
 ## Philosophy
 
-Psychic and Dream provide an end-to-end solution for modern web applications, without getting in the way by intervening in the front end client building process. Instead, we encourage Psychic developers to use whatever front end framework they want for prototyping their app, and we make little to no interventions, setting it up whatever way they see fit. We do not provide any templating engines, or any mechanisms for rendering anything other than JSON data, which can be consumed by whatver API consumers need to do so.
+Psychic and Dream provide an end-to-end solution for modern web applications, without getting in the way by intervening in the front end client building process. Instead, we encourage Psychic developers to use whatever front end framework they want for prototyping their app, and we make little to no interventions, setting it up whatever way they see fit. We do not provide any templating engines, or any mechanisms for rendering anything other than json data, which can be consumed by whatver API consumers need to do so.
 
 We do, however, provide a tools for composing a robust backend, as well as the testing infrastructure to cover any set of web client integrations you desire.
 
@@ -241,7 +231,7 @@ Don't Repeat Yourself (DRY), is a guiding philosophy of Dream and Psychic, revea
 - powerful decorators like `@SoftDelete`, `@Sortable`, and `@ReplicaSafe` that automatically and universally handle common use cases which would otherwise introduce complexity into your application
 - cli code generators that set up models, serializers, and controllers using best practice conventions, such as controllers inheriting from an authenticated ancestor right from the start
 - advanced association patterns such as has-many-through, single table inheritance (STI), and polymorphism
-- utilities like paramsFor and preloadFor, which allow you to stay DRY when defining new associations on your serializers, or add or edit columns on your table.
+- utilities like paramsFor and preloadFor, which help you stay DRY when defining new associations on your serializers, or add or edit columns on your table.
 
 ### Use familiar technologies
 
@@ -261,7 +251,7 @@ Considering, here is a breakdown of the technologies we are leaning on for our a
 
 ### Convention over configuration
 
-Since Psychic and Dream are meant to be used together, Psychic is well-fit to automatically absorb implicit configurations at the Dream layer, allowing you to define things once, rather than many times. These sensible expectations by our app enable you to compose with ease, and make changes that can flow through to the top level of your app without even needing to make changes.
+Since Psychic and Dream are meant to be used together, Psychic is well-fit to automatically absorb implicit configurations at the Dream layer, enabling you to define things once, rather than many times. These sensible expectations by our app enable you to compose with ease, and make changes that can flow through to the top level of your app without even needing to make changes.
 
 ### Leverage openapi to simplify front end integration
 
@@ -296,13 +286,13 @@ In addition, because of the flexibility provided, you are able to side-launch co
 
 ## Testing
 
-Psychic can easily act as a standalone JSON web delivery system, but it also encourages certain paradigms which enable the developer to still write end-to-end tests, as well as a rich tooling system for composing unit tests. Psychic was designed with a `BDD` philosophy in mind, which means that our system _must_ provide adequate tooling for spec'ing out our entire app.
+Psychic can easily act as a standalone json web delivery system, but it also encourages certain paradigms which enable the developer to still write end-to-end tests, as well as a rich tooling system for composing unit tests. Psychic was designed with a `BDD` philosophy in mind, which means that our system _must_ provide adequate tooling for spec'ing out our entire app.
 
-As most in the javascript world are comfortable with [vitest](http://vitest.dev), we have built our tooling to rest comfortably on top of it, allowing you to bring in custom vitest or jest plugins of your choice without any trouble from the framework. We do, however, provide some useful extensions to make your life easier when spec'ing in Dream and Psychic.
+As most in the javascript world are comfortable with [vitest](http://vitest.dev), we have built our tooling to rest comfortably on top of it, facilitating the integration of custom vitest or jest plugins of your choice without any trouble from the framework. We do, however, provide some useful extensions to make your life easier when spec'ing in Dream and Psychic.
 
 ### Unit specs
 
-Unit specs describe the behavior of your app. When practicing BDD, the unit specs are written before the functionality they describe, and allow you to test the behavior of your function from the outside in. Psychic and Dream provide special tools to enhance this process and make it seamless for you to interact with your app in a test environment.
+Unit specs describe the behavior of your app. When practicing BDD, the unit specs are written before the functionality they describe, and enable you to test the behavior of your function from the outside in. Psychic and Dream provide special tools to enhance this process and make it seamless for you to interact with your app in a test environment.
 
 > For more information, see [The Unit spec guides](/docs/specs/unit).
 
@@ -317,9 +307,7 @@ describe('User', () => {
       it('creates a user settings model, and attaches it to the user', async () => {
         expect(await UserSettings.count()).toEqual(0)
         const user = await createUser()
-        expect(await UserSettings.firstOrFail()).toMatchDreamModel(
-          user.userSettings,
-        )
+        expect(await UserSettings.firstOrFail()).toMatchDreamModel(user.userSettings)
       })
     })
   })
@@ -348,7 +336,7 @@ describe('User', () => {
 
 #### Controller specs
 
-Psychic also provides helpers to enable easy endpoint testing, allowing you to hit your routes with real requests and test the response mechanisms of your app under a variety of circumstances.
+Psychic also provides helpers to enable easy endpoint testing, making it simple to hit your routes with real requests and test the response mechanisms of your app under a variety of circumstances.
 
 ```ts
 // api/spec/unit/controllers/Api/V1/UsersController.spec.ts
@@ -367,16 +355,12 @@ describe('ApiV1UsersController', () => {
 
   describe('GET /api/v1/users/me', () => {
     async function getSession() {
-      return await request.session(
-        '/api/v1/signin',
-        204,
-        {
-          data: {
-            email: 'how@yadoin',
-            password: 'password'
-          }
-        }
-      )
+      return await request.session('/api/v1/signin', 204, {
+        data: {
+          email: 'how@yadoin',
+          password: 'password',
+        },
+      })
     }
 
     it('returns 204 with an authed user', async () => {
@@ -395,7 +379,7 @@ describe('ApiV1UsersController', () => {
 
 ### Feature (end-to-end) specs
 
-Psychic will automatically bootstrap with [puppeteer](https://pptr.dev/guides/what-is-puppeteer) as a dev dependency to provide a headless browser you can use to test a web application end-to-end. Whenever these tests run, a psychic server will automatically be started which can be used by your client application, allowing you to test your front end integration with your back end.
+Psychic will automatically bootstrap with [puppeteer](https://pptr.dev/guides/what-is-puppeteer) as a dev dependency to provide a headless browser you can use to test a web application end-to-end. Whenever these tests run, a psychic server will automatically be started which can be used by your client application, enabling you to test your front end integration with your back end.
 
 > For more information, see [The Feature spec guides](/docs/specs/feature).
 

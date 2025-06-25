@@ -17,7 +17,7 @@ To make use of this utility, you can run the following:
 yarn psy g:openapi:redux
 ```
 
-You will be prompted to answer a few questions, primarily to fill out the configuration file provided by the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) package. The configuration for this package is confusing, and also _must_ be set up using JSON as of now, due to limitiations in their own library when paired with an esm package. These nuances are hard to tango with and can lead to frustration, which is why we provided this generator to begin with.
+You will be prompted to answer a few questions, primarily to fill out the configuration file provided by the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) package. The configuration for this package is confusing, and also _must_ be set up using json as of now, due to limitiations in their own library when paired with an esm package. These nuances are hard to tango with and can lead to frustration, which is why we provided this generator to begin with.
 
 Nuances aside, the package does an incredible job at providing useful, redux-driven bindings to your application that will create a seamless integration between your client and back end applications. By default, psychic will attempt to sync to your `openapi/openapi.json` file, but you can redirect it to any openapi file of your choosing. Psychic will make a few other intelligent guesses as to a few of the configuration options, but feel free to override any of the defaults.
 
@@ -42,7 +42,7 @@ export default function initializeMyAppApi(psy: PsychicApp) {
               logPrefixColor: 'green',
             })
           },
-        },
+        }
       )
       DreamCLI.logger.logEndProgress()
     }

@@ -5,91 +5,9 @@ title: generating
 
 # Generating Serializers
 
-Dream provides several CLI commands to help you scaffold your models and associated files, including serializers. These generators set up the basic structure, allowing you to customize the serialization logic further.
+Dream provides two CLI commands for scaffolding models and their associated serializers:
 
-## `yarn psy g:model`
+- [generate:model](/docs/cli/generators/model)
+- [generate:resource](/docs/cli/generators/resource)
 
-This command creates a new Dream model. By default, it also generates a corresponding serializer for the model.
-
-```bash
-yarn psy g:model <modelName> [columnsWithTypes...]
-```
-
-**Arguments:**
-
-- `<modelName>`: The name of the model to create (e.g., `Post` or `Settings/CommunicationPreferences`).
-- `[columnsWithTypes...]`: A list of model properties and their types (e.g., `email:string title:text`).
-
-**Serializer-specific Options:**
-
-- `--no-serializer`: Use this flag if you do not want to generate a serializer for this model.
-- `--sti-base-serializer`: This option omits the serializer link from the Dream model itself but still creates the serializer file. This is useful when the model will be a base for Single Table Inheritance (STI) children, and you want those children to extend a common serializer.
-
-**Example:**
-
-To create a `User` model with `email` (string) and `name` (string) attributes, along with its default serializer:
-
-```bash
-yarn psy g:model User email:string name:string
-```
-
-This will generate `app/models/user.ts` and `app/serializers/user_serializer.ts` (or similar paths based on your project structure).
-
-## `yarn psy g:sti-child`
-
-This command is used to create a new Dream model that extends another Dream model, leveraging STI.
-
-```bash
-yarn psy g:sti-child <childModelName> extends <parentModelName> [columnsWithTypes...]
-```
-
-**Arguments:**
-
-- `<childModelName>`: The name of the child model.
-- `extends`: The literal word "extends".
-- `<parentModelName>`: The name of the parent model.
-- `[columnsWithTypes...]`: Additional properties specific to the child model.
-
-**Serializer-specific Options:**
-
-- `--no-serializer`: Prevents the generation of a serializer for the child model. If the parent model has a serializer, the child model will typically use or extend that.
-
-**Example:**
-
-To create an `AdminUser` model that extends `User` with an additional `role` attribute:
-
-```bash
-yarn psy g:sti-child AdminUser extends User role:string
-```
-
-If a serializer was generated for `User` (and not omitted with `--sti-base-serializer`), you might then customize `app/serializers/admin_user_serializer.ts` to extend `UserSerializer`.
-
-## `yarn psy g:resource`
-
-This command is a more comprehensive scaffolding tool that creates a Dream model, a database migration, a controller, a serializer, and placeholder spec files.
-
-```bash
-yarn psy g:resource <path> <modelName> [columnsWithTypes...]
-```
-
-**Arguments:**
-
-- `<path>`: The URL path for the resource (e.g., `/users`).
-- `<modelName>`: The name of the model.
-- `[columnsWithTypes...]`: Properties of the model.
-
-**Serializer-specific Options:**
-
-- `--sti-base-serializer`: Similar to `g:model`, this omits the serializer link from the model but creates the serializer file, intended for STI base models. Note that `g:resource` does not have a `--no-serializer` flag as it's designed to create a full set of resource files.
-
-**Example:**
-
-To create all resources for a `Post` model, including a serializer:
-
-```bash
-yarn psy g:resource /posts Post title:string content:text
-```
-
-This will generate the model, migration, controller, serializer (`app/serializers/post_serializer.ts`), and related tests.
-
-After generating a serializer using any of these commands, you will typically open the serializer file and use the fluent API (e.g., `ObjectSerializer(data).attribute(...)`) to define precisely how the model's data should be rendered and how its OpenAPI schema should be described.
+The generated serializers are only intended as a starting point; they almost always need to be modified to return the shape of the data needed by a real world application.

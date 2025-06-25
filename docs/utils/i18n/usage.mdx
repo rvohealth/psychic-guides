@@ -28,11 +28,18 @@ const text = i18n('en-US', 'labels.nutrition.calories')
 
 We recommend that you leverage i18n within your serializer layer, since this can be an incredibly conventient place to make translations before delivering your endpoint results.
 
+See the [passthrough setting documentation](/docs/serializers/render#serializer-passthrough-data) for details on how to set passthrough data on automatically rendered serializers.
+
 ```ts
-export default class NutritionSerializer extends DreamSerializer {
-  @Attribute('string')
-  public calories() {
-    return i18n(this.$passthroughData.locale, 'labels.nutrition.calories')
-  }
-}
+import { DreamSerializer } from '@rvoh/dream'
+import { LocalesEnum } from '../../types/db.js'
+import i18n from '../../utils/i18n.js'
+
+export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
+  PlaceSummaryForGuestsSerializer(place)
+    .customAttribute('style', () => i18n(passthrough.locale, `places.style.${place.style}`), {
+      openapi: 'string',
+    })
+    .attribute('sleeps')
+    .rendersMany('rooms', { serializerKey: 'forGuests' })
 ```

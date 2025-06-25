@@ -14,10 +14,10 @@ Since most web applications will require a database, Dream is the tool for abstr
 export async function up(db: Kysely<any>): Promise<void> {
   await db.schema
     .createTable('users')
-    .addColumn('id', 'bigserial', (col) => col.primaryKey())
+    .addColumn('id', 'bigserial', col => col.primaryKey())
     .addColumn('email', 'varchar(64)')
-    .addColumn('created_at', 'timestamp', (col) => col.notNull())
-    .addColumn('updated_at', 'timestamp', (col) => col.notNull())
+    .addColumn('created_at', 'timestamp', col => col.notNull())
+    .addColumn('updated_at', 'timestamp', col => col.notNull())
     .execute()
 }
 
@@ -56,11 +56,7 @@ Searching your database has never been so intuitive using the suite of Dream too
 
 ```ts
 // find many records by condition
-const users = await User
-  .where({ email: null })
-  .whereNot({ name: null })
-  .order('createdAt')
-  .all()
+const users = await User.where({ email: null }).whereNot({ name: null }).order('createdAt').all()
 
 // find first record, or null if not found
 const user = await User.order('createdAt').first()
@@ -90,7 +86,7 @@ await user.save()
 // attempts to create, but if it runs into a foreign key
 // violation, it returns the violating record instead.
 // requires a unique index on the column you are looking up
-await User.createOrFindBy({ email: 'how@yadoin' }, { createWith: { name: 'chalupajoe'}})
+await User.createOrFindBy({ email: 'how@yadoin' }, { createWith: { name: 'chalupajoe' } })
 ```
 
 To learn how to create new records, see our [creating guide](/docs/models/creating)
@@ -121,7 +117,7 @@ With records that are already in the database, making changes to that data is ma
 await user.destroy()
 
 // in a bulk query
-await User.where({ email: ops.ilike('%burpcollaborator%')}).destroy()
+await User.where({ email: ops.ilike('%burpcollaborator%') }).destroy()
 ```
 
 To learn how to delete records, see our [destroying guide](/docs/models/destroying).
@@ -176,6 +172,7 @@ Dream provides a rich set of features for interacting with your database. We hav
 - [validations guide](/docs/models/validations/overview)
 
 ### Advanced concepts
+
 - [transactions guide](/docs/models/transactions)
 - [STI guide](/docs/models/sti)
 - [hooks guide](/docs/models/hooks)

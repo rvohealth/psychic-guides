@@ -21,7 +21,7 @@ const users = await User.leftJoinPreload('posts', [
 
 ## Chaining
 
-Multiple preload statements can be chained together to successfully sideload all of your associations, allowing you to capture all associated records. In some cases, you may need to travel through the same association twice. In the example below, we load both `comments` and `ratings` onto posts, then, in a second statement, we travel through posts again, this time loading `images` onto posts, and then side-loading `credits` and `captions` back onto each post's images.
+Multiple preload statements can be chained together to successfully sideload all of your associations, enabling you to capture all associated records. In some cases, you may need to travel through the same association twice. In the example below, we load both `comments` and `ratings` onto posts, then, in a second statement, we travel through posts again, this time loading `images` onto posts, and then side-loading `credits` and `captions` back onto each post's images.
 
 ```ts
 const users = await User.leftJoinPreload('posts', ['comments', 'ratings'])

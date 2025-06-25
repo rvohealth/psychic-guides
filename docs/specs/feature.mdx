@@ -15,7 +15,7 @@ Feature specs are also commonly referred to as `end-to-end`, or `e2e` specs. We 
 
 A feature spec, like a unit spec, is written and executed from the back end context. This is amazingly powerful, since it provides you all the tools to provision your database between specs, enabling you to do proper set up, tear down, and assert the state of your database in between.
 
-Where feature specs differ from unit specs is that a headless browser is used to drive through any number of your client applications, enabling them to interact with your back end application and allowing you to test the results of those interactions however you see fit.
+Where feature specs differ from unit specs is that a headless browser is used to drive through any number of your client applications, enabling them to interact with your back end application and providing the ability to test the results of those interactions however you see fit.
 
 ## How is this done?
 
@@ -78,7 +78,7 @@ afterEach(async () => {
 
 To run feature specs, Psychic automatically provides a script in your package.json file, called `fspec` (short for "feature spec"). You can run it, simply by calling `yarn fspec` from your api directory
 
-```bash
+```sh
 cd api
 yarn fspec
 ```
@@ -90,15 +90,15 @@ Psychic doesn't know much about your UI, so the assertion helpers it provides ou
 ```ts
 import { visit } from '@rvoh/psychic-spec-helpers'
 
-describe('ingredients index page', () => {
+describe('places index page', () => {
   beforeEach(async () => {
     await createUser()
-    await createIngredient({ name: 'Cabbage', ... })
+    await createPlace({ name: 'Mountain Cabin', ... })
   })
 
   it('accepts the request', async () => {
-    const page = await visit('/ingredients')
-    await exect(page).toHaveTextContent('Cabbage')
+    const page = await visit('/places')
+    await expect(page).toHaveTextContent('Mountain Cabin')
   })
 })
 ```

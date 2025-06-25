@@ -8,14 +8,14 @@ title: pagination
 Psychic provides a nice wrapper around Dream's `paginate` method within the OpenAPI decorator, to enable you to explicitly render the results of a `paginate` call within Dream. When passing `paginate: true`, to your OpenAPI decorator, Psychic will automatically provide the necessary outer structure to reflect the call to Dream, and will correctly serialize the `results` field on the incoming payload, same as it would in an ordinary `many: true` scenario.
 
 ```ts
-class PostsController {
-  @OpenAPI(Post, {
+class PlacesController {
+  @OpenAPI(Place, {
     paginate: true,
     serializerKey: 'summary',
   })
   public async index() {
-    const paginated = await this.currentUser
-      .associationQuery('posts')
+    const paginated = await this.currentHost
+      .associationQuery('places')
       .paginate({
         page: this.castParam('page', 'integer', { allowNull: true }),
         pageSize: this.castParam('pageSize', 'integer', { allowNull: true }),

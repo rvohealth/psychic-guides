@@ -13,11 +13,24 @@ Certain errors within the Dream/Psychic ecosystem are automatically recognized b
 In a controller, calling `this.castParam` with an invalid param passed will raise an exception which will cause Psychic to automatically raise a 400 error response, yielding an object with errors. In the following code, the call to `castParam` will raise a `400` unless the param for `id` is both passed, and a valid uuid.
 
 ```ts
-class PostsController extends PsychicController {
+import { OpenAPI } from '@rvoh/psychic'
+import Place from '../../../models/Place.js'
+import V1HostBaseController from './BaseController.js'
+
+const openApiTags = ['places']
+
+export default class V1HostPlacesController extends V1HostBaseController {
+  @OpenAPI(Place, {
+    status: 200,
+    tags: openApiTags,
+    description: 'Fetch a Place',
+  })
   public async show() {
-    const post = await this.currentUser
-      .associationQuery('posts')
+    const place = await this.currentHost
+      .associationQuery('places')
+      .preloadFor('default')
       .find(this.castParam('id', 'uuid'))
+    this.ok(place)
   }
 }
 ```
@@ -27,12 +40,19 @@ class PostsController extends PsychicController {
 Similar to `castParam`, `paramsFor` will raise a 400 exception if any of the params provided matching one of the model attributes is invalid.
 
 ```ts
-class PostsController extends PsychicController {
+export default class V1HostPlacesController extends V1HostBaseController {
+  @OpenAPI(Place, {
+    status: 201,
+    tags: openApiTags,
+    description: 'Create a Place',
+  })
   public async create() {
-    const post = await this.currentUser.createAssociation(
-      'posts',
-      this.paramsFor(Post),
+    let place = await this.currentHost.createAssociation(
+      'places',
+      this.paramsFor(Place)
     )
+    if (place.isPersisted) place = await place.loadFor('default').execute()
+    this.created(place)
   }
 }
 ```
@@ -42,12 +62,23 @@ class PostsController extends PsychicController {
 Certain methods in dream will cause a `RecordNotFound` exception to be thrown. If this exception is unhandled by your application code, it will automatically cause Psychic to raise a 404.
 
 ```ts
-class PostsController extends PsychicController {
+export default class V1HostPlacesController extends V1HostBaseController {
+  @OpenAPI(Place, {
+    status: 204,
+    tags: openApiTags,
+    description: 'Update a Place',
+  })
   public async update() {
-    const post = await this.currentUser
-      .associationQuery('posts')
-      .findOrFail(this.castParam('id', 'bigint'))
+    const place = await this.place()
     // this will raise a 404 if no record is found
+    await place.update(this.paramsFor(Place))
+    this.noContent()
+  }
+
+  private async place() {
+    return await this.currentHost
+      .associationQuery('places')
+      .findOrFail(this.castParam('id', 'string'))
   }
 }
 ```
