@@ -7,7 +7,7 @@ title: Installation
 
 To create a new psychic app, you can use the psychic app provisioner via npx, like so:
 
-```bash
+```sh
 # if you would like your app's name to be "howyadoin"
 npx @rvoh/create-psychic howyadoin
 ```
@@ -43,7 +43,7 @@ Psychic and Dream libraries are built on modern esm patterns, including the late
 
 In order for you to run your local dev server, you will need to have the following other dependencies installed:
 
-```bash
+```sh
 node >= 20.9.0
 postgres >= 13.4
 redis >= 7.2.0 # (only if using websockets or workers)

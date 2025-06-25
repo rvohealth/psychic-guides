@@ -8,7 +8,7 @@ The call signature for `load` is very similar to [`preload`](./preload.mdx), and
 
 You can call `load` on a model instance, specifying the association name. The method returns a _new instance_ of the model with the specified association(s) loaded. The original instance remains unchanged.
 
-```typescript
+```ts
 // Assuming 'user' is an existing instance of a User model
 // and User has a 'posts' association.
 
@@ -30,7 +30,7 @@ This is useful if you have an instance and decide you need more data for it.
 
 You can chain multiple `load` calls to load several associations at once, or even nested associations:
 
-```typescript
+```ts
 let user = await User.firstOrFail() // Fetches a user without posts or pets
 
 // Load 'posts' (where body is null) and 'pets'
@@ -58,7 +58,7 @@ Both methods can take similar arguments for specifying which associations to loa
 
 Before attempting to access an association, you might want to check if it has been loaded to avoid a `NonLoadedAssociation` error. The `Dream#loaded(associationName)` method can be used for this. It returns `true` if the association has been loaded (even if the result was, for example, an empty array or null), and `false` otherwise.
 
-```typescript
+```ts
 const user = await User.find(1) // User instance without 'posts' loaded
 
 if (user.loaded('posts')) {
@@ -82,7 +82,7 @@ console.log(userWithoutPreload.loaded('mainComposition')) // false
 
 - **New Instance:** `load().execute()` always returns a _new_ instance of the model with the associations loaded. The original instance on which `load()` was called remains unchanged and will not have the newly loaded associations.
 
-  ```typescript
+  ```ts
   const freshUser = await User.create({
     email: 'charlie@peanuts.com',
     password: 'howyadoin',
@@ -101,27 +101,22 @@ console.log(userWithoutPreload.loaded('mainComposition')) // false
 
 - **Transactions:** `load` can be used within a transaction by calling `txn(transaction)` on the instance first:
 
-  ```typescript
+  ```ts
   let petsOutput: Pet[] = []
-  await ApplicationModel.transaction(async (txn) => {
-    const user = await User.create(
-      { email: 'fred@fred.com', password: 'password' },
-      { txn },
-    )
-    await user
-      .txn(txn)
-      .createAssociation('pets', { species: 'dog', name: 'violet' })
+  await ApplicationModel.transaction(async txn => {
+    const user = await User.txn(txn).create({ email: 'fred@fred.com', password: 'password' })
+    await user.txn(txn).createAssociation('pets', { species: 'dog', name: 'violet' })
     // Assuming 'user' might have other pets already, or this is the first.
     const userWithPets = await user.txn(txn).load('pets').execute()
     petsOutput = userWithPets.pets
   })
 
-  console.log(petsOutput.map((p) => p.name)) // e.g., ['violet'] or ['existing_pet_name', 'violet']
+  console.log(petsOutput.map(p => p.name)) // e.g., ['violet'] or ['existing_pet_name', 'violet']
   ```
 
 - **Freshness:** Each call to `load().execute()` fetches the association data fresh from the database at that moment. If the underlying data changes between `load` calls, subsequent `load` calls will reflect those changes on the newly returned instance.
 
-  ```typescript
+  ```ts
   const user = await User.create({
     email: 'user@example.com',
     password: 'password',

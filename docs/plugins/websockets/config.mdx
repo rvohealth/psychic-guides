@@ -12,7 +12,7 @@ However, if this is not the case for you and you are looking to install websocke
 
 1. Install the package.
 
-```bash
+```sh
 yarn add @rvoh/psychic-websockets
 ```
 
@@ -35,7 +35,7 @@ export default (wsApp: PsychicAppWebsockets) => {
     }),
   })
 
-  wsApp.on('ws:start', (io) => {
+  wsApp.on('ws:start', io => {
     // do something on start
   })
 
@@ -56,9 +56,7 @@ import psychicConf from '../../conf/app'
 import dreamConf from '../../conf/dream'
 import websocketsConf from '../../conf/websockets'
 
-export default async function initializePsychicApp(
-  opts: PsychicAppInitOptions = {}
-) {
+export default async function initializePsychicApp(opts: PsychicAppInitOptions = {}) {
   const psychicApp = await PsychicApp.init(psychicConf, dreamConf, opts)
   await PsychicAppWebsockets.init(psychicApp, websocketsConf)
   // ...
@@ -111,15 +109,15 @@ In addition to configuration, psychic-websockets also exposes hooks to tap into 
 
 #### ws:start
 
-The `ws:start` event is called whenever the psychic server is started. This allows you to establish socket bindings. Under the hood we are using [socket.io](https://socket.io) to power our websocket bindings, which means you can visit their documentation to understand more about setting up a websockets app within your application.
+The `ws:start` event is called whenever the psychic server is started. This enables you to establish socket bindings. Under the hood we are using [socket.io](https://socket.io) to power our websocket bindings, which means you can visit their documentation to understand more about setting up a websockets app within your application.
 
 ```ts
 export default (wsApp: PsychicAppWebsockets) => {
   // ...
-  wsApp.on('ws:start', (io) => {
+  wsApp.on('ws:start', io => {
     // use socket.io to establish namespaced channels
     // for your app to communicate on
-    io.of('/').on('connection', async (socket) => {
+    io.of('/').on('connection', async socket => {
       // this is an example of how you might be handling
       // socket.io authentication. It would require extra
       // setup on both your frontend and backend clients,

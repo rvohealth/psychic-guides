@@ -11,7 +11,7 @@ title: overview
 1. the serializers you already use to turn models into JSON
 1. an `@OpenAPI` decorator in controllers
 
-The [resource generator](/docs/cli/generators/resources) automatically adds `@OpenAPI` decorator declarations corresponding to each endpoint, and since serializer attributes are typed back to the database schema, these types will stay in sync as you add migrations. (For example, if you add a migration to change a column from not allowing `null` to allowing `null`, the OpenAPI spec will change to include `nullable: true` for the corresponding property.)
+The [resource generator](/docs/cli/generators/resource) automatically adds `@OpenAPI` decorator declarations corresponding to each endpoint, and since serializer attributes are typed back to the database schema, these types will stay in sync as you add migrations. (For example, if you add a migration to change a column from not allowing `null` to allowing `null`, the OpenAPI spec will change to include `nullable: true` for the corresponding property.)
 
 Serializers and the @OpenAPI decorator also support hand-written specs to provide added flexibility when needed. As with everything in Dream and Psychic, these hand-written specs are strongly typed.
 
@@ -19,23 +19,32 @@ OpenAPI validation is enabled on all requests (when a request doesn't match, it 
 
 To generate the OpenAPI spec, simply run:
 
-```bash
+```sh
 yarn psy sync:openapi
 ```
 
-Psychic provides built-in support for generating openapi schema to define your response payloads. Using the definitions you provide, Psychic will regenerate an `openapi.json` file at the root of your project whenever a sync occurs. Psychic will also use this to generate type files for your client app, allowing you to easily sync up your api mechanisms to the current values provided by the backend.
+Psychic provides built-in support for generating openapi schema to define your response payloads. Using the definitions you provide, Psychic will regenerate an `openapi.json` file at the root of your project whenever a sync occurs. Psychic will also use this to generate type files for your client app, facilitating easy synchronization of your api mechanisms to the current values provided by the backend.
 
 ## Automatic response generation
 
 ```ts
-export default class PostsController extends PsychicController {
-  @OpenAPI(Post, {
-    many: true,
+import { OpenAPI } from '@rvoh/psychic'
+import Place from '../../../models/Place.js'
+import V1HostBaseController from './BaseController.js'
+
+const openApiTags = ['places']
+
+export default class V1HostPlacesController extends V1HostBaseController {
+  @OpenAPI(Place, {
     status: 200,
+    tags: openApiTags,
+    description: 'Fetch multiple Places',
+    many: true,
     serializerKey: 'summary',
   })
   public async index() {
-    this.ok(await this.currentUser.associationQuery('posts').all())
+    const places = await this.currentHost.associationQuery('places').preloadFor('summary').all()
+    this.ok(places)
   }
 }
 ```
@@ -44,7 +53,7 @@ If the first argument to the `OpenAPI` decorator is a callback function, then th
 
 ```js
 "paths": {
-  "/posts": {
+  "/places": {
     "parameters": [],
     "get": {
       "tags": [],
@@ -56,7 +65,7 @@ If the first argument to the `OpenAPI` decorator is a callback function, then th
               "schema": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/PostSummary"
+                  "$ref": "#/components/schemas/PlaceSummary"
                 }
               }
             }
@@ -71,22 +80,22 @@ If the first argument to the `OpenAPI` decorator is a callback function, then th
 
 ## Implicit serializer scanning
 
-In the above example, a reference to the `#/components/schemas/PostSummary` component is made. This component is also generated in the components section of the openapi.json, leveraging the @Attribute decorator calls to construct an image of the serializer when building component schemas.
+In the above example, a reference to the `#/components/schemas/PlaceSummary` component is made. This component is also generated in the components section of the openapi.json, leveraging the serializer attribute definitions to construct an image of the serializer when building component schemas.
 
 ```js
 "components": {
   "schemas": {
-    "PostSummary": {
+    "PlaceSummary": {
       "type": "object",
       "required": [
         "id",
-        "body",
+        "name",
       ],
       "properties": {
         "id": {
           "type": "string"
         },
-        "body": {
+        "name": {
           "type": "string"
         },
       }
@@ -95,27 +104,31 @@ In the above example, a reference to the `#/components/schemas/PostSummary` comp
 }
 ```
 
-Dream supports OpenAPI notation within the `@Attribute` decorator, allowing us to build openapi specs for each attribute:
+Dream supports OpenAPI notation within serializer definitions, allowing us to build openapi specs for each attribute:
 
 ```ts
-class PostSerializer extends DreamSerializer {
-  @Attribute({
-    type: 'object',
-    properties: {
-      label: 'string',
-      value: {
-        type: 'string',
-        nullable: true,
-      },
-    },
-  })
-  public body() {
-    return {
-      label: 'Body',
-      value: this.data.body,
-    }
-  }
-}
+import { DreamSerializer } from '@rvoh/dream'
+
+const PlaceSerializer = (place: Place) =>
+  DreamSerializer(Place, place)
+    .attribute('id')
+    .attribute('name')
+    .customAttribute(
+      'formattedDescription',
+      () => ({
+        label: 'Description',
+        value: place.description,
+      }),
+      {
+        openapi: {
+          type: 'object',
+          properties: {
+            label: { type: 'string' },
+            value: { type: 'string', nullable: true },
+          },
+        },
+      }
+    )
 ```
 
 ## Extra response payloads
@@ -123,10 +136,12 @@ class PostSerializer extends DreamSerializer {
 In addition to the default response shapes described, you can pass custom response objects to the `responses` field, enabling you to handle custom response codes.
 
 ```ts
-export default class PostsController extends PsychicController {
-  @OpenAPI(Post, {
-    many: true,
+export default class V1HostPlacesController extends V1HostBaseController {
+  @OpenAPI(Place, {
     status: 200,
+    tags: openApiTags,
+    description: 'Fetch multiple Places',
+    many: true,
     serializerKey: 'summary',
     responses: {
       400: {
@@ -138,7 +153,8 @@ export default class PostsController extends PsychicController {
     },
   })
   public async index() {
-    this.ok(await this.currentUser.associationQuery('posts').all())
+    const places = await this.currentHost.associationQuery('places').preloadFor('summary').all()
+    this.ok(places)
   }
 }
 ```
@@ -148,12 +164,16 @@ export default class PostsController extends PsychicController {
 To populate the `parameters` field in your OpenAPI definition for this route, the `headers`, `body`, `pathParams`, and `query` options are passed:
 
 ```ts
-export default class PostsController extends PsychicController {
-  @OpenAPI(Post, {
+export default class V1HostPlacesController extends V1HostBaseController {
+  @OpenAPI(Place, {
+    status: 201,
+    tags: openApiTags,
+    description: 'Create a Place',
     body: {
       type: 'object',
       properties: {
-        email: 'string',
+        name: 'string',
+        description: 'string',
       },
     },
     query: [{ name: 'search', required: false }],
@@ -161,7 +181,9 @@ export default class PostsController extends PsychicController {
     pathParams: [{ name: 'id', required: true }],
   })
   public async create() {
-    this.ok(await this.currentUser.associationQuery('posts').all())
+    let place = await this.currentHost.createAssociation('places', this.paramsFor(Place))
+    if (place.isPersisted) place = await place.loadFor('default').execute()
+    this.created(place)
   }
 }
 ```
@@ -171,15 +193,18 @@ export default class PostsController extends PsychicController {
 When openapi routes are read, they are often grouped by the fields provided in their `tags` array. The `tags` option enables you to populate this field.
 
 ```ts
-export default class PostsController extends PsychicController {
-  @OpenAPI(Post, {
-    many: true,
+export default class V1HostPlacesController extends V1HostBaseController {
+  @OpenAPI(Place, {
     status: 200,
+    tags: openApiTags,
+    description: 'Fetch multiple Places',
+    many: true,
     serializerKey: 'summary',
-    tags: ['posts'],
+    tags: ['places'],
   })
   public async index() {
-    this.ok(await this.currentUser.associationQuery('posts').all())
+    const places = await this.currentHost.associationQuery('places').preloadFor('summary').all()
+    this.ok(places)
   }
 }
 ```

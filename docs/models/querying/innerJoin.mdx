@@ -5,15 +5,15 @@ import RoutesOutput from '@site/src/components/ui/routes-output'
 The innerJoin method enables you to join associations as part of your queries.
 
 ```ts
-const users = await User.innerJoin('pets', 'collars').all()
+const hosts = await Host.innerJoin('places', 'rooms').all()
 ```
 
 <RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-select "users".* from "users"
-inner join "pets" on "users"."id" = "pets"."user_id"
-inner join "collars" on "pets"."id" = "collars"."pet_id"
+select "hosts".* from "hosts"
+inner join "places" on "hosts"."id" = "places"."host_id"
+inner join "rooms" on "places"."id" = "rooms"."place_id"
 `}
   </pre>
 </RoutesOutput>
@@ -21,27 +21,31 @@ inner join "collars" on "pets"."id" = "collars"."pet_id"
 You can also attach `and`, `andNot`, and `andAny` clauses to join statements. The second argument (the object) in the following code generates an `and` condition on the join:
 
 ```ts
-const users = await User.innerJoin('pets', { and: { name: 'Aster' } }).all()
+const hosts = await Host.innerJoin('places', {
+  and: { name: 'Mountain Cabin' },
+}).all()
 ```
 
 <RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-select "users".* from "users"
-inner join "pets" on "users"."id" = "pets"."user_id" and "pets"."name" = $1
+select "hosts".* from "hosts"
+inner join "places" on "hosts"."id" = "places"."host_id" and "places"."name" = $1
 `}
   </pre>
 </RoutesOutput>
 
 ```ts
-// An `and` statement on both `posts` and `comments`
-const users = await User.innerJoin(
-  'posts',
-  { and: { category: 'travel' } },
-  'comments',
-  { and: flagged: true },
+// An `and` statement on both `places` and `rooms`
+const hosts = await Host.innerJoin(
+  'places',
+  { and: { style: 'cabin' } },
+  'rooms',
+  { and: { type: 'Bedroom' } }
 ).all()
 
-// An `and` statement on just `comments`
-const users = await User.innerJoin('posts', 'comments', { and: { flagged: true } }).all()
+// An `and` statement on just `rooms`
+const hosts = await Host.innerJoin('places', 'rooms', {
+  and: { type: 'Bedroom' },
+}).all()
 ```

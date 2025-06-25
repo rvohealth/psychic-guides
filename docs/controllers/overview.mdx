@@ -1,5 +1,6 @@
 ---
 sidebar_position: 0
+pagination_prev: null
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -29,26 +30,30 @@ export default class WelcomeController extends ApplicationController {
 Ordinarily, controllers will be driven by resourceful patterns tied to underlying models. In these cases, we highly recommend you see our [generating resources guides](/docs/controllers/generating), since this will automatically compose sensible default functionality and testing for your controller, as well as the underlying model.
 
 ```sh
-yarn psy g:resource v1/pets Pet User:belongs_to name:string
+yarn psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional
 ```
 
-This will also produce route entries for the new Pets controller, using the `r.resources('pets')` call, which will automatically provide sensible routes for indexing, showing, creating, updating, and deleting a pet.
+This will also produce route entries for the new Places controller, using the `r.resources('places')` call, which will automatically provide sensible routes for indexing, showing, creating, updating, and deleting a place.
 
 ### Status code responses
 
 Psychic leverages method names which correspond to http status codes to make rendering data a little more human for us.
 
 ```ts
-export default class PetsController extends ApplicationController {
+export default class V1HostPlacesController extends V1HostBaseController {
   public async create() {
-    const pet = await Pet.create(this.paramsFor(Pet))
-    this.created(pet.id) // 201
+    let place = await this.currentHost.createAssociation(
+      'places',
+      this.paramsFor(Place)
+    )
+    if (place.isPersisted) place = await place.loadFor('default').execute()
+    this.created(place)
   }
 
   public async update() {
-    const pet = await Pet.findOrFail(this.castParam('id', 'bigint'))
-    await pet.update(this.paramsFor(Pet))
-    this.noContent() // 204
+    const place = await this.place()
+    await place.update(this.paramsFor(Place))
+    this.noContent()
   }
 }
 ```
@@ -57,23 +62,29 @@ Learn more about how status codes work in psychic controllers by visiting our [s
 
 ### OPENAPI
 
-Psychic Controllers contains powerful bindings to openapi through the usage of the `@OpenAPI` decorator. This enables you to automatically generate openapi documents based on the shape of your models. The below example will auto-generate an openapi document with an array of serialized Posts as the response body for this endpoint.
+Psychic Controllers contains powerful bindings to openapi through the usage of the `@OpenAPI` decorator. This enables you to automatically generate openapi documents based on the shape of your models. The below example will auto-generate an openapi document with an array of serialized Places as the response body for this endpoint.
 
-````ts
 ```ts
 import { OpenAPI } from '@rvoh/psychic'
+import Place from '../../../models/Place.js'
+import V1HostBaseController from './BaseController.js'
 
-export default class PostsController extends ApplicationController {
-  @OpenAPI(Post, {
-    many: true,
+const openApiTags = ['places']
+
+export default class V1HostPlacesController extends V1HostBaseController {
+  @OpenAPI(Place, {
     status: 200,
+    tags: openApiTags,
+    description: 'Fetch multiple Places',
+    many: true,
     serializerKey: 'summary',
   })
   public async index() {
-    this.ok(await this.currentUser.associationQuery('posts').all())
+    const places = await this.currentHost.associationQuery('places').all()
+    this.ok(places)
   }
 }
-````
+```
 
 The OpenAPI decorator is incredibly robust in terms of capabilities, and we recommend diving deep on how to leverage it to empower yourself to write less. See our [Openapi guides](/docs/openapi/controllers) to learn more.
 

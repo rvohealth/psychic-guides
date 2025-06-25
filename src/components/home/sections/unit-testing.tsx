@@ -40,7 +40,7 @@ export default function UnitTesting() {
       >
         <p className="subtext">
           Use our in-house specRequest singleton for making requests to your
-          endpoints, allowing you to easily assert response expectaions and
+          endpoints, facilitating easy assertion of response expectations and
           payloads.
         </p>
 

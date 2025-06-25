@@ -15,7 +15,7 @@ In order to get started working on psychic locally, you will first need to insta
 
 Once done, you can clone the repo locally:
 
-```bash
+```sh
 git clone https://github.com/rvohealth/psychic
 ```
 
@@ -47,7 +47,7 @@ In each of these files, you will want to replace `WHO_AM_I` with the result of r
 
 Once this is done, you should be able to reset the test database and run specs:
 
-```bash
+```sh
 yarn psy db:reset
 yarn uspec
 yarn fspec
@@ -82,10 +82,10 @@ The cli/bin provide the cli utilities used to orchestrate your app from the comm
 
 ## Unit specs
 
-Unit specs are used to test the individual classes and functions within your application. In addtion, they are also used to test requests to your backend, which are often called `e2e` tests in other worlds. Since these request specs have no problem running alongside ordinary unit tests, we run them all together as part of the same suite, allowing you to choose when to launch a request in your test and when not to.
+Unit specs are used to test the individual classes and functions within your application. In addtion, they are also used to test requests to your backend, which are often called `e2e` tests in other worlds. Since these request specs have no problem running alongside ordinary unit tests, we run them all together as part of the same suite, providing the flexibility to choose when to launch a request in your test and when not to.
 
 ## Feature specs
 
-In a real world application, feature specs would be used to drive a headless browser through your entire application, allowing you to seed your backend database, run a browser test, clear the database out, and start another test. Since psychic itself is an app builder, we do not have any reason for feature tests, so the `fspec` command is very thin, leaving us with just enough feature specs to prove that we are capable of stubbing our backend controllers between specs.
+In a real world application, feature specs would be used to drive a headless browser through your entire application, facilitating the seeding of your backend database, running a browser test, clearing the database out, and starting another test. Since psychic itself is an app builder, we do not have any reason for feature tests, so the `fspec` command is very thin, leaving us with just enough feature specs to prove that we are capable of stubbing our backend controllers between specs.
 
 the `test-app` folder at the root of the project contains an example app that is built in psychic. This app contains a dummy project with some models scaffolded in to drive our tests with. Doing this is the best way to simulate a real app using psychic.

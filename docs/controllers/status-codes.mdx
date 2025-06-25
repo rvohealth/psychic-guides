@@ -6,29 +6,70 @@ import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # status codes
 
-Psychic encourages developers to think in terms of http status codes names, rather than manually setting status codes and rendering json. We provide methods which will automatically apply the given statuses, and will render JSON automatically.
+Psychic encourages developers to think in terms of http status codes names, rather than manually setting status codes and rendering json. We provide methods which will automatically apply the given statuses, and will render json automatically.
 
 ```ts
-import { PsychicController, Params } from 'psychic'
+import { OpenAPI } from '@rvoh/psychic'
+import Place from '../../../models/Place.js'
+import V1HostBaseController from './BaseController.js'
 
-export default class PostsController extends PsychicController {
-  public async create() {
-    await this.currentUser.createAssociation('posts', this.paramsFor(Post))
-    this.created() // 201
-  }
+const openApiTags = ['places']
 
+export default class V1HostPlacesController extends V1HostBaseController {
+  @OpenAPI(Place, {
+    status: 200,
+    tags: openApiTags,
+    description: 'Fetch multiple Places',
+    many: true,
+    serializerKey: 'summary',
+  })
   public async index() {
-    const posts = await this.currentUser.associationQuery('posts')
-    this.ok(posts) // 200
+    const places = await this.currentHost
+      .associationQuery('places')
+      .preloadFor('summary')
+      .all()
+    this.ok(places) // 200
   }
 
-  public async update() {
-    const post = await this.currentUser
-      .associationQuery('posts')
-      .findOrFail(this.castParam('id', 'uuid'))
-    await post.update(this.paramsFor(Post))
+  @OpenAPI(Place, {
+    status: 200,
+    tags: openApiTags,
+    description: 'Fetch a Place',
+  })
+  public async show() {
+    const place = await this.place()
+    this.ok(place) // 200
+  }
 
+  @OpenAPI(Place, {
+    status: 201,
+    tags: openApiTags,
+    description: 'Create a Place',
+  })
+  public async create() {
+    let place = await this.currentHost.createAssociation(
+      'places',
+      this.paramsFor(Place)
+    )
+    if (place.isPersisted) place = await place.loadFor('default').execute()
+    this.created(place) // 201
+  }
+
+  @OpenAPI(Place, {
+    status: 204,
+    tags: openApiTags,
+    description: 'Update a Place',
+  })
+  public async update() {
+    const place = await this.place()
+    await place.update(this.paramsFor(Place))
     this.noContent() // 204
+  }
+
+  private async place() {
+    return await this.currentHost
+      .associationQuery('places')
+      .findOrFail(this.castParam('id', 'string'))
   }
 }
 ```
@@ -36,13 +77,21 @@ export default class PostsController extends PsychicController {
 Thinking in terms of status codes helps you to write a clearly-defined API, and will produce more consistent, standardized patterns for handling various operations. In addition to providing status codes for handling successes, Psychic also provides methods for handling non-success statuses, like so:
 
 ```ts
-export default class PostsController extends PsychicController {
+export default class V1HostPlacesController extends V1HostBaseController {
+  @OpenAPI(Place, {
+    status: 200,
+    tags: openApiTags,
+    description: 'Fetch a Place',
+  })
   public async show() {
-    const post = await this.currentUser
-      .associationQuery('posts')
-      .find(this.castParam('id', 'uuid'))
-    if (!post) this.notFound() // throws a 404
-    this.ok(post)
+    const place = await this.place()
+    this.ok(place)
+  }
+
+  private async place() {
+    return await this.currentHost
+      .associationQuery('places')
+      .findOrFail(this.castParam('id', 'string'))
   }
 }
 ```
@@ -54,15 +103,22 @@ Note that in the example above, there is no return statement encapsulating the `
 In addition to explicit status-code messages, Psychic provides reactive mechanisms to encapsulate Dream functionality, providing default status codes out the gate for you, such as in `castParam` and `findOrFail`:
 
 ```ts
-export default class PostsController extends PsychicController {
+export default class V1HostPlacesController extends V1HostBaseController {
+  @OpenAPI(Place, {
+    status: 200,
+    tags: openApiTags,
+    description: 'Fetch a Place',
+  })
   public async show() {
-    // if the id is not present, or is not a valid uuid, this throws an error which Psychic converts to a 400
-    const id = this.castParam('id', 'uuid')
+    // if the id is not present, or is not a valid string, this throws an error which Psychic converts to a 400
+    const id = this.castParam('id', 'string')
 
-    // if a post is not found by that id for this user, this throws an error which Psychic converts to a 404
-    const post = await this.currentUser.associationQuery('posts').findOrFail(id)
+    // if a place is not found by that id for this host, this throws an error which Psychic converts to a 404
+    const place = await this.currentHost
+      .associationQuery('places')
+      .findOrFail(id)
 
-    this.ok(post)
+    this.ok(place)
   }
 }
 ```

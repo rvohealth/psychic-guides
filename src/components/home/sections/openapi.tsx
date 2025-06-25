@@ -29,7 +29,7 @@ export default function OpenAPI() {
       >
         <div>
           <p className="subtext">
-            Define OpenAPI decorators on your controller endpoints, allowing you
+            Define OpenAPI decorators on your controller endpoints, enabling you
             to easily express payload shapes by simply pointing the decorator at
             a serializer.
           </p>

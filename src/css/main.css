@@ -22,7 +22,7 @@
   --ifm-code-background: color(srgb 0.93 0.93 0.93);
   --ifm-h1-font-size: 70px;
   --ifm-navbar-link-color: rgb(251, 67, 233);
-  --ifm-font-family-base: "Inconsolata", monospace;
+  --ifm-font-family-base: 'Inconsolata', monospace;
   /* --ifm-alert-background-color: rgb(193, 254, 234); */
   /* --ifm-alert-background-color: rgb(238, 213, 255); */
   --ifm-alert-background-color: #f0e1fff5;
@@ -30,9 +30,9 @@
   --ifm-alert-border-color: transparent;
   --ifm-blockquote-border-color: #63666a;
   --ifm-link-color: black;
-  --alternate-font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif, BlinkMacSystemFont,
-  'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji',
-  'Segoe UI Emoji', 'Segoe UI Symbol';
+  --alternate-font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans,
+    sans-serif, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol';
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 
   --ifm-menu-link-margin-horizontal: 15px;
@@ -85,11 +85,11 @@
   background: rgb(72, 200, 255);
 }
 
-[data-theme=dark] .theme-doc-sidebar-menu ul .menu__link::before {
+[data-theme='dark'] .theme-doc-sidebar-menu ul .menu__link::before {
   background: rgb(126, 233, 255);
 }
 
-[data-theme=dark] .theme-doc-sidebar-menu ul li ul .menu__link::before {
+[data-theme='dark'] .theme-doc-sidebar-menu ul li ul .menu__link::before {
   background: rgb(72, 200, 255);
 }
 
@@ -110,8 +110,12 @@ body[data-location='home'] {
 }
 
 .alert {
-  margin-top: 100px;
+  margin-top: 30px;
   border-radius: 10px;
+}
+
+.theme-code-block + .alert {
+  margin-top: -40px;
 }
 
 .alert.alert--warning {
@@ -139,7 +143,6 @@ code {
 
 a {
   /*color: black;*/
-  font-style: italic;
   text-decoration: underline;
 }
 
@@ -156,12 +159,11 @@ a {
 .alert a {
   color: #424242;
   text-decoration: none;
-  font-style: italic;
   text-decoration: underline;
   /* text-decoration-color: #093727; */
 }
 
-[data-theme=dark] .alert a {
+[data-theme='dark'] .alert a {
   color: #000000;
 }
 
@@ -246,33 +248,34 @@ html[data-theme='light'] {
   margin-top: 0px;
 }
 
-main > .container > .row > .col {
-  max-width: 65% !important;
-}
-
 @media (max-width: 700px) {
   main > .container > .row > .col {
     max-width: 100% !important;
   }
 }
 
+/* Pagination navigation styling - using Docusaurus defaults with custom colors */
 .pagination-nav__link {
-  border: none;
-  background: rgb(240, 239, 242);
-  padding-top: 30px;
+  text-decoration: none;
+  border: 2px solid var(--ifm-color-primary);
+  border-radius: var(--ifm-border-radius);
+  transition: border-color var(--ifm-transition-fast) ease;
+}
+
+.pagination-nav__link:hover {
+  background-color: var(--ifm-color-emphasis-300);
 }
 
 .pagination-nav__sublabel {
-  opacity: 0;
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.875rem;
+  font-weight: var(--ifm-font-weight-semibold);
+  margin-bottom: 0.25rem;
 }
 
 .pagination-nav__label {
-  color: rgb(100, 45, 235);
-}
-
-.pagination-nav__link--next .pagination-nav__label::after,
-.pagination-nav__link--prev .pagination-nav__label::before {
-  display: none;
+  color: var(--ifm-color-emphasis-800);
+  font-weight: var(--ifm-font-weight-semibold);
 }
 
 .logo h1,
@@ -319,7 +322,7 @@ main > .container > .row > .col {
   top: -82px;
 }
 
-[data-theme=dark] .routes-output {
+[data-theme='dark'] .routes-output {
   border-color: white;
   color: #c796fb;
 }
@@ -330,8 +333,6 @@ main > .container > .row > .col {
 }
 
 .theme-doc-footer,
-.pagination-nav,
-.theme-doc-breadcrumbs,
 .footer {
   display: none;
 }
@@ -385,11 +386,11 @@ main > .container > .row > .col {
 }
 
 .triangle {
-  width: 0; 
-  height: 0; 
+  width: 0;
+  height: 0;
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  
+
   border-bottom: 5px solid black;
 }
 
@@ -424,7 +425,7 @@ main > .container > .row > .col {
   border-top: solid 2px var(--ifm-color-primary);
 }
 
-[data-theme=dark] .theme-admonition > div > ul > li:first-child {
+[data-theme='dark'] .theme-admonition > div > ul > li:first-child {
   border-color: black;
 }
 
@@ -438,18 +439,16 @@ main > .container > .row > .col {
   text-transform: uppercase;
 }
 
-[data-theme=dark] .theme-admonition ul li a {
+[data-theme='dark'] .theme-admonition ul li a {
   border-color: black;
 }
 .theme-admonition ul li ul li a {
   padding-left: 60px;
 }
 
-[data-theme=dark] .theme-admonition h2,
-[data-theme=dark] .theme-admonition h3 {
+[data-theme='dark'] .theme-admonition h2,
+[data-theme='dark'] .theme-admonition h3 {
   color: black;
 }
 
-p {
-  /* letter-spacing: 1.25px; */
-}
+/* Additional paragraph styling can be added here if needed */

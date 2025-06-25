@@ -10,14 +10,18 @@ Psychic provides resourceful routing to encourage devs to think about their app 
 
 It is fundamentally essential to think this way, since you are already being forced to do it when you separate out your application's needs into a collection of tables. The idea here is to extend these resourceful representations of your data up into the routing layer as well.
 
-For example, if you are making an application that allows users to sign up and create a blog, you may need a users table, a blogs table, a posts table, and a comments table. It would be nice if your application could cleanly reflect some of these resources:
+For example, if you are making an application that allows bears to rent places to stay, you may need a users table, a hosts table, a places table, and a rooms table. It would be nice if your application could cleanly reflect some of these resources:
 
 ```ts // conf/routes.ts
 import { PsychicRouter } from 'psychic'
 
 export default (r: PsychicRouter) => {
-  r.resources('blogs', (r) => {
-    r.resources('posts')
+  r.namespace('v1', (r) => {
+    r.namespace('host', (r) => {
+      r.resources('places', (r) => {
+        r.resources('rooms')
+      })
+    })
   })
 }
 ```
@@ -25,18 +29,18 @@ export default (r: PsychicRouter) => {
 <RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-GET     /blogs                          Blogs#index
-POST    /blogs                          Blogs#create
-GET     /blogs/:id                      Blogs#show
-PUT     /blogs/:id                      Blogs#update
-PATCH   /blogs/:id                      Blogs#update
-DELETE  /blogs/:id                      Blogs#destroy
-GET     /blogs/:id/posts                Blogs/Posts#index
-POST    /blogs/:id/posts                Blogs/Posts#create
-GET     /blogs/:blogId/posts/:id        Blogs/Posts#show
-PUT     /blogs/:blogId/posts/:id        Blogs/Posts#update
-PATCH   /blogs/:blogId/posts/:id        Blogs/Posts#update
-DELETE  /blogs/:blogId/posts/:id        Blogs/Posts#destroy
+GET     /v1/host/places                          V1/Host/Places#index
+POST    /v1/host/places                          V1/Host/Places#create
+GET     /v1/host/places/:id                      V1/Host/Places#show
+PUT     /v1/host/places/:id                      V1/Host/Places#update
+PATCH   /v1/host/places/:id                      V1/Host/Places#update
+DELETE  /v1/host/places/:id                      V1/Host/Places#destroy
+GET     /v1/host/places/:id/rooms                V1/Host/Places/Rooms#index
+POST    /v1/host/places/:id/rooms                V1/Host/Places/Rooms#create
+GET     /v1/host/places/:placeId/rooms/:id        V1/Host/Places/Rooms#show
+PUT     /v1/host/places/:placeId/rooms/:id        V1/Host/Places/Rooms#update
+PATCH   /v1/host/places/:placeId/rooms/:id        V1/Host/Places/Rooms#update
+DELETE  /v1/host/places/:placeId/rooms/:id        V1/Host/Places/Rooms#destroy
 `}
   </pre>
 </RoutesOutput>
@@ -49,17 +53,17 @@ You can use resourceful routes, but restrict the routes to only a collection. Th
 import { PsychicRouter } from 'psychic'
 
 export default (r: PsychicRouter) => {
-  r.resources('users', { only: ['create', 'index'] })
+  r.resources('places', { only: ['create', 'index'] })
   // same as:
-  r.resources('users', { except: ['show', 'update', 'destroy'] })
+  r.resources('places', { except: ['show', 'update', 'destroy'] })
 }
 ```
 
 <RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-GET     /users  Users#index
-POST    /users  Users#create
+GET     /places  Places#index
+POST    /places  Places#create
 `}
   </pre>
 </RoutesOutput>

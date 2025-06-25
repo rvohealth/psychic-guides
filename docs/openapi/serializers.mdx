@@ -5,26 +5,27 @@ title: serializers
 
 # OpenAPI - Serializers
 
-Serializers have the unique ability to transform the attributes and associations assigned to them into robust OpenAPI types. Dream and Psychic both work together to leverage the products of the types provided by serializers into the openapi schemas produced. This enables you to compose openapi types with ease, and will automatically interpret database-level types into fully-expanded OpenAPI types without any effort on your part, allowing you to get all of the OpenAPI types for your app out of the box without doing anything (unless your serializers need to deliver something more than what is in the database).
+Serializers have the unique ability to transform the attributes and associations assigned to them into robust OpenAPI types. Dream and Psychic both work together to leverage the products of the types provided by serializers into the openapi schemas produced. This enables you to compose openapi types with ease, and will automatically interpret database-level types into fully-expanded OpenAPI types without any effort on your part, providing all of the OpenAPI types for your app out of the box without doing anything (unless your serializers need to deliver something more than what is in the database).
 
 ## Automatic type inference
 
-Serializers will automatically infer types provided to `Attribute`, `RendersOne`, and `RendersMany` decorators, as long as the correct arguments are provided. For the Attribute decorator, this is as simple as providing the parent model class as the first argument:
+Serializers will automatically infer types from the model when using the functional DreamSerializer API. The serializer automatically reads database column types and associations to generate accurate OpenAPI schemas:
 
 ### Attribute type inference
 
 ```ts
-class PetSerializer extends DreamSerializer {
-  @Attribute(Pet)
-  public name: DreamColumn<Pet>
-}
+import { DreamSerializer } from '@rvoh/dream'
+import Place from '../models/Place.js'
+
+export const PlaceSerializer = (place: Place) =>
+  DreamSerializer(Place, place).attribute('name')
 ```
 
-Dream will automatically read the database types for `Pet#name`, returning an OpenAPI type like:
+Dream will automatically read the database types for `Place#name`, returning an OpenAPI type like:
 
 ```ts
 schema: {
-  Pet: {
+  Place: {
     type: 'object',
     required: ['name'],
     properties: {
@@ -40,19 +41,16 @@ We recommend that you utilize type inference where possible, since it will autom
 
 #### Date inference
 
-Unlike most javascript-based frameworks, Psychic makes a careful distinction between DateTime and CalendarDate, which it uses for datetimes and dates, respectively. Psychic will automatically instantiate instances of `DateTime` and `CalendarDate` as it reads postgres `timestamp` or `date` fields from database rows and instantiates model instances out of them, and will automatically convert them to `iso8601` strings upon serializing to JSON, correctly delivering `YYYY-MM-DD` format for date fields, while delivering the full `iso8601` timestamp spec for date-time fields, including TZ information. In the OpenAPI layer, Psychic will automatically type dates and date-times respectively, like so:
+Unlike most javascript-based frameworks, Psychic makes a careful distinction between DateTime and CalendarDate, which it uses for datetimes and dates, respectively. Psychic will automatically instantiate instances of `DateTime` and `CalendarDate` as it reads postgres `timestamp` or `date` fields from database rows and instantiates model instances out of them, and will automatically convert them to `iso8601` strings upon serializing to json, correctly delivering `YYYY-MM-DD` format for date fields, while delivering the full `iso8601` timestamp spec for date-time fields, including TZ information. In the OpenAPI layer, Psychic will automatically type dates and date-times respectively, like so:
 
 ```ts
-class PetSerializer extends DreamSerializer {
-  @Attribute(Pet)
-  public createdOn: DreamColumn<Pet>
-
-  @Attribute(Pet)
-  public createdAt: DreamColumn<Pet>
-}
+export const PlaceSerializer = (place: Place) =>
+  DreamSerializer(Place, place)
+    .attribute('createdOn')
+    .attribute('createdAt')
 
 schema: {
-  Pet: {
+  Place: {
     type: 'object',
     required: ['createdOn', 'createdAt'],
     properties: {
@@ -67,18 +65,19 @@ schema: {
 }
 ```
 
-### Associaiton type inference
+### Association type inference
 
-With our `RendersOne` and `RendersMany` decorators, we provide nested serializer usage, without duplicating structures unnecessarily, like so:
+With the functional API, we can render associations using `rendersOne` and `rendersMany` methods, which provide nested serializer usage without duplicating structures unnecessarily:
 
 ```ts
-class UserSerializer extends DreamSerializer {
-  @RendersMany(Post)
-  public posts: Post[]
-
-  @RendersOne(Post, { optional: true })
-  public latestPost: Post | null
-}
+export const UserSerializer = (user: User) =>
+  DreamSerializer(User, user)
+    .rendersMany('places', (place) => PlaceSerializer(place))
+    .rendersOne(
+      'latestPlace',
+      (place) => (place ? PlaceSerializer(place) : null),
+      { optional: true }
+    )
 ```
 
 which would produce something like:
@@ -87,30 +86,30 @@ which would produce something like:
 schema: {
   User: {
     type: 'object',
-    required: ['posts', 'latestPost'],
+    required: ['places', 'latestPlace'],
     properties: {
-      posts: {
+      places: {
         type: 'array',
         items: {
-          $ref: '#/components/schemas/Post'
+          $ref: '#/components/schemas/Place'
         }
       }
-      latestPost: {
+      latestPlace: {
         anyOf: [
           {
-            $ref: '#/components/schemas/Post'
+            $ref: '#/components/schemas/Place'
           },
           { null: true }
         ]
       }
     }
   },
-  Post: {
+  Place: {
     type: 'object',
-    required: ['id','body'],
+    required: ['id','name'],
     properties: {
       id: { type: 'string' },
-      body: { type: 'string', nullable: true },
+      name: { type: 'string', nullable: true },
     }
   }
 }
@@ -118,45 +117,42 @@ schema: {
 
 ## Custom attribute definitions
 
-If the inferred types will not work for your use case, then overrides can be provided directly to an `Attribute` statement, allowing you to specify custom OpenAPI types to fit your needs:
+If the inferred types will not work for your use case, then overrides can be provided directly to the `attribute` method, enabling you to specify custom OpenAPI types to fit your needs:
 
 ```ts
-class Post extends DreamSerializer {
-  @Attribute({
-    type: 'object',
-    required: ['en-US', 'en-ES']
-    properties: {
-      'en-US': 'hello world',
-      'en-ES': 'hola mundo',
-    }
-  })
-  public body: Record<LocalesEnum, string>
-
-  @Attribute({
-    type: 'string',
-    nullable: true
-  })
-  public title: string | null
-}
+export const PlaceSerializer = (place: Place) =>
+  DreamSerializer(Place, place)
+    .attribute('description', {
+      type: 'object',
+      required: ['en-US', 'en-ES']
+      properties: {
+        'en-US': 'Cozy mountain cottage',
+        'en-ES': 'Cabaña acogedora en la montaña',
+      }
+    })
+    .attribute('name', {
+      type: 'string',
+      nullable: true
+    })
 ```
 
 which would produce:
 
 ```ts
 schema: {
-  Post: {
+  Place: {
     type: 'object',
-    required: ['body', 'title'],
+    required: ['description', 'name'],
     properties: {
-      body: {
+      description: {
         type: 'object',
         required: ['en-US', 'en-ES']
         properties: {
-          'en-US': 'hello world',
-          'en-ES': 'hola mundo',
+          'en-US': 'Cozy mountain cottage',
+          'en-ES': 'Cabaña acogedora en la montaña',
         }
       },
-      title: {
+      name: {
         type: 'string',
         nullable: true,
       }
@@ -170,7 +166,7 @@ Psychic and dream are currently fixed to OpenAPI `3.1.0`, and plan to march forw
 - string
 - number
 - integer
-- double
+- decimal
 - boolean
 - date
 - date-time
@@ -186,31 +182,48 @@ as well as conjuncting types, like:
 
 ## Shorthand
 
-Manually typing OpenAPI specs can be _pretty_ annoying after a while, so we have provided some helpful shorthand for those looking to save their wrists a little. For type primitives, rather than typing `{ type: 'string' }`, you can simply type `string`, like so:
+Manually typing OpenAPI specs can be _pretty_ annoying after a while, so we have provided some helpful shorthand for those looking to save their wrists a little. For type primitives, rather than typing `{ type: 'string' }`, you can simply type `'string'`. The following shorthand strings are available:
+
+- 'string'
+- 'string[]'
+- 'number'
+- 'number[]'
+- 'integer'
+- 'integer[]'
+- 'decimal'
+- 'decimal[]'
+- 'boolean'
+- 'boolean[]'
+- 'date'
+- 'date[]'
+- 'date-time'
+- 'date-time[]'
+
+Any of these shorthand representations can be wrapped in an array with 'null' to represent a nullable attribute, e.g., `['string', 'null']`.
 
 ```ts
-class PetSerializer extends DreamSerializer {
-  @Attribute('string')
-  public name: string
-
-  @Attribute('string[]')
-  public nicknames: string[]
-}
+export const PlaceSerializer = (place: Place) =>
+  DreamSerializer(Place, place)
+    .attribute('name', 'string')
+    .attribute('amenities', ['string[]', 'null'])
 ```
 
 which would produce:
 
 ```ts
 schema: {
-  Pet {
+  Place {
     type: 'object',
-    required: ['name'],
+    required: ['name', 'amenities'],
     properties: {
       name: {
         type: 'string',
       },
-      nicknames: {
-        type: 'array',
+      amenities: {
+        // usually, we wouldn't recommend nullable arrays, because an empty array
+        // usually represents what we want, but this represents what the openapi
+        // shorthand can do
+        type: ['array', 'null'],
         items: {
           type: 'string',
         }

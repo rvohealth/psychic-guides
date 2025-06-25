@@ -11,9 +11,8 @@ export default function Routing() {
       <div className="main-text">
         <div className="paragraph-container">
           <p>
-            To provide mechanisms to direct specific routes to your controllers,
-            Psychic provides you with an elegant routing solution. Take
-            advantage of resourceful routing patterns and elegant callback
+            To provide mechanisms to direct specific routes to your controllers, Psychic provides you with an
+            elegant routing solution. Take advantage of resourceful routing patterns and elegant callback
             mechanisms to create beautiful nested route patterns.
           </p>
         </div>
@@ -24,27 +23,18 @@ export default function Routing() {
         gifPreviewUrl="/img/routing-crud-demo-preview.png"
         orientation="right"
       >
-        <p className="subtext">express CRUD routes programatically</p>
+        <p className="subtext">express RESTful routes programatically</p>
 
         <nav>
-          <Link to="/docs/routing/crud">See our crud guides &gt;&gt;&gt;</Link>
+          <Link to="/docs/routing/rest">See our REST guides &gt;&gt;&gt;</Link>
         </nav>
       </Banner>
 
-      <Banner
-        title="namespacing"
-        gifPreviewUrl="/img/routes-demo-preview.png"
-        gifUrl="/img/routes-demo.gif"
-      >
-        <p className="subtext">
-          Leverage namespace and scope methods to group route expressions
-          together
-        </p>
+      <Banner title="namespacing" gifPreviewUrl="/img/routes-demo-preview.png" gifUrl="/img/routes-demo.gif">
+        <p className="subtext">Leverage namespace and scope methods to group route expressions together</p>
 
         <nav>
-          <Link to="/docs/routing/namespacing">
-            See our namespacing guides &gt;&gt;&gt;
-          </Link>
+          <Link to="/docs/routing/namespacing">See our namespacing guides &gt;&gt;&gt;</Link>
         </nav>
       </Banner>
     </div>

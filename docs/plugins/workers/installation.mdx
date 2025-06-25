@@ -11,7 +11,7 @@ However, if this is not the case for you and you are looking to install websocke
 
 1. Install the package.
 
-```bash
+```sh
 yarn add @rvoh/psychic-workers
 ```
 
@@ -111,9 +111,7 @@ import psychicConf from '../../conf/app'
 import dreamConf from '../../conf/dream'
 import workersConf from '../../conf/workers'
 
-export default async function initializePsychicApp(
-  opts: PsychicAppInitOptions = {}
-) {
+export default async function initializePsychicApp(opts: PsychicAppInitOptions = {}) {
   const psychicApp = await PsychicApp.init(psychicConf, dreamConf, opts)
 
   // add this line to integrate psychic workers with your app
@@ -154,10 +152,7 @@ export default class ApplicationScheduledService extends BaseScheduledService {
 ```ts
 // app/models/ApplicationBackgroundedModel
 
-import {
-  BackgroundJobConfig,
-  BaseBackgroundedModel,
-} from '@rvoh/psychic-workers'
+import { BackgroundJobConfig, BaseBackgroundedModel } from '@rvoh/psychic-workers'
 import { DBClass } from '../../types/db'
 import { globalSchema, schema } from '../../types/dream'
 import psychicTypes from '../../types/psychic'

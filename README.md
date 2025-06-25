@@ -40,7 +40,7 @@ This documentation is deployed via Netlify, the hooks for which are built into t
 
 Follow this guide for updating dependencies: <https://docusaurus.io/docs/migration>
 
-```bash
+```sh
 yarn clear # remove existing build
 rm -rf node_modules yarn.lock # destroy lock
 yarn # re-install
