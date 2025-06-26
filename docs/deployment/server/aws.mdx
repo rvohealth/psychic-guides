@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 title: aws
+pagination_next: null
 ---
 
 To deploy your application to aws, we will be leveraging aws fargate to provision our web server, worker, and console instances. We will be using a single Dockerfile to provision all of them, but will run different initialization commands depending on if the instance provisioned is a `worker`, `console`, or `web` instance. For now, this guide assumes you have the following already set up:
