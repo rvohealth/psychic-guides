@@ -1,0 +1,185 @@
+---
+sidebar_position: 3
+title: passport
+pagination_prev: null
+---
+
+# Integrating with passport
+
+In this tutorial, we will use Psychic to provision a new application that can integrate with [passportjs](https://www.passportjs.org/packages/passport-local/). We will be using the local strategy, since that is the simplest use case for a tutorial, but feel free to deploy alternate strategies based on your application's needs.
+
+We are going to skip over provisioning steps for our app, since that can be found in our [blog tutorial](/docs/tutorials/blog). Instead, we will focus on the passport integration, which is the only part that matters to us.
+
+## Middleware
+
+Psychic has a concept of middleware which piggy-backs off of express, enabling you compose in the routing layer as though you were in an express app.
+
+```ts
+// conf/routes.ts
+
+...
+  r.post('/sign-in', (req, res) => {
+    res.json({ hello: 'world' })
+  })
+```
+
+For more information, see our [Middleware guides](/docs/routing/middleware).
+
+Let's begin with a spec to cover our new endpoint. For this test, we will just post to an endpoint that passport authenticates with, and then expect that endpoint to render the user's id when successful.
+```ts
+import { specRequest as request } from '@rvoh/psychic-spec-helpers'
+import { PsychicServer } from '@rvoh/psychic'
+
+describe('passport integration', () => {
+  beforeEach(async () => {
+    await request.init(PsychicServer)
+  })
+
+  context('with valid credentials', () => {
+    it('returns the user id', async () => {
+      const user = await User.create({ email: 'how@yadoin', password: 'password' })
+      const res = await request.post('/passport-test', 200, {
+        data: {
+          username: 'how@yadoin',
+          password: 'password',
+        },
+      })
+      expect(res.body).toEqual({ id: user.id })
+    })
+  })
+
+  context('with invalid credentials', () => {
+    it('returns 401', async () => {
+      await request.post('/sign-in', 401, {
+        data: {
+          username: 'how@yadoin',
+          password: 'WRONG PASSWORD',
+        },
+      })
+    })
+  })
+})
+```
+
+Running this spec, we will produce failures until we implement our passport strategy and wire up our `POST /sign-in` route.
+
+## Configuring our user model
+
+We will need a User model to be able to sign in with, so let's go ahead and configure one. This process is going to be identical to the one I recently wrote in my [blog tutorial](/docs/tutorials/blog), so I am simply going to direct you to the section for provisioning a user, and the section for setting up the virtual attributes:
+
+- [set up a new User model](/docs/tutorials/blog#generating-the-user-model)
+- [adding a virtual password field](/docs/tutorials/blog#adding-a-virtual-password-field)
+
+## Installing passport
+
+With our User model created, lets install the necessary dependencies for the local authentication strategy. We will also bring in the session package so that we can add http-only cookies to our requests.
+
+```sh
+yarn add passport passport-local @types/passport @types/passport-local express-session @types/express-session
+```
+
+First, let's configure passport, as well as express-session, which is required by passport:
+
+```ts
+// conf/app.ts
+import session from 'express-session'
+import passport from 'passport'
+import { Strategy as LocalStrategy } from 'passport-local'
+
+...
+  // integrate express with express-session
+  psy.use(session({
+    secret: AppEnv.string('APP_ENCRYPTION_KEY'),
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: true,
+      httpOnly: true,
+    },
+  }))
+
+  // integrate passport with express-session
+  psy.use(passport.session())
+
+  // integrate express with passport
+  psy.use(passport.initialize())
+```
+
+passport requires us to provide serialize and deserialize callback functions. these are used to prep your user for storage in a cookie, and then to pull that same data out of a cookie and use it to pull a user from your db.
+
+```ts
+  passport.serializeUser((user: User, done) => {
+    done(null, user.id)
+  })
+  passport.deserializeUser(async (id: number, done) => {
+    try {
+      const user = await User.findOrFail(id)
+      done(null, user)
+    } catch (error) {
+      done(error)
+    }
+  })
+```
+
+Additionally, we need to set up a local auth strategy, which will allow us to define a custom strategy for determining if the credentials provided match a user in our system. In passport, you define a local auth strategy by calling the `done` function. If you provide `false` to the done function, it will raise a 401, since the done function practices the error-first approach to callback handling. The second argument provided to `done` will represent the `user` argument we end up collection in our call to `passport.serializeUser`.
+
+```ts
+  // establish a local strategy, which will be accessible by calling
+  // passport.authenticate('local') from the routes file
+  passport.use(
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    new LocalStrategy(async (email, password, done) => {
+      const user = await User.findBy({ email })
+      if (!user) return done(false)
+      if (!(await user.checkPassword(password))) return done(false)
+      return done(null, user)
+    }),
+  )
+```
+
+Next, let's provide our new passport middleware in our routing layer, which will enable our specs to pass.
+
+```ts
+// conf/routes.ts
+import passport from 'passport'
+import User from '../app/models/User.js'
+
+...
+  r.post('sign-in', [
+    passport.authenticate('local'),
+
+    // this is the success callback, given that
+    // the authentication strategy passed.
+    (req, res) => {
+      res.json({ id: (req.user as User)?.id })
+    },
+  ])
+```
+
+## Integrating into your AuthedController
+
+In order to make use of the passport session that was established, let's tap into it using the `AuthedController`, like so:
+
+```ts
+// test-app/src/app/controllers/AuthedController.ts
+
+import { BeforeAction, PsychicController } from '../../../../src/index.js'
+import User from '../models/User.js'
+
+export default class AuthedController extends PsychicController {
+  protected currentUser: User
+
+  @BeforeAction()
+  public async authenticate() {
+    const user = this.req.user
+    if (!user) return this.unauthorized()
+    this.currentUser = user!
+  }
+}
+```
+
+## Final thoughts
+
+Psychic is meant to integrate with express flexibly, so how you choose to provide the authentication to your application. I would definitely recommend pushing beyond basic password authentication, that was only done for the sake of simplicity in demonstrating, since it doesn't involve me grabbing any api keys for any third party auth services.
+
+I hope you enjoyed this tutorial, and good luck in your future journeys with Dream and Psychic!
