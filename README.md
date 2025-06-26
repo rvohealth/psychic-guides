@@ -16,6 +16,14 @@ yarn start
 
 This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
 
+### Fix next/previous navigation
+
+The next and previous links at the bottom of each page should not pass beyond the borders of a particular section of navigation. After changing `sidebar_position` or adding or removing pages, run `fix-pagination` to fix the pagination controls:
+
+```bash
+yarn fix-pagination
+```
+
 ### Build
 
 ```
