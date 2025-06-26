@@ -23,6 +23,11 @@ const config: Config = {
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
 
+  markdown: {
+    mermaid: true,
+  },
+  themes: ['@docusaurus/theme-mermaid'],
+
   plugins: [
     [
       '@cmfcmf/docusaurus-search-local',
@@ -101,9 +106,9 @@ const config: Config = {
     navbar: {
       // title: 'PSY',
       logo: {
-        alt: "My Site Logo",
-        src: "img/logo-sm.svg",
-        srcDark: "img/logo-sm-dark.svg"
+        alt: 'My Site Logo',
+        src: 'img/logo-sm.svg',
+        srcDark: 'img/logo-sm-dark.svg',
       },
       items: [
         // {
