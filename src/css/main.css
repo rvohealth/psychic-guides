@@ -451,4 +451,12 @@ html[data-theme='light'] {
   color: black;
 }
 
-/* Additional paragraph styling can be added here if needed */
+
+.breadcrumbs .breadcrumbs__item:first-child {
+  display: none;
+}
+
+.breadcrumbs__item--active .breadcrumbs__link {
+  background: transparent;
+  border: solid 2px var(--ifm-color-primary);
+}

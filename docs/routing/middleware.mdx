@@ -1,0 +1,38 @@
+---
+sidebar_position: 1
+---
+
+## Middleware
+
+Psychic has a concept of middleware which piggy-backs off of express, enabling you compose in the routing layer as though you were in an express app.
+
+```ts
+// conf/routes.ts
+...
+  r.post('/sign-in', (req, res) => {
+    res.json({ hello: 'world' })
+  })
+```
+
+This approach bypasses our controller layer, which we don't recommend since it provides such helpful utilities, but can be useful sometimes, say, when integrating with express middleware.
+
+## Multiple middleware callbacks
+
+In addition to a single middleware callback, Psychic enables you to provide several, ordered middleware callbacks. To do this, simply put the callbacks into an array, like so:
+
+```ts
+  r.post('/sign-in', [
+    (req, res, next) => {
+      console.log('A')
+      next()
+    },
+    (req, res, next) => {
+      console.log('B')
+      next()
+    },
+    (req, res, next) => {
+      console.log('C')
+      res.json({ nowIKnowMy: ['a', 'b', 'c']})
+    },
+  )
+```
