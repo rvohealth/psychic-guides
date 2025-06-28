@@ -212,7 +212,7 @@ html[data-theme='light'] {
 .theme-code-block {
   border-radius: 20px !important;
   /* margin-top: 80px !important; */
-  margin-bottom: 80px !important;
+  margin-bottom: 40px !important;
 }
 
 .theme-code-block pre {
