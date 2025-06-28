@@ -95,12 +95,7 @@ class User extends ApplicationModel {
 > Note: when using an `and` clause to create a HasOne, make sure to add a unique index on the the foreign key column (and the foreign key type column if a polymorphic association) and the column(s) in the `and` clause. For example:
 
 ```ts
-await db.schema
-  .createIndex('pets_user_id_name')
-  .on('pets')
-  .columns(['user_id', 'name'])
-  .unique()
-  .execute()
+await db.schema.createIndex('pets_user_id_name').on('pets').columns(['user_id', 'name']).unique().execute()
 ```
 
 In some cases, dynamic values will need to be permitted for the provided `and` statements. In these cases, you can leverage required `and` clauses to enforce the `and` clause to be present any time an association is loaded. If utilized, an exception will be raised if you attempt to load this association without passing the required `and` statements.

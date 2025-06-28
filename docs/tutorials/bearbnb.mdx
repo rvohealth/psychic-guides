@@ -25,22 +25,16 @@ erDiagram
     citext email
     string first_name
     string last_name
-    datetime created_at
-    datetime updated_at
   }
 
   Guest {
     bigint id PK
     bigint user_id FK
-    datetime created_at
-    datetime updated_at
   }
 
   Host {
     bigint id PK
     bigint user_id FK
-    datetime created_at
-    datetime updated_at
   }
 
   Place {
@@ -48,29 +42,20 @@ erDiagram
     string name
     enum style
     integer sleeps
-    datetime deleted_at
-    datetime created_at
-    datetime updated_at
   }
 
   HostPlace {
     bigint id PK
     bigint host_id FK
     bigint place_id FK
-    datetime deleted_at
-    datetime created_at
-    datetime updated_at
   }
 
 
   Room__STI_base_model__ {
     bigint id PK
     enum type
-    bitint place_id FK
+    bigint place_id FK
     integer position
-    datetime deleted_at
-    datetime created_at
-    datetime updated_at
 
     enum bath_or_shower_type
     enum bed_types
@@ -84,33 +69,27 @@ erDiagram
     enum locale
     string title
     text markdown
-    datetime deleted_at
-    datetime created_at
-    datetime updated_at
   }
 
-  Stay__pending__ {
+  Booking__pending__ {
     bigint id PK
     date arrive_on
     date depart_on
     integer adults
     integer cubs
-    datetime deleted_at
-    datetime created_at
-    datetime updated_at
   }
 
 
   User ||--|| Guest : ""
   User ||--o| Host : ""
-  Guest ||--o{ Stay__pending__ : ""
+  Guest ||--o{ Booking__pending__ : ""
   Host ||--o{ HostPlace : ""
   HostPlace }|--|| Place : ""
   Place ||--o{ Room__STI_base_model__ : ""
   Host ||--|{ LocalizedText : ""
   Place ||--|{ LocalizedText : ""
   Room__STI_base_model__ ||--|{ LocalizedText : ""
-  Stay__pending__ }o--|| Place : ""
+  Booking__pending__ }o--|| Place : ""
 ```
 
 ## Generator commands used to create BearBnB

@@ -31,10 +31,7 @@ import { range } from '@rvoh/dream'
 await user
   .associationQuery('pets')
   .where({
-    adoptedOn: range(
-      CalendarDate.today().minus({ months: 2 }),
-      CalendarDate.today().minus({ month: 1 })
-    ),
+    adoptedOn: range(CalendarDate.today().minus({ months: 2 }), CalendarDate.today().minus({ month: 1 })),
   })
   .order({ adoptedOn: 'desc' })
   .all()
@@ -42,10 +39,7 @@ await user
 await user
   .associationQuery('pets')
   .where({
-    adoptedOn: range(
-      DateTime.now().minus({ months: 2 }),
-      DateTime.now().minus({ month: 1 })
-    ),
+    adoptedOn: range(DateTime.now().minus({ months: 2 }), DateTime.now().minus({ month: 1 })),
   })
   .order({ adoptedOn: 'desc' })
   .all()
@@ -59,7 +53,12 @@ const deco = new Decorators<typeof Post>()
 export default class Post extends ApplicationModel {
 ...
 
-@deco.HasMany(Comment, { and: { createdAt: () => range(CalendarDate.today().minus({ weeks: 2 })) } })
+@deco.HasMany(Comment, {
+  and: {
+    createdAt: () =>
+      range(CalendarDate.today().minus({ weeks: 2 }))
+  }
+})
 public recentComments: Comment[]
 }
 ```

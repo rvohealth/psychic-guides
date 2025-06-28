@@ -87,7 +87,14 @@ await user.save()
 // attempts to create, but if it runs into a foreign key
 // violation, it returns the violating record instead.
 // requires a unique index on the column you are looking up
-await User.createOrFindBy({ email: 'how@yadoin' }, { createWith: { name: 'chalupajoe' } })
+await User.createOrFindBy(
+  {
+    email: 'how@yadoin',
+  },
+  {
+    createWith: { name: 'chalupajoe' },
+  }
+)
 ```
 
 To learn how to create new records, see our [creating guide](/docs/models/creating)
