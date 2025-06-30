@@ -95,12 +95,7 @@ class User extends ApplicationModel {
 > Note: when using an `and` clause to create a HasOne, make sure to add a unique index on the the foreign key column (and the foreign key type column if a polymorphic association) and the column(s) in the `and` clause. For example:
 
 ```ts
-await db.schema
-  .createIndex('pets_user_id_name')
-  .on('pets')
-  .columns(['user_id', 'name'])
-  .unique()
-  .execute()
+await db.schema.createIndex('pets_user_id_name').on('pets').columns(['user_id', 'name']).unique().execute()
 ```
 
 In some cases, dynamic values will need to be permitted for the provided `and` statements. In these cases, you can leverage required `and` clauses to enforce the `and` clause to be present any time an association is loaded. If utilized, an exception will be raised if you attempt to load this association without passing the required `and` statements.
@@ -261,89 +256,6 @@ If you want to avoid picking up duplicate records with the same value for a cert
 class User extends ApplicationModel {
   @deco.HasMany('Pet', { distinct: 'name' })
   public petsWithUniqueNames: Pet[]
-}
-```
-
-### PreloadThroughColumns
-
-`preloadThroughColumns` provides a mechanism to load columns from a join table without explicitly loading that table.
-
-In the following example, the loaded Lesson models will have access to the `percentComplete` attribute even though it is stored on the join model:
-
-```ts
-const lessons = this.currentUser.load('lessons').all()
-console.log(lesson.preloadedThroughColumns.percentComplete)
-
-export default class User extends ApplicationModel {
-  // ...
-
-  @deco.HasMany('UserLesson')
-  public userLessons: UserLesson[]
-
-  @deco.HasMany('Lesson', {
-    through: 'userLessons',
-    preloadThroughColumns: ['percentComplete'],
-  })
-  public lessons: Lesson[]
-}
-
-export default class UserLesson extends ApplicationModel {
-  // ...
-
-  public percentComplete: DreamColumn<Lesson, 'percentComplete'>
-
-  @deco.HasMany('Lesson')
-  public lessons: Lesson[]
-}
-
-export default class Lesson extends ApplicationModel {
-  // ...
-
-  public preloadedThroughColumns: {
-    percentComplete?: DreamColumn<UserLesson, 'percentComplete'>
-  } = {}
-}
-```
-
-`preloadThroughColumns` also provide a mechanism to alias the preloaded columns to other names. In the following example, the `id` from the UserLesson join model is mapped to `userLessonId` in `preloadedThroughColumns`:
-
-```ts
-const lessons = this.currentUser.load('lessons').all()
-console.log(lesson.preloadedThroughColumns.userLessonId)
-console.log(lesson.preloadedThroughColumns.percentComplete)
-
-export default class User extends ApplicationModel {
-  // ...
-
-  @deco.HasMany('UserLesson')
-  public userLessons: UserLesson[]
-
-  @deco.HasMany('Lesson', {
-    through: 'userLessons',
-    preloadThroughColumns: {
-      id: 'userLessonId',
-      percentComplete: 'percentComplete',
-    },
-  })
-  public lessons: Lesson[]
-}
-
-export default class UserLesson extends ApplicationModel {
-  // ...
-
-  public percentComplete: DreamColumn<Lesson, 'percentComplete'>
-
-  @deco.HasMany('Lesson')
-  public lessons: Lesson[]
-}
-
-export default class Lesson extends ApplicationModel {
-  // ...
-
-  public preloadedThroughColumns: {
-    userLessonId?: DreamColumn<UserLesson, 'id'>
-    percentComplete?: DreamColumn<UserLesson, 'percentComplete'>
-  } = {}
 }
 ```
 
