@@ -1,0 +1,58 @@
+---
+sidebar_position: 8
+---
+
+# lookup
+
+## The problem of circular imports
+
+In Nodejs, there are limitations that prevent you from circular importing, i.e.
+
+```ts
+// LogEntry/Base.ts
+import SleepLogEntry from './Sleep.js'
+
+export default class BaseLogEntry extends ApplicationModel {
+  public static thisWillBreakThings() {
+    // you can't reference SleepLogEntry in here!
+    console.log(SleepLogEntry)
+  }
+}
+
+// LogEntry/Sleep.ts
+import BaseLogEntry from './Base.js'
+
+export default class SleepLogEntry extends BaseLogEntry {}
+```
+
+Contrary to many other programming languages you may be familiar with, Nodejs has issues with classes who's signatures depend on eachother to be understood, and will often eventually resolve one or the other class to be `undefined`, creating a mysterious error in your system.
+
+However, the nature of the relationships in an ORM naturally creates the types of relationships between various models in your app to encourage this type of circularity.
+
+## using the ioc
+
+Dream leverages inversion of control (ioc) to ingest your models, and exposes a helpful utility to enable you to safely perform circular imports without causing a circular reference issue.
+
+```ts
+// LogEntry/Base.ts
+import UnsafeSleepLogEntry from './Sleep.js'
+
+// using the ioc provided by dream, we can safely
+// sidestep circular import issues without any cost
+// to our type-system, since the type layer is not
+// vulnerable to circular import issues the same way
+// that the nodejs engine is.
+const SleepLogEntry = ApplicationModel.lookup('LogEntry/Sleep') as UnsafeSleepLogEntry
+
+export default class BaseLogEntry extends ApplicationModel {
+  public static thisWillBreakThings() {
+    // This is safe
+    console.log(SleepLogEntry)
+
+    // uncommenting this will cause your circular import error again
+    // console.log(UnsafeSleepLogEntry)
+  }
+}
+```
+
+The `lookup` method provided by dream enables us to import models or serializers directly from Dream's ioc, which enables us to get past our dreaded undefined issues caused by circular import errors. We recommend that you use this sparingly, since it can create clutter in your code where it needn't be. Instead, we recommend that you use this when you run into this type of problem as an escape hatch, rather than a hard rule for your system.

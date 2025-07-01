@@ -44,8 +44,6 @@ As such, we have leaned into using syncing functions provided by both Dream and 
 
 Circular dependencies are one of the most frustrating bugs that can endlessly plague you in the Nodejs world. It happens when a file imports from another file, which then, either eventually or immediately, imports back from the original file and uses that for anything other than typing. If this happens, Nodejs will at some point in the import cycle have undefined for one or more of the classes involved, leaving your application to error out in bizarre and unexpected ways. This usually only happens when your application grows to a certain scale.
 
-The golden rule not to break, of course, depends on which version of Nodejs you are using. If you are in a node version < 22, circular dependencies will pop up for you unexpectedly if you use a circular reference anywhere outside of the type layer. After Node 22, circular dependencies become more relaxed, as only top-level references to the other class could trigger the issue.
-
 For example, this code demonstrates a pattern encouraged by our ORM. It will break on a version of Nodejs < 22, because the usage of User in the call to `DreamSerializer` creates a circular reference for the User class, since User is used as a real argument, instead of just being used for typing.
 
 ```ts
@@ -65,9 +63,9 @@ class User extends ApplicationModel {
 }
 ```
 
-In any version of Nodejs after 22, this pattern will now be safe, since the usage of `User` is tucked behind a callback function, which is a new loophole that can be used to dodge circular references made available in Node 22.
+In the original Dream architecture (well before the project was made public or open sourced), we discovered many of these circular reference headaches in the import cycles between our models and serializers, as well as between models and other models, since they would often both need to import from and reference each other. We solved this problem before hitting v1 by refactoring the serializer layer of dream to use top-level callback functions, since these are safe from circular reference issues. Additionally, we provided an internal global name system for associating models with each other to avoid any circular references there, since all model associations are driven by string refs instead of actual model classes.
 
-In the original Dream architecture, we discovered many of these circular reference headaches in the import cycles between our models and serializers, as well as between models and other models, since they would often both need to import from and reference each other. We solved this problem before hitting v1 by refactoring the serializer layer of dream to use top-level callback functions, since these are safe from circular reference issues. Additionally, we provided an internal global name system for associating models with each other to avoid any circular references there, since all model associations are driven by string refs instead of actual model classes.
+To support this, Dream has a built in `ioc` (inversion of control) system to enable Dream to capture all of your models and serializers, namespace them (based on their file path, or file path _and_ export name for serializers), and then build association mappings between your classes safely, without tripping up any circular import issues that can plague node orms. Consequentially, and to your benefit, the [lookup](/docs/models/lookup) method provided by Dream offers devs an escape hatch in scenarios where they insist on commiting this nodejs crime.
 
 ## Syncing
 
