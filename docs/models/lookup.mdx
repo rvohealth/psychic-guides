@@ -42,11 +42,17 @@ import UnsafeSleepLogEntry from './Sleep.js'
 // to our type-system, since the type layer is not
 // vulnerable to circular import issues the same way
 // that the nodejs engine is.
-const SleepLogEntry = ApplicationModel.lookup('LogEntry/Sleep') as UnsafeSleepLogEntry
+const models = () => ({
+  SleepLogEntry: ApplicationModel.lookup('LogEntry/Sleep') as UnsafeSleepLogEntry
+})
 
 export default class BaseLogEntry extends ApplicationModel {
   public static thisWillBreakThings() {
     // This is safe
+    console.log(models().SleepLogEntry)
+
+    // This is safe
+    const SleepLogEntry = ApplicationModel.lookup('LogEntry/Sleep') as UnsafeSleepLogEntry
     console.log(SleepLogEntry)
 
     // uncommenting this will cause your circular import error again
@@ -56,3 +62,19 @@ export default class BaseLogEntry extends ApplicationModel {
 ```
 
 The `lookup` method provided by dream enables us to import models or serializers directly from Dream's ioc, which enables us to get past our dreaded undefined issues caused by circular import errors. We recommend that you use this sparingly, since it can create clutter in your code where it needn't be. Instead, we recommend that you use this when you run into this type of problem as an escape hatch, rather than a hard rule for your system.
+
+## Issues when syncing
+
+top-level usage of the `lookup` method is not safe, and will cause mysterious exceptions in your app during syncing. To avoid this, make sure to wrap any top-level usage in a callback function, like so:
+
+```ts
+import UnsafeSleepLogEntry from './Sleep.js'
+
+// this is BAD at the top level
+const SleepLogEntry = ApplicationModel.lookup('LogEntry/Sleep') as UnsafeSleepLogEntry
+
+// this is GOOD at the top level
+const models = () => ({
+  SleepLogEntry: ApplicationModel.lookup('LogEntry/Sleep') as UnsafeSleepLogEntry
+})
+```
