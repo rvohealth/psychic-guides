@@ -6,6 +6,8 @@ pagination_next: null
 
 # Installation
 
+## new
+
 To create a new psychic app, you can use the psychic app provisioner via npx, like so:
 
 ```sh
@@ -15,7 +17,81 @@ npx @rvoh/create-psychic howyadoin
 
 This will prompt you to ask a few questions, and then provision a new psychic app for you in the "howyadoin" folder of your current directory. All of your dependencies will be automatically installed (for both your server and client apps, if you are generating with a client) and committed to a new git repo.
 
-# repos
+## init
+
+It is possible for Psychic and Dream to be integrated with an existing typescript project. Psychic even provides special bindings which allow it to be driven by nextjs if you wish to do so!
+
+
+### integrating with a nextjs project
+
+Navigate to the root of your nextjs project and use the create-psychic cli tool to provision psychic and/or dream into your nextjs app directly, like so:
+
+```sh
+cd my-nextjs-app
+
+# Without the `--template` flag, a prompt will simply raise to ask you what template
+# you would like to use. You can select nextjs there as well.
+npx @rvoh/create-psychic init --template=nextjs
+```
+
+With this run and all the prompts answered, the provisioning tool will begin adding the necessary dependencies, as well as distributing boilerplate to the locations you specified during the prompt. Since you have opted into a nextjs-specific integration, the tool will also provide a sidecar to automatically launch your psychic server whenever the nextjs dev server launches. This also means you can leverage the Dream ORM within your server-side nextjs components.
+
+### integrating with a generic typescript project
+
+If you are not using nextjs, we can still do our best to provide the boilerplate for your application, though results are not guaranteed. To do this, navigate to the root of your typescript project and provision psychic using the following command:
+
+```sh
+cd my-typescript-app
+npx @rvoh/create-psychic init
+```
+
+The provisioning tool will begin installing dependencies into the existing project. It is expected that at this point, a package.json file already exists, as well as your own tsconfig file, etc...
+
+Boilerplate files will be spat out into the locations specified during the prompts and package dependencies will be added to your existing package.json. At this point, you should now be able to leverage the psychic CLI, i.e.
+
+```sh
+npm run psy g:model User email:string
+npm run psy db:reset
+```
+
+### dream-only
+
+It is possible to integrate dream into your existing typescript project. To do so, you can leverage the `--dream-only` flag, like so:
+
+```sh
+cd my-typescript-app
+npx @rvoh/create-psychic init --dream-only
+```
+
+This will build your project with dream and all the dependencies necessary for dream, but none of those necessary for psychic. To leverage the cli, you can use the `dream` cmd, like so:
+
+```sh
+npm run dream g:model User email:string
+npm run dream db:reset
+```
+
+### troubleshooting
+
+If you are having issues with your integration, here are some common issues that can cause problems for you:
+
+#### bad srcPath definition
+
+Find the `srcPath.ts` file in your application, and make sure that the `path.join('..', ...)` call in that file has the correct number of updirs. If this is not correct, it will cause dream and psychic to fail to resolve some paths.
+
+#### bad tsconfig
+
+Make sure the tsconfig has the following `compilerOptions` set, or it will cause build failures:
+
+```json
+{
+  "compilerOptions": {
+    ...
+    "strictPropertyInitialization": false,
+  }
+}
+```
+
+## repos
 
 - [psychic](https://github.com/rvohealth/psychic)
 - [dream](https://github.com/rvohealth/dream)
@@ -36,10 +112,6 @@ Though our app provisioner is driven by `npx`, we offer you a choice when provis
 
 You may be tempted to reach for `bun`, but we have not formally built our application to support it just yet. As of now, bun has issues with TypeScript 5 generators [See here for updates on this issue](https://github.com/oven-sh/bun/issues/4122). There could be a potential path forward for bun, but as of right now we recommend you stick with one of the package managers we officially support.
 
-## esm
-
-Psychic and Dream libraries are built on modern esm patterns, including the latest TypeScript 5 decorators. There is a very large rift in the nodejs community due to the move towards esm. Most important libraries out there have made the transition at this point, but several are stuck behind, especially those that rely on previous proposals for TypeScript decorators, which were much more friendly with regards to meta programming, and have made it very difficult for those stuck behind to adapt.
-
 ## local dependencies
 
 In order for you to run your local dev server, you will need to have the following other dependencies installed:
@@ -51,7 +123,3 @@ redis >= 7.2.0 # (only if using websockets or workers)
 ```
 
 You will need postgres and redis to be running locally for this to work, and if your credentials are different than those set up in your local `.env` and `.env.test` files, those credentials will need to be set/updated to reflect.
-
-## installing Dream without Psychic
-
-This is possible, but we have not completed the provisioning tools necessary to provide this feature just yet.
