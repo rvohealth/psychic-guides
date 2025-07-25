@@ -38,6 +38,64 @@ export default async function (dream: DreamApp) {
 }
 ```
 
+#### leveraging multiple database connections simultaneously
+
+Dream provides the ability for you to house multiple database connections within your application. To do this, simply call the `set` method a second time, this time providing it with a string argument for a connectionName before providing it your connection options.
+
+```ts
+  dream.set('db', 'myAlternateConnection', {
+    primary: ...,
+  })
+```
+
+Be sure to add any new environment variables to your .env and .env.test files.
+
+2. Run sync
+
+```sh
+yarn psy sync
+```
+
+3. add a new application model for your new connection, naming it the name of your connection, pascalized, with the string `ApplicationModel` at the end, like so:
+
+```ts
+// app/models/MyAlternateConnectionApplicationModel.ts
+
+import Dream from '../../../src/Dream.js'
+import { DBClass } from '../../types/db.alternateConnection.js'
+import { globalSchema, schema } from '../../types/dream.alternateConnection.js'
+
+export default class MyAlternateConnectionApplicationModel extends Dream {
+  declare public DB: DBClass
+
+  public override get connectionName() {
+    return 'myAlternateConnection' as const
+  }
+
+  public override get schema(): any {
+    return schema
+  }
+
+  public override get globalSchema() {
+    return globalSchema
+  }
+}
+```
+
+4. Now you can proceed to generate a model for your new connection, like so:
+
+```sh
+yarn psy g:model MyNewModel someField:text --connection-name=myAlternateConnection
+```
+
+Dream will automatically read the connectionName and use it to derive the `MyAlternateConnectionApplicationModel` automatically, though if this isn't correct, you will need to manually adjust it.
+
+Any migrations for other models will go into a special folder named after the connection, i.e. `src/db/migrations/myConnectionName/`, so that they can be isolated from those for the default connection. Whenever running migrations, dream will run them for both connections.
+
+:::warning
+Any models using a separate db connection will be isolated in scope, and cannot be joined or associated with other models in your system unless they are using the same db connection.
+:::
+
 ### loading your application files
 
 In order for dream to function properly, it needs you to provide it folders to scan to locate:
