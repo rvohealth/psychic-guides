@@ -96,6 +96,37 @@ Any migrations for other models will go into a special folder named after the co
 Any models using a separate db connection will be isolated in scope, and cannot be joined or associated with other models in your system unless they are using the same db connection.
 :::
 
+#### providing a custom query driver
+
+By default, dream is strapped to a postgres driver, and dream does not inherently offer any other drivers for performing query execution. However, if you are determined to make dream work with a different database engine, it is possible for you to provide a custom query driver, which you can provide as part of the db configuration, like so:
+
+```ts
+// src/conf/dream.ts
+
+  app.set('db', {
+    queryDriverClass: MyCustomQueryDriver,
+    ...,
+  })
+```
+
+This can be done on a connection-to-connection basis, meaning you can have one connection use postgres, and another use a custom driver, like so:
+
+```ts
+  app.set('db', {
+    ...,
+  })
+
+  app.set('db', 'myMysqlConnection' {
+    queryDriverClass: MyCustomMysqlDriver,
+    ...,
+  })
+
+```
+
+Your custom query driver class will need to extend the `QueryDriverBase` class. This class is responsible for handling any part of the dream ecosystem that makes a call to the database. This includes the migration engine, the query engine underlying all dream models, the helper functions used to provision the database, introspect the database to build types, etc...
+
+If you are looking to build an adapter to extend one of the existing kysely drivers, we recommend you try extending the `KyselyQueryDriver` class instead, since it is basically set up to do this. For an example, you can take a look at [this hypothetical mysql driver](https://github.com/rvohealth/dream/pull/575/files#diff-a793d3eaff6b8bb26faf18c555fcd96f874d86f610d2fe21911d0d338642b52f), which was built to test out the ability to integrate custom drivers, should anyone be interested in taking on the endeavor. Be warned, there be dragons in that adapter, it was not built for production-grade use, so tread lightly. An entire function was written by ai without much vetting, and should probably be entirely re-written. The rest of it was written as a proof of concept, and hardly any testing around it, so only use it as a reference.
+
 ### loading your application files
 
 In order for dream to function properly, it needs you to provide it folders to scan to locate:
