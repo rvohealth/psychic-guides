@@ -30,6 +30,36 @@ yarn psy g:model --sti-base-serializer Room \
 # use the --help flag to inspect all of the options
 ```
 
+## enum types
+
+As demonstrated above, you can use the `enum` type as a column type when specifying your column, provided you give a little bit more information about the enum you are designing. Looking closer at the `type` field generated for the `Room` model in the above example, we see some extra information being provided:
+
+```sh
+type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom
+```
+
+the `room_types` segment signals to Dream to create a new enum called `room_types_enum` within your db. The segment following the `room_types` segment informs Dream of what values you want to allow for your enum column. In this case, it will produce the following values for your enum:
+
+```ts
+[
+  'Bathroom',
+  'Bedroom',
+  'Kitchen',
+  'Den',
+  'LivingRoom'
+]
+```
+
+### enum arrays
+
+In some cases, you may need an array of enum values for your column. In this case, simply provide `enum[]` as the column type segment, instead of `enum`, like so:
+
+```sh
+type:enum[]:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom
+```
+
+Doing this will produce the same enum type in postgres, but the column definition will expect an array of enum values instead of a single value. Dream will also set the default value for an enum[] column to be a blank array.
+
 ## snake_casing column, table, and enum names
 
 Since sql is a case-insensitive language, it is encouraged that you write your columns and tables using snake case. Dream leverages a Kysely setting to automatically convert snake case to camel case so that your Typescript will use the conventional camel case while the database retains the database convention of snake case.
