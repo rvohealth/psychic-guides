@@ -18,20 +18,22 @@ In order for Dream to connect to your database, you need to provide it with expl
 export default async function (dream: DreamApp) {
   dream.set('db', {
     primary: {
-      user: process.env.DB_USER!,
-      password: process.env.DB_PASSWORD!,
-      host: process.env.PRIMARY_DB_HOST!,
-      name: process.env.PRIMARY_DB_NAME!,
-      port: parseInt(process.env.DB_PORT!),
-      useSsl: process.env.DB_USE_SSL === '1',
+      user: AppEnv.string('DB_USER'),
+      password: AppEnv.string('DB_PASSWORD'),
+      host: AppEnv.string('PRIMARY_DB_HOST'),
+      name: AppEnv.string('PRIMARY_DB_NAME'),
+      port: parseInt(AppEnv.integer('DB_PORT')),
+      // only connect to replica db insecurely if `DB_NO_SSL` is explicitly set
+      useSsl: !AppEnv.boolean('DB_NO_SSL'),
     },
     replica: {
-      user: process.env.DB_USER!,
-      password: process.env.DB_PASSWORD!,
-      host: process.env.REPLICA_DB_HOST!,
-      name: process.env.REPLICA_DB_NAME!,
-      port: parseInt(process.env.DB_PORT!),
-      useSsl: process.env.DB_USE_SSL === '1',
+      user: AppEnv.string('DB_USER'),
+      password: AppEnv.string('DB_PASSWORD'),
+      host: AppEnv.string('REPLICA_DB_HOST'),
+      name: AppEnv.string('REPLICA_DB_NAME'),
+      port: parseInt(AppEnv.integer('DB_PORT')),
+      // only connect to replica db insecurely if `DB_NO_SSL` is explicitly set
+      useSsl: !AppEnv.boolean('DB_NO_SSL'),
     },
   }),
   ...
@@ -66,7 +68,7 @@ import { DBClass } from '../../types/db.alternateConnection.js'
 import { globalSchema, schema } from '../../types/dream.alternateConnection.js'
 
 export default class MyAlternateConnectionApplicationModel extends Dream {
-  declare public DB: DBClass
+  public declare DB: DBClass
 
   public override get connectionName() {
     return 'myAlternateConnection' as const
@@ -243,7 +245,7 @@ Dream tests can be slower than traditional vitest testing, since each test utili
 
 ```ts
 export default async function (dream: DreamApp) {
-  dream.set('parallelTests', Number(process.env.DREAM_PARALLEL_TESTS))
+  app.set('parallelTests', AppEnv.integer('DREAM_PARALLEL_TESTS', { optional: true }) || 1)
   ...
 }
 ```
