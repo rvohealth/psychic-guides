@@ -20,7 +20,7 @@ Registering users with the `Ws` class is imperative if you intend to later emit 
     // this token is used for authenticating via websockets
     const token = Encrypt.encrypt(user!.id.toString(), {
       algorithm: 'aes-256-gcm',
-      key: process.env.APP_ENCRYPTION_KEY!,
+      key: AppEnv.string('APP_ENCRYPTION_KEY'),
     })
 
     this.ok(token)
@@ -48,7 +48,7 @@ try {
 
   // this will be called automatically upon establishing
   // a connection with socket.io in Psychic
-  socket.on('/ops/connection-success', (message) => {
+  socket.on('/ops/connection-success', message => {
     console.log(message)
   })
 } catch {
@@ -71,7 +71,7 @@ export default async (psy: PsychicApp) => {
 
       const userId = Encrypt.decrypt(token, {
         algorithm: 'aes-256-gcm',
-        key: process.env.APP_ENCRYPTION_KEY!,
+        key: AppEnv.string('APP_ENCRYPTION_KEY'),
       })
       const user = await User.find(userId)
 

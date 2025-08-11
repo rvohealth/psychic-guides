@@ -17,7 +17,7 @@ psy.set('encryption', {
   cookies: {
     current: {
       algorithm: 'aes-256-gcm',
-      key: process.env.APP_ENCRYPTION_KEY!,
+      key: AppEnv.string('APP_ENCRYPTION_KEY'),
     },
   },
 })
@@ -31,11 +31,11 @@ psy.set('encryption', {
   cookies: {
     current: {
       algorithm: 'aes-256-gcm',
-      key: process.env.APP_ENCRYPTION_KEY!,
+      key: AppEnv.string('APP_ENCRYPTION_KEY'),
     },
     legacy: {
       algorithm: 'aes-128-gcm',
-      key: process.env.APP_LEGACY_ENCRYPTION_KEY!,
+      key: AppEnv.string('APP_LEGACY_ENCRYPTION_KEY'),
     },
   },
 })
@@ -55,7 +55,7 @@ dream.set('encryption', {
   columns: {
     current: {
       algorithm: 'aes-256-gcm',
-      key: process.env.APP_ENCRYPTION_KEY!,
+      key: AppEnv.string('APP_ENCRYPTION_KEY'),
     },
   },
 })
@@ -69,11 +69,11 @@ dream.set('encryption', {
   columns: {
     current: {
       algorithm: 'aes-256-gcm',
-      key: process.env.APP_ENCRYPTION_KEY!,
+      key: AppEnv.string('APP_ENCRYPTION_KEY'),
     },
     legacy: {
       algorithm: 'aes-128-gcm',
-      key: process.env.APP_LEGACY_ENCRYPTION_KEY!,
+      key: AppEnv.string('APP_LEGACY_ENCRYPTION_KEY'),
     },
   },
 })

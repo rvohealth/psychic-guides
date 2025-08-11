@@ -32,11 +32,11 @@ export default function configureDream(dream: DreamApp) {
     columns: {
       current: {
         algorithm: 'aes-256-gcm',
-        key: process.env.APP_ENCRYPTION_KEY!,
+        key: AppEnv.string('APP_ENCRYPTION_KEY'),
       },
       legacy: {
         algorithm: 'aes-256-gcm',
-        key: process.env.LEGACY_APP_ENCRYPTION_KEY!,
+        key: AppEnv.string('LEGACY_APP_ENCRYPTION_KEY'),
       },
     },
   })

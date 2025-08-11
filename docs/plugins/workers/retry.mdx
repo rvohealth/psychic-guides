@@ -1,0 +1,26 @@
+---
+sidebar_position: 7
+title: retry
+---
+
+# Automatic retry of failed jobs
+
+Jobs that throw an unhandled Error during execution are automatically retried. The [exponential backoff strategy](https://docs.bullmq.io/guide/retrying-failing-jobs#exponential) provided by BullMQ is configured by default via the `defaultBullMQQueueOptions` in `conf/initializers/workers.ts` and may be customized there as needed:
+
+```ts
+    defaultBullMQQueueOptions: {
+      defaultJobOptions: {
+        removeOnComplete: 1000,
+        removeOnFail: 20000,
+        // 524,288,000 ms (~6.1 days) using algorithm:
+        // "2 ^ (attempts - 1) * delay"
+        attempts: 20,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+      },
+    },
+```
+
+This config is sent directly to BullMQ, so see [the BullMQ retry documentation](https://docs.bullmq.io/guide/retrying-failing-jobs) for details on how to customize the retry strategy.

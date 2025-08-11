@@ -9,12 +9,12 @@ Encrypting and decrypting are very simple using the Encrypt class, provided you 
 ```ts
 const encrypted = Encrypt.encrypt('helloworld', {
   algorithm: 'aes-256-gcm',
-  key: process.env.APP_ENCRYPTION_KEY!,
+  key: AppEnv.string('APP_ENCRYPTION_KEY'),
 })
 
 const decrypted = Encrypt.decrypt(encrypted, {
   algorithm: 'aes-256-gcm',
-  key: process.env.APP_ENCRYPTION_KEY!,
+  key: AppEnv.string('APP_ENCRYPTION_KEY'),
 })
 
 console.log(decrypted)
@@ -30,7 +30,7 @@ Since your application will often be performing encryption and decryption using 
 export default function encrypt(val: any) {
   return Encrypt.encrypt(val, {
     algorithm: 'aes-256-gcm',
-    key: process.env.APP_ENCRYPTION_KEY!,
+    key: AppEnv.string('APP_ENCRYPTION_KEY'),
   })
 }
 
@@ -38,7 +38,7 @@ export default function encrypt(val: any) {
 export default function decrypt<RetType>(val: any) {
   return Encrypt.decrypt<RetType>(val, {
     algorithm: 'aes-256-gcm',
-    key: process.env.APP_ENCRYPTION_KEY!,
+    key: AppEnv.string('APP_ENCRYPTION_KEY'),
   })
 }
 ```
@@ -67,12 +67,12 @@ export default function decrypt<RetType>(val: any) {
     val,
     {
       algorithm: 'aes-256-gcm',
-      key: process.env.APP_ENCRYPTION_KEY!,
+      key: AppEnv.string('APP_ENCRYPTION_KEY'),
     },
     {
       algorithm: 'aes-128-gcm',
-      key: process.env.APP_LEGACY_ENCRYPTION_KEY!,
-    },
+      key: AppEnv.string('APP_LEGACY_ENCRYPTION_KEY'),
+    }
   )
 }
 ```

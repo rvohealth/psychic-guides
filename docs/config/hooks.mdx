@@ -138,23 +138,24 @@ The underlying [kysely](https://kysely.dev) engine we use to provide our databas
 ```ts
 export default async function (app: DreamApp) {
   app.on('db:log', event => {
-    if (AppEnv.isProduction || process.env.SQL_LOGGING !== '1') return
+    if (!debugSql) return
 
     if (event.level === 'error') {
-      console.error('the following db query encountered an unexpected error: ', {
+      PsychicApp.logWithLevel('error', 'the following db query encountered an unexpected error: ', {
         durationMs: event.queryDurationMillis,
         error: event.error,
         sql: event.query.sql,
         params: event.query.parameters.map(maskPII),
       })
     } else {
-      console.log('db query completed:', {
+      PsychicApp.log('db query completed:', {
         durationMs: event.queryDurationMillis,
         sql: event.query.sql,
         params: event.query.parameters.map(maskPII),
       })
     }
   })
+
   ...
 }
 
@@ -172,7 +173,7 @@ This lifecycle hook will fire when the repl is starting. It enables you to add a
 
 ```ts
 export default async function (app: DreamApp) {
-  app.on('repl:start', (context) => {
+  app.on('repl:start', context => {
     context.chalupas = 'delicious'
   })
 }
