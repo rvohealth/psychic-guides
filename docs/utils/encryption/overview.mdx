@@ -16,12 +16,12 @@ provide the algorithm you wish to use as the second argument to `.encrypt` or `.
 ```ts
 const encrypted = Encrypt.encrypt('helloworld', {
   algorithm: 'aes-256-gcm',
-  key: process.env.APP_ENCRYPTION_KEY!,
+  key: AppEnv.string('APP_ENCRYPTION_KEY'),
 })
 
 const decrypted = Encrypt.decrypt(encrypted, {
   algorithm: 'aes-256-gcm',
-  key: process.env.APP_ENCRYPTION_KEY!,
+  key: AppEnv.string('APP_ENCRYPTION_KEY'),
 })
 
 console.log(decrypted)
