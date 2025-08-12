@@ -74,6 +74,25 @@ export default class V1HostPlacesController extends V1HostBaseController {
 }
 ```
 
+### casting openapi shapes
+
+The castParam method is also able to interpret openapi shapes, and will return types data back to you based on the provided shape.
+
+```ts
+  const data = this.castParam('myData', {
+    type: 'object',
+    properties: {
+      a: number,
+      b: { oneOf: [{ type: 'string' }, { type: 'number' }] }
+    }
+  })
+  data.a // number | undefined
+  data.b // string | number | undefined
+```
+
+When using castParam with openapi shapes, params will automatically be coerced by the Ajv library.
+
+
 ## paramsFor
 
 In addition to individual param casting, Psychic also provides the ability to automatically ingest all params for a given Dream model. This enables developers to easily bring in params for a model without having to specify their types manually:
