@@ -9,6 +9,7 @@ pagination_next: null
 In addition to automatically generating OpenAPI specs for your application, Psychic also provides built in request and response validation, leveraging the openapi specs to determine the appropriate shapes for your request body, query, headers, and response bodies.
 
 ## Opting into validations
+
 To opt into this, you can take one of two configuration actions:
 
 ### 1. define a global validation config
@@ -27,6 +28,7 @@ export default async (psy: PsychicApp) => {
       requestBody: true,
       query: true,
       responseBody: AppEnv.isTest,
+      detailedErrors: AppEnv.isDevelopmentOrTest,
     },
   })
 }
@@ -46,10 +48,18 @@ export default class PetsController {
   @OpenAPI(Pet, {
     ...
     validate: {
+      // always validate headers/requestBody/query/responseBody
+      // for this endpoint even when disabled
+      // at the application level
       headers: true,
       requestBody: true,
       query: true,
-      responseBody: AppEnv.isTest,
+      responseBody: true,
+
+      // always include detailed OpenAPI validation errors
+      // for this endpoint even when detailed errors are
+      // disabled at the application level
+      detailedErrors: true,
     }
   })
   public async index() {
@@ -58,7 +68,7 @@ export default class PetsController {
 }
 ```
 
-## Customizing validation options
+## Overriding Ajv validation defaults
 
 Psychic leverages [ajv](https://ajv.js.org) to validate openapi schemas. If you would like to customize the Ajv validator, you can provide custom overrides via `ajvOptions`, which will be sent through to the constructor of the imported `Ajv` class.
 
