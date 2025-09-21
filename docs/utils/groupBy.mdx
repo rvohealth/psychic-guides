@@ -1,0 +1,29 @@
+---
+title: groupBy
+description: Helper for grouping arrays by a key or function.
+---
+
+# groupBy
+
+`groupBy` groups an array of items by the value returned by the second argument callback function.
+
+```ts
+import { groupBy } from '@rvoh/dream'
+
+const pets = [
+  { type: 'cat', name: 'Aster' },
+  { type: 'dog', name: 'Bingo' },
+  { type: 'cat', name: 'Milo' },
+]
+
+const grouped = groupBy(pets, pet => pet.type)
+// {
+//   cat: [
+//          { type: 'cat', name: 'Aster' },
+//          { type: 'cat', name: 'Milo' },
+//        ],
+//   dog: [
+//          { type: 'dog', name: 'Bingo' },
+//        ]
+// }
+```
