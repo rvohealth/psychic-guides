@@ -11,7 +11,7 @@ Returns a copy of an object or array, with `null` and `undefined` values removed
 ```ts
 import { compact } from '@rvoh/dream'
 
-compact(['hello', null, 'world'])
+compact(['hello', null, undefined, 'world'])
 // ['hello', 'world']
 
 compact({ hello: 'world', goodbye: null })
