@@ -41,7 +41,7 @@ IMPORTANT: `optional` belongs-to associations do _not_ automatically result in `
 
 By default, the foreign key is derived from the association name. E.g., in the example below, the
 default foreign key would be `userId`. This can be overridden by including an explicit
-`foreignKey: '<camelized-column-name-on-this-table>'` option.
+`on: '<camelized-column-name-on-this-table>'` option.
 
 ```ts
 export default class Post extends Dream {

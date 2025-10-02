@@ -7,6 +7,23 @@ import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # DateTime
 
+:::danger Avoid JavaScript's Date Class
+**Never use JavaScript's native `Date` class in Psychic applications.** Always use Dream's `DateTime` for timestamps and `CalendarDate` for dates. JavaScript's `Date` has numerous timezone and parsing issues that can cause subtle bugs. Dream's classes provide built-in math, formatting, and robust timezone handling.
+
+```ts
+// ❌ DON'T DO THIS
+const badDate = new Date()
+const badParsed = new Date('2024-01-15')
+
+// ✅ DO THIS INSTEAD - Built-in math and formatting
+import { DateTime, CalendarDate } from '@rvoh/dream'
+const goodDateTime = DateTime.now()
+const goodDate = CalendarDate.today()
+const formatted = goodDateTime.toFormat('yyyy-MM-dd HH:mm')
+const tomorrow = goodDate.plus({ days: 1 })
+```
+:::
+
 Datetime fields in the database are returned as DateTime objects. DateTime provides robust handling of datetimes, including timezone manipulation, formatting, and math. See [https://moment.github.io/luxon/#/](https://moment.github.io/luxon/#/) for full documentation.
 
 Note: in Psychic Projects, import DateTime from @rvoh/dream and do not include @types/luxon in your package.json. We found Luxon types to be incompatible with node16 module resolution and included modified DateTime types within Dream.

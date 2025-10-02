@@ -72,3 +72,25 @@ Dream runs Kysely migrations with `allowUnorderedMigrations: true`, which facili
 > The migration methods use a lock on the database level and parallel calls are executed serially. This means that you can safely call migrateToLatest and other migration methods from multiple server instances simultaneously and the migrations are guaranteed to only be executed once. The locks are also automatically released if the migration process crashes or the connection to the database fails.
 
 Also, since Dream currently only supports Postgres, and Kysely runs all migrations in a transaction on Postgres, Dream migrations are run in a transaction. This means that if multiple migration files are being migrated, and the last one fails, all of them will be rolled back. This is a powerful guarantee since it always leaves the database in a known state: If a final migration file adds a unique index that cannot be applied to the database due to existing records, then the code can safely be rolled back to the previous version while a fix is implemented, and the database schema will be in the state that that previous code version defined and is known to work with.
+
+## Migration Helpers
+
+Dream provides helpful migration utilities to simplify common database operations.
+
+### renameTable
+
+The `renameTable` helper automatically renames both the table and its associated sequence (for tables with serial primary keys), ensuring consistency across your database schema.
+
+```ts
+import { DreamMigrationHelpers } from '@rvoh/dream'
+
+export async function up(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.renameTable(db, 'old_table_name', 'new_table_name')
+}
+
+export async function down(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.renameTable(db, 'new_table_name', 'old_table_name')
+}
+```
+
+This helper is particularly useful when refactoring table names, as it handles the complexity of renaming associated sequences automatically, preventing common migration errors.

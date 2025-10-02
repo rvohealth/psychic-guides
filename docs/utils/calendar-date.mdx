@@ -6,6 +6,23 @@ import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # CalendarDate
 
+:::danger Avoid JavaScript's Date Class
+**Never use JavaScript's native `Date` class in Psychic applications.** For dates (year-month-day), always use Dream's `CalendarDate`. For timestamps, use `DateTime`. JavaScript's `Date` has numerous timezone and parsing issues that can cause subtle bugs. Dream's classes provide built-in math, formatting, and reliable date operations.
+
+```ts
+// ❌ DON'T DO THIS
+const badDate = new Date('2024-01-15')
+const badToday = new Date()
+
+// ✅ DO THIS INSTEAD - Built-in math and formatting
+import { CalendarDate, DateTime } from '@rvoh/dream'
+const goodDate = CalendarDate.fromISO('2024-01-15')
+const goodToday = CalendarDate.today()
+const nextWeek = goodToday.plus({ weeks: 1 })
+const formatted = goodDate.toFormat('MMM dd, yyyy')
+```
+:::
+
 Date fields in the database are returned as CalendarDate objects. CalendarDate provides a clean way to deal with dates without worrying about timezone math (though several methods accept an optional `zone` option when setting the CalendarDate). The name CalendarDate was chosen because Date was already taken by Javascript's time class, and we wanted to emphasize that this class deals with days as the fundamental unit of time.
 
 ## Creating a CalendarDate

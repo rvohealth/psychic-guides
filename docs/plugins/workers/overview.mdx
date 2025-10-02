@@ -20,6 +20,48 @@ Additionally, it is important to keep your web servers fluid. You don't want to 
 
 to alleviate the pressure on your web application server, you can offload costly or process-intensive services to background processes, so that your web server can continue to be reliable and performant. Additionally, you can use cron-like features within Psychic to schedule your jobs to run at specific times, such as the third tuesday of the month at noon UTC.
 
+## Logging in Background Jobs
+
+Background methods can optionally receive a `Job` parameter as their last argument to access logging functionality:
+
+```ts
+import { Job } from 'bullmq'
+
+class DataProcessingService extends ApplicationBackgroundedService {
+  public static async processLargeDataset(datasetId: string) {
+    await this.background('_processLargeDataset', datasetId)
+  }
+
+  public static async _processLargeDataset(datasetId: string, job: Job) {
+    const dataset = await Dataset.findOrFail(datasetId)
+
+    await job.log(`Starting processing of dataset ${datasetId}`)
+
+    let processedRows = 0
+    let invalidRows = 0
+
+    for (const row of dataset.rows) {
+      try {
+        await this.processRow(row)
+        processedRows++
+
+        if (processedRows % 100 === 0) {
+          await job.log(`processedRows: ${processedRows}, invalidRows: ${invalidRows}`)
+        }
+      } catch (error) {
+        invalidRows++
+        await job.log(`Invalid row ${row.id}: ${error.message}`)
+      }
+    }
+
+    await job.log(`Completed: processedRows: ${processedRows}, invalidRows: ${invalidRows}`)
+  }
+}
+```
+
+The `Job` parameter is optional and always comes last in the method signature. Job logs are accessible through the BullMQ dashboard and can be retrieved programmatically.
+
+
 :::tip
 
 - To learn how to install Psychic Workers, see our [installation](/docs/plugins/workers/installation) guide

@@ -1,0 +1,27 @@
+---
+sidebar_position: 7
+---
+
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
+# percent
+
+The `percent` function calculates the percentage of a `numerator` out of a `denominator`, with optional `precision` for rounding.
+
+```ts
+import { percent } from '@rvoh/dream'
+
+// Basic usage
+percent(1, 4)
+// 25
+
+// With zero denominator (returns 0 to avoid NaN)
+percent(1, 0)
+// 0
+
+// With precision for rounding
+percent(1, 3, 4)
+// 33.3333
+percent(7, 8, 2)
+// 87.50
+```
