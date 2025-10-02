@@ -229,6 +229,26 @@ Don't Repeat Yourself (DRY), is a guiding philosophy of Dream and Psychic, revea
 - model attribute types that are derived from the database, so when you write a migration that, for example, adds an enum, the one place that you define the change is in the migration, and it automatically cascades everywhere the enum is referenced or set
 - OpenAPI definitions that are fleshed out automatically from the routes file and model serializers
 - `HasOne`, `HasMany`, and `BelongsTo` association decorators that encapsulate all the complexity of an association into a single declaration that, once defined, becomes an abstraction in a well defined domain
+
+### Date and Time Handling
+
+:::danger Critical: Never Use JavaScript's Date Class
+**Always use Dream's `DateTime` and `CalendarDate` classes instead of JavaScript's native `Date`.** This is a fundamental requirement in Psychic applications.
+
+```ts
+// ❌ NEVER DO THIS - JavaScript Date has timezone and parsing issues
+const badDate = new Date()
+const badParsed = new Date('2024-01-15')
+
+// ✅ ALWAYS DO THIS - Use Dream's robust date/time classes
+import { DateTime, CalendarDate } from '@rvoh/dream'
+const timestamp = DateTime.now()
+const date = CalendarDate.today()
+const parsed = CalendarDate.fromISO('2024-01-15')
+```
+
+Dream automatically converts database `timestamp` fields to `DateTime` objects and `date` fields to `CalendarDate` objects, providing built-in math, formatting, and timezone handling. See our [DateTime](/docs/utils/date-time) and [CalendarDate](/docs/utils/calendar-date) guides for full documentation.
+:::
 - powerful decorators like `@SoftDelete`, `@Sortable`, and `@ReplicaSafe` that automatically and universally handle common use cases which would otherwise introduce complexity into your application
 - cli code generators that set up models, serializers, and controllers using best practice conventions, such as controllers inheriting from an authenticated ancestor right from the start
 - advanced association patterns such as has-many-through, single table inheritance (STI), and polymorphism

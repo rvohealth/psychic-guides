@@ -57,6 +57,49 @@ const posts = await user
 // [Post{ body: null }, Post{ body: null }, ...]
 ```
 
+## association and associationOrFail
+
+Dream provides convenient methods for accessing single associations (HasOne and BelongsTo) that handle both loaded and unloaded states efficiently.
+
+### association
+
+The `association` method returns the associated record if already loaded, or queries for it if not loaded. It accepts `required` and `passthrough` options for dynamic loading.
+
+```ts
+// Simple usage - returns loaded association or queries for it
+const userSettings = await user.association('userSettings')
+// UserSettings | null
+
+// With required conditions (must be provided if association uses DreamConst.required)
+const favoritePet = await user.association('favoritePet', {
+  required: { species: 'cat' },
+})
+
+// With passthrough data for serializers
+const profile = await user.association('profile', {
+  passthrough: { locale: 'en-US' },
+})
+```
+
+### associationOrFail
+
+Similar to `association`, but throws a `RecordNotFound` exception if the association is not found.
+
+```ts
+// Will throw if userSettings doesn't exist
+const userSettings = await user.associationOrFail('userSettings')
+// UserSettings (guaranteed to exist)
+
+// With required conditions
+const favoritePet = await user.associationOrFail('favoritePet', {
+  required: { species: 'dog' },
+})
+```
+
+:::tip
+Use `required` and `passthrough` instead of `and` conditions with these methods. The `and` parameter would be misleading for already-loaded associations since it wouldn't apply retroactively. The `required` and `passthrough` parameters are necessary for the association loading to work correctly.
+:::
+
 ## creating
 
 Dream provides some helpful tools for saving associations. One of the simplest and most common ways of saving `BelongsTo` associations is to attach them directly to their parent while saving it, like so:
@@ -96,11 +139,7 @@ await user.updateAssociation('userSettings', { active: true })
 Additional where clauses can be applied during update, like so:
 
 ```ts
-await user.updateAssociation(
-  'userSettings',
-  { active: true },
-  { where: { userId: [1, 2, 3] } },
-)
+await user.updateAssociation('userSettings', { active: true }, { where: { userId: [1, 2, 3] } })
 ```
 
 ## destroying
