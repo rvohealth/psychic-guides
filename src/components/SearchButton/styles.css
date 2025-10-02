@@ -1,0 +1,63 @@
+.search-button {
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 100px;
+  background: var(--ifm-color-emphasis-100);
+  padding: 0px 12px 0px 12px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  color: var(--ifm-font-color-base);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.search-button:hover {
+  background: var(--ifm-color-emphasis-200);
+  border-color: var(--ifm-color-emphasis-400);
+}
+
+.search-button svg {
+  fill: var(--ifm-font-color-base);
+}
+
+.search-button-placeholder {
+  display: none;
+}
+
+.search-button-key {
+  font-family: ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  color: var(--ifm-font-color-base) !important;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  font-weight: normal !important;
+  display: none;
+  width: 100%;
+  text-align: center;
+}
+
+.search-button-key.non-macos {
+  display: block !important;
+}
+
+.search-button-key.macos {
+  display: none !important;
+}
+
+body.os-macos .search-button-key.non-macos,
+html.os-macos .search-button-key.non-macos,
+.os-macos .search-button-key.non-macos {
+  display: none !important;
+}
+
+body.os-macos .search-button-key.macos,
+html.os-macos .search-button-key.macos,
+.os-macos .search-button-key.macos {
+  display: block !important;
+}
