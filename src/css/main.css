@@ -454,7 +454,6 @@ html[data-theme='light'] {
   color: black;
 }
 
-
 .breadcrumbs .breadcrumbs__item:first-child {
   display: none;
 }
@@ -462,4 +461,26 @@ html[data-theme='light'] {
 .breadcrumbs__item--active .breadcrumbs__link {
   background: transparent;
   border: solid 2px var(--ifm-color-primary);
+}
+
+.navbar__search,
+.navbar .dsla-search-wrapper,
+.navbar .dsla-search-field,
+.navbar div[class*='navbarSearchContainer'] {
+  display: none !important;
+}
+
+.navbar .aa-DetachedSearchButton,
+.navbar .aa-Autocomplete {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: auto !important;
 }
