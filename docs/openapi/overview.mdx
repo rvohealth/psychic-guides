@@ -26,6 +26,7 @@ yarn psy sync:openapi
 
 Psychic provides built-in support for generating openapi schema to define your response payloads. Using the definitions you provide, Psychic will regenerate an `openapi.json` file at the root of your project whenever a sync occurs. Psychic will also use this to generate type files for your client app, facilitating easy synchronization of your api mechanisms to the current values provided by the backend.
 
+
 ## Automatic response generation
 
 ```ts
@@ -207,5 +208,27 @@ export default class V1HostPlacesController extends V1HostBaseController {
     const places = await this.currentHost.associationQuery('places').preloadFor('summary').all()
     this.ok(places)
   }
+}
+```
+
+## Detect Breaking Changes in Your OpenAPI Specs
+
+When you update your code, your generated OpenAPI specs will often change too. To help catch **breaking changes** early, you can enable a built-in tool that compares your updated specs against the previous version (version in your head branch, probably `main`) and reports any issues.
+
+To enable this feature, set the `checkDiffs` option to `true` in your [Psychic app configuration](https://psychicframework.com/docs/config/psychic). 
+
+_Note: By default, this setting will **fail your builds** if breaking changes are found. This can be customized to your needs._
+
+#### Example
+
+```ts
+// conf/app.ts
+export default async (psy: PsychicApp) => {
+  // Other config...
+
+  psy.set('openapi', {
+    // Other OpenAPI settings...
+    checkDiffs: true,
+  })
 }
 ```

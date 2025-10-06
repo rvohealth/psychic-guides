@@ -1,0 +1,124 @@
+---
+sidebar_position: 7
+pagination_prev: null
+---
+
+## OpenAPI Spec Diff Tool
+
+This tool helps developers automatically detect **breaking** and **non-breaking** changes between the current OpenAPI specification(s) in your branch and the `HEAD` branch (e.g., `main`). It uses [`oasdiff`](https://github.com/Tufin/oasdiff) under the hood.
+
+It’s designed to integrate easily into your existing workflows, either automatically or on-demand.
+
+---
+
+## Prerequisites
+
+[`oasdiff`](https://github.com/Tufin/oasdiff) **must be installed** and available on your local system or CI environment.
+
+
+```bash
+brew tap oasdiff/homebrew-oasdiff
+brew install oasdiff
+```
+
+or 
+
+```bash
+# Install oasdiff
+go install github.com/Tufin/oasdiff@latest
+```
+
+
+_Your project must be configured using a `PsychicApp` where `checkDiffs: true` is enabled for any OpenAPI configuration you'd like to compare._
+
+## Usage
+
+Once `checkDiffs: true` is set in your OpenAPI config, there are two ways to run the diff tool:
+
+### 1. **Automatic check**
+
+```bash
+yarn psy sync
+```
+
+* Automatically runs OpenAPI diff checks for all configs that have `checkDiffs: true`.
+* Recommended for use in CI pipelines or as part of your standard sync process.
+
+### 2. **Manual check**
+
+```bash
+yarn psy diff:openapi
+```
+
+* Manually triggers the diff comparison for enabled OpenAPI configs.
+* Useful during development or pre-PR review.
+
+
+## Fail on Breaking Changes
+
+Use the `--fail-on-breaking`, or `-f` flag to **fail the command** if any breaking changes are detected:
+
+```bash
+# when running sync
+yarn psy sync --fail-on-breaking
+
+# when running directly
+yarn psy diff:openapi --fail-on-breaking
+```
+
+* This will throw an error and exit the process if breaking changes are found compared to the `HEAD` branch (usually `main`).
+
+## What It Compares
+
+For each OpenAPI config:
+
+* Fetches the OpenAPI spec from the `HEAD` branch (e.g., `main`)
+* Compares it with the spec in your current working branch
+* Uses `oasdiff` to generate:
+
+  * A list of **breaking changes**
+  * A **changelog** of all changes
+
+## Output Summary
+
+The CLI output will include:
+
+* ✅ **No changes** — when files match
+* 🚨 **Breaking changes** — highlighted in red
+* 📋 **Changelog** — a detailed diff of modifications
+
+### Example Output
+
+```bash
+🔍 Comparing current OpenAPI Specs against main...
+
+✅ openapi: No changes
+
+============================================================
+📊 Summary: All OpenAPI files in current branch are identical to main branch
+============================================================
+```
+
+Or, with breaking changes:
+
+```bash
+🔍 Comparing current OpenAPI Specs against main...
+
+openapi: HAS CHANGES
+   🚨 BREAKING CHANGES:
+      • response removed on GET /users
+   📋 CHANGELOG:
+      • Removed response from GET /users
+
+============================================================
+🚨 CRITICAL: Breaking changes detected in current branch compared to main! Review before merging.
+============================================================
+```
+
+### 📚 Error Reference
+
+| Error                                       | Description                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------------ |
+| Fail on breaking                            | Thrown if `--fail-on-breaking` is used and breaking changes are detected |
+| File not found                              | Raised if OpenAPI file is missing in the current working directory       |
+| Git error                                   | Raised if file cannot be fetched from `HEAD` branch                      |
