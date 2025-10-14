@@ -69,7 +69,7 @@ export default class Host extends ApplicationModel {
 
   @deco.HasMany('LocalizedText', {
     polymorphic: true,
-    foreignKey: 'localizableId',
+    on: 'localizableId',
     dependent: 'destroy',
   })
   public localizedTexts: LocalizedText[]
@@ -97,7 +97,7 @@ export default class Place extends ApplicationModel {
 
   @deco.HasMany('LocalizedText', {
     polymorphic: true,
-    foreignKey: 'localizableId',
+    on: 'localizableId',
     dependent: 'destroy',
   })
   public localizedTexts: LocalizedText[]
@@ -120,7 +120,7 @@ export default class Room extends ApplicationModel {
 
   @deco.HasMany('LocalizedText', {
     polymorphic: true,
-    foreignKey: 'localizableId',
+    on: 'localizableId',
     dependent: 'destroy',
   })
   public localizedTexts: LocalizedText[]
@@ -270,13 +270,13 @@ export default class Task extends ApplicationModel {
     return 'tasks' as const
   }
 
-  @deco.BelongsTo('User', { foreignKey: 'userId' })
+  @deco.BelongsTo('User', { on: 'userId' })
   public user: User
   public userId: DreamColumn<Task, 'userId'>
 
   @deco.BelongsTo(['Chore', 'Workout'], {
     polymorphic: true,
-    foreignKey: 'taskableId',
+    on: 'taskableId',
   })
   public taskable: Chore | Workout
   public taskableId: DreamColumn<Task, 'taskableId'>
@@ -294,7 +294,7 @@ export default class Chore extends ApplicationModel {
     return 'chores' as const
   }
 
-  @deco.HasMany('Polymorphic/Task', { polymorphic: true, foreignKey: 'taskableId' })
+  @deco.HasMany('Polymorphic/Task', { polymorphic: true, on: 'taskableId' })
   public tasks: PolymorphicTask[]
 }
 ///////////////
@@ -309,7 +309,7 @@ export default class Workout extends ApplicationModel {
     return 'workouts' as const
   }
 
-  @deco.HasMany('Polymorphic/Task', { polymorphic: true, foreignKey: 'taskableId' })
+  @deco.HasMany('Polymorphic/Task', { polymorphic: true, on: 'taskableId' })
   public tasks: PolymorphicTask[]
 }
 /////////////////

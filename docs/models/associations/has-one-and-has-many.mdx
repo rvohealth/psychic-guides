@@ -323,7 +323,7 @@ const siblingEdgeNodes = await edgeNode.load('siblings').execute()
 export default class EdgeNode extends ApplicationModel {
   // ...
 
-  @deco.BelongsTo('GraphNode', { foreignKey: 'nodeId' })
+  @deco.BelongsTo('GraphNode', { on: 'nodeId' })
   public node: DreamColumn<GraphNode, 'node'>
   public nodeId: DreamColumn<GraphNode, 'nodeId'>
 
@@ -338,7 +338,7 @@ export default class EdgeNode extends ApplicationModel {
 export default class GraphNode extends ApplicationModel {
   // ...
 
-  @deco.HasMany('EdgeNode', { foreignKey: 'nodeId' })
+  @deco.HasMany('EdgeNode', { on: 'nodeId' })
   public edgeNodes: EdgeNode[]
 }
 ```
