@@ -52,7 +52,7 @@ export default class Post extends Dream {
   public id: number
   public content: string | null
 
-  @deco.BelongsTo('User', { foreignKey: 'myUserId' })
+  @deco.BelongsTo('User', { on: 'myUserId' })
   public user: User
   public myUserId: number
 }
