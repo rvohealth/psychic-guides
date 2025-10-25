@@ -97,7 +97,7 @@ await Place.removeDefaultScope('dream:SoftDelete').count()
 
 ## Deleting @SoftDelete models from the database
 
-A model marked `@SoftDelete` can be deleted with `reallyDestroy`. As with
+A model marked `@SoftDelete` can be deleted from the database with `reallyDestroy`:
 
 ```ts
 await Place.create({ name: 'My Place' })

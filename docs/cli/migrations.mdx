@@ -82,7 +82,7 @@ Dream provides helpful migration utilities to simplify common database operation
 The `renameTable` helper automatically renames both the table and its associated sequence (for tables with serial primary keys), ensuring consistency across your database schema.
 
 ```ts
-import { DreamMigrationHelpers } from '@rvoh/dream'
+import { DreamMigrationHelpers } from '@rvoh/dream/db'
 
 export async function up(db: Kysely<any>): Promise<void> {
   await DreamMigrationHelpers.renameTable(db, 'old_table_name', 'new_table_name')

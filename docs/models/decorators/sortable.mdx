@@ -22,24 +22,24 @@ unique constraint, instead.
 
 ```ts
 import { Kysely } from 'kysely'
-import { MigrationHelpers } from '@rvoh/dream'
+import { DreamMigrationHelpers } from '@rvoh/dream/db'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function up(db: Kysely<any>): Promise<void> {
-  await MigrationHelpers.addDeferrableUniqueConstraint(
+  await DreamMigrationHelpers.addDeferrableUniqueConstraint(
+    db,
     'graph_edge_nodes_uniq_on_edge_id_node_id_position',
-    'graph_edge_nodes',
-    ['edge_id', 'node_id', 'position'],
-    db
+    {
+      table: 'graph_edge_nodes',
+      columns: ['edge_id', 'node_id', 'position'],
+    }
   )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function down(db: Kysely<any>): Promise<void> {
-  await MigrationHelpers.dropConstraint(
-    'graph_edge_nodes_uniq_on_edge_id_node_id_position',
-    'graph_edge_nodes',
-    db
-  )
+  await DreamMigrationHelpers.dropConstraint(db, 'graph_edge_nodes_uniq_on_edge_id_node_id_position', {
+    table: 'graph_edge_nodes',
+  })
 }
 ```
