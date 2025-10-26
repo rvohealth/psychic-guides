@@ -3,26 +3,18 @@ sidebar_position: 7
 pagination_next: null
 ---
 
-# Migration Helpers
+# migration helpers
 
 Dream provides a set of migration utilities through the `DreamMigrationHelpers` class.
 
-## Import
+## renameTable
 
-All migration helpers are available from the `DreamMigrationHelpers` class:
+The `renameTable` helper automatically renames both the table and its associated sequence (for tables with serial primary keys).
 
 ```ts
 import { DreamMigrationHelpers } from '@rvoh/dream/db'
 import { Kysely } from 'kysely'
-```
 
-## Table Operations
-
-### renameTable
-
-The `renameTable` helper automatically renames both the table and its associated sequence (for tables with serial primary keys), ensuring consistency across your database schema.
-
-```ts
 export async function up(db: Kysely<any>): Promise<void> {
   await DreamMigrationHelpers.renameTable(db, 'old_table_name', 'new_table_name')
 }
@@ -32,49 +24,53 @@ export async function down(db: Kysely<any>): Promise<void> {
 }
 ```
 
-## Constraint Operations
+## Constraints
 
 ### addDeferrableUniqueConstraint
 
 Creates deferrable unique constraints, which are required for the `@deco.Sortable` decorator. Deferrable constraints allow constraint checking to be deferred until the end of a transaction, enabling operations that temporarily violate the constraint.
 
 ```ts
+import { DreamMigrationHelpers } from '@rvoh/dream/db'
+import { Kysely } from 'kysely'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function up(db: Kysely<any>): Promise<void> {
-  await DreamMigrationHelpers.addDeferrableUniqueConstraint(db, 'constraint_name', {
-    table: 'table_name',
-    columns: ['col1', 'col2'],
+  await DreamMigrationHelpers.addDeferrableUniqueConstraint(db, 'room_position_contraint', {
+    table: 'rooms',
+    columns: ['place_id', 'position'],
   })
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function down(db: Kysely<any>): Promise<void> {
-  await DreamMigrationHelpers.dropConstraint(db, 'constraint_name', {
-    table: 'table_name',
-  })
+  await DreamMigrationHelpers.dropConstraint(db, 'room_position_contraint', { table: 'rooms' })
 }
 ```
 
 ### dropConstraint
 
-Safely drops a constraint from a table. This method provides a consistent interface for constraint removal across different constraint types.
+Drops a constraint from a table.
 
 ```ts
+import { DreamMigrationHelpers } from '@rvoh/dream/db'
+import { Kysely } from 'kysely'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function up(db: Kysely<any>): Promise<void> {
-  // Remove a constraint that's no longer needed
-  await DreamMigrationHelpers.dropConstraint(db, 'old_constraint_name', {
-    table: 'table_name',
-  })
+  await DreamMigrationHelpers.dropConstraint(db, 'room_position_contraint', { table: 'rooms' })
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function down(db: Kysely<any>): Promise<void> {
-  // Recreate the constraint if needed
-  await DreamMigrationHelpers.addDeferrableUniqueConstraint(db, 'old_constraint_name', {
-    table: 'table_name',
-    columns: ['col1', 'col2'],
+  await DreamMigrationHelpers.addDeferrableUniqueConstraint(db, 'room_position_contraint', {
+    table: 'rooms',
+    columns: ['place_id', 'position'],
   })
 }
 ```
 
-## Enum Operations
+## Enums
 
 ### addEnumValue
 
@@ -196,7 +192,7 @@ export async function down(db: Kysely<any>): Promise<void> {
 }
 ```
 
-## Extension Operations
+## Extensions
 
 ### createExtension
 
@@ -275,11 +271,42 @@ await db.schema
   .execute()
 ```
 
-## Index Operations
+## Indexs
+
+Regular indexes can be easily created using out-of-the-box Kysely functionality:
+
+```ts
+await db.schema
+  .createTable('users')
+  .addColumn('id', 'bigserial', col => col.primaryKey())
+  /**
+   * add a unique index when adding a column using `unique`
+   */
+  .addColumn('email', sql`citext`, col => col.notNull().unique())
+  .execute()
+
+/**
+ * create an index on a column
+ */
+await db.schema.createIndex('rooms_type').on('rooms').column('type').execute()
+
+/**
+ * create a multi-column index
+ */
+await db.schema
+  .createIndex('localized_texts_localizable_for_locale')
+  .on('localized_texts')
+  .columns(['localizable_type', 'localizable_id', 'locale'])
+  /**
+   * make it unique
+   */
+  .unique()
+  .execute()
+```
 
 ### createGinIndex
 
-Creates GIN (Generalized Inverted Index) indexes, which are particularly useful for full-text search and similarity operations.
+Creates GIN (Generalized Inverted Index) indexes for full-text search.
 
 ```ts
 export async function up(db: Kysely<any>): Promise<void> {
@@ -300,7 +327,7 @@ export async function down(db: Kysely<any>): Promise<void> {
 
 GIN indexes dramatically improve performance for similarity searches using `ops.similarity()`, `ops.wordSimilarity()`, and `ops.strictWordSimilarity()`.
 
-## Transaction Management
+## Transactions
 
 ### newTransaction
 
