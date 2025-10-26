@@ -1,7 +1,6 @@
 ---
-sidebar_position: 8
+pagination_next: null
 ---
-
 # lookup
 
 ## The problem of circular imports
@@ -43,7 +42,7 @@ import UnsafeSleepLogEntry from './Sleep.js'
 // vulnerable to circular import issues the same way
 // that the nodejs engine is.
 const models = () => ({
-  SleepLogEntry: ApplicationModel.lookup('LogEntry/Sleep') as UnsafeSleepLogEntry
+  SleepLogEntry: ApplicationModel.lookup('LogEntry/Sleep') as UnsafeSleepLogEntry,
 })
 
 export default class BaseLogEntry extends ApplicationModel {
@@ -75,6 +74,6 @@ const SleepLogEntry = ApplicationModel.lookup('LogEntry/Sleep') as UnsafeSleepLo
 
 // this is GOOD at the top level
 const models = () => ({
-  SleepLogEntry: ApplicationModel.lookup('LogEntry/Sleep') as UnsafeSleepLogEntry
+  SleepLogEntry: ApplicationModel.lookup('LogEntry/Sleep') as UnsafeSleepLogEntry,
 })
 ```
