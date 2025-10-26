@@ -108,7 +108,7 @@ await Place.removeAllDefaultScopes().count()
 // 0
 ```
 
-There is an analogous method for deleting associated models marked `@SoftDelete`:
+There is an analogous method for deleting associated models marked `@SoftDelete` from the database:
 
 ```ts
 const place = await Place.first()

@@ -2,7 +2,7 @@
 
 Returns true if the argument is the same Dream class with the same primary key value, and both models are persisted.
 
-Models derived from the same database record are equal even when they are different instances **even if the data has been changed in one instance but not the other**. If you want to compare contents, see []
+Models derived from the same database record are equal even when they are different instances and **even when the data has been changed in one instance but not the other**. If you want to compare the attribute values of two models, [see getAttributes](/docs/models/attributes#getattributes).
 
 ````ts
 const node = await GraphNode.create({ name: 'Hello' })
@@ -15,7 +15,7 @@ node.equals(reloadedNode)
 // still true!
 ```
 
-Models derived from different database records, but different instances, are NOT equal:
+Models derived from different database records are NOT equal:
 
 ```ts
 const node1 = await GraphNode.create({ name: 'Hello' })
