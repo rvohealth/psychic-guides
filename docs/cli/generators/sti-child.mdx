@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 2
 title: sti-child
 ---
 
@@ -50,7 +50,7 @@ This example creates an STI model for various rooms.
 
 ### STI Base
 
-Create the base `Room` using the resource generator with the `--sti-base-serializer` flag:
+Create the base `Room` model using the resource generator with the `--sti-base-serializer` flag:
 
 ```console
 yarn psy g:resource --sti-base-serializer --owning-model=Place \
@@ -58,7 +58,7 @@ yarn psy g:resource --sti-base-serializer --owning-model=Place \
   Place:belongs_to position:integer:optional deleted_at:datetime:optional
 ```
 
-### STI Child: Bathroom
+### STI Child
 
 Then create an STI child:
 
@@ -68,4 +68,4 @@ yarn psy g:sti-child Room/Kitchen extends Room appliances:enum\[\]:appliance_typ
 
 ## Supported Column Types
 
-STI child models support the same column types as the model generator.
+STI child models support the same column types as the [model generator](/docs/models/generating).

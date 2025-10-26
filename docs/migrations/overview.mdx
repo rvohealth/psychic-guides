@@ -5,6 +5,8 @@ pagination_prev: null
 
 # migrations
 
+Migrations are generated implicitly as by the [model](/docs/cli/generators/model) and [controller](/docs/cli/generators/controller) generators or explicitly using the [migration](/docs/cli/generators/migration) generator.
+
 Under the hood, Psychic leverages [kysely](https://kysely.dev) to run our migrations. Whenever a new model is generated, a migration is automatically generated to pair with the model, as we have seen for the User model generated in the authentication example:
 
 ```ts

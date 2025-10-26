@@ -47,12 +47,6 @@ const users = await User.where({
 }).all()
 ```
 
-**Use cases:**
-
-- General fuzzy text searching
-- Handling typos in user input
-- Finding similar names or terms
-
 ### ops.wordSimilarity()
 
 The `wordSimilarity()` operator uses word-based similarity with a default score threshold of **0.5**. It's better at matching individual words within longer text.
@@ -69,12 +63,6 @@ const users = await User.where({
 }).all()
 ```
 
-**Use cases:**
-
-- Searching within longer text fields
-- Matching partial words or phrases
-- Finding relevant content when searching for specific terms
-
 ### ops.strictWordSimilarity()
 
 The `strictWordSimilarity()` operator uses strict word-based similarity with a default score threshold of **0.6**. It provides the most precise matching.
@@ -90,12 +78,6 @@ const users = await User.where({
   name: ops.strictWordSimilarity('steeven hawkins', { score: 0.4 }),
 }).all()
 ```
-
-**Use cases:**
-
-- High-precision text matching
-- When you need fewer but more accurate results
-- Reducing false positives in search results
 
 ## Score Thresholds
 
@@ -119,8 +101,6 @@ const preciseResults = await User.where({
 }).all()
 ```
 
-## Performance Considerations
-
 ### GIN Indexes
 
 For optimal performance on large datasets, create GIN indexes on columns you'll search frequently:
@@ -136,68 +116,4 @@ await DreamMigrationHelpers.createGinIndex(db, 'posts_content_gin_index', {
   table: 'posts',
   column: 'content',
 })
-```
-
-### Index Usage
-
-GIN indexes are automatically used by PostgreSQL when:
-
-- The column has a GIN index with `gin_trgm_ops` operator class
-- You're using similarity operators on that column
-- The query planner determines the index will improve performance
-
-### Multiple Column Searches
-
-When searching across multiple columns, consider creating separate indexes:
-
-```ts
-// Search across multiple indexed columns
-const results = await Post.where(query =>
-  query.where({ title: ops.similarity('search term') }).orWhere({ content: ops.similarity('search term') })
-).all()
-```
-
-## Choosing the Right Operator
-
-| Operator                 | Best For                             | Default Score | Precision |
-| ------------------------ | ------------------------------------ | ------------- | --------- |
-| `similarity()`           | General fuzzy search, typo tolerance | 0.3           | Balanced  |
-| `wordSimilarity()`       | Partial word matching, longer text   | 0.5           | Moderate  |
-| `strictWordSimilarity()` | High-precision matching              | 0.6           | High      |
-
-## Examples
-
-### E-commerce Product Search
-
-```ts
-// Flexible product search with typo tolerance
-const products = await Product.where({
-  name: ops.similarity(searchTerm, { score: 0.25 }),
-})
-  .limit(20)
-  .all()
-```
-
-### User Directory Search
-
-```ts
-// Precise user name matching
-const employees = await User.where({
-  full_name: ops.strictWordSimilarity(query, { score: 0.7 }),
-})
-  .order('full_name')
-  .all()
-```
-
-### Content Search
-
-```ts
-// Search blog posts by title and content
-const posts = await Post.where(query =>
-  query
-    .where({ title: ops.wordSimilarity(searchTerm) })
-    .orWhere({ content: ops.similarity(searchTerm, { score: 0.2 }) })
-)
-  .preload('author')
-  .all()
 ```
