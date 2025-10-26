@@ -1,5 +1,6 @@
 ---
-sidebar_position: 6
+sidebar_position: 0
+pagination_prev: null
 ---
 
 # migrations
@@ -74,22 +75,4 @@ Also, since Dream currently only supports Postgres, and Kysely runs all migratio
 
 ## Migration Helpers
 
-Dream provides helpful migration utilities to simplify common database operations.
-
-### renameTable
-
-The `renameTable` helper automatically renames both the table and its associated sequence (for tables with serial primary keys), ensuring consistency across your database schema.
-
-```ts
-import { DreamMigrationHelpers } from '@rvoh/dream/db'
-
-export async function up(db: Kysely<any>): Promise<void> {
-  await DreamMigrationHelpers.renameTable(db, 'old_table_name', 'new_table_name')
-}
-
-export async function down(db: Kysely<any>): Promise<void> {
-  await DreamMigrationHelpers.renameTable(db, 'new_table_name', 'old_table_name')
-}
-```
-
-This helper is particularly useful when refactoring table names, as it handles the complexity of renaming associated sequences automatically, preventing common migration errors.
+Dream provides [migration helpers](/docs/migrations/helpers) to simplify common database operations.

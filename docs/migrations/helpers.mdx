@@ -3,6 +3,8 @@ sidebar_position: 7
 pagination_next: null
 ---
 
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
 # migration helpers
 
 Dream provides a set of migration utilities through the `DreamMigrationHelpers` class.
@@ -359,7 +361,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 
 ### Include a `down` method
 
-In each migration file, provide a `down` implementation that cleanly reverses the operations in rollback scenarios. (Not necessary for idempotent `up` calls such as [`addEnumValue`](#addEnumValue))
+In each migration file, provide a `down` implementation that cleanly reverses the operations in rollback scenarios. (Not necessary for idempotent `up` calls such as [`addEnumValue`](#addenumvalue))
 
 ```ts
 export async function up(db: Kysely<any>): Promise<void> {

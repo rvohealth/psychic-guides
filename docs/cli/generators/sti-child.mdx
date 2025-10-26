@@ -52,68 +52,20 @@ This example creates an STI model for various rooms.
 
 Create the base `Room` using the resource generator with the `--sti-base-serializer` flag:
 
-```sh
+```console
 yarn psy g:resource --sti-base-serializer --owning-model=Place \
   v1/host/places/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
   Place:belongs_to position:integer:optional deleted_at:datetime:optional
 ```
 
-Note that you’ll need to run `yarn psy db:migrate` after generating in order to run the next generator.
-
 ### STI Child: Bathroom
 
 Then create an STI child:
 
-```sh
-yarn psy g:sti-child Room/Bathroom extends Room bath_or_shower_type:enum:bath_or_shower_types:bath,shower,bath_and_shower,none
+```console
+yarn psy g:sti-child Room/Kitchen extends Room appliances:enum\[\]:appliance_types:stove,oven,microwave,dishwasher
 ```
 
 ## Supported Column Types
 
-STI child models support the same column types as the model generator:
-
-### Basic Types
-
-- **citext**: Case insensitive text
-- **string**: VARCHAR (default 255, customizable: `name:string:128`)
-- **text**: TEXT type for longer content
-- **date**: Date only
-- **datetime**: Timestamp with timezone
-- **integer**: Integer numbers
-
-### Advanced Types
-
-- **decimal**: `price:decimal:10,2` (10 total digits, 2 after decimal)
-- **enum**: `status:enum:user_status:active,inactive,suspended`
-- **belongs_to**: `Role:belongs_to` (creates foreign key and association)
-
-### Optional Columns
-
-Add `:optional` to make any column nullable:
-
-```sh
-yarn psy g:sti-child AdminUser extends User role:string:optional last_login:datetime:optional
-```
-
-## How STI Works with Generators
-
-Single Table Inheritance allows multiple models to share the same database table while having different behaviors and attributes. The generators work together to create this setup:
-
-### Generator Workflow
-
-1. **Parent Model**: Created with `g:model` or `g:resource` using `--sti-base-serializer`
-2. **Child Models**: Created with `g:sti-child` extending the parent
-
-### Database Structure
-
-- **Parent table**: Contains columns for all child models
-- **Type column**: Automatically used to distinguish between child types (discriminator)
-- **Shared columns**: Common attributes inherited by all children
-- **Child-specific columns**: Additional columns added by child generators
-
-:::tip Related Documentation
-
-- [STI Models guide](/docs/models/sti)
-- [Model Generator](./model)
-- [Migration documentation](/docs/cli/migrations)
-  :::
+STI child models support the same column types as the model generator.
