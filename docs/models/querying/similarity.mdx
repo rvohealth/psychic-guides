@@ -29,6 +29,8 @@ export async function down(db: Kysely<any>): Promise<void> {
 
 ## Similarity Operators
 
+PostgreSQL's `pg_trgm` extension provides three distinct similarity functions: `similarity()` compares the overall similarity between two strings using trigrams, `word_similarity()` finds the best matching word within a string by comparing each word individually, and `strict_word_similarity()` performs a more rigorous word-by-word comparison that requires stronger matches. Each function uses different algorithms and scoring methods, making them suitable for different types of fuzzy search scenarios.
+
 ### ops.similarity()
 
 The `similarity()` operator uses trigram similarity with a default score threshold of **0.3**. It's the most flexible similarity operator and works well for general fuzzy matching.
@@ -36,15 +38,13 @@ The `similarity()` operator uses trigram similarity with a default score thresho
 ```ts
 import { ops } from '@rvoh/dream'
 
-// Basic similarity search (uses default score of 0.3)
-const users = await User.where({
-  name: ops.similarity('steeven hawkins'),
-}).all()
-
-// Custom similarity score (0.0 = very loose, 1.0 = exact match)
-const users = await User.where({
-  name: ops.similarity('steeven hawkins', { score: 0.2 }),
-}).all()
+const titleSearchedRecipes = await Recipe.passthrough({ locale: 'en-US' })
+  .innerJoin('currentRecipeText', {
+    and: {
+      title: ops.strictWordSimilarity(this.query),
+    },
+  })
+  .scrollPaginate({ cursor })
 ```
 
 ### ops.wordSimilarity()
@@ -52,15 +52,15 @@ const users = await User.where({
 The `wordSimilarity()` operator uses word-based similarity with a default score threshold of **0.5**. It's better at matching individual words within longer text.
 
 ```ts
-// Basic word similarity search (uses default score of 0.5)
-const users = await User.where({
-  name: ops.wordSimilarity('steeven hawkins'),
-}).all()
+import { ops } from '@rvoh/dream'
 
-// Custom word similarity score
-const users = await User.where({
-  name: ops.wordSimilarity('steeven hawkins', { score: 0.3 }),
-}).all()
+const fullTextSearchedRecipes = await Recipe.passthrough({ locale: 'en-US' })
+  .innerJoin('currentAggregateRecipeText', {
+    and: {
+      aggregate: ops.wordSimilarity(this.query),
+    },
+  })
+  .scrollPaginate({ cursor })
 ```
 
 ### ops.strictWordSimilarity()
@@ -68,15 +68,15 @@ const users = await User.where({
 The `strictWordSimilarity()` operator uses strict word-based similarity with a default score threshold of **0.6**. It provides the most precise matching.
 
 ```ts
-// Basic strict word similarity search (uses default score of 0.6)
-const users = await User.where({
-  name: ops.strictWordSimilarity('steeven hawkins'),
-}).all()
+import { ops } from '@rvoh/dream'
 
-// Custom strict similarity score
-const users = await User.where({
-  name: ops.strictWordSimilarity('steeven hawkins', { score: 0.4 }),
-}).all()
+const fullTextSearchedRecipes = await Recipe.passthrough({ locale: 'en-US' })
+  .innerJoin('currentAggregateRecipeText', {
+    and: {
+      aggregate: ops.strictWordSimilarity(this.query),
+    },
+  })
+  .scrollPaginate({ cursor })
 ```
 
 ## Score Thresholds
