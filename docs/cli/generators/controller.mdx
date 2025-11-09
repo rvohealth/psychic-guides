@@ -7,4 +7,19 @@ title: controller
 
 If you are looking to generate a resourceful (CRUD) controller with a model, see the [resource generator documentation](/docs/controllers/generating#resources).
 
-To simply generate a controller, see the [controller generator documentation](/docs/controllers/generating#simple-controller).
+`generate:controller` is for generating a simple controller skeleton (and the inheritance chain to that controller). The CLI documentation follows, below, but [the controller generator documentation](/docs/controllers/generating#simple-controller) explains controller generation in greater detail.
+
+## Usage
+
+```sh
+yarn psy g:controller [options] <controllerName> [actions...]
+```
+
+**Arguments:**
+
+- `<controllerName>`: The name of the controller to create, including namespaces, e.g. `Posts` or `Api/V1/Posts`.
+- `[actions...]`: The names of controller actions to create.
+
+**Options:**
+
+- `-h, --help`: Display help for command.

@@ -7,4 +7,25 @@ title: resource
 
 Psychic considers a resource to be something that is both a database model and an entity that is accessible via an endpoint. Not all of the models you generate may need to have api endpoints for accessing them, so you will not need resource generators for these, and can instead lean on the [model generators](/docs/models/generating).
 
-See the [resource generator documentation](/docs/controllers/generating).
+See the [resource generator documentation](/docs/controllers/generating) for details. The CLI documentation follows:
+
+## Usage
+
+```sh
+yarn psy g:resource [options] <path> <modelName> [columnsWithTypes...]
+```
+
+**Arguments:**
+
+- `<path>`: URL path from root domain. Specify nesting resource with `{}`, e.g. `tickets/{}/comments`.
+- `<modelName>`: The name of the model to create, e.g. `Post` or `Settings/CommunicationPreferences`.
+- `[columnsWithTypes...]`: Same as [the model generator](./model).
+
+**Options:**
+
+- `--singular`: Generates a "resource" route instead of "resources".
+- `--only <onlyActions>`: Comma separated list of resourceful endpoints (e.g. `--only=create,show`).
+- `--sti-base-serializer`: Omits the serializer from the dream model, but creates the serializer for STI children.
+- `--owning-model <modelName>`: The model class for association queries in the controller/spec (default: User).
+- `--connection-name <connectionName>`: The db connection to use (default: "default").
+- `-h, --help`: Display help for command.

@@ -12,6 +12,22 @@ yarn psy g:migration --help
 yarn psy g:migration add-deleted-at-to-posts deleted_at:datetime
 ```
 
+## Usage
+
+```sh
+yarn psy g:migration [options] <migrationName> [columnsWithTypes...]
+```
+
+**Arguments:**
+
+- `<migrationName>`: End with `-to-table-name` to prepopulate with an alterTable command.
+- `[columnsWithTypes...]`: Same as [the model generator](./model).
+
+**Options:**
+
+- `--connection-name <connectionName>`: The connection name you wish to use for your migration.
+- `-h, --help`: Display help for command.
+
 Ending the migration name with `-to-table-name` will automatically include the underscored table name in the migration.
 
 If you want to also generate a model for this migration, you can simply use the [g:model](./model.mdx) or [g:resource](./resource.mdx) commands instead.
