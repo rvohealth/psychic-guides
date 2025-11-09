@@ -26,9 +26,9 @@ yarn psy g:model Guest User:belongs_to
 yarn psy g:model --sti-base-serializer Room \
   type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
   Place:belongs_to position:integer:optional deleted_at:datetime:optional
-
-# use the --help flag to inspect all of the options
 ```
+
+Run `yarn psy g:model --help` or see [the g:resource documentation](docs/cli/generators/model.mdx) for details of the generator API.
 
 ## enum types
 
@@ -41,13 +41,7 @@ type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom
 the `room_types` segment signals to Dream to create a new enum called `room_types_enum` within your db. The segment following the `room_types` segment informs Dream of what values you want to allow for your enum column. In this case, it will produce the following values for your enum:
 
 ```ts
-[
-  'Bathroom',
-  'Bedroom',
-  'Kitchen',
-  'Den',
-  'LivingRoom'
-]
+;['Bathroom', 'Bedroom', 'Kitchen', 'Den', 'LivingRoom']
 ```
 
 ### enum arrays
