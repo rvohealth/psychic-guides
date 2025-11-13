@@ -1,20 +1,54 @@
+---
+title: paramSafeColumns
+---
+
 # paramSafeColumns / paramUnsafeColumns
 
-`paramSafeColumns`/`paramUnsafeColumns` work in conjunction with `PsychicController#paramsFor` to limit what attributes will be set from params. This concept is similar to Rails' "strong params", but implemented at the model level and with different defaults.
+:::caution
+`paramSafeColumns` and `paramUnsafeColumns` _only_ provide protection when used with `PsychicController#paramsFor`.
 
-By default, `PsychicController#paramsFor` will never include the following attributes (this cannot be overridden by `paramSafeColumms` or `paramUnsafeColumns`):
+```ts
+export default class HostPlacesController extends HostBaseController {
+  public async update() {
+    const place = await this.place()
+    // protected
+    await place.update(this.paramsFor(Place))
+    this.noContent()
+  }
+}
+```
+
+```ts
+export default class HostPlacesController extends HostBaseController {
+  public async update() {
+    const place = await this.place()
+    // !!!!!!!!!!!!!
+    // NOT protected
+    await place.update(this.params)
+    // NOT protected
+    // !!!!!!!!!!!!!
+    this.noContent()
+  }
+}
+```
+
+:::
+
+`paramSafeColumns`/`paramUnsafeColumns` work in conjunction with `PsychicController#paramsFor` to limit what attributes are allowed to be set from params. This concept is similar to Rails’ "strong params", but implemented at the model level and with different defaults.
+
+Default protection is provided automatically, since `PsychicController#paramsFor` will never include the following attributes (this cannot be overridden by `paramSafeColumms` or `paramUnsafeColumns`):
 
 - the primary key (defaults to `id`)
 - the created at field (defaults to `createdAt`)
 - the updated at field (defaults to `updatedAt`)
 - the deleted at field (defaults to `deletedAt`)
-- the type field of an STI model
+- the `type` field of an STI model
 - foreign keys of BelongsTo associations
 - the polymorphic type field of polymorphic BelongsTo associations
 
 ## paramSafeColumns
 
-You can restrict the attributes that may be modified to _only_ the explicitly specified columns by creating a `paramSafeColumns` getter that returns the columns that may be safely updated:
+Allowed params can be further restricted to _only_ allow explicitly specified columns by adding a `paramSafeColumns` getter to the Dream model that returns the columns that may be safely updated:
 
 ```ts
 class CoachingSession extends ApplicationModel {
@@ -24,16 +58,66 @@ class CoachingSession extends ApplicationModel {
 }
 ```
 
-Adding the default restricted column names to `paramSafeColumns` will have no effect.
+Adding default restricted column names to `paramSafeColumns` will have no effect.
 
 ## paramUnsafeColumns
 
-Alternately, you can specify additional individual attributes (in addition to the defaults), that may _not_ be modified by adding a `paramSafeColumns` getter that returns the names of columns that may not be updated:
+Aternately, individual attributes may be disallowed (in addition to the defaults) by adding a `paramUnsafeColumns` getter that returns the names of columns that may not be updated:
 
 ```ts
 class Friend extends ApplicationModel {
   public get paramUnsafeColumns(): DreamColumnNames<Friend>[] {
     return ['bff']
+  }
+}
+```
+
+## OpenAPI
+
+Restricted params (both defaults and any additional limitations imposed by `paramSafeColumns` and `paramUnsafeColumns`) are automatically omitted from the request body OpenAPI shape.
+
+```ts
+export default class HostPlacesRoomsController extends HostPlacesBaseController {
+  @OpenAPI(Room, {
+    status: 204,
+    tags: openApiTags,
+    description: 'Update a Room',
+  })
+  public async update() {
+    const room = await this.room()
+    /**
+    /* `id`, `createdAt`, `updatedAt`, `deletedAt`, and `type` (since Room is an STI model)
+    /* will not be included in the object returned by `this.paramsFor(Room)` 
+    */
+    await room.update(this.paramsFor(Room))
+    this.noContent()
+  }
+}
+```
+
+Restricted params can be added to the OpenAPI request body by specifying an `including` array. Note that this does _not_ alter the behavior of `PsychicController#paramsFor`, only the OpenAPI shape, so that requests may be allowed that include protected attributes; but these attributes will need to be handled explicitly:
+
+```ts
+export default class HostPlacesRoomsController extends HostPlacesBaseController {
+  @OpenAPI(Room, {
+    status: 201,
+    tags: openApiTags,
+    description: 'Create a Room',
+    requestBody: {
+      /**
+       * `type` is normally a protected attribute, but when creating a room, we do want the user
+       * to be able to select room type, we just have to handle it explicitly since it won't be
+       * returned by `paramsFor` (and we don't want it to be since simply setting the type would
+       * not be operating on the correct model, even though the correct model would be hydrated
+       * when loading from the database)
+       */
+      including: ['type'],
+    },
+  })
+  public async create() {
+    const roomType = this.castParam('type', 'string', { enum: RoomTypesEnumValues })
+    // handle `roomType` explicitly
+    ...
   }
 }
 ```
