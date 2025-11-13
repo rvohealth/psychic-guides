@@ -1,0 +1,129 @@
+---
+title: Rename generated RoomBathroom to Bathroom
+---
+
+# Rename generated RoomBathroom to Bathroom, including in the check constraint in the migration
+
+## Git Log
+
+```
+commit 94f272f46d7380d28b9f2f9aa390482c1baeed18
+Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
+Date:   Sat Nov 8 11:45:24 2025 -0600
+
+    Rename generated RoomBathroom to Bathroom,
+    including in the check constraint in the migration
+    
+    ```console
+    yarn psy db:migrate
+    ```
+
+```
+
+## Diff from edf2afb
+
+```diff
+diff --git a/api/spec/factories/Room/BathroomFactory.ts b/api/spec/factories/Room/BathroomFactory.ts
+index a7bf14e..7ffc1b1 100644
+--- a/api/spec/factories/Room/BathroomFactory.ts
++++ b/api/spec/factories/Room/BathroomFactory.ts
+@@ -1,8 +1,8 @@
++import Bathroom from '@models/Room/Bathroom.js'
+ import { UpdateableProperties } from '@rvoh/dream/types'
+-import RoomBathroom from '@models/Room/Bathroom.js'
+ 
+-export default async function createRoomBathroom(attrs: UpdateableProperties<RoomBathroom> = {}) {
+-  return await RoomBathroom.create({
++export default async function createRoomBathroom(attrs: UpdateableProperties<Bathroom> = {}) {
++  return await Bathroom.create({
+     bathOrShowerStyle: 'bath',
+     ...attrs,
+   })
+diff --git a/api/src/app/models/Room/Bathroom.ts b/api/src/app/models/Room/Bathroom.ts
+index be5bd2d..ede559a 100644
+--- a/api/src/app/models/Room/Bathroom.ts
++++ b/api/src/app/models/Room/Bathroom.ts
+@@ -1,17 +1,17 @@
++import Room from '@models/Room.js'
+ import { Decorators, STI } from '@rvoh/dream'
+ import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+-import Room from '@models/Room.js'
+ 
+-const deco = new Decorators<typeof RoomBathroom>()
++const deco = new Decorators<typeof Bathroom>()
+ 
+ @STI(Room)
+-export default class RoomBathroom extends Room {
+-  public override get serializers(): DreamSerializers<RoomBathroom> {
++export default class Bathroom extends Room {
++  public override get serializers(): DreamSerializers<Bathroom> {
+     return {
+       default: 'Room/BathroomSerializer',
+       summary: 'Room/BathroomSummarySerializer',
+     }
+   }
+ 
+-  public bathOrShowerStyle: DreamColumn<RoomBathroom, 'bathOrShowerStyle'>
++  public bathOrShowerStyle: DreamColumn<Bathroom, 'bathOrShowerStyle'>
+ }
+diff --git a/api/src/app/serializers/Room/BathroomSerializer.ts b/api/src/app/serializers/Room/BathroomSerializer.ts
+index 1e713c1..0f6953e 100644
+--- a/api/src/app/serializers/Room/BathroomSerializer.ts
++++ b/api/src/app/serializers/Room/BathroomSerializer.ts
+@@ -1,9 +1,8 @@
++import Bathroom from '@models/Room/Bathroom.js'
+ import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
+-import RoomBathroom from '@models/Room/Bathroom.js'
+ 
+-export const RoomBathroomSummarySerializer = (roomBathroom: RoomBathroom) =>
+-  RoomSummarySerializer(RoomBathroom, roomBathroom)
++export const RoomBathroomSummarySerializer = (roomBathroom: Bathroom) =>
++  RoomSummarySerializer(Bathroom, roomBathroom)
+ 
+-export const RoomBathroomSerializer = (roomBathroom: RoomBathroom) =>
+-  RoomSerializer(RoomBathroom, roomBathroom)
+-    .attribute('bathOrShowerStyle')
++export const RoomBathroomSerializer = (roomBathroom: Bathroom) =>
++  RoomSerializer(Bathroom, roomBathroom).attribute('bathOrShowerStyle')
+diff --git a/api/src/db/migrations/1762623819589-create-room-bathroom.ts b/api/src/db/migrations/1762623819589-create-room-bathroom.ts
+index 8896e86..94158e4 100644
+--- a/api/src/db/migrations/1762623819589-create-room-bathroom.ts
++++ b/api/src/db/migrations/1762623819589-create-room-bathroom.ts
+@@ -4,12 +4,7 @@ import { Kysely, sql } from 'kysely'
+ export async function up(db: Kysely<any>): Promise<void> {
+   await db.schema
+     .createType('bath_or_shower_styles_enum')
+-    .asEnum([
+-      'bath',
+-      'shower',
+-      'bath_and_shower',
+-      'none'
+-    ])
++    .asEnum(['bath', 'shower', 'bath_and_shower', 'none'])
+     .execute()
+ 
+   await db.schema
+@@ -21,17 +16,14 @@ export async function up(db: Kysely<any>): Promise<void> {
+     .alterTable('rooms')
+     .addCheckConstraint(
+       'rooms_not_null_bath_or_shower_style',
+-      sql`type != 'RoomBathroom' OR bath_or_shower_style IS NOT NULL`,
++      sql`type != 'Bathroom' OR bath_or_shower_style IS NOT NULL`,
+     )
+     .execute()
+ }
+ 
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ export async function down(db: Kysely<any>): Promise<void> {
+-  await db.schema
+-    .alterTable('rooms')
+-    .dropColumn('bath_or_shower_style')
+-    .execute()
++  await db.schema.alterTable('rooms').dropColumn('bath_or_shower_style').execute()
+ 
+   await db.schema.dropType('bath_or_shower_styles_enum').execute()
+-}
+\ No newline at end of file
++}
+
+```

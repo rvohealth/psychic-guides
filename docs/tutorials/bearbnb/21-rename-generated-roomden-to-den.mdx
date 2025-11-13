@@ -1,0 +1,84 @@
+---
+title: Rename generated RoomDen to Den
+---
+
+# Rename generated RoomDen to Den
+
+## Git Log
+
+```
+commit 9d12d0306a3015e3c02139b9ce4d0b2210901c44
+Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
+Date:   Sat Nov 8 11:52:45 2025 -0600
+
+    Rename generated RoomDen to Den
+    
+    ```console
+    yarn psy sync
+    ```
+
+```
+
+## Diff from e1c1dcc
+
+```diff
+diff --git a/api/spec/factories/Room/DenFactory.ts b/api/spec/factories/Room/DenFactory.ts
+index 4840bb0..36df1c4 100644
+--- a/api/spec/factories/Room/DenFactory.ts
++++ b/api/spec/factories/Room/DenFactory.ts
+@@ -1,8 +1,8 @@
++import Den from '@models/Room/Den.js'
+ import { UpdateableProperties } from '@rvoh/dream/types'
+-import RoomDen from '@models/Room/Den.js'
+ 
+-export default async function createRoomDen(attrs: UpdateableProperties<RoomDen> = {}) {
+-  return await RoomDen.create({
++export default async function createRoomDen(attrs: UpdateableProperties<Den> = {}) {
++  return await Den.create({
+     ...attrs,
+   })
+ }
+diff --git a/api/src/app/models/Room/Den.ts b/api/src/app/models/Room/Den.ts
+index 7f67007..8b65ee8 100644
+--- a/api/src/app/models/Room/Den.ts
++++ b/api/src/app/models/Room/Den.ts
+@@ -1,16 +1,15 @@
+-import { Decorators, STI } from '@rvoh/dream'
+-import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import Room from '@models/Room.js'
++import { Decorators, STI } from '@rvoh/dream'
++import { DreamSerializers } from '@rvoh/dream/types'
+ 
+-const deco = new Decorators<typeof RoomDen>()
++const deco = new Decorators<typeof Den>()
+ 
+ @STI(Room)
+-export default class RoomDen extends Room {
+-  public override get serializers(): DreamSerializers<RoomDen> {
++export default class Den extends Room {
++  public override get serializers(): DreamSerializers<Den> {
+     return {
+       default: 'Room/DenSerializer',
+       summary: 'Room/DenSummarySerializer',
+     }
+   }
+-
+ }
+diff --git a/api/src/app/serializers/Room/DenSerializer.ts b/api/src/app/serializers/Room/DenSerializer.ts
+index 9030e23..86500fa 100644
+--- a/api/src/app/serializers/Room/DenSerializer.ts
++++ b/api/src/app/serializers/Room/DenSerializer.ts
+@@ -1,8 +1,6 @@
++import Den from '@models/Room/Den.js'
+ import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
+-import RoomDen from '@models/Room/Den.js'
+ 
+-export const RoomDenSummarySerializer = (roomDen: RoomDen) =>
+-  RoomSummarySerializer(RoomDen, roomDen)
++export const RoomDenSummarySerializer = (roomDen: Den) => RoomSummarySerializer(Den, roomDen)
+ 
+-export const RoomDenSerializer = (roomDen: RoomDen) =>
+-  RoomSerializer(RoomDen, roomDen)
++export const RoomDenSerializer = (roomDen: Den) => RoomSerializer(Den, roomDen)
+
+```

@@ -1,0 +1,747 @@
+---
+title: Places controller for Guests, including localization
+---
+
+# Places controller for Guests, including localization
+
+## Git Log
+
+```
+commit 2f92295981cb5f171a7b41caa26cece5377b475d
+Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
+Date:   Sat Nov 8 12:46:41 2025 -0600
+
+    Places controller for Guests, including localization
+    
+    If you get ambiguous Typescript errors along the way, restart
+    the ESLint server in your editor, and if that doesn't work,
+    quit and re-open your editor
+    
+    ```console
+    yarn psy g:controller V1/Guest/Places index show
+    
+    yarn psy sync --ignore-errors
+    yarn psy sync
+    
+    yarn build
+    yarn build:spec
+    
+    yarn uspec spec/unit/controllers/V1/Guest/PlacesController.spec.ts
+    yarn uspec
+    ```
+
+```
+
+## Diff from d387632
+
+```diff
+diff --git a/api/spec/unit/controllers/V1/Guest/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Guest/PlacesController.spec.ts
+new file mode 100644
+index 0000000..2bcb2b8
+--- /dev/null
++++ b/api/spec/unit/controllers/V1/Guest/PlacesController.spec.ts
+@@ -0,0 +1,152 @@
++import Place from '@models/Place.js'
++import User from '@models/User.js'
++import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
++import createPlace from '@spec/factories/PlaceFactory.js'
++import createRoomBathroom from '@spec/factories/Room/BathroomFactory.js'
++import createRoomBedroom from '@spec/factories/Room/BedroomFactory.js'
++import createRoomDen from '@spec/factories/Room/DenFactory.js'
++import createRoomKitchen from '@spec/factories/Room/KitchenFactory.js'
++import createRoomLivingRoom from '@spec/factories/Room/LivingRoomFactory.js'
++import createUser from '@spec/factories/UserFactory.js'
++import { SpecRequestType, session } from '@spec/unit/helpers/authentication.js'
++
++describe('V1/Guest/PlacesController', () => {
++  let request: SpecRequestType
++  let user: User
++
++  beforeEach(async () => {
++    user = await createUser()
++    request = await session(user)
++  })
++
++  describe('GET index', () => {
++    const subject = async <StatusCode extends 200 | 400>(expectedStatus: StatusCode) => {
++      return request.get('/v1/guest/places', expectedStatus, {
++        headers: {
++          'content-language': 'es-ES',
++        },
++      })
++    }
++
++    it('returns the index of Places', async () => {
++      const place = await createPlace()
++      await createLocalizedText({ localizable: place, locale: 'es-ES', title: 'The Spanish title' })
++
++      const { body } = await subject(200)
++
++      expect(body.results).toEqual([
++        {
++          id: place.id,
++          title: 'The Spanish title',
++        },
++      ])
++    })
++  })
++
++  describe('GET show', () => {
++    const subject = async <StatusCode extends 200 | 400>(place: Place, expectedStatus: StatusCode) => {
++      return request.get('/v1/guest/places/{id}', expectedStatus, {
++        id: place.id,
++        headers: {
++          'content-language': 'es-ES',
++        },
++      })
++    }
++
++    it('returns places with rooms', async () => {
++      const place = await createPlace({ style: 'cabin', sleeps: 3 })
++      await createLocalizedText({ localizable: place, locale: 'es-ES', title: 'The Spanish place title' })
++
++      const { kitchen, bathroom, bedroom, den, livingRoom } = await createRoomsForPlace(place)
++
++      const { body } = await subject(place, 200)
++
++      expect(body).toEqual({
++        id: place.id,
++        sleeps: 3,
++        title: 'The Spanish place title',
++        style: 'cabin',
++        displayStyle: 'cabaña rústica',
++
++        rooms: [
++          {
++            id: kitchen.id,
++            type: 'Kitchen',
++            displayType: 'cocina',
++            title: 'The Spanish kitchen title',
++            appliances: [
++              {
++                value: 'oven',
++                label: 'horno',
++              },
++              {
++                value: 'dishwasher',
++                label: 'lavavajillas',
++              },
++            ],
++          },
++          {
++            id: bathroom.id,
++            type: 'Bathroom',
++            displayType: 'baño',
++            title: 'The Spanish bathroom title',
++            bathOrShowerStyle: {
++              value: 'shower',
++              label: 'ducha',
++            },
++          },
++          {
++            id: bedroom.id,
++            type: 'Bedroom',
++            displayType: 'dormitorio',
++            title: 'The Spanish bedroom title',
++            bedTypes: [
++              {
++                value: 'cot',
++                label: 'catre',
++              },
++              {
++                value: 'bunk',
++                label: 'litera',
++              },
++            ],
++          },
++          { id: den.id, type: 'Den', displayType: 'estudio', title: 'The Spanish den title' },
++          {
++            id: livingRoom.id,
++            type: 'LivingRoom',
++            displayType: 'sala de estar',
++            title: 'The Spanish livingRoom title',
++          },
++        ],
++      })
++    })
++  })
++})
++
++async function createRoomsForPlace(place: Place) {
++  const kitchen = await createRoomKitchen({ place, appliances: ['oven', 'dishwasher'] })
++  await createLocalizedText({ localizable: kitchen, locale: 'es-ES', title: 'The Spanish kitchen title' })
++
++  const bathroom = await createRoomBathroom({ place, bathOrShowerStyle: 'shower' })
++  await createLocalizedText({
++    localizable: bathroom,
++    locale: 'es-ES',
++    title: 'The Spanish bathroom title',
++  })
++
++  const bedroom = await createRoomBedroom({ place, bedTypes: ['cot', 'bunk'] })
++  await createLocalizedText({ localizable: bedroom, locale: 'es-ES', title: 'The Spanish bedroom title' })
++
++  const den = await createRoomDen({ place })
++  await createLocalizedText({ localizable: den, locale: 'es-ES', title: 'The Spanish den title' })
++
++  const livingRoom = await createRoomLivingRoom({ place })
++  await createLocalizedText({
++    localizable: livingRoom,
++    locale: 'es-ES',
++    title: 'The Spanish livingRoom title',
++  })
++
++  return { kitchen, bathroom, bedroom, den, livingRoom }
++}
+diff --git a/api/src/app/controllers/ApplicationController.ts b/api/src/app/controllers/ApplicationController.ts
+index 728e813..11ddb35 100644
+--- a/api/src/app/controllers/ApplicationController.ts
++++ b/api/src/app/controllers/ApplicationController.ts
+@@ -1,6 +1,7 @@
+-import { PsychicController } from '@rvoh/psychic'
++import { BeforeAction, PsychicController } from '@rvoh/psychic'
+ import { PsychicOpenapiNames } from '@rvoh/psychic/openapi'
+ import psychicTypes from '@src/types/psychic.js'
++import { supportedLocales } from '@src/utils/i18n.js'
+ 
+ export default class ApplicationController extends PsychicController {
+   public override get psychicTypes() {
+@@ -10,4 +11,17 @@ export default class ApplicationController extends PsychicController {
+   public static override get openapiNames(): PsychicOpenapiNames<ApplicationController> {
+     return ['default', 'mobile', 'validation']
+   }
++
++  @BeforeAction()
++  public configureSerializers() {
++    this.serializerPassthrough({
++      locale: this.locale,
++    })
++  }
++
++  protected get locale() {
++    const locale = this.headers['content-language']
++    const locales = supportedLocales()
++    return locales.includes(locale as (typeof locales)[number]) ? locale : 'en-US'
++  }
+ }
+diff --git a/api/src/app/controllers/V1/Guest/BaseController.ts b/api/src/app/controllers/V1/Guest/BaseController.ts
+new file mode 100644
+index 0000000..652ec53
+--- /dev/null
++++ b/api/src/app/controllers/V1/Guest/BaseController.ts
+@@ -0,0 +1,5 @@
++import V1BaseController from '../BaseController.js'
++
++export default class V1GuestBaseController extends V1BaseController {
++
++}
+diff --git a/api/src/app/controllers/V1/Guest/PlacesController.ts b/api/src/app/controllers/V1/Guest/PlacesController.ts
+new file mode 100644
+index 0000000..40ae7ce
+--- /dev/null
++++ b/api/src/app/controllers/V1/Guest/PlacesController.ts
+@@ -0,0 +1,35 @@
++import Place from '@models/Place.js'
++import { OpenAPI } from '@rvoh/psychic'
++import V1GuestBaseController from './BaseController.js'
++
++const openApiTags = ['v1-guest-places']
++
++export default class V1GuestPlacesController extends V1GuestBaseController {
++  @OpenAPI(Place, {
++    status: 200,
++    tags: openApiTags,
++    description: 'Place index endpoint for Guests',
++    scrollPaginate: true,
++    serializerKey: 'summaryForGuests',
++  })
++  public async index() {
++    const places = await Place.passthrough({ locale: this.locale })
++      .preloadFor('summaryForGuests')
++      .scrollPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
++    this.ok(places)
++  }
++
++  @OpenAPI(Place, {
++    status: 200,
++    tags: openApiTags,
++    description: 'Place show endpoint for Guests',
++    serializerKey: 'forGuests',
++  })
++  public async show() {
++    this.ok(
++      await Place.passthrough({ locale: this.locale })
++        .preloadFor('forGuests')
++        .findOrFail(this.castParam('id', 'bigint')),
++    )
++  }
++}
+diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
+index 9e6d48f..ab21061 100644
+--- a/api/src/app/models/Place.ts
++++ b/api/src/app/models/Place.ts
+@@ -17,6 +17,8 @@ export default class Place extends ApplicationModel {
+     return {
+       default: 'PlaceSerializer',
+       summary: 'PlaceSummarySerializer',
++      summaryForGuests: 'PlaceSummaryForGuestsSerializer',
++      forGuests: 'PlaceForGuestsSerializer',
+     }
+   }
+ 
+@@ -34,7 +36,7 @@ export default class Place extends ApplicationModel {
+   @deco.HasMany('Host', { through: 'hostPlaces' })
+   public hosts: Host[]
+ 
+-  @deco.HasMany('Room')
++  @deco.HasMany('Room', { order: 'createdAt' })
+   // make sure this imports from `import Room from '@models/Room.js'`
+   // not from `import { Room } from 'socket.io-adapter'`
+   public rooms: Room[]
+diff --git a/api/src/app/models/Room/Bathroom.ts b/api/src/app/models/Room/Bathroom.ts
+index 9d57fc5..833fc2f 100644
+--- a/api/src/app/models/Room/Bathroom.ts
++++ b/api/src/app/models/Room/Bathroom.ts
+@@ -10,6 +10,7 @@ export default class Bathroom extends Room {
+     return {
+       default: 'Room/BathroomSerializer',
+       summary: 'Room/BathroomSummarySerializer',
++      forGuests: 'Room/BathroomForGuestsSerializer',
+     }
+   }
+ 
+diff --git a/api/src/app/models/Room/Bedroom.ts b/api/src/app/models/Room/Bedroom.ts
+index 203a911..5d9856f 100644
+--- a/api/src/app/models/Room/Bedroom.ts
++++ b/api/src/app/models/Room/Bedroom.ts
+@@ -10,6 +10,7 @@ export default class Bedroom extends Room {
+     return {
+       default: 'Room/BedroomSerializer',
+       summary: 'Room/BedroomSummarySerializer',
++      forGuests: 'Room/BedroomForGuestsSerializer',
+     }
+   }
+ 
+diff --git a/api/src/app/models/Room/Den.ts b/api/src/app/models/Room/Den.ts
+index f80981a..7c7d64c 100644
+--- a/api/src/app/models/Room/Den.ts
++++ b/api/src/app/models/Room/Den.ts
+@@ -10,6 +10,7 @@ export default class Den extends Room {
+     return {
+       default: 'Room/DenSerializer',
+       summary: 'Room/DenSummarySerializer',
++      forGuests: 'Room/DenForGuestsSerializer',
+     }
+   }
+ }
+diff --git a/api/src/app/models/Room/Kitchen.ts b/api/src/app/models/Room/Kitchen.ts
+index bcf3068..4622f8b 100644
+--- a/api/src/app/models/Room/Kitchen.ts
++++ b/api/src/app/models/Room/Kitchen.ts
+@@ -10,6 +10,7 @@ export default class Kitchen extends Room {
+     return {
+       default: 'Room/KitchenSerializer',
+       summary: 'Room/KitchenSummarySerializer',
++      forGuests: 'Room/KitchenForGuestsSerializer',
+     }
+   }
+ 
+diff --git a/api/src/app/models/Room/LivingRoom.ts b/api/src/app/models/Room/LivingRoom.ts
+index 64c5cd7..7187e89 100644
+--- a/api/src/app/models/Room/LivingRoom.ts
++++ b/api/src/app/models/Room/LivingRoom.ts
+@@ -10,6 +10,7 @@ export default class LivingRoom extends Room {
+     return {
+       default: 'Room/LivingRoomSerializer',
+       summary: 'Room/LivingRoomSummarySerializer',
++      forGuests: 'Room/LivingRoomForGuestsSerializer',
+     }
+   }
+ }
+diff --git a/api/src/app/serializers/PlaceSerializer.ts b/api/src/app/serializers/PlaceSerializer.ts
+index ba698d3..8dde4c9 100644
+--- a/api/src/app/serializers/PlaceSerializer.ts
++++ b/api/src/app/serializers/PlaceSerializer.ts
+@@ -1,5 +1,7 @@
+ import Place from '@models/Place.js'
+ import { DreamSerializer } from '@rvoh/dream'
++import { LocalesEnum } from '@src/types/db.js'
++import i18n from '@src/utils/i18n.js'
+ 
+ // prettier-ignore
+ export const PlaceSummarySerializer = (place: Place) =>
+@@ -13,3 +15,17 @@ export const PlaceSerializer = (place: Place) =>
+     .attribute('style')
+     .attribute('sleeps')
+     .attribute('deletedAt')
++
++export const PlaceSummaryForGuestsSerializer = (place: Place) =>
++  DreamSerializer(Place, place)
++    .attribute('id')
++    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
++
++export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
++  PlaceSummaryForGuestsSerializer(place)
++    .attribute('style')
++    .customAttribute('displayStyle', () => i18n(passthrough.locale, `places.style.${place.style}`), {
++      openapi: 'string',
++    })
++    .attribute('sleeps')
++    .rendersMany('rooms', { serializerKey: 'forGuests' })
+diff --git a/api/src/app/serializers/Room/BathroomSerializer.ts b/api/src/app/serializers/Room/BathroomSerializer.ts
+index 0f6953e..976c0e9 100644
+--- a/api/src/app/serializers/Room/BathroomSerializer.ts
++++ b/api/src/app/serializers/Room/BathroomSerializer.ts
+@@ -1,8 +1,40 @@
+ import Bathroom from '@models/Room/Bathroom.js'
+-import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import { ObjectSerializer } from '@rvoh/dream'
++import {
++  RoomForGuestsSerializer,
++  RoomSerializer,
++  RoomSummarySerializer,
++} from '@serializers/RoomSerializer.js'
++import { BathOrShowerStylesEnum, BathOrShowerStylesEnumValues, LocalesEnum } from '@src/types/db.js'
++import i18n from '@src/utils/i18n.js'
+ 
+ export const RoomBathroomSummarySerializer = (roomBathroom: Bathroom) =>
+   RoomSummarySerializer(Bathroom, roomBathroom)
+ 
+ export const RoomBathroomSerializer = (roomBathroom: Bathroom) =>
+   RoomSerializer(Bathroom, roomBathroom).attribute('bathOrShowerStyle')
++
++export const BathOrShowerStyleSerializer = (
++  bathOrShowerStyle: BathOrShowerStylesEnum,
++  passthrough: { locale: LocalesEnum },
++) =>
++  ObjectSerializer({ bathOrShowerStyle }, passthrough)
++    .attribute('bathOrShowerStyle', {
++      as: 'value',
++      openapi: { type: 'string', enum: BathOrShowerStylesEnumValues },
++    })
++    .customAttribute(
++      'label',
++      () => i18n(passthrough.locale, `rooms.Bathroom.bathOrShowerStyles.${bathOrShowerStyle}`),
++      {
++        openapi: 'string',
++      },
++    )
++
++export const RoomBathroomForGuestsSerializer = (
++  roomBathroom: Bathroom,
++  passthrough: { locale: LocalesEnum },
++) =>
++  RoomForGuestsSerializer(Bathroom, roomBathroom, passthrough).rendersOne('bathOrShowerStyle', {
++    serializer: BathOrShowerStyleSerializer,
++  })
+diff --git a/api/src/app/serializers/Room/BedroomSerializer.ts b/api/src/app/serializers/Room/BedroomSerializer.ts
+index 09b4589..ea93889 100644
+--- a/api/src/app/serializers/Room/BedroomSerializer.ts
++++ b/api/src/app/serializers/Room/BedroomSerializer.ts
+@@ -1,8 +1,27 @@
+ import Bedroom from '@models/Room/Bedroom.js'
+-import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import { ObjectSerializer } from '@rvoh/dream'
++import {
++  RoomForGuestsSerializer,
++  RoomSerializer,
++  RoomSummarySerializer,
++} from '@serializers/RoomSerializer.js'
++import { BedTypesEnum, BedTypesEnumValues, LocalesEnum } from '@src/types/db.js'
++import i18n from '@src/utils/i18n.js'
+ 
+ export const RoomBedroomSummarySerializer = (roomBedroom: Bedroom) =>
+   RoomSummarySerializer(Bedroom, roomBedroom)
+ 
+ export const RoomBedroomSerializer = (roomBedroom: Bedroom) =>
+   RoomSerializer(Bedroom, roomBedroom).attribute('bedTypes')
++
++export const BedTypeSerializer = (bedType: BedTypesEnum, passthrough: { locale: LocalesEnum }) =>
++  ObjectSerializer({ bedType }, passthrough)
++    .attribute('bedType', { as: 'value', openapi: { type: 'string', enum: BedTypesEnumValues } })
++    .customAttribute('label', () => i18n(passthrough.locale, `rooms.Bedroom.bedTypes.${bedType}`), {
++      openapi: 'string',
++    })
++
++export const RoomBedroomForGuestsSerializer = (roomBedroom: Bedroom, passthrough: { locale: LocalesEnum }) =>
++  RoomForGuestsSerializer(Bedroom, roomBedroom, passthrough).rendersMany('bedTypes', {
++    serializer: BedTypeSerializer,
++  })
+diff --git a/api/src/app/serializers/Room/DenSerializer.ts b/api/src/app/serializers/Room/DenSerializer.ts
+index 86500fa..d1668e1 100644
+--- a/api/src/app/serializers/Room/DenSerializer.ts
++++ b/api/src/app/serializers/Room/DenSerializer.ts
+@@ -1,6 +1,14 @@
+ import Den from '@models/Room/Den.js'
+-import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import {
++  RoomForGuestsSerializer,
++  RoomSerializer,
++  RoomSummarySerializer,
++} from '@serializers/RoomSerializer.js'
++import { LocalesEnum } from '@src/types/db.js'
+ 
+ export const RoomDenSummarySerializer = (roomDen: Den) => RoomSummarySerializer(Den, roomDen)
+ 
+ export const RoomDenSerializer = (roomDen: Den) => RoomSerializer(Den, roomDen)
++
++export const RoomDenForGuestsSerializer = (roomDen: Den, passthrough: { locale: LocalesEnum }) =>
++  RoomForGuestsSerializer(Den, roomDen, passthrough)
+diff --git a/api/src/app/serializers/Room/KitchenSerializer.ts b/api/src/app/serializers/Room/KitchenSerializer.ts
+index 618c25a..e48aa59 100644
+--- a/api/src/app/serializers/Room/KitchenSerializer.ts
++++ b/api/src/app/serializers/Room/KitchenSerializer.ts
+@@ -1,8 +1,27 @@
+ import Kitchen from '@models/Room/Kitchen.js'
+-import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import { ObjectSerializer } from '@rvoh/dream'
++import {
++  RoomForGuestsSerializer,
++  RoomSerializer,
++  RoomSummarySerializer,
++} from '@serializers/RoomSerializer.js'
++import { ApplianceTypesEnum, ApplianceTypesEnumValues, LocalesEnum } from '@src/types/db.js'
++import i18n from '@src/utils/i18n.js'
+ 
+ export const RoomKitchenSummarySerializer = (roomKitchen: Kitchen) =>
+   RoomSummarySerializer(Kitchen, roomKitchen)
+ 
+ export const RoomKitchenSerializer = (roomKitchen: Kitchen) =>
+   RoomSerializer(Kitchen, roomKitchen).attribute('appliances')
++
++export const ApplianceSerializer = (appliance: ApplianceTypesEnum, passthrough: { locale: LocalesEnum }) =>
++  ObjectSerializer({ appliance }, passthrough)
++    .attribute('appliance', { as: 'value', openapi: { type: 'string', enum: ApplianceTypesEnumValues } })
++    .customAttribute('label', () => i18n(passthrough.locale, `rooms.Kitchen.appliances.${appliance}`), {
++      openapi: 'string',
++    })
++
++export const RoomKitchenForGuestsSerializer = (roomKitchen: Kitchen, passthrough: { locale: LocalesEnum }) =>
++  RoomForGuestsSerializer(Kitchen, roomKitchen, passthrough).rendersMany('appliances', {
++    serializer: ApplianceSerializer,
++  })
+diff --git a/api/src/app/serializers/Room/LivingRoomSerializer.ts b/api/src/app/serializers/Room/LivingRoomSerializer.ts
+index 5a1ea3a..1d99426 100644
+--- a/api/src/app/serializers/Room/LivingRoomSerializer.ts
++++ b/api/src/app/serializers/Room/LivingRoomSerializer.ts
+@@ -1,8 +1,18 @@
+ import LivingRoom from '@models/Room/LivingRoom.js'
+-import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import {
++  RoomForGuestsSerializer,
++  RoomSerializer,
++  RoomSummarySerializer,
++} from '@serializers/RoomSerializer.js'
++import { LocalesEnum } from '@src/types/db.js'
+ 
+ export const RoomLivingRoomSummarySerializer = (roomLivingRoom: LivingRoom) =>
+   RoomSummarySerializer(LivingRoom, roomLivingRoom)
+ 
+ export const RoomLivingRoomSerializer = (roomLivingRoom: LivingRoom) =>
+   RoomSerializer(LivingRoom, roomLivingRoom)
++
++export const RoomLivingRoomForGuestsSerializer = (
++  roomLivingRoom: LivingRoom,
++  passthrough: { locale: LocalesEnum },
++) => RoomForGuestsSerializer(LivingRoom, roomLivingRoom, passthrough)
+diff --git a/api/src/app/serializers/RoomSerializer.ts b/api/src/app/serializers/RoomSerializer.ts
+index fba36c5..eb278df 100644
+--- a/api/src/app/serializers/RoomSerializer.ts
++++ b/api/src/app/serializers/RoomSerializer.ts
+@@ -1,5 +1,7 @@
+ import Room from '@models/Room.js'
+ import { DreamSerializer } from '@rvoh/dream'
++import { LocalesEnum } from '@src/types/db.js'
++import i18n from '@src/utils/i18n.js'
+ 
+ export const RoomSummarySerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
+   DreamSerializer(StiChildClass ?? Room, room)
+@@ -9,3 +11,16 @@ export const RoomSummarySerializer = <T extends Room>(StiChildClass: typeof Room
+ 
+ export const RoomSerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
+   RoomSummarySerializer(StiChildClass, room).attribute('deletedAt')
++
++export const RoomForGuestsSerializer = <T extends Room>(
++  StiChildClass: typeof Room,
++  room: T,
++  passthrough: { locale: LocalesEnum },
++) =>
++  DreamSerializer(StiChildClass ?? Room, room)
++    .attribute('id')
++    .attribute('type')
++    .customAttribute('displayType', () => i18n(passthrough.locale, `rooms.type.${room.type}`), {
++      openapi: 'string',
++    })
++    .delegatedAttribute<Room, 'currentLocalizedText'>('currentLocalizedText', 'title', { openapi: 'string' })
+diff --git a/api/src/conf/locales/en.ts b/api/src/conf/locales/en.ts
+index ae21584..1e720ed 100644
+--- a/api/src/conf/locales/en.ts
++++ b/api/src/conf/locales/en.ts
+@@ -1,3 +1,52 @@
+ export default {
+-  // add your application's localizable text in here
++  places: {
++    style: {
++      cottage: 'cottage',
++      cabin: 'cabin',
++      lean_to: 'lean to',
++      treehouse: 'treehouse',
++      tent: 'tent',
++      cave: 'cave',
++      dump: 'dump',
++    },
++  },
++
++  rooms: {
++    type: {
++      Bathroom: 'bathroom',
++      Bedroom: 'bedroom',
++      Kitchen: 'kitchen',
++      Den: 'den',
++      LivingRoom: 'living room',
++    },
++
++    Bathroom: {
++      bathOrShowerStyles: {
++        bath: 'bath',
++        shower: 'shower',
++        bath_and_shower: 'bath and shower',
++        none: 'none',
++      },
++    },
++
++    Bedroom: {
++      bedTypes: {
++        twin: 'twin',
++        bunk: 'bunk',
++        queen: 'queen',
++        king: 'king',
++        cot: 'cot',
++        sofabed: 'sofabed',
++      },
++    },
++
++    Kitchen: {
++      appliances: {
++        stove: 'stove',
++        oven: 'oven',
++        microwave: 'microwave',
++        dishwasher: 'dishwasher',
++      },
++    },
++  },
+ }
+diff --git a/api/src/conf/locales/es.ts b/api/src/conf/locales/es.ts
+new file mode 100644
+index 0000000..25eb876
+--- /dev/null
++++ b/api/src/conf/locales/es.ts
+@@ -0,0 +1,52 @@
++export default {
++  places: {
++    style: {
++      cottage: 'cabaña',
++      cabin: 'cabaña rústica',
++      lean_to: 'refugio',
++      treehouse: 'casa del árbol',
++      tent: 'tienda de campaña',
++      cave: 'cueva',
++      dump: 'basurero',
++    },
++  },
++
++  rooms: {
++    type: {
++      Bathroom: 'baño',
++      Bedroom: 'dormitorio',
++      Kitchen: 'cocina',
++      Den: 'estudio',
++      LivingRoom: 'sala de estar',
++    },
++
++    Bathroom: {
++      bathOrShowerStyles: {
++        bath: 'bañera',
++        shower: 'ducha',
++        bath_and_shower: 'bañera y ducha',
++        none: 'ninguno',
++      },
++    },
++
++    Bedroom: {
++      bedTypes: {
++        twin: 'individual',
++        bunk: 'litera',
++        queen: 'matrimonial',
++        king: 'king',
++        cot: 'catre',
++        sofabed: 'sofá cama',
++      },
++    },
++
++    Kitchen: {
++      appliances: {
++        stove: 'estufa',
++        oven: 'horno',
++        microwave: 'microondas',
++        dishwasher: 'lavavajillas',
++      },
++    },
++  },
++}
+diff --git a/api/src/conf/locales/index.ts b/api/src/conf/locales/index.ts
+index b798cf2..82b076e 100644
+--- a/api/src/conf/locales/index.ts
++++ b/api/src/conf/locales/index.ts
+@@ -1,5 +1,7 @@
+ import en from '@conf/locales/en.js'
++import es from '@conf/locales/es.js'
+ 
+ export default {
+   en,
++  es,
+ }
+diff --git a/api/src/conf/routes.ts b/api/src/conf/routes.ts
+index e0981a7..c99ddc9 100644
+--- a/api/src/conf/routes.ts
++++ b/api/src/conf/routes.ts
+@@ -3,14 +3,19 @@ import { PsychicRouter } from '@rvoh/psychic'
+ 
+ export default function routes(r: PsychicRouter) {
+   r.namespace('v1', r => {
++    r.namespace('guest', r => {
++      r.resources('places', { only: ['index', 'show'] })
++      // Alternatively, could have written the routes explicitly:
++      // r.get('places', V1GuestPlacesController, 'index')
++      // r.get('places/:id', V1GuestPlacesController, 'show')
++    })
++
+     r.namespace('host', r => {
+       r.resources('localized-texts', { only: ['update', 'destroy'] })
+ 
+       r.resources('places', r => {
+         r.resources('rooms')
+-
+       })
+-
+     })
+   })
+ 
+diff --git a/api/src/utils/i18n.ts b/api/src/utils/i18n.ts
+index c99a20e..b5ec778 100644
+--- a/api/src/utils/i18n.ts
++++ b/api/src/utils/i18n.ts
+@@ -1,9 +1,9 @@
+ import locales from '@conf/locales/index.js'
+ import { I18nProvider } from '@rvoh/psychic/system'
++import { LocalesEnumValues } from '@src/types/db.js'
+ 
+-const SUPPORTED_LOCALES = ['en-US']
+ export function supportedLocales() {
+-  return SUPPORTED_LOCALES
++  return LocalesEnumValues
+ }
+ 
+ export default I18nProvider.provide(locales, 'en')
+
+```

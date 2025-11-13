@@ -1,0 +1,86 @@
+---
+title: Rename generated RoomLivingRoom to LivingRoom
+---
+
+# Rename generated RoomLivingRoom to LivingRoom
+
+## Git Log
+
+```
+commit d412f83f61eef9d6fbde7e7486c55387ca9807a4
+Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
+Date:   Sat Nov 8 11:53:50 2025 -0600
+
+    Rename generated RoomLivingRoom to LivingRoom
+    
+    ```console
+    yarn psy sync
+    ```
+
+```
+
+## Diff from 3da43ab
+
+```diff
+diff --git a/api/spec/factories/Room/LivingRoomFactory.ts b/api/spec/factories/Room/LivingRoomFactory.ts
+index 501cde5..41b9807 100644
+--- a/api/spec/factories/Room/LivingRoomFactory.ts
++++ b/api/spec/factories/Room/LivingRoomFactory.ts
+@@ -1,8 +1,8 @@
++import LivingRoom from '@models/Room/LivingRoom.js'
+ import { UpdateableProperties } from '@rvoh/dream/types'
+-import RoomLivingRoom from '@models/Room/LivingRoom.js'
+ 
+-export default async function createRoomLivingRoom(attrs: UpdateableProperties<RoomLivingRoom> = {}) {
+-  return await RoomLivingRoom.create({
++export default async function createRoomLivingRoom(attrs: UpdateableProperties<LivingRoom> = {}) {
++  return await LivingRoom.create({
+     ...attrs,
+   })
+ }
+diff --git a/api/src/app/models/Room/LivingRoom.ts b/api/src/app/models/Room/LivingRoom.ts
+index feaca2f..f6aaa38 100644
+--- a/api/src/app/models/Room/LivingRoom.ts
++++ b/api/src/app/models/Room/LivingRoom.ts
+@@ -1,16 +1,15 @@
+-import { Decorators, STI } from '@rvoh/dream'
+-import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import Room from '@models/Room.js'
++import { Decorators, STI } from '@rvoh/dream'
++import { DreamSerializers } from '@rvoh/dream/types'
+ 
+-const deco = new Decorators<typeof RoomLivingRoom>()
++const deco = new Decorators<typeof LivingRoom>()
+ 
+ @STI(Room)
+-export default class RoomLivingRoom extends Room {
+-  public override get serializers(): DreamSerializers<RoomLivingRoom> {
++export default class LivingRoom extends Room {
++  public override get serializers(): DreamSerializers<LivingRoom> {
+     return {
+       default: 'Room/LivingRoomSerializer',
+       summary: 'Room/LivingRoomSummarySerializer',
+     }
+   }
+-
+ }
+diff --git a/api/src/app/serializers/Room/LivingRoomSerializer.ts b/api/src/app/serializers/Room/LivingRoomSerializer.ts
+index e44755e..5a1ea3a 100644
+--- a/api/src/app/serializers/Room/LivingRoomSerializer.ts
++++ b/api/src/app/serializers/Room/LivingRoomSerializer.ts
+@@ -1,8 +1,8 @@
++import LivingRoom from '@models/Room/LivingRoom.js'
+ import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
+-import RoomLivingRoom from '@models/Room/LivingRoom.js'
+ 
+-export const RoomLivingRoomSummarySerializer = (roomLivingRoom: RoomLivingRoom) =>
+-  RoomSummarySerializer(RoomLivingRoom, roomLivingRoom)
++export const RoomLivingRoomSummarySerializer = (roomLivingRoom: LivingRoom) =>
++  RoomSummarySerializer(LivingRoom, roomLivingRoom)
+ 
+-export const RoomLivingRoomSerializer = (roomLivingRoom: RoomLivingRoom) =>
+-  RoomSerializer(RoomLivingRoom, roomLivingRoom)
++export const RoomLivingRoomSerializer = (roomLivingRoom: LivingRoom) =>
++  RoomSerializer(LivingRoom, roomLivingRoom)
+
+```
