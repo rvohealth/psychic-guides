@@ -1,0 +1,39 @@
+# paramSafeColumns / paramUnsafeColumns
+
+`paramSafeColumns`/`paramUnsafeColumns` work in conjunction with `PsychicController#paramsFor` to limit what attributes will be set from params. This concept is similar to Rails' "strong params", but implemented at the model level and with different defaults.
+
+By default, `PsychicController#paramsFor` will never include the following attributes (this cannot be overridden by `paramSafeColumms` or `paramUnsafeColumns`):
+
+- the primary key (defaults to `id`)
+- the created at field (defaults to `createdAt`)
+- the updated at field (defaults to `updatedAt`)
+- the deleted at field (defaults to `deletedAt`)
+- the type field of an STI model
+- foreign keys of BelongsTo associations
+- the polymorphic type field of polymorphic BelongsTo associations
+
+## paramSafeColumns
+
+You can restrict the attributes that may be modified to _only_ the explicitly specified columns by creating a `paramSafeColumns` getter that returns the columns that may be safely updated:
+
+```ts
+class CoachingSession extends ApplicationModel {
+  public get paramSafeColumns(): DreamColumnNames<CoachingSession>[] {
+    return ['rated', 'meetingIntent', 'topic']
+  }
+}
+```
+
+Adding the default restricted column names to `paramSafeColumns` will have no effect.
+
+## paramUnsafeColumns
+
+Alternately, you can specify additional individual attributes (in addition to the defaults), that may _not_ be modified by adding a `paramSafeColumns` getter that returns the names of columns that may not be updated:
+
+```ts
+class Friend extends ApplicationModel {
+  public get paramUnsafeColumns(): DreamColumnNames<Friend>[] {
+    return ['bff']
+  }
+}
+```
