@@ -103,7 +103,7 @@ TZ=UTC
 DREAM_PARALLEL_TESTS=3
 ```
 
-Opening these files up, you should see database credentials for your application. By default, the DB_USER _should_ be the username of your current user. This is because when you provision a new postgres database using homebrew, it automatically creates a new DB user with the username on your machine. If you are provisioning your postgres version a different way, you may need to adjust the `DB_USER` value found in both of these files. Otherwise, let's move on.
+Opening these files up, you should see database credentials for your application. By default, the DB*USER \_should* be the username of your current user. This is because when you provision a new postgres database using homebrew, it automatically creates a new DB user with the username on your machine. If you are provisioning your postgres version a different way, you may need to adjust the `DB_USER` value found in both of these files. Otherwise, let's move on.
 
 ### Setting up your database
 
@@ -131,7 +131,7 @@ This command will create new postgres databases for your test and development en
 Since we are creating a blog, we are going to need at minimum a users and blogs table in our database, so that we can allow users to sign up, sign in, and create new blog posts. To get started, let's generate the user model and begin building out the scaffolding for authentication.
 
 ```sh
-yarn psy g:dream User email:string passwordDigest:string
+yarn psy g:model User email:string passwordDigest:string
 ```
 
 This will spit out a model, spec, factory, serializer, and migration for the new User model.
@@ -217,7 +217,7 @@ With the package added, let's first write a spec to cover the new behavior for o
 // api/spec/unit/models/User.spec.ts
 
 import argon2 from 'argon2'
-import createUser from "../../factories/UserFactory.js"
+import createUser from '../../factories/UserFactory.js'
 
 describe('User', () => {
   describe('upon save', () => {
@@ -339,7 +339,7 @@ export default class User extends ApplicationModel {
     return await argon2.verify(this.passwordDigest, password)
   }
 }
- ```
+```
 
 Running specs again, we should be passing now:
 
@@ -349,7 +349,6 @@ Running specs again, we should be passing now:
   ✓ User > #checkPassword > returns true with a valid password 142ms
   ✓ User > #checkPassword > returns false with an invalid password 109ms
 ```
-
 
 ## Add Sign up functionality
 
@@ -427,7 +426,7 @@ With react-router installed, let's configure react router in our `client/src/mai
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from "react-router" // add this line
+import { BrowserRouter } from 'react-router' // add this line
 import './index.css'
 import App from './App.tsx'
 
@@ -437,7 +436,7 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <App />
     </BrowserRouter>
-  </StrictMode>,
+  </StrictMode>
 )
 ```
 
@@ -446,7 +445,7 @@ Next, let's add a few new pages to our app. We will start with a sign up page. I
 ```ts
 // client/src/pages/unauthed/SignupPage.tsx
 
-import { useState } from "react"
+import { useState } from 'react'
 
 export default function SignupPage() {
   const [email, setEmail] = useState('')
@@ -455,12 +454,14 @@ export default function SignupPage() {
   return (
     <div>
       <input id="email" onChange={e => setEmail(e.target.value)} />
-      <input id="password" onChange={e => setPassword(e.target.value)}/>
+      <input id="password" onChange={e => setPassword(e.target.value)} />
       <button
         onClick={() => {
           // submit login
         }}
-      >Submit</button>
+      >
+        Submit
+      </button>
     </div>
   )
 }
@@ -471,7 +472,7 @@ Let's also add a home page, so that we have a landing page that can navigate to 
 ```ts
 // client/src/pages/unauthed/HomePage.tsx
 
-import { Link } from "react-router"
+import { Link } from 'react-router'
 
 export default function HomePage() {
   return (
@@ -487,7 +488,7 @@ With these two pages in place, we can now update the `App.tsx` file to incorpora
 ```ts
 // client/src/App.tsx
 
-import { Route, Routes } from "react-router"
+import { Route, Routes } from 'react-router'
 import HomePage from './pages/unauthed/HomePage'
 import SignupPage from './pages/unauthed/SignupPage'
 
@@ -495,24 +496,20 @@ import './App.css'
 
 function App() {
   // TODO: add ability to detect authenticated users
-  return (
-    <UnauthedApp />
-  )
+  return <UnauthedApp />
 }
 
 function UnauthedApp() {
   return (
     <Routes>
-      <Route path='/' element={<HomePage />} />
-      <Route path='/signup' element={<SignupPage />} />
+      <Route path="/" element={<HomePage />} />
+      <Route path="/signup" element={<SignupPage />} />
     </Routes>
   )
 }
 
 function AuthedApp() {
-  return (
-    <Routes></Routes>
-  )
+  return <Routes></Routes>
 }
 
 export default App
@@ -571,10 +568,10 @@ This will generate both a controller and spec for us. Let's start by editing the
 ```ts
 // api/spec/unit/controllers/AuthSessionController.spec.ts
 
-import { OpenapiSpecRequest } from "@rvoh/psychic-spec-helpers"
-import { paths } from "../../../src/types/openapi/validation.openapi.js"
-import { PsychicServer } from "@rvoh/psychic"
-import createUser from "../../factories/UserFactory.js"
+import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
+import { paths } from '../../../src/types/openapi/validation.openapi.js'
+import { PsychicServer } from '@rvoh/psychic'
+import createUser from '../../factories/UserFactory.js'
 
 const request = new OpenapiSpecRequest<paths>()
 
@@ -709,8 +706,8 @@ export default class AuthSessionController extends AuthedController {
     status: 204,
     tags: openApiTags,
     requestBody: {
-      only: ['email', 'password']
-    }
+      only: ['email', 'password'],
+    },
   })
   public async signUp() {
     const email = this.castParam('email', 'string')
@@ -769,7 +766,7 @@ With redux installed, we can begin integrating into our client application. We w
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Provider } from 'react-redux' // add this line
-import { BrowserRouter } from "react-router"
+import { BrowserRouter } from 'react-router'
 import App from './App.tsx'
 import { store } from './store.ts'
 
@@ -783,7 +780,7 @@ createRoot(document.getElementById('root')!).render(
         <App />
       </BrowserRouter>
     </Provider>
-  </StrictMode>,
+  </StrictMode>
 )
 ```
 
@@ -799,7 +796,7 @@ interface AppState {
 }
 
 const initialState: AppState = {
-  authed: false
+  authed: false,
 }
 
 export const appSlice = createSlice({
@@ -808,8 +805,8 @@ export const appSlice = createSlice({
   reducers: {
     setAuthed: (state, action: PayloadAction<boolean>) => {
       state.authed = action.payload
-    }
-  }
+    },
+  },
 })
 
 export const { setAuthed } = appSlice.actions
@@ -828,7 +825,7 @@ import appReducer from './reducers/appReducer'
 export const store = configureStore({
   reducer: {
     app: appReducer,
-  }
+  },
 })
 
 // Get the type of our store variable
@@ -965,10 +962,7 @@ export default function viteEnvValue(envVar: ViteEnvVar) {
   return (import.meta as unknown as { env: Record<ViteEnvVar, string> }).env[envVar]
 }
 
-export type ViteEnvVar =
-  | 'VITE_PSYCHIC_ENV'
-  | 'VITE_API_HOST'
-
+export type ViteEnvVar = 'VITE_PSYCHIC_ENV' | 'VITE_API_HOST'
 ```
 
 With that env helper in place, we can now use it to determine if test, and then return a different base url, like so:
@@ -993,9 +987,9 @@ With this all in place, we should be ready to start utilizing our redux bindings
 ```ts
 // client/src/pages/unauthed/SignupPage.tsx
 
-import { useState } from "react"
-import { usePostSignUpMutation } from "../../api/myblogApi" // add this import
-import { useNavigate } from "react-router"
+import { useState } from 'react'
+import { usePostSignUpMutation } from '../../api/myblogApi' // add this import
+import { useNavigate } from 'react-router'
 
 export default function SignupPage() {
   const navigate = useNavigate()
@@ -1006,14 +1000,16 @@ export default function SignupPage() {
   return (
     <div>
       <input id="email" onChange={e => setEmail(e.target.value)} />
-      <input id="password" onChange={e => setPassword(e.target.value)}/>
+      <input id="password" onChange={e => setPassword(e.target.value)} />
       <button
         onClick={async () => {
           // add the below two lines
-          await signUp({ body: { email, password }})
+          await signUp({ body: { email, password } })
           navigate('/signin')
         }}
-      >Submit</button>
+      >
+        Submit
+      </button>
     </div>
   )
 }
@@ -1024,7 +1020,7 @@ This will set us up to call to our backend and sign up the user. Let's also set 
 ```ts
 // client/src/pages/unauthed/SigninPage.tsx
 
-import { useState } from "react"
+import { useState } from 'react'
 
 export default function SigninPage() {
   const [email, setEmail] = useState('')
@@ -1035,10 +1031,12 @@ export default function SigninPage() {
       <h1>Sign in</h1>
 
       <input id="email" onChange={e => setEmail(e.target.value)} />
-      <input id="password" onChange={e => setPassword(e.target.value)}/>
+      <input id="password" onChange={e => setPassword(e.target.value)} />
       <button
-          // submit login
-      >Submit</button>
+      // submit login
+      >
+        Submit
+      </button>
     </div>
   )
 }
@@ -1135,7 +1133,7 @@ This is because we have not hooked up a Sign in link to the home page yet. Let's
 ```ts
 // client/src/pages/unauthed/HomePage.tsx
 
-import { Link } from "react-router"
+import { Link } from 'react-router'
 
 // add signin link below
 export default function HomePage() {
@@ -1535,7 +1533,7 @@ describe('Api/V1/PostsController', () => {
           id: post.id,
           title: post.title,
           body: post.body,
-        }),
+        })
       )
     })
 
@@ -1557,10 +1555,13 @@ describe('Api/V1/PostsController', () => {
     }
 
     it('creates a Post for this User', async () => {
-      const { body } = await subject({
-        title: 'The Post title',
-        body: 'The Post body',
-      }, 201)
+      const { body } = await subject(
+        {
+          title: 'The Post title',
+          body: 'The Post body',
+        },
+        201
+      )
 
       const post = await user.associationQuery('posts').firstOrFail()
       expect(post.title).toEqual('The Post title')
@@ -1571,7 +1572,7 @@ describe('Api/V1/PostsController', () => {
           id: post.id,
           title: post.title,
           body: post.body,
-        }),
+        })
       )
     })
   })
@@ -1591,10 +1592,14 @@ describe('Api/V1/PostsController', () => {
     it('updates the Post', async () => {
       const post = await createPost({ user })
 
-      await subject(post, {
-        title: 'Updated Post title',
-        body: 'Updated Post body',
-      }, 204)
+      await subject(
+        post,
+        {
+          title: 'Updated Post title',
+          body: 'Updated Post body',
+        },
+        204
+      )
 
       await post.reload()
       expect(post.title).toEqual('Updated Post title')
@@ -1607,10 +1612,14 @@ describe('Api/V1/PostsController', () => {
         const originalTitle = post.title
         const originalBody = post.body
 
-        await subject(post, {
-          title: 'Updated Post title',
-          body: 'Updated Post body',
-        }, 404)
+        await subject(
+          post,
+          {
+            title: 'Updated Post title',
+            body: 'Updated Post body',
+          },
+          404
+        )
 
         await post.reload()
         expect(post.title).toEqual(originalTitle)
@@ -1645,7 +1654,6 @@ describe('Api/V1/PostsController', () => {
     })
   })
 })
-
 ```
 
 Let's first run our migrations to capture the new model
@@ -2310,7 +2318,6 @@ describe('create a Post', () => {
     expect(post.body).toEqual('my body')
   })
 })
-
 ```
 
 with this in place, running the spec gives us, predictable, an error about a missing link "New post"
@@ -2552,7 +2559,6 @@ export default function PostForm({ post }: { post?: Post }) {
     </div>
   )
 }
-
 ```
 
 Next, let's go update the existing new page to leverage this form:
@@ -2668,7 +2674,6 @@ describe('delete a Post', () => {
 
 Running this will give us a predictable error:
 
-
 ```sh
  ❯ spec/features/posts/delete.spec.ts (1 test | 1 failed) 8120ms
    × delete a Post > allows a user to delete a Post 6135ms
@@ -2697,7 +2702,6 @@ Error: Expected page to have clickable link with matching text: "Delete"
 ```
 
 Let's add the missing Delete button and wire it up to solve for this:
-
 
 ```ts
 // client/src/pages/authed/posts/PostShowPage.tsx
