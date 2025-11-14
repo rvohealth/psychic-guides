@@ -1,6 +1,6 @@
 # preloadFor
 
-Simlar to [leftJoinPreloadFor](/docs/models/querying/leftJoinPreloadFor), the preloadFor method enables you to side-load all associations bound to the load chain for a particular serializer. This means that, if a serializer in your system has a nested chain of renderable associations, you can preload them all safely with the same call.
+The preloadFor method enables you to side-load all associations bound to the load chain for a particular serializer. This means that, if a serializer in your system has a nested chain of renderable associations, you can preload them all safely with the same call.
 
 To tap into this functionality, simply provide a valid serializer key as the first argument, like so:
 
@@ -13,17 +13,13 @@ Using the provided serializer key, Dream will extrapolate the entire preload cha
 for clarification, this means that you can have nested layers of associations, and they can all be brought in with a single method call, which means that, given the following serializer chain:
 
 ```ts
-const UserSerializer = (user: User) => DreamSerializer(User, user)
-  .rendersMany('posts')
+const UserSerializer = (user: User) => DreamSerializer(User, user).rendersMany('posts')
 
-const PostSerializer = (post: Post) => DreamSerializer(Post, post)
-  .rendersMany('comments')
-  .rendersMany('likes')
-  .rendersMany('similarPosts')
+const PostSerializer = (post: Post) =>
+  DreamSerializer(Post, post).rendersMany('comments').rendersMany('likes').rendersMany('similarPosts')
 
-const CommentSerializer = (post: Post) => DreamSerializer(Post, post)
-  .rendersMany('images')
-  .rendersMany('videos')
+const CommentSerializer = (post: Post) =>
+  DreamSerializer(Post, post).rendersMany('images').rendersMany('videos')
 
 class User extends ApplicationModel {
   public get serializers() {
@@ -39,8 +35,7 @@ the following two expressions are equivalent:
 
 ```ts
 // manually loading everything necessary for serialization
-const user = await User
-  .preload('posts', 'comments', ['images', 'videos'])
+const user = await User.preload('posts', 'comments', ['images', 'videos'])
   .preload('posts', ['likes', 'similarPosts'])
   .firstOrFail()
 
@@ -56,13 +51,13 @@ You may come accross edge-case associations in your preload chain which you must
 
 ```ts
 const users = await User.preloadFor('detail', (dreamClass, associationName) => {
-  if (dreamClass.typeof(Post) && associationName === 'currentPosts') return { and: { userId: user.id }}
+  if (dreamClass.typeof(Post) && associationName === 'currentPosts') return { and: { userId: user.id } }
   if (dreamClass.typeof(Image) && associationName === 'legacyImage') return 'omit'
 }).firstOrFail()
 ```
 
 The modifierFn handles return values in a unique way, enabling you to inject into a position within a preload statement. The modifierFn is called for each association found, and if anything is returned, the encapsulating preload execution context will check the return value:
 
-* if the return value is the word `omit` as a string, it will intentionally omit the current association from the preload clause.
-* if the return value is a join clause, such as `{ and: { userId: 123 }}`, it will be applied to that particular position in the preload statement.
-* if the value is falsey, Dream will do nothing and move onto the next association in the preload statement
+- if the return value is the word `omit` as a string, it will intentionally omit the current association from the preload clause.
+- if the return value is a join clause, such as `{ and: { userId: 123 }}`, it will be applied to that particular position in the preload statement.
+- if the value is falsey, Dream will do nothing and move onto the next association in the preload statement
