@@ -31,9 +31,7 @@ export default class V1HostPlacesController extends V1HostBaseController {
   }
 
   private async place() {
-    return await this.currentHost
-      .associationQuery('places')
-      .findOrFail(this.castParam('id', 'string'))
+    return await this.currentHost.associationQuery('places').findOrFail(this.castParam('id', 'string'))
   }
 }
 ```
@@ -79,19 +77,18 @@ export default class V1HostPlacesController extends V1HostBaseController {
 The castParam method is also able to interpret openapi shapes, and will return types data back to you based on the provided shape.
 
 ```ts
-  const data = this.castParam('myData', {
-    type: 'object',
-    properties: {
-      a: number,
-      b: { oneOf: [{ type: 'string' }, { type: 'number' }] }
-    }
-  })
-  data.a // number | undefined
-  data.b // string | number | undefined
+const data = this.castParam('myData', {
+  type: 'object',
+  properties: {
+    a: number,
+    b: { oneOf: [{ type: 'string' }, { type: 'number' }] },
+  },
+})
+data.a // number | undefined
+data.b // string | number | undefined
 ```
 
 When using castParam with openapi shapes, params will automatically be coerced by the Ajv library.
-
 
 ## paramsFor
 
@@ -105,10 +102,7 @@ export default class V1HostPlacesController extends V1HostBaseController {
     description: 'Create a Place',
   })
   public async create() {
-    let place = await this.currentHost.createAssociation(
-      'places',
-      this.paramsFor(Place)
-    )
+    let place = await this.currentHost.createAssociation('places', this.paramsFor(Place))
     if (place.isPersisted) place = await place.loadFor('default').execute()
     this.created(place)
   }
@@ -117,17 +111,15 @@ export default class V1HostPlacesController extends V1HostBaseController {
 
 This will automatically bring in all params for the Place model, barring generated fields like `id`, `createdAt`, `updatedAt`, `deletedAt`, or any belongs-to foreign keys or foreign key types.
 
-The attributes that can be updated via params can be further restricted by providing a `paramSafeColumns` getter in any Dream model:
+The attributes that can be updated via params can be further restricted by providing a `paramSafeColumns` getter in any Dream model see [paramSafeColumns](/docs/models/paramSafeColumns):
 
 ```ts
 export default class User extends ApplicationModel {
-  public get paramSafeColumns() {
+  public get paramSafeColumns(): DreamColumnNames<User>[] {
     return ['email'] as const
   }
 }
 ```
-
-Note that `paramSafeColumns` cannot be used to allow setting of generated columns (`id`, `createdAt`, `updatedAt`, `deletedAt`, or any belongs-to foreign keys or foreign key types) via params.
 
 The paramsFor method also accepts the ability to customize which params should be allowed, enabling you to only bring in specific params without needing to cast their types:
 
@@ -137,24 +129,6 @@ export default class V1HostPlacesController extends V1HostBaseController {
     let place = await this.currentHost.createAssociation(
       'places',
       this.paramsFor(Place, { only: ['name', 'description'] })
-    )
-    if (place.isPersisted) place = await place.loadFor('default').execute()
-    this.created(place)
-  }
-}
-```
-
-Additionally, the `including` option can be provided to enable columns to flow through that would otherwise be blocked, such as foreign keys, primary keys, timestamps, etc...
-
-```ts
-export default class V1HostPlacesController extends V1HostBaseController {
-  public async create() {
-    let place = await this.currentHost.createAssociation(
-      'places',
-      this.paramsFor(Place, {
-        only: ['name', 'description'],
-        including: ['hostId'],
-      })
     )
     if (place.isPersisted) place = await place.loadFor('default').execute()
     this.created(place)

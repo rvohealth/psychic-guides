@@ -217,20 +217,22 @@ export default class UsersController extends PsychicController {
 }
 ```
 
-Tapping into the `including` arg, we can explicitly provide params that would otherwise be excluded (i.e. foreign keys, primary keys, and timestamp fields).
+Tapping into the `including` arg, we can explicitly provide params that would otherwise be excluded (see [paramSafeColumns](/docs/models/paramSafeColumns)).
 
 ```ts
-export default class PetsController extends PsychicController {
-  @OpenAPI(Pet, {
-    status: 204,
+export default class HostPlacesRoomsController extends HostPlacesBaseController {
+  @OpenAPI(Room, {
+    status: 201,
+    tags: openApiTags,
+    description: 'Create a Room',
     requestBody: {
-      only: ['species'],
-      including: ['userId'],
+      including: ['type'],
     },
   })
   public async create() {
-    await Pet.create(this.paramsFor(Pet, { only: ['species'], including: ['userId'] }))
-    this.noContent()
+    const roomType = this.castParam('type', 'string', { enum: RoomTypesEnumValues })
+    // handle `roomType` explicitly
+    ...
   }
 }
 ```
