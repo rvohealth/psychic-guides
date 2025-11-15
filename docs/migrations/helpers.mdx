@@ -1,0 +1,376 @@
+---
+sidebar_position: 7
+pagination_next: null
+---
+
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
+# migration helpers
+
+Dream provides a set of migration utilities through the `DreamMigrationHelpers` class.
+
+## renameTable
+
+The `renameTable` helper automatically renames both the table and its associated sequence (for tables with serial primary keys).
+
+```ts
+import { DreamMigrationHelpers } from '@rvoh/dream/db'
+import { Kysely } from 'kysely'
+
+export async function up(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.renameTable(db, 'old_table_name', 'new_table_name')
+}
+
+export async function down(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.renameTable(db, 'new_table_name', 'old_table_name')
+}
+```
+
+## Constraints
+
+### addDeferrableUniqueConstraint
+
+Creates deferrable unique constraints, which are required for the `@deco.Sortable` decorator. Deferrable constraints allow constraint checking to be deferred until the end of a transaction, enabling operations that temporarily violate the constraint.
+
+```ts
+import { DreamMigrationHelpers } from '@rvoh/dream/db'
+import { Kysely } from 'kysely'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function up(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.addDeferrableUniqueConstraint(db, 'room_position_contraint', {
+    table: 'rooms',
+    columns: ['place_id', 'position'],
+  })
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function down(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.dropConstraint(db, 'room_position_contraint', { table: 'rooms' })
+}
+```
+
+### dropConstraint
+
+Drops a constraint from a table.
+
+```ts
+import { DreamMigrationHelpers } from '@rvoh/dream/db'
+import { Kysely } from 'kysely'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function up(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.dropConstraint(db, 'room_position_contraint', { table: 'rooms' })
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function down(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.addDeferrableUniqueConstraint(db, 'room_position_contraint', {
+    table: 'rooms',
+    columns: ['place_id', 'position'],
+  })
+}
+```
+
+## Enums
+
+### addEnumValue
+
+Adds a new value to an existing PostgreSQL enum type. This method always performs `if not exists`, so is safe to use repeatedly (e.g., it can safely be omitted from the down migration method and will not cause problems if the migration is rolled back and re-run).
+
+```ts
+export async function up(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.addEnumValue(db, {
+    enumName: 'status_enum',
+    value: 'pending',
+  })
+}
+
+export async function down(): Promise<void> {}
+```
+
+### dropEnumValue
+
+Drop a value from an enum and replace it with null (if a nullable column) or a different enum already present in the enum type, or, if the column is an array, simply remove it.
+
+```ts
+export async function up(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.dropEnumValue(_db, {
+    enumName: 'room_types_enum',
+    value: 'WaterCloset',
+    replacements: [
+      {
+        table: 'rooms',
+        column: 'type',
+        behavior: 'replace',
+        replaceWith: 'Bathroom',
+      },
+    ],
+  })
+}
+
+export async function down(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.addEnumValue(db, {
+    enumName: 'room_types_enum',
+    value: 'WaterCloset',
+  })
+}
+```
+
+```ts
+export async function up(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.dropEnumValue(_db, {
+    enumName: 'appliance_types_enum',
+    value: 'crockpot',
+    replacements: [
+      {
+        table: 'rooms',
+        column: 'appliances',
+        array: true,
+        behavior: 'remove',
+      },
+    ],
+  })
+}
+
+export async function down(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.addEnumValue(db, {
+    enumName: 'appliance_types_enum',
+    value: 'crockpot',
+  })
+}
+```
+
+New enum values cannot be both added and used as a replacement in a single transaction, and new migration files are generally run in a single transaction. To both add a new enum and replace existing values with that new value, use two migration files, and include both `newTransaction` and the `dropEnumValue` in the second file, e.g.:
+
+```console
+yarn psy g:migration add-bathroom-to-room-types
+yarn psy g:migration replace-watercloset-with-bathroom
+```
+
+```ts
+// in <timestamp>-add-bathroom-to-room-types:
+
+export async function up(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.addEnumValue(db, {
+    enumName: 'room_types_enum',
+    value: 'Bathroom',
+  })
+}
+
+export async function down(): Promise<void> {}
+```
+
+```ts
+// in <timestamp>-replace-watercloset-with-bathroom
+
+export async function up(db: Kysely<any>): Promise<void> {
+  DreamMigrationHelpers.newTransaction()
+
+  await DreamMigrationHelpers.dropEnumValue(_db, {
+    enumName: 'room_types_enum',
+    value: 'WaterCloset',
+    replacements: [
+      {
+        table: 'rooms',
+        column: 'type',
+        behavior: 'replace',
+        replaceWith: 'Bathroom',
+      },
+    ],
+  })
+}
+
+export async function down(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.addEnumValue(db, {
+    enumName: 'room_types_enum',
+    value: 'WaterCloset',
+  })
+}
+```
+
+## Extensions
+
+### createExtension
+
+Creates PostgreSQL extensions with optional configuration. Extensions provide additional functionality to your database.
+
+```ts
+export async function up(db: Kysely<any>): Promise<void> {
+  // Create the pg_trgm extension for similarity searching
+  await DreamMigrationHelpers.createExtension(db, 'pg_trgm')
+
+  // Create citext extension for case-insensitive text
+  await DreamMigrationHelpers.createExtension(db, 'citext', {
+    ifNotExists: true,
+    publicSchema: true,
+  })
+}
+
+export async function down(db: Kysely<any>): Promise<void> {
+  await db.schema.dropExtension('pg_trgm').execute()
+  await db.schema.dropExtension('citext').execute()
+}
+```
+
+### Common Extensions
+
+#### pg_trgm
+
+For similarity and fuzzy text searching. Required for using `ops.similarity()`, `ops.wordSimilarity()`, and `ops.strictWordSimilarity()` operators.
+
+```ts
+// Enable similarity searching
+await DreamMigrationHelpers.createExtension(db, 'pg_trgm')
+
+// Then create GIN indexes for better performance
+await DreamMigrationHelpers.createGinIndex(db, 'users_name_gin_index', {
+  table: 'users',
+  column: 'name',
+})
+```
+
+#### citext
+
+For case-insensitive text columns. Useful for email addresses, usernames, and other text fields where case shouldn't matter.
+
+```ts
+// Enable case-insensitive text support
+await DreamMigrationHelpers.createExtension(db, 'citext')
+
+// Then use citext columns in your tables
+await db.schema
+  .createTable('users')
+  .addColumn('id', 'bigserial', col => col.primaryKey())
+  .addColumn('email', 'citext', col => col.unique()) // Case-insensitive emails
+  .addColumn('username', 'citext', col => col.unique()) // Case-insensitive usernames
+  .execute()
+```
+
+With citext columns:
+
+- `'ADMIN@EXAMPLE.COM'` equals `'admin@example.com'`
+- Unique constraints work case-insensitively
+- Queries are automatically case-insensitive
+
+#### uuid-ossp
+
+For UUID generation functions like `uuid_generate_v4()`.
+
+```ts
+await DreamMigrationHelpers.createExtension(db, 'uuid-ossp')
+
+// Use UUID generation in tables
+await db.schema
+  .createTable('sessions')
+  .addColumn('id', 'uuid', col => col.primaryKey().defaultTo(sql`uuid_generate_v4()`))
+  .addColumn('user_id', 'bigint')
+  .execute()
+```
+
+## Indexs
+
+Regular indexes can be easily created using out-of-the-box Kysely functionality:
+
+```ts
+await db.schema
+  .createTable('users')
+  .addColumn('id', 'bigserial', col => col.primaryKey())
+  /**
+   * add a unique index when adding a column using `unique`
+   */
+  .addColumn('email', sql`citext`, col => col.notNull().unique())
+  .execute()
+
+/**
+ * create an index on a column
+ */
+await db.schema.createIndex('rooms_type').on('rooms').column('type').execute()
+
+/**
+ * create a multi-column index
+ */
+await db.schema
+  .createIndex('localized_texts_localizable_for_locale')
+  .on('localized_texts')
+  .columns(['localizable_type', 'localizable_id', 'locale'])
+  /**
+   * make it unique
+   */
+  .unique()
+  .execute()
+```
+
+### createGinIndex
+
+Creates GIN (Generalized Inverted Index) indexes for full-text search.
+
+```ts
+export async function up(db: Kysely<any>): Promise<void> {
+  // First create the required extension
+  await DreamMigrationHelpers.createExtension(db, 'pg_trgm')
+
+  // Then create the GIN index for similarity searching
+  await DreamMigrationHelpers.createGinIndex(db, 'users_name_gin_index', {
+    table: 'users',
+    column: 'name',
+  })
+}
+
+export async function down(db: Kysely<any>): Promise<void> {
+  await db.schema.dropIndex('users_name_gin_index').execute()
+}
+```
+
+GIN indexes dramatically improve performance for similarity searches using `ops.similarity()`, `ops.wordSimilarity()`, and `ops.strictWordSimilarity()`.
+
+## Transactions
+
+### newTransaction
+
+All new migration files are generally run in a single transaction. `newTransaction` commits the migration transaction and starts a new one between the previous migration file and the migration file containing `DreamMigrationHelpers.newTransaction()`.
+
+This is necessary, for example, when check constraints are added that reference enum values also being added.
+
+```ts
+// first migration file: Add enum value
+export async function up(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.addEnumValue(db, {
+    enumName: 'user_status',
+    value: 'premium',
+  })
+}
+
+// second migration file: Add check constraint that depends on the enum value
+export async function up(db: Kysely<any>): Promise<void> {
+  DreamMigrationHelpers.newTransaction() // Ensure enum value is committed first
+
+  await db.schema
+    .alterTable('users')
+    .addCheckConstraint('check_premium_users', sql`status = 'premium' OR credits < 100`)
+    .execute()
+}
+```
+
+## Best Practices
+
+### Include a `down` method
+
+In each migration file, provide a `down` implementation that cleanly reverses the operations in rollback scenarios. (Not necessary for idempotent `up` calls such as [`addEnumValue`](#addenumvalue))
+
+```ts
+export async function up(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.createExtension(db, 'pg_trgm')
+  await DreamMigrationHelpers.createGinIndex(db, 'search_index', {
+    table: 'posts',
+    column: 'title',
+  })
+}
+
+export async function down(db: Kysely<any>): Promise<void> {
+  // Drop in reverse order
+  await db.schema.dropIndex('search_index').execute()
+  // Note: Extensions are typically left in place for down migrations
+  // as other tables might depend on them
+}
+```

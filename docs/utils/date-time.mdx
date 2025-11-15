@@ -22,9 +22,10 @@ const goodDate = CalendarDate.today()
 const formatted = goodDateTime.toFormat('yyyy-MM-dd HH:mm')
 const tomorrow = goodDate.plus({ days: 1 })
 ```
+
 :::
 
-Datetime fields in the database are returned as DateTime objects. DateTime provides robust handling of datetimes, including timezone manipulation, formatting, and math. See [https://moment.github.io/luxon/#/](https://moment.github.io/luxon/#/) for full documentation.
+Database `timestamp` columns are automatically converted to DateTime objects when Dream models are loaded from the database. DateTime provides robust handling of datetimes, including timezone manipulation, formatting, and math. See [the Luxon documentation](https://moment.github.io/luxon/#/) for full details.
 
 Note: in Psychic Projects, import DateTime from @rvoh/dream and do not include @types/luxon in your package.json. We found Luxon types to be incompatible with node16 module resolution and included modified DateTime types within Dream.
 

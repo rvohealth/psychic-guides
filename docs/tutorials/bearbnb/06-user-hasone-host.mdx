@@ -1,0 +1,92 @@
+---
+title: User HasOne Host
+---
+
+# User HasOne Host
+
+## Git Log
+
+```
+commit 83bf27dd072c43f91f3559d80e0621ae89d3b751
+Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
+Date:   Sat Nov 8 10:51:34 2025 -0600
+
+    User HasOne Host
+    
+    Users do _not_ automatically get a Host (special onboarding process for
+    becoming a host).
+    Each User can have at most one Host (unique index on user_id foreign key).
+    Sync association types.
+    
+    ```console
+    yarn psy db:migrate
+    ```
+    
+    If migrations had already been run, after adding
+    a new association, one could run `sync` instead
+    (`db:migrate` runs `sync` implicitly):
+    
+    ```console
+    yarn psy sync
+    ```
+
+```
+
+## Diff from ef1d3cd
+
+```diff
+diff --git a/api/src/app/models/User.ts b/api/src/app/models/User.ts
+index 7de8b28..af66468 100644
+--- a/api/src/app/models/User.ts
++++ b/api/src/app/models/User.ts
+@@ -1,5 +1,6 @@
+ import ApplicationModel from '@models/ApplicationModel.js'
+ import Guest from '@models/Guest.js'
++import Host from '@models/Host.js'
+ import { Decorators } from '@rvoh/dream'
+ import { DreamColumn } from '@rvoh/dream/types'
+ 
+@@ -22,4 +23,7 @@ export default class User extends ApplicationModel {
+ 
+   @deco.HasOne('Guest')
+   public guest: Guest
++
++  @deco.HasOne('Host')
++  public host: Host
+ }
+diff --git a/api/src/db/migrations/1762620628815-create-host.ts b/api/src/db/migrations/1762620628815-create-host.ts
+index d43553d..97a1d3e 100644
+--- a/api/src/db/migrations/1762620628815-create-host.ts
++++ b/api/src/db/migrations/1762620628815-create-host.ts
+@@ -1,24 +1,20 @@
+-import { Kysely, sql } from 'kysely'
++import { Kysely } from 'kysely'
+ 
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ export async function up(db: Kysely<any>): Promise<void> {
+   await db.schema
+     .createTable('hosts')
+     .addColumn('id', 'bigserial', col => col.primaryKey())
+-    .addColumn('user_id', 'bigint', col => col.references('users.id').onDelete('restrict').notNull())
++    .addColumn('user_id', 'bigint', col => col.references('users.id').onDelete('restrict').notNull().unique())
+     .addColumn('created_at', 'timestamp', col => col.notNull())
+     .addColumn('updated_at', 'timestamp', col => col.notNull())
+     .execute()
+ 
+-  await db.schema
+-    .createIndex('hosts_user_id')
+-    .on('hosts')
+-    .column('user_id')
+-    .execute()
++  await db.schema.createIndex('hosts_user_id').on('hosts').column('user_id').execute()
+ }
+ 
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ export async function down(db: Kysely<any>): Promise<void> {
+   await db.schema.dropIndex('hosts_user_id').execute()
+   await db.schema.dropTable('hosts').execute()
+-}
+\ No newline at end of file
++}
+
+```

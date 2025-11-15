@@ -1,12 +1,47 @@
 ---
 sidebar_position: 1
-title: models
+title: model
+pagination_prev: null
 ---
 
 # generate:model
 
 If you are looking to generate a resourceful (CRUD) controller with a model, see the [resource generator documentation](/docs/controllers/generating#resources).
 
-To simply generate a model, see the [model generator documentation](/docs/models/generating).
-
 To generate an STI child model, see the [sti-child generator documentation](./sti-child.mdx).
+
+The `generate:model` CLI documentation follows below, but more details about generating a model are included in [the model generator documentation](/docs/models/generating).
+
+## Usage
+
+```sh
+yarn psy g:model [options] <modelName> [columnsWithTypes...]
+```
+
+**Arguments:**
+
+- `<modelName>`: The name of the model to create, e.g. `Post` or `Settings/CommunicationPreferences`.
+- `[columnsWithTypes...]`: Space separated snake-case (except for belongs_to model name) properties, e.g.:
+  `title:citext subtitle:string body_markdown:text style:enum:post_styles:formal,informal User:belongs_to`
+  - All properties default to not nullable; allow null with `:optional` (e.g. `subtitle:string:optional`).
+  - Generating an 'email' column will always default to `citext` and `unique`
+  - Generating a 'token' column (or a column ending in '\_token') will always default to `unique`
+
+**Supported types:**
+
+- citext, citext[]: case insensitive text
+- string, string[]: varchar (default length 255, customizable)
+- text, text[]
+- date, date[]
+- datetime, datetime[]
+- integer, integer[]
+- decimal, decimal[]: scale,precision required (e.g. `volume:decimal:3,2`)
+- enum, enum[]: create or use enums (e.g. `type:enum:room_types:bathroom,kitchen`)
+- belongs_to: adds a foreign key and BelongsTo association (e.g. `Health/Coach:belongs_to`)
+
+**Options:**
+
+- `--no-serializer`: Do not generate a serializer for the model.
+- `--connection-name <connectionName>`: The db connection to attach to (default: "default").
+- `--sti-base-serializer`: Generate a base serializer for STI.
+- `-h, --help`: Display help for command.

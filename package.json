@@ -13,7 +13,8 @@
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
     "typecheck": "tsc",
-    "fix-pagination": "tsx scripts/fix-pagination.ts"
+    "fix-pagination": "tsx scripts/fix-pagination.ts",
+    "combine-docs": "tsx scripts/combine-docs.ts"
   },
   "resolutions": {
     "cheerio": "1.0.0-rc.12"

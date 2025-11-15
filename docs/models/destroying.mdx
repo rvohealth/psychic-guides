@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 5
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -97,7 +97,7 @@ await Place.removeDefaultScope('dream:SoftDelete').count()
 
 ## Deleting @SoftDelete models from the database
 
-A model marked `@SoftDelete` can be deleted with `reallyDestroy`. As with
+A model marked `@SoftDelete` can be deleted from the database with `reallyDestroy`:
 
 ```ts
 await Place.create({ name: 'My Place' })
@@ -106,4 +106,13 @@ await Place.count()
 await Place.reallyDestroy()
 await Place.removeAllDefaultScopes().count()
 // 0
+```
+
+There is an analogous method for deleting associated models marked `@SoftDelete` from the database:
+
+```ts
+const place = await Place.first()
+await place.reallyDestroyAssociation('rooms')
+// OR
+await place.reallyDestroyAssociation('rooms', { and: { name: 'my room' } })
 ```

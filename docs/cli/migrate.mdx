@@ -1,0 +1,27 @@
+---
+sidebar_position: 6
+pagination_next: null
+---
+
+# migrate/rollback
+
+Run migrations:
+
+```sh
+NODE_ENV=development yarn psy db:migrate
+NODE_ENV=test yarn psy db:migrate
+```
+
+Roll back a migration:
+
+```sh
+NODE_ENV=test yarn psy db:rollback
+```
+
+Roll back multiple migrations at once:
+
+```sh
+NODE_ENV=test yarn psy db:rollback --steps  3
+```
+
+For full details, see the [migration documentation](/docs/migrations/overview)

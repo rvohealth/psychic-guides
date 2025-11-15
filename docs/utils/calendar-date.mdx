@@ -21,9 +21,10 @@ const goodToday = CalendarDate.today()
 const nextWeek = goodToday.plus({ weeks: 1 })
 const formatted = goodDate.toFormat('MMM dd, yyyy')
 ```
+
 :::
 
-Date fields in the database are returned as CalendarDate objects. CalendarDate provides a clean way to deal with dates without worrying about timezone math (though several methods accept an optional `zone` option when setting the CalendarDate). The name CalendarDate was chosen because Date was already taken by Javascript's time class, and we wanted to emphasize that this class deals with days as the fundamental unit of time.
+Database `date` columns are automatically converted to CalendarDate objects when Dream models are loaded from the database. CalendarDate provides a clean way to deal with dates without worrying about timezone math (though several methods accept an optional `zone` option when setting the CalendarDate). The name CalendarDate was chosen because Date was already taken by Javascript's time class, and we wanted to emphasize that this class deals with days as the fundamental unit of time.
 
 ## Creating a CalendarDate
 

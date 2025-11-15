@@ -1,0 +1,11 @@
+# nestedSelect
+
+Returns a new Kysely SelectQueryBuilder instance to be used in a sub-query.
+
+```ts
+const userRatingsForRecipesInMenu = user
+  .associationQuery('userRecipeRatings', {
+    and: { recipeId: menu.associationQuery('recipes').nestedSelect('id') },
+  })
+  .all()
+```

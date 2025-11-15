@@ -49,11 +49,7 @@ export default class PlacesController extends PsychicController {
     status: 200,
   })
   public async show() {
-    this.ok(
-      await this.currentHost
-        .associationQuery('places')
-        .findOrFail(this.castParam('id', 'bigint'))
-    )
+    this.ok(await this.currentHost.associationQuery('places').findOrFail(this.castParam('id', 'bigint')))
   }
 }
 ```
@@ -93,12 +89,7 @@ export default class V1HostPlacesController extends PsychicController {
     status: 200,
   })
   public async index() {
-    this.ok(
-      await this.currentHost
-        .associationQuery('places')
-        .preloadFor('summary')
-        .all()
-    )
+    this.ok(await this.currentHost.associationQuery('places').preloadFor('summary').all())
   }
 }
 ```
@@ -189,7 +180,7 @@ export default class UsersController extends PsychicController {
 }
 ```
 
-### for
+### for, only, including, and combining
 
 For more granular specification, you can take advantage of the `for`, `only`, and `including` options, which enable you to explicitly provide certain params for a model class.
 
@@ -226,22 +217,41 @@ export default class UsersController extends PsychicController {
 }
 ```
 
-Tapping into the `including` arg, we can explicitly provide params that would otherwise be excluded (i.e. foreign keys, primary keys, and timestamp fields).
+Tapping into the `including` arg, we can explicitly provide params that would otherwise be excluded (see [paramSafeColumns](/docs/models/paramSafeColumns)).
+
+```ts
+export default class HostPlacesRoomsController extends HostPlacesBaseController {
+  @OpenAPI(Room, {
+    status: 201,
+    tags: openApiTags,
+    description: 'Create a Room',
+    requestBody: {
+      including: ['type'],
+    },
+  })
+  public async create() {
+    const roomType = this.castParam('type', 'string', { enum: RoomTypesEnumValues })
+    // handle `roomType` explicitly
+    ...
+  }
+}
+```
+
+The `combining` attribute enables addition of fields unrelated to the model to the OpenAPI spec.
 
 ```ts
 export default class PetsController extends PsychicController {
   @OpenAPI(Pet, {
     status: 204,
     requestBody: {
-      only: ['species'],
-      including: ['userId'],
+      combining: {
+        otherField: { type: 'boolean' },
+      },
     },
   })
   public async create() {
-    await Pet.create(
-      this.paramsFor(Pet, { only: ['species'], including: ['userId'] })
-    )
-    this.noContent()
+    const otherField = this.castParam('otherField', 'boolean')
+    // do something with `otherField`
   }
 }
 ```
@@ -396,11 +406,7 @@ export default class PostsController extends PsychicController {
     },
   })
   public async show() {
-    this.ok(
-      await this.currentHost
-        .associationQuery('places')
-        .findOrFail(this.castParam('id', 'bigint'))
-    )
+    this.ok(await this.currentHost.associationQuery('places').findOrFail(this.castParam('id', 'bigint')))
   }
 }
 ```

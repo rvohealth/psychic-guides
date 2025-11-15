@@ -44,20 +44,14 @@ Dream also provides two methods to use for a locate-or-create pattern:
 Utilizing `findOrCreateBy`, we can either collect a record if it exists, or else create it. Any fields passed into the `createWith` option will be applied _only_ if the record is being created.
 
 ```ts
-const user = await User.findOrCreateBy(
-  { email: 'how@yadoin' },
-  { createWith: { password: 'mypassword' } },
-)
+const user = await User.findOrCreateBy({ email: 'how@yadoin' }, { createWith: { password: 'mypassword' } })
 ```
 
 ## using "createOrFindBy"
 
-The `createOrFindBy` method is very similar to `findOrCreateBy`, except it will attempt to create the record first. This pattern relies on unique contraints at the DB level to reject the create statement if another record already exists with those fields.
+The `createOrFindBy` method is very similar to [`findOrCreateBy`](./querying/findOrCreateBy), except it will attempt to create the record first. This pattern relies on unique contraints at the DB level to reject the create statement if another record already exists with those fields. Since the create action will fail at the database level when a matching record already exists, `createOrFindBy` may not be used in a transaction.
 
 ```ts
 // this expects that the `email` column with have a unique contraint in the DB
-const user = await User.createOrFindBy(
-  { email: 'how@yadoin' },
-  { createWith: { password: 'mypassword' } },
-)
+const user = await User.createOrFindBy({ email: 'how@yadoin' }, { createWith: { password: 'mypassword' } })
 ```

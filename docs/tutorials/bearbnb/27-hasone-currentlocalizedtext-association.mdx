@@ -1,0 +1,165 @@
+---
+title: HasOne currentLocalizedText association
+---
+
+# Leverage a passthrough and condition to create a HasOne currentLocalizedText association for displaying localized text to Guests
+
+## Git Log
+
+```
+commit d3876322ea8e18503dac5a6fcf7a7753ee47c677
+Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
+Date:   Sat Nov 8 12:36:35 2025 -0600
+
+    Leverage a passthrough and condition
+    to create a HasOne currentLocalizedText
+    association for displaying localized
+    text to Guests
+    
+    ```console
+    yarn psy sync
+    yarn uspec spec/unit/models/Host.spec.ts
+    yarn uspec spec/unit/models/Place.spec.ts
+    yarn uspec spec/unit/models/Room.spec.ts
+    yarn uspec
+    ```
+
+```
+
+## Diff from 267e957
+
+```diff
+diff --git a/api/spec/unit/models/Host.spec.ts b/api/spec/unit/models/Host.spec.ts
+index 421caec..cd12902 100644
+--- a/api/spec/unit/models/Host.spec.ts
++++ b/api/spec/unit/models/Host.spec.ts
+@@ -27,4 +27,13 @@ describe('Host', () => {
+       expect(localizedText.locale).toEqual('en-US')
+     })
+   })
++
++  it('has one currentLocalizedText', async () => {
++    let host = await createHost()
++    const esLocalizedText = await createLocalizedText({ localizable: host, locale: 'es-ES' })
++
++    host = await host.passthrough({ locale: 'es-ES' }).load('currentLocalizedText').execute()
++
++    expect(host.currentLocalizedText).toMatchDreamModel(esLocalizedText)
++  })
+ })
+diff --git a/api/spec/unit/models/Place.spec.ts b/api/spec/unit/models/Place.spec.ts
+index c453660..a288c44 100644
+--- a/api/spec/unit/models/Place.spec.ts
++++ b/api/spec/unit/models/Place.spec.ts
+@@ -28,4 +28,13 @@ describe('Place', () => {
+       expect(localizedText.title).toEqual('My cottage')
+     })
+   })
++
++  it('has one currentLocalizedText', async () => {
++    let place = await createPlace()
++    const esLocalizedText = await createLocalizedText({ localizable: place, locale: 'es-ES' })
++
++    place = await place.passthrough({ locale: 'es-ES' }).load('currentLocalizedText').execute()
++
++    expect(place.currentLocalizedText).toMatchDreamModel(esLocalizedText)
++  })
+ })
+diff --git a/api/spec/unit/models/Room.spec.ts b/api/spec/unit/models/Room.spec.ts
+index d66a8ab..1929c21 100644
+--- a/api/spec/unit/models/Room.spec.ts
++++ b/api/spec/unit/models/Room.spec.ts
+@@ -24,4 +24,16 @@ describe('Room', () => {
+       expect(localizedText.title).toEqual('Den')
+     })
+   })
++
++  it('has one currentLocalizedText', async () => {
++    // using Den as a stand-in for any Room since STI base models cannot be
++    // saved to the database (enforced by intentionally omitting the base
++    // STI model controller name from the enum values allowed for `type`)Add commentMore actions
++    let room = await createRoomDen()
++    const esLocalizedText = await createLocalizedText({ localizable: room, locale: 'es-ES' })
++
++    room = await room.passthrough({ locale: 'es-ES' }).load('currentLocalizedText').execute()
++
++    expect(room.currentLocalizedText).toMatchDreamModel(esLocalizedText)
++  })
+ })
+diff --git a/api/src/app/models/Host.ts b/api/src/app/models/Host.ts
+index 4fae757..5c3b72a 100644
+--- a/api/src/app/models/Host.ts
++++ b/api/src/app/models/Host.ts
+@@ -3,7 +3,7 @@ import HostPlace from '@models/HostPlace.js'
+ import LocalizedText from '@models/LocalizedText.js'
+ import Place from '@models/Place.js'
+ import User from '@models/User.js'
+-import { Decorators } from '@rvoh/dream'
++import { Decorators, DreamConst } from '@rvoh/dream'
+ import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ 
+ const deco = new Decorators<typeof Host>()
+@@ -41,4 +41,11 @@ export default class Host extends ApplicationModel {
+   public async createDefaultLocalizedText(this: Host) {
+     await this.createAssociation('localizedTexts', { locale: 'en-US' })
+   }
++
++  @deco.HasOne('LocalizedText', {
++    polymorphic: true,
++    on: 'localizableId',
++    and: { locale: DreamConst.passthrough },
++  })
++  public currentLocalizedText: LocalizedText
+ }
+diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
+index 717990e..9e6d48f 100644
+--- a/api/src/app/models/Place.ts
++++ b/api/src/app/models/Place.ts
+@@ -3,7 +3,7 @@ import Host from '@models/Host.js'
+ import HostPlace from '@models/HostPlace.js'
+ import LocalizedText from '@models/LocalizedText.js'
+ import Room from '@models/Room.js'
+-import { Decorators } from '@rvoh/dream'
++import { Decorators, DreamConst } from '@rvoh/dream'
+ import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ 
+ const deco = new Decorators<typeof Place>()
+@@ -46,4 +46,11 @@ export default class Place extends ApplicationModel {
+   public async createDefaultLocalizedText(this: Place) {
+     await this.createAssociation('localizedTexts', { locale: 'en-US', title: `My ${this.style}` })
+   }
++
++  @deco.HasOne('LocalizedText', {
++    polymorphic: true,
++    on: 'localizableId',
++    and: { locale: DreamConst.passthrough },
++  })
++  public currentLocalizedText: LocalizedText
+ }
+diff --git a/api/src/app/models/Room.ts b/api/src/app/models/Room.ts
+index fc0ed30..d5f6182 100644
+--- a/api/src/app/models/Room.ts
++++ b/api/src/app/models/Room.ts
+@@ -1,7 +1,7 @@
+ import ApplicationModel from '@models/ApplicationModel.js'
+ import LocalizedText from '@models/LocalizedText.js'
+ import Place from '@models/Place.js'
+-import { Decorators } from '@rvoh/dream'
++import { Decorators, DreamConst } from '@rvoh/dream'
+ import { DreamColumn } from '@rvoh/dream/types'
+ 
+ const deco = new Decorators<typeof Room>()
+@@ -29,4 +29,11 @@ export default class Room extends ApplicationModel {
+   public async createDefaultLocalizedText(this: Room) {
+     await this.createAssociation('localizedTexts', { locale: 'en-US', title: this.type })
+   }
++
++  @deco.HasOne('LocalizedText', {
++    polymorphic: true,
++    on: 'localizableId',
++    and: { locale: DreamConst.passthrough },
++  })
++  public currentLocalizedText: LocalizedText
+ }
+
+```

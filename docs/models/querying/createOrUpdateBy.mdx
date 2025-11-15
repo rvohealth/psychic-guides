@@ -1,17 +1,13 @@
 # createOrUpdateBy
 
-The createOrUpdateBy static method attempts to create a model with the given attributes. If a unique constraint database error is raised, it then attempts to find and update the record.
+The `createOrUpdateBy` method is very similar to [`updateOrCreateBy`](./updateOrCreateBy), except it will attempt to create the record first. This pattern relies on unique contraints at the DB level to reject the create statement if another record already exists with those fields. Since the create action will fail at the database level when a matching record already exists, `createOrFindBy` may not be used in a transaction.
 
-This is functionally equivalent to an upsert, except it is run in two database queries. This variation is useful in situations where we want to avoid a race condition creating duplicate records (as opposed to updateOrCreateBy).
+This is functionally equivalent to an upsert, except it is run in two database queries. This variation is useful in situations where we want to avoid a race condition creating duplicate records (as opposed to `updateOrCreateBy`).
 
 All lifecycle hooks are run for whichever action is taken, unless `skipHooks` is passed.
 
-
 ```ts
-const user = await User.createOrUpdateBy(
-  { email: 'test@example.com' },
-  { with: { name: 'Alice' } }
-)
+const user = await User.createOrUpdateBy({ email: 'test@example.com' }, { with: { name: 'Alice' } })
 // User{email: 'test@example.com', name: 'Alice'}
 ```
 
@@ -24,20 +20,5 @@ const user = await User.createOrUpdateBy(
   { email: 'test@example.com' },
   { with: { name: 'Alice' }, skipHooks: true }
 )
-// User{email: 'test@example.com', name: 'Alice'}
-```
-
-## Transactions
-
-`createOrUpdateBy` can be used with transactions:
-
-```ts
-let user: User
-await ApplicationModel.transaction(async txn => {
-  user = await User.txn(txn).createOrUpdateBy(
-    { email: 'test@example.com' },
-    { with: { name: 'Alice' } }
-  )
-})
 // User{email: 'test@example.com', name: 'Alice'}
 ```

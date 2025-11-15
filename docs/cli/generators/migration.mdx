@@ -1,10 +1,9 @@
 ---
-sidebar_position: 1
-title: migrations
-pagination_prev: null
+sidebar_position: 4
+title: migration
 ---
 
-# generating migrations
+# generate:migration
 
 Use the built-in cli command for generating migrations to easily get up and running. Psychic will automatically timestamp the filename for your migrations, keeping them in sequential order, and will generate boilerplate to get you started with writing a migration.
 
@@ -12,6 +11,22 @@ Use the built-in cli command for generating migrations to easily get up and runn
 yarn psy g:migration --help
 yarn psy g:migration add-deleted-at-to-posts deleted_at:datetime
 ```
+
+## Usage
+
+```sh
+yarn psy g:migration [options] <migrationName> [columnsWithTypes...]
+```
+
+**Arguments:**
+
+- `<migrationName>`: End with `-to-table-name` to prepopulate with an alterTable command.
+- `[columnsWithTypes...]`: Same as [the model generator](./model).
+
+**Options:**
+
+- `--connection-name <connectionName>`: The connection name you wish to use for your migration.
+- `-h, --help`: Display help for command.
 
 Ending the migration name with `-to-table-name` will automatically include the underscored table name in the migration.
 
