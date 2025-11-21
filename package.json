@@ -41,7 +41,7 @@
     "@docusaurus/utils-validation": "^3.8.1",
     "@types/js-yaml": "^4.0.9",
     "@types/react-icons": "^3.0.0",
-    "js-yaml": "^4.1.0",
+    "js-yaml": "^4.1.1",
     "tsx": "^4.20.3",
     "typescript": "~5.2.2"
   },
