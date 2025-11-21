@@ -9,7 +9,7 @@ A polymorphic BelongsTo association links one model to several models. At the da
 ## Example: LocalizedTexts
 
 :::info
-This example is a modified version of the domain model used in the [BearBnB](/docs/tutorials/bearbnb.mdx) tutorial.
+This example is a modified version of the domain model used in the [BearBnB](/docs/tutorials/bearbnb/overview) tutorial.
 :::
 
 In an application where multiple models may have localized text (text in multiple languages), one can keep DRY by using a polymorphic LocalizedText model with a BelongsTo association that points to several models.
@@ -199,7 +199,7 @@ export async function down(db: Kysely<any>): Promise<void> {
 
 ## Example: Tasks
 
-Another use case for polymorphismm is when creating a Task list from different types of things. If the things could be considered variants of the same type of thing, consider using [single table inheritance (STI)](/docs/models/sti.mdx) instead since polymorphic associations have [some caveats](#caveats) and cannot leverage table enforced foreign key references.
+Another use case for polymorphismm is when creating a Task list from different types of things. If the things could be considered variants of the same type of thing, consider using [single table inheritance (STI)](/docs/models/sti) instead since polymorphic associations have [some caveats](#caveats) and cannot leverage table enforced foreign key references.
 
 In this example, the application has Chores and Workouts, each of which is a distinct entity, so they are represented as separate models backed by separate tables. Users can have lists of Tasks that include both Chores and Workouts. The following entity relationship diagram (ERD) models this domain:
 
