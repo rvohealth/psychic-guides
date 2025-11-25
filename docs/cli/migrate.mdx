@@ -5,14 +5,22 @@ pagination_next: null
 
 # migrate/rollback
 
-Run migrations:
+## db:migrate
+
+Runs any outstanding database migrations.
 
 ```sh
 NODE_ENV=development yarn psy db:migrate
 NODE_ENV=test yarn psy db:migrate
 ```
 
-Roll back a migration:
+**Options:**
+- `--skip-sync`: Skips syncing local schema after running migrations.
+- `-h, --help`: Display help for command.
+
+## db:rollback
+
+Rolls back the specified number of migration steps (defaults to 1).
 
 ```sh
 NODE_ENV=test yarn psy db:rollback
@@ -21,7 +29,71 @@ NODE_ENV=test yarn psy db:rollback
 Roll back multiple migrations at once:
 
 ```sh
-NODE_ENV=test yarn psy db:rollback --steps  3
+NODE_ENV=test yarn psy db:rollback --steps 3
 ```
+
+**Options:**
+- `--steps <number>`: Number of steps back to travel (default: 1).
+- `--skip-sync`: Skips syncing local schema after running migrations.
+- `-h, --help`: Display help for command.
+
+## db:create
+
+Creates a new database.
+
+```sh
+NODE_ENV=development yarn psy db:create
+NODE_ENV=test yarn psy db:create
+```
+
+**Options:**
+- `-h, --help`: Display help for command.
+
+## db:drop
+
+Drops the database.
+
+```sh
+NODE_ENV=development yarn psy db:drop
+NODE_ENV=test yarn psy db:drop
+```
+
+**Options:**
+- `-h, --help`: Display help for command.
+
+## db:reset
+
+Runs `db:drop` (safely), `db:create`, `db:migrate`, and `db:seed`.
+
+```sh
+NODE_ENV=development yarn psy db:reset
+NODE_ENV=test yarn psy db:reset
+```
+
+**Options:**
+- `-h, --help`: Display help for command.
+
+## db:seed
+
+Seeds the database using the file located in `db/seed.ts`.
+
+```sh
+NODE_ENV=development yarn psy db:seed
+NODE_ENV=test yarn psy db:seed
+```
+
+**Options:**
+- `-h, --help`: Display help for command.
+
+## db:integrity-check
+
+Fails if migrations need to be run.
+
+```sh
+yarn psy db:integrity-check
+```
+
+**Options:**
+- `-h, --help`: Display help for command.
 
 For full details, see the [migration documentation](/docs/migrations/overview)

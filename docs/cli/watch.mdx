@@ -16,4 +16,16 @@ This can get cumbersome, especially considering it is difficult to know what cha
 yarn psy watch
 ```
 
-This will watch all files in your `src` directory, and will automatically call `sync` for you without any intervention on your part. This promises to always keep your types in sync. In some cases, you may leave your code in an invalid state. No matter for the watcher, it will swallow errors and carry on watching. Once a valid iteration of your code is achieved, the sync will succeed.
+This will watch all files in your `src` directory (or the specified directory), and will automatically call `sync` for you without any intervention on your part. This promises to always keep your types in sync. In some cases, you may leave your code in an invalid state. No matter for the watcher, it will swallow errors and carry on watching. Once a valid iteration of your code is achieved, the sync will succeed.
+
+## Usage
+
+```sh
+yarn psy watch [dir]
+```
+
+**Arguments:**
+- `[dir]`: The folder you want to watch, defaults to `./src`.
+
+**Options:**
+- `-h, --help`: Display help for command.
