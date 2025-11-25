@@ -35,14 +35,40 @@ yarn psy g:sti-child <childModelName> extends <parentModelName> [columnsWithType
 
 **Arguments:**
 
-- `<childModelName>`: The name of the child model to create (e.g., `AdminUser` or `Premium/Account`)
-- `extends`: The literal word "extends" (required)
-- `<parentModelName>`: Fully qualified name of the parent model (e.g., `User` or `Health/Coach`)
-- `[columnsWithTypes...]`: Additional properties specific to the child model
+- `<childModelName>`: The name of the model to create, e.g. `Post` or `Settings/CommunicationPreferences`.
+- `extends`: Just the word "extends".
+- `<parentModelName>`: Fully qualified name of the parent model, e.g.:
+  - To extend the Room model in `src/app/models/Room`: `Room`
+  - To extend the Coach model in `src/app/models/Health/Coach`: `Health/Coach`
+- `[columnsWithTypes...]`: Space separated snake-case (except for belongs_to model name) properties like this:
+  `title:citext subtitle:string body_markdown:text style:enum:post_styles:formal,informal User:belongs_to`
+  
+  All properties default to not nullable; null can be allowed by appending `:optional`:
+  `subtitle:string:optional`
+  
+  **Supported types:**
+  - `citext`, `citext[]`: case insensitive text (indexes and queries are automatically case insensitive)
+  - `string`, `string[]`: varchar; allowed length defaults to 255, but may be customized, e.g.: `subtitle:string:128` or `subtitle:string:128:optional`
+  - `text`, `text[]`
+  - `date`, `date[]`
+  - `datetime`, `datetime[]`
+  - `integer`, `integer[]`
+  - `decimal`, `decimal[]`: scale,precision is required, e.g.: `volume:decimal:3,2` or `volume:decimal:3,2:optional`
+    - Leveraging arrays, add the "[]" suffix, e.g.: `volume:decimal[]:3,2`
+  - `enum`, `enum[]`: include the enum name to automatically create the enum:
+    `type:enum:room_types:bathroom,kitchen,bedroom` or `type:enum:room_types:bathroom,kitchen,bedroom:optional`
+    - Omit the enum values to leverage an existing enum (omits the enum type creation):
+      `type:enum:room_types` or `type:enum:room_types:optional`
+    - Leveraging arrays, add the "[]" suffix, e.g.: `type:enum[]:room_types:bathroom,kitchen,bedroom`
+  - `belongs_to`: not only adds a foreign key to the migration, but also adds a BelongsTo association to the generated model:
+    - Include the fully qualified model name, e.g., if the Coach model is in `src/app/models/Health/Coach`:
+      `Health/Coach:belongs_to`
 
 **Options:**
 
-- `--no-serializer`: Skip generating a serializer for the child model
+- `--no-serializer`: Skip generating a serializer for the child model.
+- `--connection-name <connectionName>`: The db connection you want this model attached to (defaults to the default connection).
+- `-h, --help`: Display help for command.
 
 ## STI Example
 
