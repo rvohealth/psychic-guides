@@ -19,13 +19,40 @@ yarn psy g:resource [options] <path> <modelName> [columnsWithTypes...]
 
 - `<path>`: URL path from root domain. Specify nesting resource with `{}`, e.g. `tickets/{}/comments`.
 - `<modelName>`: The name of the model to create, e.g. `Post` or `Settings/CommunicationPreferences`.
-- `[columnsWithTypes...]`: Same as [the model generator](./model).
+- `[columnsWithTypes...]`: Space separated snake-case (except for belongs_to model name) properties like this:
+  `title:citext subtitle:string body_markdown:text style:enum:post_styles:formal,informal User:belongs_to`
+  
+  All properties default to not nullable; null can be allowed by appending `:optional`:
+  `subtitle:string:optional`
+  
+  **Supported types:**
+  - `citext`, `citext[]`: case insensitive text (indexes and queries are automatically case insensitive)
+  - `string`, `string[]`: varchar; allowed length defaults to 255, but may be customized, e.g.: `subtitle:string:128` or `subtitle:string:128:optional`
+  - `text`, `text[]`
+  - `date`, `date[]`
+  - `datetime`, `datetime[]`
+  - `integer`, `integer[]`
+  - `decimal`, `decimal[]`: scale,precision is required, e.g.: `volume:decimal:3,2` or `volume:decimal:3,2:optional`
+    - Leveraging arrays, add the "[]" suffix, e.g.: `volume:decimal[]:3,2`
+  - `enum`, `enum[]`: include the enum name to automatically create the enum:
+    `type:enum:room_types:bathroom,kitchen,bedroom` or `type:enum:room_types:bathroom,kitchen,bedroom:optional`
+    - Omit the enum values to leverage an existing enum (omits the enum type creation):
+      `type:enum:room_types` or `type:enum:room_types:optional`
+    - Leveraging arrays, add the "[]" suffix, e.g.: `type:enum[]:room_types:bathroom,kitchen,bedroom`
+  - `belongs_to`: not only adds a foreign key to the migration, but also adds a BelongsTo association to the generated model:
+    - Include the fully qualified model name, e.g., if the Coach model is in `src/app/models/Health/Coach`:
+      `Health/Coach:belongs_to`
 
 **Options:**
 
-- `--singular`: Generates a "resource" route instead of "resources".
-- `--only <onlyActions>`: Comma separated list of resourceful endpoints (e.g. `--only=create,show`).
-- `--sti-base-serializer`: Omits the serializer from the dream model, but creates the serializer for STI children.
-- `--owning-model <modelName>`: The model class for association queries in the controller/spec (default: User).
-- `--connection-name <connectionName>`: The db connection to use (default: "default").
+- `--singular`: Generates a "resource" route instead of "resources", along with the necessary controller and spec changes.
+- `--only <onlyActions>`: Comma separated list of resourceful endpoints (e.g. `--only=create,show`); any of:
+  - `index`
+  - `create`
+  - `show`
+  - `update`
+  - `delete`
+- `--sti-base-serializer`: Omits the serializer from the dream model, but does create the serializer so it can be extended by STI children.
+- `--owning-model <modelName>`: The model class of the object that `associationQuery`/`createAssociation` will be performed on in the created controller and spec (e.g., "Host", "Guest", "Ticketing/Ticket") (simply to save time making changes to the generated code). Defaults to User.
+- `--connection-name <connectionName>`: The name of the db connection you would like to use for your model. Defaults to "default" (default: "default").
 - `-h, --help`: Display help for command.
