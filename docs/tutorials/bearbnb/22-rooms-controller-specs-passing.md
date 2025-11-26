@@ -4,35 +4,30 @@ title: Rooms controller specs passing
 
 # Rooms controller specs passing
 
-## Git Log
+## Commit Message
 
 ```
-commit 3f2c26422a7fb2d9457ac5176810d2f9b65dda14
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 12:19:51 2025 -0600
+Rooms controller specs passing
 
-    Rooms controller specs passing
-    
-    Note the changes in api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts:
-    1. The room is no longer the base STI model because, in STI, we can't instantiate
-       the base model, only child models, so we choose an arbitrary Room child to stand
-       in for any Room.
-         • to this end, the `roomFactory` was deleted, and all of the child
-           room factories updated with the initialization lines from `roomFactory`
-         • similarly, removed the serializer from the base Room model, which necessitated
-           removing override from the room STI child models
-    2. The request body to the create and update endpoints are changed to reflect the STI
-       child we are creating / updating.
-    
-    ```console
-    yarn psy sync
-    
-    yarn uspec spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
-    ```
+Note the changes in api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts:
+1. The room is no longer the base STI model because, in STI, we can't instantiate
+   the base model, only child models, so we choose an arbitrary Room child to stand
+   in for any Room.
+     • to this end, the `roomFactory` was deleted, and all of the child
+       room factories updated with the initialization lines from `roomFactory`
+     • similarly, removed the serializer from the base Room model, which necessitated
+       removing override from the room STI child models
+2. The request body to the create and update endpoints are changed to reflect the STI
+   child we are creating / updating.
 
+```console
+yarn psy sync
+
+yarn uspec spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
+```
 ```
 
-## Diff from d412f83
+## Changes
 
 ```diff
 diff --git a/api/spec/factories/Room/BathroomFactory.ts b/api/spec/factories/Room/BathroomFactory.ts
@@ -127,7 +122,7 @@ index c75d9f4..0000000
 -  })
 -}
 diff --git a/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts b/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
-index 36d8d57..52ef7cb 100644
+index 6c5f66d..f1ded04 100644
 --- a/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 +++ b/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 @@ -1,9 +1,12 @@
@@ -164,7 +159,7 @@ index 36d8d57..52ef7cb 100644
 -      const room = await createRoom({ place })
 +      const room = await createRoomKitchen({ place })
  
-       const { body } = await subject(200)
+       const { body } = await indexRooms(200)
  
 @@ -38,7 +43,7 @@ describe('V1/Host/Places/RoomsController', () => {
  
@@ -173,7 +168,7 @@ index 36d8d57..52ef7cb 100644
 -        await createRoom()
 +        await createRoomKitchen()
  
-         const { body } = await subject(200)
+         const { body } = await indexRooms(200)
  
 @@ -56,7 +61,7 @@ describe('V1/Host/Places/RoomsController', () => {
      }
@@ -182,7 +177,7 @@ index 36d8d57..52ef7cb 100644
 -      const room = await createRoom({ place })
 +      const room = await createRoomKitchen({ place })
  
-       const { body } = await subject(room, 200)
+       const { body } = await showRoom(room, 200)
  
 @@ -71,7 +76,7 @@ describe('V1/Host/Places/RoomsController', () => {
  
@@ -191,11 +186,11 @@ index 36d8d57..52ef7cb 100644
 -        const otherPlaceRoom = await createRoom()
 +        const otherPlaceRoom = await createRoomKitchen()
  
-         await subject(otherPlaceRoom, 404)
+         await showRoom(otherPlaceRoom, 404)
        })
-@@ -81,27 +86,31 @@ describe('V1/Host/Places/RoomsController', () => {
+@@ -81,27 +86,32 @@ describe('V1/Host/Places/RoomsController', () => {
    describe('POST create', () => {
-     const subject = async <StatusCode extends 201 | 400 | 404>(
+     const createRoom = async <StatusCode extends 201 | 400 | 404>(
        data: RequestBody<'post', '/v1/host/places/{placeId}/rooms'>,
 -      expectedStatus: StatusCode
 +      expectedStatus: StatusCode,
@@ -208,10 +203,10 @@ index 36d8d57..52ef7cb 100644
      }
  
      it('creates a Room for this Place', async () => {
--      const { body } = await subject({
+-      const { body } = await createRoom({
 -        position: 1,
 -      }, 201)
-+      const { body } = await subject(
++      const { body } = await createRoom(
 +        {
 +          type: 'Kitchen',
 +          appliances: ['oven', 'stove'],
@@ -221,19 +216,21 @@ index 36d8d57..52ef7cb 100644
  
        const room = await place.associationQuery('rooms').firstOrFail()
 -      expect(room.position).toEqual(1)
++      expect(room.type).toEqual('Kitchen')
 +      expect((room as Kitchen).appliances).toEqual(['oven', 'stove'])
  
        expect(body).toEqual(
          expect.objectContaining({
            id: room.id,
-           type: room.type,
+-          type: room.type,
 -          position: room.position,
++          type: 'Kitchen',
 +          appliances: ['oven', 'stove'],
          }),
        )
      })
-@@ -111,7 +120,7 @@ describe('V1/Host/Places/RoomsController', () => {
-     const subject = async <StatusCode extends 204 | 400 | 404>(
+@@ -111,7 +121,7 @@ describe('V1/Host/Places/RoomsController', () => {
+     const updateRoom = async <StatusCode extends 204 | 400 | 404>(
        room: Room,
        data: RequestBody<'patch', '/v1/host/places/{placeId}/rooms/{id}'>,
 -      expectedStatus: StatusCode
@@ -241,18 +238,18 @@ index 36d8d57..52ef7cb 100644
      ) => {
        return request.patch('/v1/host/places/{placeId}/rooms/{id}', expectedStatus, {
          placeId: place.id,
-@@ -121,27 +130,35 @@ describe('V1/Host/Places/RoomsController', () => {
+@@ -121,33 +131,44 @@ describe('V1/Host/Places/RoomsController', () => {
      }
  
      it('updates the Room', async () => {
 -      const room = await createRoom({ place })
 -
--      await subject(room, {
+-      await updateRoom(room, {
 -        position: 2,
 -      }, 204)
 +      const room = await createRoomKitchen({ place })
 +
-+      await subject(
++      await updateRoom(
 +        room,
 +        {
 +          appliances: ['dishwasher'],
@@ -272,10 +269,10 @@ index 36d8d57..52ef7cb 100644
 +        const room = await createRoomKitchen()
 +        const originalAppliances = room.appliances
  
--        await subject(room, {
+-        await updateRoom(room, {
 -          position: 2,
 -        }, 404)
-+        await subject(
++        await updateRoom(
 +          room,
 +          {
 +            appliances: ['dishwasher'],
@@ -289,23 +286,33 @@ index 36d8d57..52ef7cb 100644
        })
      })
    })
-@@ -155,7 +172,7 @@ describe('V1/Host/Places/RoomsController', () => {
+ 
+   describe('DELETE destroy', () => {
+-    const destroyRoom = async <StatusCode extends 204 | 400 | 404>(room: Room, expectedStatus: StatusCode) => {
++    const destroyRoom = async <StatusCode extends 204 | 400 | 404>(
++      room: Room,
++      expectedStatus: StatusCode,
++    ) => {
+       return request.delete('/v1/host/places/{placeId}/rooms/{id}', expectedStatus, {
+         placeId: place.id,
+         id: room.id,
+@@ -155,7 +176,7 @@ describe('V1/Host/Places/RoomsController', () => {
      }
  
      it('deletes the Room', async () => {
 -      const room = await createRoom({ place })
 +      const room = await createRoomKitchen({ place })
  
-       await subject(room, 204)
+       await destroyRoom(room, 204)
  
-@@ -164,7 +181,7 @@ describe('V1/Host/Places/RoomsController', () => {
+@@ -164,7 +185,7 @@ describe('V1/Host/Places/RoomsController', () => {
  
      context('a Room created by another Place', () => {
        it('is not deleted', async () => {
 -        const room = await createRoom()
 +        const room = await createRoomKitchen()
  
-         await subject(room, 404)
+         await destroyRoom(room, 404)
  
 diff --git a/api/src/app/controllers/V1/Host/Places/BaseController.ts b/api/src/app/controllers/V1/Host/Places/BaseController.ts
 index 475dacc..9da129a 100644
@@ -327,7 +334,7 @@ index 475dacc..9da129a 100644
 +  }
  }
 diff --git a/api/src/app/controllers/V1/Host/Places/RoomsController.ts b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
-index b64c592..6788e1f 100644
+index b64c592..c3d0339 100644
 --- a/api/src/app/controllers/V1/Host/Places/RoomsController.ts
 +++ b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
 @@ -1,6 +1,12 @@
@@ -344,7 +351,7 @@ index b64c592..6788e1f 100644
  
  const openApiTags = ['rooms']
  
-@@ -13,11 +19,11 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
+@@ -13,11 +19,12 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      serializerKey: 'summary',
    })
    public async index() {
@@ -356,12 +363,13 @@ index b64c592..6788e1f 100644
 +    const rooms = await this.currentPlace
 +      .associationQuery('rooms')
 +      .preloadFor('summary')
++      .order({ createdAt: 'desc' })
 +      .scrollPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
 +    this.ok(rooms)
    }
  
    @OpenAPI(Room, {
-@@ -26,19 +32,67 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
+@@ -26,19 +33,67 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      description: 'Fetch a Room',
    })
    public async show() {
@@ -434,7 +442,7 @@ index b64c592..6788e1f 100644
    }
  
    @OpenAPI(Room, {
-@@ -47,9 +101,9 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
+@@ -47,9 +102,9 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      description: 'Update a Room',
    })
    public async update() {
@@ -447,7 +455,7 @@ index b64c592..6788e1f 100644
    }
  
    @OpenAPI({
-@@ -58,14 +112,15 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
+@@ -58,14 +113,15 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      description: 'Destroy a Room',
    })
    public async destroy() {
@@ -470,16 +478,16 @@ index b64c592..6788e1f 100644
    }
  }
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index 9f8b47d..9243aa1 100644
+index 64ddfc8..399d7a9 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
-@@ -1,6 +1,7 @@
- import ApplicationModel from '@models/ApplicationModel.js'
- import Host from '@models/Host.js'
- import HostPlace from '@models/HostPlace.js'
-+import Room from '@models/Room.js'
- import { Decorators } from '@rvoh/dream'
+@@ -3,6 +3,7 @@ import { Decorators } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import Host from './Host.js'
+ import HostPlace from './HostPlace.js'
++import Room from './Room.js'
+ 
+ const deco = new Decorators<typeof Place>()
  
 @@ -31,4 +32,9 @@ export default class Place extends ApplicationModel {
  
@@ -585,10 +593,10 @@ index f6aaa38..64c5cd7 100644
        default: 'Room/LivingRoomSerializer',
        summary: 'Room/LivingRoomSummarySerializer',
 diff --git a/api/src/app/serializers/RoomSerializer.ts b/api/src/app/serializers/RoomSerializer.ts
-index 79390f9..fba36c5 100644
+index 79390f9..e1aa6a5 100644
 --- a/api/src/app/serializers/RoomSerializer.ts
 +++ b/api/src/app/serializers/RoomSerializer.ts
-@@ -1,12 +1,11 @@
+@@ -1,12 +1,13 @@
 -import { DreamSerializer } from '@rvoh/dream'
  import Room from '@models/Room.js'
 +import { DreamSerializer } from '@rvoh/dream'
@@ -599,11 +607,551 @@ index 79390f9..fba36c5 100644
      .attribute('id')
 +    .attribute('position')
  
++// prettier-ignore
  export const RoomSerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
--  RoomSummarySerializer(StiChildClass, room)
+   RoomSummarySerializer(StiChildClass, room)
 -    .attribute('type', { openapi: { type: 'string', enum: [(StiChildClass ?? Room).sanitizedName] } })
 -    .attribute('position')
--    .attribute('deletedAt')
-+  RoomSummarySerializer(StiChildClass, room).attribute('deletedAt')
-
+     .attribute('deletedAt')
+diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
+index ece4189..8da1ee6 100644
+--- a/api/src/openapi/mobile.openapi.json
++++ b/api/src/openapi/mobile.openapi.json
+@@ -446,6 +446,16 @@
+                       "integer",
+                       "null"
+                     ]
++                  },
++                  "type": {
++                    "type": "string",
++                    "enum": [
++                      "Bathroom",
++                      "Bedroom",
++                      "Den",
++                      "Kitchen",
++                      "LivingRoom"
++                    ]
+                   }
+                 }
+               }
+@@ -847,11 +857,23 @@
+       "RoomBathroomSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "description": "The following values will be allowed:\n  Bathroom"
+           }
+         }
+       },
+@@ -897,11 +919,23 @@
+       "RoomBedroomSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "description": "The following values will be allowed:\n  Bedroom"
+           }
+         }
+       },
+@@ -939,11 +973,23 @@
+       "RoomDenSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "description": "The following values will be allowed:\n  Den"
+           }
+         }
+       },
+@@ -989,11 +1035,23 @@
+       "RoomKitchenSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "description": "The following values will be allowed:\n  Kitchen"
+           }
+         }
+       },
+@@ -1031,11 +1089,23 @@
+       "RoomLivingRoomSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "description": "The following values will be allowed:\n  LivingRoom"
+           }
+         }
+       },
+diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
+index b12e018..4c2b563 100644
+--- a/api/src/openapi/openapi.json
++++ b/api/src/openapi/openapi.json
+@@ -446,6 +446,16 @@
+                       "integer",
+                       "null"
+                     ]
++                  },
++                  "type": {
++                    "type": "string",
++                    "enum": [
++                      "Bathroom",
++                      "Bedroom",
++                      "Den",
++                      "Kitchen",
++                      "LivingRoom"
++                    ]
+                   }
+                 }
+               }
+@@ -863,11 +873,25 @@
+       "RoomBathroomSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bathroom"
++            ]
+           }
+         }
+       },
+@@ -922,11 +946,25 @@
+       "RoomBedroomSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bedroom"
++            ]
+           }
+         }
+       },
+@@ -966,11 +1004,25 @@
+       "RoomDenSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Den"
++            ]
+           }
+         }
+       },
+@@ -1023,11 +1075,25 @@
+       "RoomKitchenSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Kitchen"
++            ]
+           }
+         }
+       },
+@@ -1067,11 +1133,25 @@
+       "RoomLivingRoomSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "LivingRoom"
++            ]
+           }
+         }
+       },
+diff --git a/api/src/openapi/spec.openapi.json b/api/src/openapi/spec.openapi.json
+index b12e018..4c2b563 100644
+--- a/api/src/openapi/spec.openapi.json
++++ b/api/src/openapi/spec.openapi.json
+@@ -446,6 +446,16 @@
+                       "integer",
+                       "null"
+                     ]
++                  },
++                  "type": {
++                    "type": "string",
++                    "enum": [
++                      "Bathroom",
++                      "Bedroom",
++                      "Den",
++                      "Kitchen",
++                      "LivingRoom"
++                    ]
+                   }
+                 }
+               }
+@@ -863,11 +873,25 @@
+       "RoomBathroomSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bathroom"
++            ]
+           }
+         }
+       },
+@@ -922,11 +946,25 @@
+       "RoomBedroomSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bedroom"
++            ]
+           }
+         }
+       },
+@@ -966,11 +1004,25 @@
+       "RoomDenSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Den"
++            ]
+           }
+         }
+       },
+@@ -1023,11 +1075,25 @@
+       "RoomKitchenSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Kitchen"
++            ]
+           }
+         }
+       },
+@@ -1067,11 +1133,25 @@
+       "RoomLivingRoomSummary": {
+         "type": "object",
+         "required": [
+-          "id"
++          "id",
++          "position",
++          "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "LivingRoom"
++            ]
+           }
+         }
+       },
+diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
+index d6d38a0..b4fc9d7 100644
+--- a/api/src/types/dream.ts
++++ b/api/src/types/dream.ts
+@@ -383,6 +383,15 @@ export const schema = {
+         requiredAndClauses: null,
+         passthroughAndClauses: null,
+       },
++      rooms: {
++        type: 'HasMany',
++        foreignKey: 'placeId',
++        foreignKeyTypeColumn: null,
++        tables: ['rooms'],
++        optional: null,
++        requiredAndClauses: null,
++        passthroughAndClauses: null,
++      },
+     },
+   },
+   rooms: {
+diff --git a/api/src/types/openapi/spec.openapi.d.ts b/api/src/types/openapi/spec.openapi.d.ts
+index fc626a3..4f0c02f 100644
+--- a/api/src/types/openapi/spec.openapi.d.ts
++++ b/api/src/types/openapi/spec.openapi.d.ts
+@@ -260,6 +260,8 @@ export interface paths {
+                         bathOrShowerStyle?: "bath" | "bath_and_shower" | "none" | "shower" | null;
+                         bedTypes?: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
+                         position?: number | null;
++                        /** @enum {string} */
++                        type?: "Bathroom" | "Bedroom" | "Den" | "Kitchen" | "LivingRoom";
+                     };
+                 };
+             };
+@@ -435,6 +437,9 @@ export interface components {
+         };
+         RoomBathroomSummary: {
+             id: string;
++            position: number | null;
++            /** @enum {string} */
++            type: "Bathroom";
+         };
+         RoomBedroom: {
+             bedTypes: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
+@@ -447,6 +452,9 @@ export interface components {
+         };
+         RoomBedroomSummary: {
+             id: string;
++            position: number | null;
++            /** @enum {string} */
++            type: "Bedroom";
+         };
+         RoomDen: {
+             /** Format: date-time */
+@@ -458,6 +466,9 @@ export interface components {
+         };
+         RoomDenSummary: {
+             id: string;
++            position: number | null;
++            /** @enum {string} */
++            type: "Den";
+         };
+         RoomKitchen: {
+             appliances: ("dishwasher" | "microwave" | "oven" | "stove")[];
+@@ -470,6 +481,9 @@ export interface components {
+         };
+         RoomKitchenSummary: {
+             id: string;
++            position: number | null;
++            /** @enum {string} */
++            type: "Kitchen";
+         };
+         RoomLivingRoom: {
+             /** Format: date-time */
+@@ -481,6 +495,9 @@ export interface components {
+         };
+         RoomLivingRoomSummary: {
+             id: string;
++            position: number | null;
++            /** @enum {string} */
++            type: "LivingRoom";
+         };
+         ValidationErrors: {
+             /** @enum {string} */
 ```

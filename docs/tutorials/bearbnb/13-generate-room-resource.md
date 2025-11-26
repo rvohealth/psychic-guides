@@ -4,31 +4,26 @@ title: Generate Room resource
 
 # Generate Room resource
 
-## Git Log
+## Commit Message
 
 ```
-commit 3f263e07077bf25d98d58dc95203f004e9145967
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 11:04:22 2025 -0600
+Generate Room resource
 
-    Generate Room resource
-    
-    ```console
-    yarn psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\{\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom Place:belongs_to position:integer:optional deleted_at:datetime:optional
-    ```
-    
-    The `places/{}` (escaped to `places/\{\}` for the console) makes
-    rooms a nested resource within the places resource, which you can
-    see with `yarn psy routes`:
-    
-    ```console
-    yarn psy db:migrate
-    yarn psy routes
-    ```
-
+```console
+yarn psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\{\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom Place:belongs_to position:integer:optional deleted_at:datetime:optional
 ```
 
-## Diff from 5566548
+The `places/{}` (escaped to `places/\{\}` for the console) makes
+rooms a nested resource within the places resource, which you can
+see with `yarn psy routes`:
+
+```console
+yarn psy db:migrate
+yarn psy routes
+```
+```
+
+## Changes
 
 ```diff
 diff --git a/api/spec/factories/RoomFactory.ts b/api/spec/factories/RoomFactory.ts
@@ -49,7 +44,7 @@ index 0000000..c75d9f4
 +}
 diff --git a/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts b/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 new file mode 100644
-index 0000000..36d8d57
+index 0000000..6c5f66d
 --- /dev/null
 +++ b/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 @@ -0,0 +1,175 @@
@@ -73,7 +68,7 @@ index 0000000..36d8d57
 +  })
 +
 +  describe('GET index', () => {
-+    const subject = async <StatusCode extends 200 | 400 | 404>(expectedStatus: StatusCode) => {
++    const indexRooms = async <StatusCode extends 200 | 400 | 404>(expectedStatus: StatusCode) => {
 +      return request.get('/v1/host/places/{placeId}/rooms', expectedStatus, {
 +        placeId: place.id,
 +      })
@@ -82,7 +77,7 @@ index 0000000..36d8d57
 +    it('returns the index of Rooms', async () => {
 +      const room = await createRoom({ place })
 +
-+      const { body } = await subject(200)
++      const { body } = await indexRooms(200)
 +
 +      expect(body.results).toEqual([
 +        expect.objectContaining({
@@ -95,7 +90,7 @@ index 0000000..36d8d57
 +      it('are omitted', async () => {
 +        await createRoom()
 +
-+        const { body } = await subject(200)
++        const { body } = await indexRooms(200)
 +
 +        expect(body.results).toEqual([])
 +      })
@@ -103,7 +98,7 @@ index 0000000..36d8d57
 +  })
 +
 +  describe('GET show', () => {
-+    const subject = async <StatusCode extends 200 | 400 | 404>(room: Room, expectedStatus: StatusCode) => {
++    const showRoom = async <StatusCode extends 200 | 400 | 404>(room: Room, expectedStatus: StatusCode) => {
 +      return request.get('/v1/host/places/{placeId}/rooms/{id}', expectedStatus, {
 +        placeId: place.id,
 +        id: room.id,
@@ -113,7 +108,7 @@ index 0000000..36d8d57
 +    it('returns the specified Room', async () => {
 +      const room = await createRoom({ place })
 +
-+      const { body } = await subject(room, 200)
++      const { body } = await showRoom(room, 200)
 +
 +      expect(body).toEqual(
 +        expect.objectContaining({
@@ -128,13 +123,13 @@ index 0000000..36d8d57
 +      it('is not found', async () => {
 +        const otherPlaceRoom = await createRoom()
 +
-+        await subject(otherPlaceRoom, 404)
++        await showRoom(otherPlaceRoom, 404)
 +      })
 +    })
 +  })
 +
 +  describe('POST create', () => {
-+    const subject = async <StatusCode extends 201 | 400 | 404>(
++    const createRoom = async <StatusCode extends 201 | 400 | 404>(
 +      data: RequestBody<'post', '/v1/host/places/{placeId}/rooms'>,
 +      expectedStatus: StatusCode
 +    ) => {
@@ -145,7 +140,7 @@ index 0000000..36d8d57
 +    }
 +
 +    it('creates a Room for this Place', async () => {
-+      const { body } = await subject({
++      const { body } = await createRoom({
 +        position: 1,
 +      }, 201)
 +
@@ -163,7 +158,7 @@ index 0000000..36d8d57
 +  })
 +
 +  describe('PATCH update', () => {
-+    const subject = async <StatusCode extends 204 | 400 | 404>(
++    const updateRoom = async <StatusCode extends 204 | 400 | 404>(
 +      room: Room,
 +      data: RequestBody<'patch', '/v1/host/places/{placeId}/rooms/{id}'>,
 +      expectedStatus: StatusCode
@@ -178,7 +173,7 @@ index 0000000..36d8d57
 +    it('updates the Room', async () => {
 +      const room = await createRoom({ place })
 +
-+      await subject(room, {
++      await updateRoom(room, {
 +        position: 2,
 +      }, 204)
 +
@@ -191,7 +186,7 @@ index 0000000..36d8d57
 +        const room = await createRoom()
 +        const originalPosition = room.position
 +
-+        await subject(room, {
++        await updateRoom(room, {
 +          position: 2,
 +        }, 404)
 +
@@ -202,7 +197,7 @@ index 0000000..36d8d57
 +  })
 +
 +  describe('DELETE destroy', () => {
-+    const subject = async <StatusCode extends 204 | 400 | 404>(room: Room, expectedStatus: StatusCode) => {
++    const destroyRoom = async <StatusCode extends 204 | 400 | 404>(room: Room, expectedStatus: StatusCode) => {
 +      return request.delete('/v1/host/places/{placeId}/rooms/{id}', expectedStatus, {
 +        placeId: place.id,
 +        id: room.id,
@@ -212,7 +207,7 @@ index 0000000..36d8d57
 +    it('deletes the Room', async () => {
 +      const room = await createRoom({ place })
 +
-+      await subject(room, 204)
++      await destroyRoom(room, 204)
 +
 +      expect(await Room.find(room.id)).toBeNull()
 +    })
@@ -221,7 +216,7 @@ index 0000000..36d8d57
 +      it('is not deleted', async () => {
 +        const room = await createRoom()
 +
-+        await subject(room, 404)
++        await destroyRoom(room, 404)
 +
 +        expect(await Room.find(room.id)).toMatchDreamModel(room)
 +      })
@@ -396,12 +391,12 @@ index 198aa15..036f15f 100644
      })
    })
  
-diff --git a/api/src/db/migrations/1762621434439-create-room.ts b/api/src/db/migrations/1762621434439-create-room.ts
+diff --git a/api/src/db/migrations/1764184174971-create-room.ts b/api/src/db/migrations/1764184174971-create-room.ts
 new file mode 100644
-index 0000000..2c04dc2
+index 0000000..ab4029e
 --- /dev/null
-+++ b/api/src/db/migrations/1762621434439-create-room.ts
-@@ -0,0 +1,47 @@
++++ b/api/src/db/migrations/1764184174971-create-room.ts
+@@ -0,0 +1,51 @@
 +import { Kysely, sql } from 'kysely'
 +
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -419,9 +414,13 @@ index 0000000..2c04dc2
 +
 +  await db.schema
 +    .createTable('rooms')
-+    .addColumn('id', 'bigserial', col => col.primaryKey())
++    .addColumn('id', 'uuid', col =>
++      col
++        .primaryKey()
++        .defaultTo(sql`uuid_generate_v4()`),
++    )
 +    .addColumn('type', sql`room_types_enum`, col => col.notNull())
-+    .addColumn('place_id', 'bigint', col => col.references('places.id').onDelete('restrict').notNull())
++    .addColumn('place_id', 'uuid', col => col.references('places.id').onDelete('restrict').notNull())
 +    .addColumn('position', 'integer')
 +    .addColumn('deleted_at', 'timestamp')
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
@@ -450,5 +449,4 @@ index 0000000..2c04dc2
 +  await db.schema.dropType('room_types_enum').execute()
 +}
 \ No newline at end of file
-
 ```

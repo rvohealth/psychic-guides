@@ -1,25 +1,20 @@
 ---
-title: Generate Room-Kitchen STI model
+title: Generate Room/Kitchen STI model
 ---
 
 # Generate Room/Kitchen STI model
 
-## Git Log
+## Commit Message
 
 ```
-commit 00d1e08275fc82f78b33bd77baed2ea18d06d30b
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 11:48:01 2025 -0600
+Generate Room/Kitchen STI model
 
-    Generate Room/Kitchen STI model
-    
-    ```console
-    yarn psy g:sti-child Room/Kitchen extends Room appliances:enum\[\]:appliance_types:stove,oven,microwave,dishwasher
-    ```
-
+```console
+yarn psy g:sti-child Room/Kitchen extends Room appliances:enum\[\]:appliance_types:stove,oven,microwave,dishwasher
+```
 ```
 
-## Diff from 3864659
+## Changes
 
 ```diff
 diff --git a/api/spec/factories/Room/KitchenFactory.ts b/api/spec/factories/Room/KitchenFactory.ts
@@ -84,11 +79,11 @@ index 0000000..f5a38d7
 +export const RoomKitchenSerializer = (roomKitchen: RoomKitchen) =>
 +  RoomSerializer(RoomKitchen, roomKitchen)
 +    .attribute('appliances')
-diff --git a/api/src/db/migrations/1762624071739-create-room-kitchen.ts b/api/src/db/migrations/1762624071739-create-room-kitchen.ts
+diff --git a/api/src/db/migrations/1764184671580-create-room-kitchen.ts b/api/src/db/migrations/1764184671580-create-room-kitchen.ts
 new file mode 100644
 index 0000000..d798b22
 --- /dev/null
-+++ b/api/src/db/migrations/1762624071739-create-room-kitchen.ts
++++ b/api/src/db/migrations/1764184671580-create-room-kitchen.ts
 @@ -0,0 +1,29 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -120,5 +115,4 @@ index 0000000..d798b22
 +  await db.schema.dropType('appliance_types_enum').execute()
 +}
 \ No newline at end of file
-
 ```

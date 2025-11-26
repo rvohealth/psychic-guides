@@ -4,33 +4,28 @@ title: PlacesController specs passing
 
 # PlacesController specs passing
 
-## Git Log
+## Commit Message
 
 ```
-commit d2c646bd2171f4aafb552e5f7fcc26c1b9898dc6
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 11:00:35 2025 -0600
+PlacesController specs passing
 
-    PlacesController specs passing
-    
-    NOTE: if your editor starts complaining about an `error` type,
-    restart the ESLint server (the `ESLint: Restart ESLint Server`
-    command in VSCode / Cursor)
-    
-    ```console
-    yarn uspec spec/unit/controllers/V1/Host/PlacesController.spec.ts
-    // if it hangs, it's likely that you haven't implemented the controller
-    // changes; simply adding `this.ok()` or `this.noContent()` to each action
-    // in the controller will get the spec run to complete
-    ```
+NOTE: if your editor starts complaining about an `error` type,
+restart the ESLint server (the `ESLint: Restart ESLint Server`
+command in VSCode / Cursor)
 
+```console
+yarn uspec spec/unit/controllers/V1/Host/PlacesController.spec.ts
+// if it hangs, it's likely that you haven't implemented the controller
+// changes; simply adding `this.ok()` or `this.noContent()` to each action
+// in the controller will get the spec run to complete
+```
 ```
 
-## Diff from 2724516
+## Changes
 
 ```diff
 diff --git a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
-index 731467c..2fc1714 100644
+index 10c5a6a..25e59a6 100644
 --- a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 +++ b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 @@ -1,9 +1,10 @@
@@ -54,9 +49,20 @@ index 731467c..2fc1714 100644
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
  
-       const { body } = await subject(200)
+       const { body } = await indexPlaces(200)
  
-@@ -53,7 +55,8 @@ describe('V1/Host/PlacesController', () => {
+@@ -46,14 +48,18 @@ describe('V1/Host/PlacesController', () => {
+   })
+ 
+   describe('GET show', () => {
+-    const showPlace = async <StatusCode extends 200 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
++    const showPlace = async <StatusCode extends 200 | 400 | 404>(
++      place: Place,
++      expectedStatus: StatusCode,
++    ) => {
+       return request.get('/v1/host/places/{id}', expectedStatus, {
+         id: place.id,
+       })
      }
  
      it('returns the specified Place', async () => {
@@ -64,11 +70,11 @@ index 731467c..2fc1714 100644
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
  
-       const { body } = await subject(place, 200)
+       const { body } = await showPlace(place, 200)
  
-@@ -79,19 +82,22 @@ describe('V1/Host/PlacesController', () => {
+@@ -79,19 +85,22 @@ describe('V1/Host/PlacesController', () => {
    describe('POST create', () => {
-     const subject = async <StatusCode extends 201 | 400 | 404>(
+     const createPlace = async <StatusCode extends 201 | 400 | 404>(
        data: RequestBody<'post', '/v1/host/places'>,
 -      expectedStatus: StatusCode
 +      expectedStatus: StatusCode,
@@ -80,12 +86,12 @@ index 731467c..2fc1714 100644
      }
  
      it('creates a Place for this Host', async () => {
--      const { body } = await subject({
+-      const { body } = await createPlace({
 -        name: 'The Place name',
 -        style: 'cottage',
 -        sleeps: 1,
 -      }, 201)
-+      const { body } = await subject(
++      const { body } = await createPlace(
 +        {
 +          name: 'The Place name',
 +          style: 'cottage',
@@ -96,8 +102,8 @@ index 731467c..2fc1714 100644
  
        const place = await host.associationQuery('places').firstOrFail()
        expect(place.name).toEqual('The Place name')
-@@ -113,7 +119,7 @@ describe('V1/Host/PlacesController', () => {
-     const subject = async <StatusCode extends 204 | 400 | 404>(
+@@ -113,7 +122,7 @@ describe('V1/Host/PlacesController', () => {
+     const updatePlace = async <StatusCode extends 204 | 400 | 404>(
        place: Place,
        data: RequestBody<'patch', '/v1/host/places/{id}'>,
 -      expectedStatus: StatusCode
@@ -105,7 +111,7 @@ index 731467c..2fc1714 100644
      ) => {
        return request.patch('/v1/host/places/{id}', expectedStatus, {
          id: place.id,
-@@ -122,13 +128,18 @@ describe('V1/Host/PlacesController', () => {
+@@ -122,13 +131,18 @@ describe('V1/Host/PlacesController', () => {
      }
  
      it('updates the Place', async () => {
@@ -113,12 +119,12 @@ index 731467c..2fc1714 100644
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
  
--      await subject(place, {
+-      await updatePlace(place, {
 -        name: 'Updated Place name',
 -        style: 'dump',
 -        sleeps: 2,
 -      }, 204)
-+      await subject(
++      await updatePlace(
 +        place,
 +        {
 +          name: 'Updated Place name',
@@ -130,16 +136,16 @@ index 731467c..2fc1714 100644
  
        await place.reload()
        expect(place.name).toEqual('Updated Place name')
-@@ -143,11 +154,15 @@ describe('V1/Host/PlacesController', () => {
+@@ -143,11 +157,15 @@ describe('V1/Host/PlacesController', () => {
          const originalStyle = place.style
          const originalSleeps = place.sleeps
  
--        await subject(place, {
+-        await updatePlace(place, {
 -          name: 'Updated Place name',
 -          style: 'dump',
 -          sleeps: 2,
 -        }, 404)
-+        await subject(
++        await updatePlace(
 +          place,
 +          {
 +            name: 'Updated Place name',
@@ -151,7 +157,18 @@ index 731467c..2fc1714 100644
  
          await place.reload()
          expect(place.name).toEqual(originalName)
-@@ -165,7 +180,8 @@ describe('V1/Host/PlacesController', () => {
+@@ -158,14 +176,18 @@ describe('V1/Host/PlacesController', () => {
+   })
+ 
+   describe('DELETE destroy', () => {
+-    const destroyPlace = async <StatusCode extends 204 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
++    const destroyPlace = async <StatusCode extends 204 | 400 | 404>(
++      place: Place,
++      expectedStatus: StatusCode,
++    ) => {
+       return request.delete('/v1/host/places/{id}', expectedStatus, {
+         id: place.id,
+       })
      }
  
      it('deletes the Place', async () => {
@@ -159,7 +176,7 @@ index 731467c..2fc1714 100644
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
  
-       await subject(place, 204)
+       await destroyPlace(place, 204)
  
 diff --git a/api/src/app/controllers/AuthedController.ts b/api/src/app/controllers/AuthedController.ts
 index fc70d67..3f576e4 100644
@@ -322,5 +339,4 @@ index fb2326a..df0a8f3 100644
 +      .findOrFail(this.castParam('id', 'string'))
    }
  }
-
 ```

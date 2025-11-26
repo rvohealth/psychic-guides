@@ -1,39 +1,34 @@
 ---
-title: HasOne currentLocalizedText association
+title: Leverage a passthrough `and` condition
 ---
 
-# Leverage a passthrough and condition to create a HasOne currentLocalizedText association for displaying localized text to Guests
+# Leverage a passthrough `and` condition
 
-## Git Log
-
-```
-commit d3876322ea8e18503dac5a6fcf7a7753ee47c677
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 12:36:35 2025 -0600
-
-    Leverage a passthrough and condition
-    to create a HasOne currentLocalizedText
-    association for displaying localized
-    text to Guests
-    
-    ```console
-    yarn psy sync
-    yarn uspec spec/unit/models/Host.spec.ts
-    yarn uspec spec/unit/models/Place.spec.ts
-    yarn uspec spec/unit/models/Room.spec.ts
-    yarn uspec
-    ```
+## Commit Message
 
 ```
+Leverage a passthrough `and` condition
+to create a HasOne currentLocalizedText
+association for displaying localized
+text to Guests
 
-## Diff from 267e957
+```console
+yarn psy sync
+yarn uspec spec/unit/models/Host.spec.ts
+yarn uspec spec/unit/models/Place.spec.ts
+yarn uspec spec/unit/models/Room.spec.ts
+yarn uspec
+```
+```
+
+## Changes
 
 ```diff
 diff --git a/api/spec/unit/models/Host.spec.ts b/api/spec/unit/models/Host.spec.ts
-index 421caec..cd12902 100644
+index cdcb8d6..79b1487 100644
 --- a/api/spec/unit/models/Host.spec.ts
 +++ b/api/spec/unit/models/Host.spec.ts
-@@ -27,4 +27,13 @@ describe('Host', () => {
+@@ -28,4 +28,13 @@ describe('Host', () => {
        expect(localizedText.locale).toEqual('en-US')
      })
    })
@@ -48,10 +43,10 @@ index 421caec..cd12902 100644
 +  })
  })
 diff --git a/api/spec/unit/models/Place.spec.ts b/api/spec/unit/models/Place.spec.ts
-index c453660..a288c44 100644
+index 7399652..c4f54f5 100644
 --- a/api/spec/unit/models/Place.spec.ts
 +++ b/api/spec/unit/models/Place.spec.ts
-@@ -28,4 +28,13 @@ describe('Place', () => {
+@@ -29,4 +29,13 @@ describe('Place', () => {
        expect(localizedText.title).toEqual('My cottage')
      })
    })
@@ -66,10 +61,10 @@ index c453660..a288c44 100644
 +  })
  })
 diff --git a/api/spec/unit/models/Room.spec.ts b/api/spec/unit/models/Room.spec.ts
-index d66a8ab..1929c21 100644
+index 0c9281f..e6c7481 100644
 --- a/api/spec/unit/models/Room.spec.ts
 +++ b/api/spec/unit/models/Room.spec.ts
-@@ -24,4 +24,16 @@ describe('Room', () => {
+@@ -25,4 +25,16 @@ describe('Room', () => {
        expect(localizedText.title).toEqual('Den')
      })
    })
@@ -87,18 +82,17 @@ index d66a8ab..1929c21 100644
 +  })
  })
 diff --git a/api/src/app/models/Host.ts b/api/src/app/models/Host.ts
-index 4fae757..5c3b72a 100644
+index f0bb141..1bc8c32 100644
 --- a/api/src/app/models/Host.ts
 +++ b/api/src/app/models/Host.ts
-@@ -3,7 +3,7 @@ import HostPlace from '@models/HostPlace.js'
- import LocalizedText from '@models/LocalizedText.js'
- import Place from '@models/Place.js'
+@@ -1,6 +1,6 @@
+ import ApplicationModel from '@models/ApplicationModel.js'
  import User from '@models/User.js'
 -import { Decorators } from '@rvoh/dream'
 +import { Decorators, DreamConst } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- 
- const deco = new Decorators<typeof Host>()
+ import HostPlace from './HostPlace.js'
+ import LocalizedText from './LocalizedText.js'
 @@ -41,4 +41,11 @@ export default class Host extends ApplicationModel {
    public async createDefaultLocalizedText(this: Host) {
      await this.createAssociation('localizedTexts', { locale: 'en-US' })
@@ -112,18 +106,16 @@ index 4fae757..5c3b72a 100644
 +  public currentLocalizedText: LocalizedText
  }
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index 717990e..9e6d48f 100644
+index 114e2cc..2631c38 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
-@@ -3,7 +3,7 @@ import Host from '@models/Host.js'
- import HostPlace from '@models/HostPlace.js'
- import LocalizedText from '@models/LocalizedText.js'
- import Room from '@models/Room.js'
+@@ -1,5 +1,5 @@
+ import ApplicationModel from '@models/ApplicationModel.js'
 -import { Decorators } from '@rvoh/dream'
 +import { Decorators, DreamConst } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- 
- const deco = new Decorators<typeof Place>()
+ import Host from './Host.js'
+ import HostPlace from './HostPlace.js'
 @@ -46,4 +46,11 @@ export default class Place extends ApplicationModel {
    public async createDefaultLocalizedText(this: Place) {
      await this.createAssociation('localizedTexts', { locale: 'en-US', title: `My ${this.style}` })
@@ -137,18 +129,17 @@ index 717990e..9e6d48f 100644
 +  public currentLocalizedText: LocalizedText
  }
 diff --git a/api/src/app/models/Room.ts b/api/src/app/models/Room.ts
-index fc0ed30..d5f6182 100644
+index 289e533..3343514 100644
 --- a/api/src/app/models/Room.ts
 +++ b/api/src/app/models/Room.ts
-@@ -1,7 +1,7 @@
+@@ -1,6 +1,6 @@
  import ApplicationModel from '@models/ApplicationModel.js'
- import LocalizedText from '@models/LocalizedText.js'
  import Place from '@models/Place.js'
 -import { Decorators } from '@rvoh/dream'
 +import { Decorators, DreamConst } from '@rvoh/dream'
  import { DreamColumn } from '@rvoh/dream/types'
+ import LocalizedText from './LocalizedText.js'
  
- const deco = new Decorators<typeof Room>()
 @@ -29,4 +29,11 @@ export default class Room extends ApplicationModel {
    public async createDefaultLocalizedText(this: Room) {
      await this.createAssociation('localizedTexts', { locale: 'en-US', title: this.type })
@@ -161,5 +152,65 @@ index fc0ed30..d5f6182 100644
 +  })
 +  public currentLocalizedText: LocalizedText
  }
-
+diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
+index 3b6c1a0..b7231fb 100644
+--- a/api/src/types/dream.ts
++++ b/api/src/types/dream.ts
+@@ -266,6 +266,15 @@ export const schema = {
+     },
+     virtualColumns: [],
+     associations: {
++      currentLocalizedText: {
++        type: 'HasOne',
++        foreignKey: 'localizableId',
++        foreignKeyTypeColumn: 'localizableType',
++        tables: ['localized_texts'],
++        optional: null,
++        requiredAndClauses: null,
++        passthroughAndClauses: ['locale'],
++      },
+       hostPlaces: {
+         type: 'HasMany',
+         foreignKey: 'hostId',
+@@ -481,6 +490,15 @@ export const schema = {
+     },
+     virtualColumns: [],
+     associations: {
++      currentLocalizedText: {
++        type: 'HasOne',
++        foreignKey: 'localizableId',
++        foreignKeyTypeColumn: 'localizableType',
++        tables: ['localized_texts'],
++        optional: null,
++        requiredAndClauses: null,
++        passthroughAndClauses: ['locale'],
++      },
+       hostPlaces: {
+         type: 'HasMany',
+         foreignKey: 'placeId',
+@@ -620,6 +638,15 @@ export const schema = {
+     },
+     virtualColumns: [],
+     associations: {
++      currentLocalizedText: {
++        type: 'HasOne',
++        foreignKey: 'localizableId',
++        foreignKeyTypeColumn: 'localizableType',
++        tables: ['localized_texts'],
++        optional: null,
++        requiredAndClauses: null,
++        passthroughAndClauses: ['locale'],
++      },
+       localizedTexts: {
+         type: 'HasMany',
+         foreignKey: 'localizableId',
+@@ -710,7 +737,7 @@ export const schema = {
+ } as const
+ 
+ export const connectionTypeConfig = {
+-  passthroughColumns: [],
++  passthroughColumns: ['locale'],
+   allDefaultScopeNames: ['dream:STI'],
+   globalNames: {
+     models: {
 ```

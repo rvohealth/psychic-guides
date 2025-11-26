@@ -4,22 +4,17 @@ title: Generate Host model
 
 # Generate Host model
 
-## Git Log
+## Commit Message
 
 ```
-commit ef1d3cda91a13efad31440ebbba8d54169fff771
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 10:50:34 2025 -0600
+Generate Host model
 
-    Generate Host model
-    
-    ```console
-    yarn psy g:model Host User:belongs_to
-    ```
-
+```console
+yarn psy g:model Host User:belongs_to
+```
 ```
 
-## Diff from b32af27
+## Changes
 
 ```diff
 diff --git a/api/spec/factories/HostFactory.ts b/api/spec/factories/HostFactory.ts
@@ -95,20 +90,24 @@ index 0000000..9ccbada
 +
 +export const HostSerializer = (host: Host) =>
 +  HostSummarySerializer(host)
-diff --git a/api/src/db/migrations/1762620628815-create-host.ts b/api/src/db/migrations/1762620628815-create-host.ts
+diff --git a/api/src/db/migrations/1764175837654-create-host.ts b/api/src/db/migrations/1764175837654-create-host.ts
 new file mode 100644
-index 0000000..d43553d
+index 0000000..9157b9b
 --- /dev/null
-+++ b/api/src/db/migrations/1762620628815-create-host.ts
-@@ -0,0 +1,24 @@
++++ b/api/src/db/migrations/1764175837654-create-host.ts
+@@ -0,0 +1,28 @@
 +import { Kysely, sql } from 'kysely'
 +
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +export async function up(db: Kysely<any>): Promise<void> {
 +  await db.schema
 +    .createTable('hosts')
-+    .addColumn('id', 'bigserial', col => col.primaryKey())
-+    .addColumn('user_id', 'bigint', col => col.references('users.id').onDelete('restrict').notNull())
++    .addColumn('id', 'uuid', col =>
++      col
++        .primaryKey()
++        .defaultTo(sql`uuid_generate_v4()`),
++    )
++    .addColumn('user_id', 'uuid', col => col.references('users.id').onDelete('restrict').notNull())
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
 +    .execute()
@@ -126,5 +125,4 @@ index 0000000..d43553d
 +  await db.schema.dropTable('hosts').execute()
 +}
 \ No newline at end of file
-
 ```

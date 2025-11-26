@@ -1,33 +1,27 @@
 ---
 title: Sortable
-pagination_next: null
 ---
 
 # Sortable
 
-## Git Log
+## Commit Message
 
 ```
-commit b4467fc236a2b81c4a8151e25b24a8969b387b0b
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 13:18:47 2025 -0600
+Sortable
 
-    Sortable
-    
-    ```console
-    yarn psy g:migration add-deferrable-unique-constraint-to-rooms
-    yarn psy db:migrate
-    yarn uspec spec/unit/models/Room.spec.ts
-    yarn uspec
-    ```
-
+```console
+yarn psy g:migration add-deferrable-unique-constraint-to-rooms
+yarn psy db:migrate
+yarn uspec spec/unit/models/Room.spec.ts
+yarn uspec
+```
 ```
 
-## Diff from 965b1bd
+## Changes
 
 ```diff
 diff --git a/api/spec/unit/models/Room.spec.ts b/api/spec/unit/models/Room.spec.ts
-index 1929c21..1b0a493 100644
+index e6c7481..f34ea18 100644
 --- a/api/spec/unit/models/Room.spec.ts
 +++ b/api/spec/unit/models/Room.spec.ts
 @@ -1,5 +1,8 @@
@@ -39,7 +33,7 @@ index 1929c21..1b0a493 100644
  
  describe('Room', () => {
    it('has many LocalizedTexts', async () => {
-@@ -36,4 +39,17 @@ describe('Room', () => {
+@@ -37,4 +40,17 @@ describe('Room', () => {
  
      expect(room.currentLocalizedText).toMatchDreamModel(esLocalizedText)
    })
@@ -58,7 +52,7 @@ index 1929c21..1b0a493 100644
 +  })
  })
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index 0dee71a..675c7c5 100644
+index bb10df8..23f0515 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
 @@ -37,7 +37,7 @@ export default class Place extends ApplicationModel {
@@ -71,7 +65,7 @@ index 0dee71a..675c7c5 100644
    // not from `import { Room } from 'socket.io-adapter'`
    public rooms: Room[]
 diff --git a/api/src/app/models/Room.ts b/api/src/app/models/Room.ts
-index ffd5409..a0c638a 100644
+index eb177b3..0eb640b 100644
 --- a/api/src/app/models/Room.ts
 +++ b/api/src/app/models/Room.ts
 @@ -14,7 +14,10 @@ export default class Room extends ApplicationModel {
@@ -85,11 +79,11 @@ index ffd5409..a0c638a 100644
    public deletedAt: DreamColumn<Room, 'deletedAt'>
    public createdAt: DreamColumn<Room, 'createdAt'>
    public updatedAt: DreamColumn<Room, 'updatedAt'>
-diff --git a/api/src/db/migrations/1762629467449-add-deferrable-unique-constraint-to-rooms.ts b/api/src/db/migrations/1762629467449-add-deferrable-unique-constraint-to-rooms.ts
+diff --git a/api/src/db/migrations/1764196883852-add-deferrable-unique-constraint-to-rooms.ts b/api/src/db/migrations/1764196883852-add-deferrable-unique-constraint-to-rooms.ts
 new file mode 100644
 index 0000000..49e3c5f
 --- /dev/null
-+++ b/api/src/db/migrations/1762629467449-add-deferrable-unique-constraint-to-rooms.ts
++++ b/api/src/db/migrations/1764196883852-add-deferrable-unique-constraint-to-rooms.ts
 @@ -0,0 +1,15 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely } from 'kysely'
@@ -106,5 +100,4 @@ index 0000000..49e3c5f
 +export async function down(db: Kysely<any>): Promise<void> {
 +  await DreamMigrationHelpers.dropConstraint(db, 'room_position_contraint', { table: 'rooms' })
 +}
-
 ```
