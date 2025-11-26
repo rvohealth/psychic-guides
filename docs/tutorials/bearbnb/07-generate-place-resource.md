@@ -4,22 +4,17 @@ title: Generate Place resource
 
 # Generate Place resource
 
-## Git Log
+## Commit Message
 
 ```
-commit 7fbe764b9c18a31acc8139935bb3d037de941f80
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 10:52:15 2025 -0600
+Generate Place resource
 
-    Generate Place resource
-    
-    ```console
-    yarn psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional
-    ```
-
+```console
+yarn psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional
+```
 ```
 
-## Diff from 83bf27d
+## Changes
 
 ```diff
 diff --git a/api/spec/factories/PlaceFactory.ts b/api/spec/factories/PlaceFactory.ts
@@ -43,7 +38,7 @@ index 0000000..d0a664e
 +}
 diff --git a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 new file mode 100644
-index 0000000..731467c
+index 0000000..10c5a6a
 --- /dev/null
 +++ b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 @@ -0,0 +1,185 @@
@@ -67,14 +62,14 @@ index 0000000..731467c
 +  })
 +
 +  describe('GET index', () => {
-+    const subject = async <StatusCode extends 200 | 400 | 404>(expectedStatus: StatusCode) => {
++    const indexPlaces = async <StatusCode extends 200 | 400 | 404>(expectedStatus: StatusCode) => {
 +      return request.get('/v1/host/places', expectedStatus)
 +    }
 +
 +    it('returns the index of Places', async () => {
 +      const place = await createPlace({ host })
 +
-+      const { body } = await subject(200)
++      const { body } = await indexPlaces(200)
 +
 +      expect(body.results).toEqual([
 +        expect.objectContaining({
@@ -87,7 +82,7 @@ index 0000000..731467c
 +      it('are omitted', async () => {
 +        await createPlace()
 +
-+        const { body } = await subject(200)
++        const { body } = await indexPlaces(200)
 +
 +        expect(body.results).toEqual([])
 +      })
@@ -95,7 +90,7 @@ index 0000000..731467c
 +  })
 +
 +  describe('GET show', () => {
-+    const subject = async <StatusCode extends 200 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
++    const showPlace = async <StatusCode extends 200 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
 +      return request.get('/v1/host/places/{id}', expectedStatus, {
 +        id: place.id,
 +      })
@@ -104,7 +99,7 @@ index 0000000..731467c
 +    it('returns the specified Place', async () => {
 +      const place = await createPlace({ host })
 +
-+      const { body } = await subject(place, 200)
++      const { body } = await showPlace(place, 200)
 +
 +      expect(body).toEqual(
 +        expect.objectContaining({
@@ -120,13 +115,13 @@ index 0000000..731467c
 +      it('is not found', async () => {
 +        const otherHostPlace = await createPlace()
 +
-+        await subject(otherHostPlace, 404)
++        await showPlace(otherHostPlace, 404)
 +      })
 +    })
 +  })
 +
 +  describe('POST create', () => {
-+    const subject = async <StatusCode extends 201 | 400 | 404>(
++    const createPlace = async <StatusCode extends 201 | 400 | 404>(
 +      data: RequestBody<'post', '/v1/host/places'>,
 +      expectedStatus: StatusCode
 +    ) => {
@@ -136,7 +131,7 @@ index 0000000..731467c
 +    }
 +
 +    it('creates a Place for this Host', async () => {
-+      const { body } = await subject({
++      const { body } = await createPlace({
 +        name: 'The Place name',
 +        style: 'cottage',
 +        sleeps: 1,
@@ -159,7 +154,7 @@ index 0000000..731467c
 +  })
 +
 +  describe('PATCH update', () => {
-+    const subject = async <StatusCode extends 204 | 400 | 404>(
++    const updatePlace = async <StatusCode extends 204 | 400 | 404>(
 +      place: Place,
 +      data: RequestBody<'patch', '/v1/host/places/{id}'>,
 +      expectedStatus: StatusCode
@@ -173,7 +168,7 @@ index 0000000..731467c
 +    it('updates the Place', async () => {
 +      const place = await createPlace({ host })
 +
-+      await subject(place, {
++      await updatePlace(place, {
 +        name: 'Updated Place name',
 +        style: 'dump',
 +        sleeps: 2,
@@ -192,7 +187,7 @@ index 0000000..731467c
 +        const originalStyle = place.style
 +        const originalSleeps = place.sleeps
 +
-+        await subject(place, {
++        await updatePlace(place, {
 +          name: 'Updated Place name',
 +          style: 'dump',
 +          sleeps: 2,
@@ -207,7 +202,7 @@ index 0000000..731467c
 +  })
 +
 +  describe('DELETE destroy', () => {
-+    const subject = async <StatusCode extends 204 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
++    const destroyPlace = async <StatusCode extends 204 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
 +      return request.delete('/v1/host/places/{id}', expectedStatus, {
 +        id: place.id,
 +      })
@@ -216,7 +211,7 @@ index 0000000..731467c
 +    it('deletes the Place', async () => {
 +      const place = await createPlace({ host })
 +
-+      await subject(place, 204)
++      await destroyPlace(place, 204)
 +
 +      expect(await Place.find(place.id)).toBeNull()
 +    })
@@ -225,7 +220,7 @@ index 0000000..731467c
 +      it('is not deleted', async () => {
 +        const place = await createPlace()
 +
-+        await subject(place, 404)
++        await destroyPlace(place, 404)
 +
 +        expect(await Place.find(place.id)).toMatchDreamModel(place)
 +      })
@@ -408,12 +403,12 @@ index 67975fc..198aa15 100644
    adminRoutes(r)
    // add routes here, perhaps by running `yarn psy g:resource v1/pets Pet name:citext birthdate:date species:enum:pet_species:dog,cat,fish`
  }
-diff --git a/api/src/db/migrations/1762620716247-create-place.ts b/api/src/db/migrations/1762620716247-create-place.ts
+diff --git a/api/src/db/migrations/1764176714209-create-place.ts b/api/src/db/migrations/1764176714209-create-place.ts
 new file mode 100644
-index 0000000..b3f75f3
+index 0000000..e1e0e23
 --- /dev/null
-+++ b/api/src/db/migrations/1762620716247-create-place.ts
-@@ -0,0 +1,38 @@
++++ b/api/src/db/migrations/1764176714209-create-place.ts
+@@ -0,0 +1,42 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely, sql } from 'kysely'
 +
@@ -436,7 +431,11 @@ index 0000000..b3f75f3
 +
 +  await db.schema
 +    .createTable('places')
-+    .addColumn('id', 'bigserial', col => col.primaryKey())
++    .addColumn('id', 'uuid', col =>
++      col
++        .primaryKey()
++        .defaultTo(sql`uuid_generate_v4()`),
++    )
 +    .addColumn('name', sql`citext`, col => col.notNull())
 +    .addColumn('style', sql`place_styles_enum`, col => col.notNull())
 +    .addColumn('sleeps', 'integer', col => col.notNull())
@@ -453,5 +452,4 @@ index 0000000..b3f75f3
 +  await db.schema.dropType('place_styles_enum').execute()
 +}
 \ No newline at end of file
-
 ```

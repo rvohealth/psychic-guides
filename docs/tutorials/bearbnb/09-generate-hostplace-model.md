@@ -4,22 +4,17 @@ title: Generate HostPlace model
 
 # Generate HostPlace model
 
-## Git Log
+## Commit Message
 
 ```
-commit 8b8489d15ad80d58ad0c7d1b5457ff39839d2daf
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 10:53:03 2025 -0600
+Generate HostPlace model
 
-    Generate HostPlace model
-    
-    ```console
-    yarn psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to deleted_at:datetime:optional
-    ```
-
+```console
+yarn psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to deleted_at:datetime:optional
+```
 ```
 
-## Diff from ef34829
+## Changes
 
 ```diff
 diff --git a/api/spec/factories/HostPlaceFactory.ts b/api/spec/factories/HostPlaceFactory.ts
@@ -81,21 +76,25 @@ index 0000000..baf74e2
 +  public place: Place
 +  public placeId: DreamColumn<HostPlace, 'placeId'>
 +}
-diff --git a/api/src/db/migrations/1762620777831-create-host-place.ts b/api/src/db/migrations/1762620777831-create-host-place.ts
+diff --git a/api/src/db/migrations/1764176778158-create-host-place.ts b/api/src/db/migrations/1764176778158-create-host-place.ts
 new file mode 100644
-index 0000000..114c330
+index 0000000..7d47d55
 --- /dev/null
-+++ b/api/src/db/migrations/1762620777831-create-host-place.ts
-@@ -0,0 +1,33 @@
++++ b/api/src/db/migrations/1764176778158-create-host-place.ts
+@@ -0,0 +1,37 @@
 +import { Kysely, sql } from 'kysely'
 +
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +export async function up(db: Kysely<any>): Promise<void> {
 +  await db.schema
 +    .createTable('host_places')
-+    .addColumn('id', 'bigserial', col => col.primaryKey())
-+    .addColumn('host_id', 'bigint', col => col.references('hosts.id').onDelete('restrict').notNull())
-+    .addColumn('place_id', 'bigint', col => col.references('places.id').onDelete('restrict').notNull())
++    .addColumn('id', 'uuid', col =>
++      col
++        .primaryKey()
++        .defaultTo(sql`uuid_generate_v4()`),
++    )
++    .addColumn('host_id', 'uuid', col => col.references('hosts.id').onDelete('restrict').notNull())
++    .addColumn('place_id', 'uuid', col => col.references('places.id').onDelete('restrict').notNull())
 +    .addColumn('deleted_at', 'timestamp')
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
@@ -121,5 +120,4 @@ index 0000000..114c330
 +  await db.schema.dropTable('host_places').execute()
 +}
 \ No newline at end of file
-
 ```

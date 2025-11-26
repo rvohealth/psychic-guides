@@ -1,25 +1,20 @@
 ---
-title: Generate Room-Bedroom STI model
+title: Generate Room/Bedroom STI model
 ---
 
 # Generate Room/Bedroom STI model
 
-## Git Log
+## Commit Message
 
 ```
-commit 73e6c8e00168cf4a7a4409245bd90e8f6aef7386
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 11:45:45 2025 -0600
+Generate Room/Bedroom STI model
 
-    Generate Room/Bedroom STI model
-    
-    ```console
-    yarn psy g:sti-child Room/Bedroom extends Room bed_types:enum\[\]:bed_types:twin,bunk,queen,king,cot,sofabed
-    ```
-
+```console
+yarn psy g:sti-child Room/Bedroom extends Room bed_types:enum\[\]:bed_types:twin,bunk,queen,king,cot,sofabed
+```
 ```
 
-## Diff from 94f272f
+## Changes
 
 ```diff
 diff --git a/api/spec/factories/Room/BedroomFactory.ts b/api/spec/factories/Room/BedroomFactory.ts
@@ -84,11 +79,11 @@ index 0000000..e705036
 +export const RoomBedroomSerializer = (roomBedroom: RoomBedroom) =>
 +  RoomSerializer(RoomBedroom, roomBedroom)
 +    .attribute('bedTypes')
-diff --git a/api/src/db/migrations/1762623939899-create-room-bedroom.ts b/api/src/db/migrations/1762623939899-create-room-bedroom.ts
+diff --git a/api/src/db/migrations/1764184609121-create-room-bedroom.ts b/api/src/db/migrations/1764184609121-create-room-bedroom.ts
 new file mode 100644
 index 0000000..55d5d4c
 --- /dev/null
-+++ b/api/src/db/migrations/1762623939899-create-room-bedroom.ts
++++ b/api/src/db/migrations/1764184609121-create-room-bedroom.ts
 @@ -0,0 +1,31 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -122,5 +117,4 @@ index 0000000..55d5d4c
 +  await db.schema.dropType('bed_types_enum').execute()
 +}
 \ No newline at end of file
-
 ```

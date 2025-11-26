@@ -1,26 +1,21 @@
 ---
-title: Generate Room-Bathroom STI model
+title: Generate Room/Bathroom STI model
 ---
 
 # Generate Room/Bathroom STI model
 
-## Git Log
+## Commit Message
 
 ```
-commit edf2afb7ac145cf7fff0d3aa6a54ccd3dafc7f1b
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 11:43:50 2025 -0600
+Generate Room/Bathroom STI model
 
-    Generate Room/Bathroom STI model
-    
-    ```console
-    yarn psy g:sti-child --help
-    yarn psy g:sti-child Room/Bathroom extends Room bath_or_shower_style:enum:bath_or_shower_styles:bath,shower,bath_and_shower,none
-    ```
-
+```console
+yarn psy g:sti-child --help
+yarn psy g:sti-child Room/Bathroom extends Room bath_or_shower_style:enum:bath_or_shower_styles:bath,shower,bath_and_shower,none
+```
 ```
 
-## Diff from 3f263e0
+## Changes
 
 ```diff
 diff --git a/api/spec/factories/Room/BathroomFactory.ts b/api/spec/factories/Room/BathroomFactory.ts
@@ -85,11 +80,11 @@ index 0000000..1e713c1
 +export const RoomBathroomSerializer = (roomBathroom: RoomBathroom) =>
 +  RoomSerializer(RoomBathroom, roomBathroom)
 +    .attribute('bathOrShowerStyle')
-diff --git a/api/src/db/migrations/1762623819589-create-room-bathroom.ts b/api/src/db/migrations/1762623819589-create-room-bathroom.ts
+diff --git a/api/src/db/migrations/1764184213461-create-room-bathroom.ts b/api/src/db/migrations/1764184213461-create-room-bathroom.ts
 new file mode 100644
 index 0000000..8896e86
 --- /dev/null
-+++ b/api/src/db/migrations/1762623819589-create-room-bathroom.ts
++++ b/api/src/db/migrations/1764184213461-create-room-bathroom.ts
 @@ -0,0 +1,37 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -129,5 +124,4 @@ index 0000000..8896e86
 +  await db.schema.dropType('bath_or_shower_styles_enum').execute()
 +}
 \ No newline at end of file
-
 ```

@@ -4,24 +4,19 @@ title: Generate LocalizedText resource
 
 # Generate LocalizedText resource
 
-## Git Log
+## Commit Message
 
 ```
-commit 3d859ee421616b256a0b093ac2524b870362f554
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 12:26:17 2025 -0600
+Generate LocalizedText resource
 
-    Generate LocalizedText resource
-    
-    ```console
-    yarn psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText localizable_type:enum:localized_types:Host,Place,Room localizable_id:bigint locale:enum:locales:en-US,es-ES title:string markdown:text deleted_at:datetime:optional
-    ```
-    
-    Leverages `--only=update,destroy` to only generate the show, update, and destroy actions. Each polymorphically associated model's controller will have an action for creating an associated LocalizedText model, and Host-facing serializer can display its LocalizedTexts, but the actions for maintaining all LocalizedText will be centralized in the LocalizedText controller.
-
+```console
+yarn psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText localizable_type:enum:localized_types:Host,Place,Room localizable_id:uuid locale:enum:locales:en-US,es-ES title:string markdown:text deleted_at:datetime:optional
 ```
 
-## Diff from 3f2c264
+Leverages `--only=update,destroy` to only generate the show, update, and destroy actions. Each polymorphically associated model's controller will have an action for creating an associated LocalizedText model, and Host-facing serializer can display its LocalizedTexts, but the actions for maintaining all LocalizedText will be centralized in the LocalizedText controller.
+```
+
+## Changes
 
 ```diff
 diff --git a/api/spec/factories/LocalizedTextFactory.ts b/api/spec/factories/LocalizedTextFactory.ts
@@ -45,7 +40,7 @@ index 0000000..0df341b
 +}
 diff --git a/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts b/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
 new file mode 100644
-index 0000000..161cf61
+index 0000000..9cfebae
 --- /dev/null
 +++ b/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
 @@ -0,0 +1,89 @@
@@ -65,7 +60,7 @@ index 0000000..161cf61
 +  })
 +
 +  describe('PATCH update', () => {
-+    const subject = async <StatusCode extends 204 | 400 | 404>(
++    const updateLocalizedText = async <StatusCode extends 204 | 400 | 404>(
 +      localizedText: LocalizedText,
 +      data: RequestBody<'patch', '/v1/host/localized-texts/{id}'>,
 +      expectedStatus: StatusCode
@@ -79,7 +74,7 @@ index 0000000..161cf61
 +    it('updates the LocalizedText', async () => {
 +      const localizedText = await createLocalizedText({ user })
 +
-+      await subject(localizedText, {
++      await updateLocalizedText(localizedText, {
 +        locale: 'es-ES',
 +        title: 'Updated LocalizedText title',
 +        markdown: 'Updated LocalizedText markdown',
@@ -98,7 +93,7 @@ index 0000000..161cf61
 +        const originalTitle = localizedText.title
 +        const originalMarkdown = localizedText.markdown
 +
-+        await subject(localizedText, {
++        await updateLocalizedText(localizedText, {
 +          locale: 'es-ES',
 +          title: 'Updated LocalizedText title',
 +          markdown: 'Updated LocalizedText markdown',
@@ -113,7 +108,7 @@ index 0000000..161cf61
 +  })
 +
 +  describe('DELETE destroy', () => {
-+    const subject = async <StatusCode extends 204 | 400 | 404>(localizedText: LocalizedText, expectedStatus: StatusCode) => {
++    const destroyLocalizedText = async <StatusCode extends 204 | 400 | 404>(localizedText: LocalizedText, expectedStatus: StatusCode) => {
 +      return request.delete('/v1/host/localized-texts/{id}', expectedStatus, {
 +        id: localizedText.id,
 +      })
@@ -122,7 +117,7 @@ index 0000000..161cf61
 +    it('deletes the LocalizedText', async () => {
 +      const localizedText = await createLocalizedText({ user })
 +
-+      await subject(localizedText, 204)
++      await destroyLocalizedText(localizedText, 204)
 +
 +      expect(await LocalizedText.find(localizedText.id)).toBeNull()
 +    })
@@ -131,7 +126,7 @@ index 0000000..161cf61
 +      it('is not deleted', async () => {
 +        const localizedText = await createLocalizedText()
 +
-+        await subject(localizedText, 404)
++        await destroyLocalizedText(localizedText, 404)
 +
 +        expect(await LocalizedText.find(localizedText.id)).toMatchDreamModel(localizedText)
 +      })
@@ -256,12 +251,12 @@ index 036f15f..e0981a7 100644
        r.resources('places', r => {
          r.resources('rooms')
  
-diff --git a/api/src/db/migrations/1762626367248-create-localized-text.ts b/api/src/db/migrations/1762626367248-create-localized-text.ts
+diff --git a/api/src/db/migrations/1764187753122-create-localized-text.ts b/api/src/db/migrations/1764187753122-create-localized-text.ts
 new file mode 100644
-index 0000000..aad284a
+index 0000000..13f64b4
 --- /dev/null
-+++ b/api/src/db/migrations/1762626367248-create-localized-text.ts
-@@ -0,0 +1,42 @@
++++ b/api/src/db/migrations/1764187753122-create-localized-text.ts
+@@ -0,0 +1,46 @@
 +import { Kysely, sql } from 'kysely'
 +
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -285,9 +280,13 @@ index 0000000..aad284a
 +
 +  await db.schema
 +    .createTable('localized_texts')
-+    .addColumn('id', 'bigserial', col => col.primaryKey())
++    .addColumn('id', 'uuid', col =>
++      col
++        .primaryKey()
++        .defaultTo(sql`uuid_generate_v4()`),
++    )
 +    .addColumn('localizable_type', sql`localized_types_enum`, col => col.notNull())
-+    .addColumn('localizable_id', 'bigint', col => col.notNull())
++    .addColumn('localizable_id', 'uuid', col => col.notNull())
 +    .addColumn('locale', sql`locales_enum`, col => col.notNull())
 +    .addColumn('title', 'varchar(255)', col => col.notNull())
 +    .addColumn('markdown', 'text', col => col.notNull())
@@ -305,5 +304,4 @@ index 0000000..aad284a
 +  await db.schema.dropType('locales_enum').execute()
 +}
 \ No newline at end of file
-
 ```

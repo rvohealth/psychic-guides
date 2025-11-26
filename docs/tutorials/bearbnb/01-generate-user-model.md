@@ -4,33 +4,28 @@ title: Generate User model
 
 # Generate User model
 
-## Git Log
+## Commit Message
 
 ```
-commit 9a4a0e4ba202ea56bb4ba129ec38c323e3220f91
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 09:56:01 2025 -0600
+Generate User model
 
-    Generate User model
-    
-    The User model is primaryily used for authentication
-    and associating the authenticated user with resources.
-    Since we haven't selected an authentication strategy
-    yet, we'll simply start with an email address.
-    
-    citext ensures both that when we create a unique
-    constraint, the email address will be case-insensitively
-    unique, and that all queries are automatically case-
-    insensitve.
-    
-    ```console
-    yarn psy db:create
-    yarn psy g:model --no-serializer User email:citext
-    ```
+The User model is primaryily used for authentication
+and associating the authenticated user with resources.
+Since we haven't selected an authentication strategy
+yet, we'll simply start with an email address.
 
+citext ensures both that when we create a unique
+constraint, the email address will be case-insensitively
+unique, and that all queries are automatically case-
+insensitve.
+
+```console
+yarn psy db:create
+yarn psy g:model --no-serializer User email:citext
+```
 ```
 
-## Diff from 4113eda
+## Changes
 
 ```diff
 diff --git a/api/spec/factories/UserFactory.ts b/api/spec/factories/UserFactory.ts
@@ -81,12 +76,12 @@ index 0000000..0c415a7
 +  public createdAt: DreamColumn<User, 'createdAt'>
 +  public updatedAt: DreamColumn<User, 'updatedAt'>
 +}
-diff --git a/api/src/db/migrations/1762617331279-create-user.ts b/api/src/db/migrations/1762617331279-create-user.ts
+diff --git a/api/src/db/migrations/1764175528349-create-user.ts b/api/src/db/migrations/1764175528349-create-user.ts
 new file mode 100644
-index 0000000..cea332b
+index 0000000..7e99b85
 --- /dev/null
-+++ b/api/src/db/migrations/1762617331279-create-user.ts
-@@ -0,0 +1,20 @@
++++ b/api/src/db/migrations/1764175528349-create-user.ts
+@@ -0,0 +1,24 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely, sql } from 'kysely'
 +
@@ -96,7 +91,11 @@ index 0000000..cea332b
 +
 +  await db.schema
 +    .createTable('users')
-+    .addColumn('id', 'bigserial', col => col.primaryKey())
++    .addColumn('id', 'uuid', col =>
++      col
++        .primaryKey()
++        .defaultTo(sql`uuid_generate_v4()`),
++    )
 +    .addColumn('email', sql`citext`, col => col.notNull().unique())
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
@@ -108,5 +107,4 @@ index 0000000..cea332b
 +  await db.schema.dropTable('users').execute()
 +}
 \ No newline at end of file
-
 ```

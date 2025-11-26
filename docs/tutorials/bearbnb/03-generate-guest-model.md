@@ -4,22 +4,17 @@ title: Generate Guest model
 
 # Generate Guest model
 
-## Git Log
+## Commit Message
 
 ```
-commit 8cd7e101a205a83452ca30882914648c1c28dd9d
-Author: Daniel Nelson <844258+daniel-nelson@users.noreply.github.com>
-Date:   Sat Nov 8 10:45:46 2025 -0600
+Generate Guest model
 
-    Generate Guest model
-    
-    ```console
-    yarn psy g:model Guest User:belongs_to
-    ```
-
+```console
+yarn psy g:model Guest User:belongs_to
+```
 ```
 
-## Diff from 1374820
+## Changes
 
 ```diff
 diff --git a/api/spec/factories/GuestFactory.ts b/api/spec/factories/GuestFactory.ts
@@ -95,20 +90,24 @@ index 0000000..1fa3936
 +
 +export const GuestSerializer = (guest: Guest) =>
 +  GuestSummarySerializer(guest)
-diff --git a/api/src/db/migrations/1762620340186-create-guest.ts b/api/src/db/migrations/1762620340186-create-guest.ts
+diff --git a/api/src/db/migrations/1764175590862-create-guest.ts b/api/src/db/migrations/1764175590862-create-guest.ts
 new file mode 100644
-index 0000000..3edfe7e1
+index 0000000..acc776a
 --- /dev/null
-+++ b/api/src/db/migrations/1762620340186-create-guest.ts
-@@ -0,0 +1,24 @@
++++ b/api/src/db/migrations/1764175590862-create-guest.ts
+@@ -0,0 +1,28 @@
 +import { Kysely, sql } from 'kysely'
 +
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +export async function up(db: Kysely<any>): Promise<void> {
 +  await db.schema
 +    .createTable('guests')
-+    .addColumn('id', 'bigserial', col => col.primaryKey())
-+    .addColumn('user_id', 'bigint', col => col.references('users.id').onDelete('restrict').notNull())
++    .addColumn('id', 'uuid', col =>
++      col
++        .primaryKey()
++        .defaultTo(sql`uuid_generate_v4()`),
++    )
++    .addColumn('user_id', 'uuid', col => col.references('users.id').onDelete('restrict').notNull())
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
 +    .execute()
@@ -126,5 +125,4 @@ index 0000000..3edfe7e1
 +  await db.schema.dropTable('guests').execute()
 +}
 \ No newline at end of file
-
 ```
