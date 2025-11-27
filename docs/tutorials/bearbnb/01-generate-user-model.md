@@ -1,0 +1,110 @@
+---
+title: Generate User model
+---
+
+# Generate User model
+
+## Commit Message
+
+```
+Generate User model
+
+The User model is primaryily used for authentication
+and associating the authenticated user with resources.
+Since we haven't selected an authentication strategy
+yet, we'll simply start with an email address.
+
+citext ensures both that when we create a unique
+constraint, the email address will be case-insensitively
+unique, and that all queries are automatically case-
+insensitve.
+
+```console
+yarn psy db:create
+yarn psy g:model --no-serializer User email:citext
+```
+```
+
+## Changes
+
+```diff
+diff --git a/api/spec/factories/UserFactory.ts b/api/spec/factories/UserFactory.ts
+new file mode 100644
+index 0000000..26cdcf8
+--- /dev/null
++++ b/api/spec/factories/UserFactory.ts
+@@ -0,0 +1,11 @@
++import { UpdateableProperties } from '@rvoh/dream/types'
++import User from '@models/User.js'
++
++let counter = 0
++
++export default async function createUser(attrs: UpdateableProperties<User> = {}) {
++  return await User.create({
++    email: `User email ${++counter}`,
++    ...attrs,
++  })
++}
+diff --git a/api/spec/unit/models/User.spec.ts b/api/spec/unit/models/User.spec.ts
+new file mode 100644
+index 0000000..06dac32
+--- /dev/null
++++ b/api/spec/unit/models/User.spec.ts
+@@ -0,0 +1,3 @@
++describe('User', () => {
++  it.todo('add a test here to get started building User')
++})
+diff --git a/api/src/app/models/User.ts b/api/src/app/models/User.ts
+new file mode 100644
+index 0000000..0c415a7
+--- /dev/null
++++ b/api/src/app/models/User.ts
+@@ -0,0 +1,16 @@
++import { Decorators } from '@rvoh/dream'
++import { DreamColumn } from '@rvoh/dream/types'
++import ApplicationModel from '@models/ApplicationModel.js'
++
++const deco = new Decorators<typeof User>()
++
++export default class User extends ApplicationModel {
++  public override get table() {
++    return 'users' as const
++  }
++
++  public id: DreamColumn<User, 'id'>
++  public email: DreamColumn<User, 'email'>
++  public createdAt: DreamColumn<User, 'createdAt'>
++  public updatedAt: DreamColumn<User, 'updatedAt'>
++}
+diff --git a/api/src/db/migrations/1764175528349-create-user.ts b/api/src/db/migrations/1764175528349-create-user.ts
+new file mode 100644
+index 0000000..7e99b85
+--- /dev/null
++++ b/api/src/db/migrations/1764175528349-create-user.ts
+@@ -0,0 +1,24 @@
++import { DreamMigrationHelpers } from '@rvoh/dream/db'
++import { Kysely, sql } from 'kysely'
++
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export async function up(db: Kysely<any>): Promise<void> {
++  await DreamMigrationHelpers.createExtension(db, 'citext')
++
++  await db.schema
++    .createTable('users')
++    .addColumn('id', 'uuid', col =>
++      col
++        .primaryKey()
++        .defaultTo(sql`uuid_generate_v4()`),
++    )
++    .addColumn('email', sql`citext`, col => col.notNull().unique())
++    .addColumn('created_at', 'timestamp', col => col.notNull())
++    .addColumn('updated_at', 'timestamp', col => col.notNull())
++    .execute()
++}
++
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export async function down(db: Kysely<any>): Promise<void> {
++  await db.schema.dropTable('users').execute()
++}
+\ No newline at end of file
+```

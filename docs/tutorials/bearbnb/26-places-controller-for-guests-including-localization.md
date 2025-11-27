@@ -1,0 +1,2484 @@
+---
+title: Places controller for Guests, including localization
+---
+
+# Places controller for Guests, including localization
+
+## Commit Message
+
+```
+Places controller for Guests, including localization
+
+If the i18n text is coming through in English when it should
+be Spanish, make sure you've added `es` to the locales map
+exported by api/src/conf/locales/index.ts.
+
+If you get ambiguous Typescript errors along the way, restart
+the ESLint server in your editor, and if that doesn't work,
+quit and re-open your editor
+
+```console
+yarn psy g:controller V1/Guest/Places index show
+
+yarn psy sync --ignore-errors
+yarn psy sync
+
+yarn build
+yarn build:spec
+
+yarn uspec spec/unit/controllers/V1/Guest/PlacesController.spec.ts
+NODE_DEBUG=psychic yarn uspec spec/unit/controllers/V1/Guest/PlacesController.spec.ts
+yarn uspec
+```
+```
+
+## Changes
+
+```diff
+diff --git a/api/spec/unit/controllers/V1/Guest/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Guest/PlacesController.spec.ts
+new file mode 100644
+index 0000000..2bcb2b8
+--- /dev/null
++++ b/api/spec/unit/controllers/V1/Guest/PlacesController.spec.ts
+@@ -0,0 +1,152 @@
++import Place from '@models/Place.js'
++import User from '@models/User.js'
++import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
++import createPlace from '@spec/factories/PlaceFactory.js'
++import createRoomBathroom from '@spec/factories/Room/BathroomFactory.js'
++import createRoomBedroom from '@spec/factories/Room/BedroomFactory.js'
++import createRoomDen from '@spec/factories/Room/DenFactory.js'
++import createRoomKitchen from '@spec/factories/Room/KitchenFactory.js'
++import createRoomLivingRoom from '@spec/factories/Room/LivingRoomFactory.js'
++import createUser from '@spec/factories/UserFactory.js'
++import { SpecRequestType, session } from '@spec/unit/helpers/authentication.js'
++
++describe('V1/Guest/PlacesController', () => {
++  let request: SpecRequestType
++  let user: User
++
++  beforeEach(async () => {
++    user = await createUser()
++    request = await session(user)
++  })
++
++  describe('GET index', () => {
++    const subject = async <StatusCode extends 200 | 400>(expectedStatus: StatusCode) => {
++      return request.get('/v1/guest/places', expectedStatus, {
++        headers: {
++          'content-language': 'es-ES',
++        },
++      })
++    }
++
++    it('returns the index of Places', async () => {
++      const place = await createPlace()
++      await createLocalizedText({ localizable: place, locale: 'es-ES', title: 'The Spanish title' })
++
++      const { body } = await subject(200)
++
++      expect(body.results).toEqual([
++        {
++          id: place.id,
++          title: 'The Spanish title',
++        },
++      ])
++    })
++  })
++
++  describe('GET show', () => {
++    const subject = async <StatusCode extends 200 | 400>(place: Place, expectedStatus: StatusCode) => {
++      return request.get('/v1/guest/places/{id}', expectedStatus, {
++        id: place.id,
++        headers: {
++          'content-language': 'es-ES',
++        },
++      })
++    }
++
++    it('returns places with rooms', async () => {
++      const place = await createPlace({ style: 'cabin', sleeps: 3 })
++      await createLocalizedText({ localizable: place, locale: 'es-ES', title: 'The Spanish place title' })
++
++      const { kitchen, bathroom, bedroom, den, livingRoom } = await createRoomsForPlace(place)
++
++      const { body } = await subject(place, 200)
++
++      expect(body).toEqual({
++        id: place.id,
++        sleeps: 3,
++        title: 'The Spanish place title',
++        style: 'cabin',
++        displayStyle: 'cabaña rústica',
++
++        rooms: [
++          {
++            id: kitchen.id,
++            type: 'Kitchen',
++            displayType: 'cocina',
++            title: 'The Spanish kitchen title',
++            appliances: [
++              {
++                value: 'oven',
++                label: 'horno',
++              },
++              {
++                value: 'dishwasher',
++                label: 'lavavajillas',
++              },
++            ],
++          },
++          {
++            id: bathroom.id,
++            type: 'Bathroom',
++            displayType: 'baño',
++            title: 'The Spanish bathroom title',
++            bathOrShowerStyle: {
++              value: 'shower',
++              label: 'ducha',
++            },
++          },
++          {
++            id: bedroom.id,
++            type: 'Bedroom',
++            displayType: 'dormitorio',
++            title: 'The Spanish bedroom title',
++            bedTypes: [
++              {
++                value: 'cot',
++                label: 'catre',
++              },
++              {
++                value: 'bunk',
++                label: 'litera',
++              },
++            ],
++          },
++          { id: den.id, type: 'Den', displayType: 'estudio', title: 'The Spanish den title' },
++          {
++            id: livingRoom.id,
++            type: 'LivingRoom',
++            displayType: 'sala de estar',
++            title: 'The Spanish livingRoom title',
++          },
++        ],
++      })
++    })
++  })
++})
++
++async function createRoomsForPlace(place: Place) {
++  const kitchen = await createRoomKitchen({ place, appliances: ['oven', 'dishwasher'] })
++  await createLocalizedText({ localizable: kitchen, locale: 'es-ES', title: 'The Spanish kitchen title' })
++
++  const bathroom = await createRoomBathroom({ place, bathOrShowerStyle: 'shower' })
++  await createLocalizedText({
++    localizable: bathroom,
++    locale: 'es-ES',
++    title: 'The Spanish bathroom title',
++  })
++
++  const bedroom = await createRoomBedroom({ place, bedTypes: ['cot', 'bunk'] })
++  await createLocalizedText({ localizable: bedroom, locale: 'es-ES', title: 'The Spanish bedroom title' })
++
++  const den = await createRoomDen({ place })
++  await createLocalizedText({ localizable: den, locale: 'es-ES', title: 'The Spanish den title' })
++
++  const livingRoom = await createRoomLivingRoom({ place })
++  await createLocalizedText({
++    localizable: livingRoom,
++    locale: 'es-ES',
++    title: 'The Spanish livingRoom title',
++  })
++
++  return { kitchen, bathroom, bedroom, den, livingRoom }
++}
+diff --git a/api/src/app/controllers/AuthedController.ts b/api/src/app/controllers/AuthedController.ts
+index 3f576e4..c8e9e95 100644
+--- a/api/src/app/controllers/AuthedController.ts
++++ b/api/src/app/controllers/AuthedController.ts
+@@ -3,6 +3,7 @@ import ApplicationController from '@controllers/ApplicationController.js'
+ import User from '@models/User.js'
+ import { Encrypt } from '@rvoh/dream/utils'
+ import { BeforeAction } from '@rvoh/psychic'
++import { supportedLocales } from '@src/utils/i18n.js'
+ 
+ export default class AuthedController extends ApplicationController {
+   protected currentUser: User
+@@ -18,6 +19,19 @@ export default class AuthedController extends ApplicationController {
+     this.currentUser = user
+   }
+ 
++  @BeforeAction()
++  public configureSerializers() {
++    this.serializerPassthrough({
++      locale: this.locale,
++    })
++  }
++
++  protected get locale() {
++    const locale = this.headers['content-language']
++    const locales = supportedLocales()
++    return locales.includes(locale as (typeof locales)[number]) ? locale : 'en-US'
++  }
++
+   protected authedUserId(): string | null {
+     if (!AppEnv.isTest)
+       throw new Error(
+diff --git a/api/src/app/controllers/V1/Guest/BaseController.ts b/api/src/app/controllers/V1/Guest/BaseController.ts
+new file mode 100644
+index 0000000..652ec53
+--- /dev/null
++++ b/api/src/app/controllers/V1/Guest/BaseController.ts
+@@ -0,0 +1,5 @@
++import V1BaseController from '../BaseController.js'
++
++export default class V1GuestBaseController extends V1BaseController {
++
++}
+diff --git a/api/src/app/controllers/V1/Guest/PlacesController.ts b/api/src/app/controllers/V1/Guest/PlacesController.ts
+new file mode 100644
+index 0000000..3be8c19
+--- /dev/null
++++ b/api/src/app/controllers/V1/Guest/PlacesController.ts
+@@ -0,0 +1,35 @@
++import Place from '@models/Place.js'
++import { OpenAPI } from '@rvoh/psychic'
++import V1GuestBaseController from './BaseController.js'
++
++const openApiTags = ['v1-guest-places']
++
++export default class V1GuestPlacesController extends V1GuestBaseController {
++  @OpenAPI(Place, {
++    status: 200,
++    tags: openApiTags,
++    description: 'Place index endpoint for Guests',
++    scrollPaginate: true,
++    serializerKey: 'summaryForGuests',
++  })
++  public async index() {
++    const places = await Place.passthrough({ locale: this.locale })
++      .preloadFor('summaryForGuests')
++      .scrollPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
++    this.ok(places)
++  }
++
++  @OpenAPI(Place, {
++    status: 200,
++    tags: openApiTags,
++    description: 'Place show endpoint for Guests',
++    serializerKey: 'forGuests',
++  })
++  public async show() {
++    this.ok(
++      await Place.passthrough({ locale: this.locale })
++        .preloadFor('forGuests')
++        .findOrFail(this.castParam('id', 'uuid')),
++    )
++  }
++}
+diff --git a/api/src/app/controllers/V1/Host/Places/RoomsController.ts b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
+index c3d0339..6788e1f 100644
+--- a/api/src/app/controllers/V1/Host/Places/RoomsController.ts
++++ b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
+@@ -22,7 +22,6 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
+     const rooms = await this.currentPlace
+       .associationQuery('rooms')
+       .preloadFor('summary')
+-      .order({ createdAt: 'desc' })
+       .scrollPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
+     this.ok(rooms)
+   }
+diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
+index 2631c38..152f6b5 100644
+--- a/api/src/app/models/Place.ts
++++ b/api/src/app/models/Place.ts
+@@ -17,6 +17,8 @@ export default class Place extends ApplicationModel {
+     return {
+       default: 'PlaceSerializer',
+       summary: 'PlaceSummarySerializer',
++      summaryForGuests: 'PlaceSummaryForGuestsSerializer',
++      forGuests: 'PlaceForGuestsSerializer',
+     }
+   }
+ 
+@@ -34,7 +36,7 @@ export default class Place extends ApplicationModel {
+   @deco.HasMany('Host', { through: 'hostPlaces' })
+   public hosts: Host[]
+ 
+-  @deco.HasMany('Room')
++  @deco.HasMany('Room', { order: 'createdAt' })
+   // make sure this imports from `import Room from '@models/Room.js'`
+   // not from `import { Room } from 'socket.io-adapter'`
+   public rooms: Room[]
+diff --git a/api/src/app/models/Room/Bathroom.ts b/api/src/app/models/Room/Bathroom.ts
+index 9d57fc5..833fc2f 100644
+--- a/api/src/app/models/Room/Bathroom.ts
++++ b/api/src/app/models/Room/Bathroom.ts
+@@ -10,6 +10,7 @@ export default class Bathroom extends Room {
+     return {
+       default: 'Room/BathroomSerializer',
+       summary: 'Room/BathroomSummarySerializer',
++      forGuests: 'Room/BathroomForGuestsSerializer',
+     }
+   }
+ 
+diff --git a/api/src/app/models/Room/Bedroom.ts b/api/src/app/models/Room/Bedroom.ts
+index 203a911..5d9856f 100644
+--- a/api/src/app/models/Room/Bedroom.ts
++++ b/api/src/app/models/Room/Bedroom.ts
+@@ -10,6 +10,7 @@ export default class Bedroom extends Room {
+     return {
+       default: 'Room/BedroomSerializer',
+       summary: 'Room/BedroomSummarySerializer',
++      forGuests: 'Room/BedroomForGuestsSerializer',
+     }
+   }
+ 
+diff --git a/api/src/app/models/Room/Den.ts b/api/src/app/models/Room/Den.ts
+index f80981a..7c7d64c 100644
+--- a/api/src/app/models/Room/Den.ts
++++ b/api/src/app/models/Room/Den.ts
+@@ -10,6 +10,7 @@ export default class Den extends Room {
+     return {
+       default: 'Room/DenSerializer',
+       summary: 'Room/DenSummarySerializer',
++      forGuests: 'Room/DenForGuestsSerializer',
+     }
+   }
+ }
+diff --git a/api/src/app/models/Room/Kitchen.ts b/api/src/app/models/Room/Kitchen.ts
+index bcf3068..4622f8b 100644
+--- a/api/src/app/models/Room/Kitchen.ts
++++ b/api/src/app/models/Room/Kitchen.ts
+@@ -10,6 +10,7 @@ export default class Kitchen extends Room {
+     return {
+       default: 'Room/KitchenSerializer',
+       summary: 'Room/KitchenSummarySerializer',
++      forGuests: 'Room/KitchenForGuestsSerializer',
+     }
+   }
+ 
+diff --git a/api/src/app/models/Room/LivingRoom.ts b/api/src/app/models/Room/LivingRoom.ts
+index 64c5cd7..7187e89 100644
+--- a/api/src/app/models/Room/LivingRoom.ts
++++ b/api/src/app/models/Room/LivingRoom.ts
+@@ -10,6 +10,7 @@ export default class LivingRoom extends Room {
+     return {
+       default: 'Room/LivingRoomSerializer',
+       summary: 'Room/LivingRoomSummarySerializer',
++      forGuests: 'Room/LivingRoomForGuestsSerializer',
+     }
+   }
+ }
+diff --git a/api/src/app/serializers/PlaceSerializer.ts b/api/src/app/serializers/PlaceSerializer.ts
+index ba698d3..8dde4c9 100644
+--- a/api/src/app/serializers/PlaceSerializer.ts
++++ b/api/src/app/serializers/PlaceSerializer.ts
+@@ -1,5 +1,7 @@
+ import Place from '@models/Place.js'
+ import { DreamSerializer } from '@rvoh/dream'
++import { LocalesEnum } from '@src/types/db.js'
++import i18n from '@src/utils/i18n.js'
+ 
+ // prettier-ignore
+ export const PlaceSummarySerializer = (place: Place) =>
+@@ -13,3 +15,17 @@ export const PlaceSerializer = (place: Place) =>
+     .attribute('style')
+     .attribute('sleeps')
+     .attribute('deletedAt')
++
++export const PlaceSummaryForGuestsSerializer = (place: Place) =>
++  DreamSerializer(Place, place)
++    .attribute('id')
++    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
++
++export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
++  PlaceSummaryForGuestsSerializer(place)
++    .attribute('style')
++    .customAttribute('displayStyle', () => i18n(passthrough.locale, `places.style.${place.style}`), {
++      openapi: 'string',
++    })
++    .attribute('sleeps')
++    .rendersMany('rooms', { serializerKey: 'forGuests' })
+diff --git a/api/src/app/serializers/Room/BathroomSerializer.ts b/api/src/app/serializers/Room/BathroomSerializer.ts
+index 0f6953e..976c0e9 100644
+--- a/api/src/app/serializers/Room/BathroomSerializer.ts
++++ b/api/src/app/serializers/Room/BathroomSerializer.ts
+@@ -1,8 +1,40 @@
+ import Bathroom from '@models/Room/Bathroom.js'
+-import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import { ObjectSerializer } from '@rvoh/dream'
++import {
++  RoomForGuestsSerializer,
++  RoomSerializer,
++  RoomSummarySerializer,
++} from '@serializers/RoomSerializer.js'
++import { BathOrShowerStylesEnum, BathOrShowerStylesEnumValues, LocalesEnum } from '@src/types/db.js'
++import i18n from '@src/utils/i18n.js'
+ 
+ export const RoomBathroomSummarySerializer = (roomBathroom: Bathroom) =>
+   RoomSummarySerializer(Bathroom, roomBathroom)
+ 
+ export const RoomBathroomSerializer = (roomBathroom: Bathroom) =>
+   RoomSerializer(Bathroom, roomBathroom).attribute('bathOrShowerStyle')
++
++export const BathOrShowerStyleSerializer = (
++  bathOrShowerStyle: BathOrShowerStylesEnum,
++  passthrough: { locale: LocalesEnum },
++) =>
++  ObjectSerializer({ bathOrShowerStyle }, passthrough)
++    .attribute('bathOrShowerStyle', {
++      as: 'value',
++      openapi: { type: 'string', enum: BathOrShowerStylesEnumValues },
++    })
++    .customAttribute(
++      'label',
++      () => i18n(passthrough.locale, `rooms.Bathroom.bathOrShowerStyles.${bathOrShowerStyle}`),
++      {
++        openapi: 'string',
++      },
++    )
++
++export const RoomBathroomForGuestsSerializer = (
++  roomBathroom: Bathroom,
++  passthrough: { locale: LocalesEnum },
++) =>
++  RoomForGuestsSerializer(Bathroom, roomBathroom, passthrough).rendersOne('bathOrShowerStyle', {
++    serializer: BathOrShowerStyleSerializer,
++  })
+diff --git a/api/src/app/serializers/Room/BedroomSerializer.ts b/api/src/app/serializers/Room/BedroomSerializer.ts
+index 09b4589..ea93889 100644
+--- a/api/src/app/serializers/Room/BedroomSerializer.ts
++++ b/api/src/app/serializers/Room/BedroomSerializer.ts
+@@ -1,8 +1,27 @@
+ import Bedroom from '@models/Room/Bedroom.js'
+-import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import { ObjectSerializer } from '@rvoh/dream'
++import {
++  RoomForGuestsSerializer,
++  RoomSerializer,
++  RoomSummarySerializer,
++} from '@serializers/RoomSerializer.js'
++import { BedTypesEnum, BedTypesEnumValues, LocalesEnum } from '@src/types/db.js'
++import i18n from '@src/utils/i18n.js'
+ 
+ export const RoomBedroomSummarySerializer = (roomBedroom: Bedroom) =>
+   RoomSummarySerializer(Bedroom, roomBedroom)
+ 
+ export const RoomBedroomSerializer = (roomBedroom: Bedroom) =>
+   RoomSerializer(Bedroom, roomBedroom).attribute('bedTypes')
++
++export const BedTypeSerializer = (bedType: BedTypesEnum, passthrough: { locale: LocalesEnum }) =>
++  ObjectSerializer({ bedType }, passthrough)
++    .attribute('bedType', { as: 'value', openapi: { type: 'string', enum: BedTypesEnumValues } })
++    .customAttribute('label', () => i18n(passthrough.locale, `rooms.Bedroom.bedTypes.${bedType}`), {
++      openapi: 'string',
++    })
++
++export const RoomBedroomForGuestsSerializer = (roomBedroom: Bedroom, passthrough: { locale: LocalesEnum }) =>
++  RoomForGuestsSerializer(Bedroom, roomBedroom, passthrough).rendersMany('bedTypes', {
++    serializer: BedTypeSerializer,
++  })
+diff --git a/api/src/app/serializers/Room/DenSerializer.ts b/api/src/app/serializers/Room/DenSerializer.ts
+index 86500fa..d1668e1 100644
+--- a/api/src/app/serializers/Room/DenSerializer.ts
++++ b/api/src/app/serializers/Room/DenSerializer.ts
+@@ -1,6 +1,14 @@
+ import Den from '@models/Room/Den.js'
+-import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import {
++  RoomForGuestsSerializer,
++  RoomSerializer,
++  RoomSummarySerializer,
++} from '@serializers/RoomSerializer.js'
++import { LocalesEnum } from '@src/types/db.js'
+ 
+ export const RoomDenSummarySerializer = (roomDen: Den) => RoomSummarySerializer(Den, roomDen)
+ 
+ export const RoomDenSerializer = (roomDen: Den) => RoomSerializer(Den, roomDen)
++
++export const RoomDenForGuestsSerializer = (roomDen: Den, passthrough: { locale: LocalesEnum }) =>
++  RoomForGuestsSerializer(Den, roomDen, passthrough)
+diff --git a/api/src/app/serializers/Room/KitchenSerializer.ts b/api/src/app/serializers/Room/KitchenSerializer.ts
+index 618c25a..e48aa59 100644
+--- a/api/src/app/serializers/Room/KitchenSerializer.ts
++++ b/api/src/app/serializers/Room/KitchenSerializer.ts
+@@ -1,8 +1,27 @@
+ import Kitchen from '@models/Room/Kitchen.js'
+-import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import { ObjectSerializer } from '@rvoh/dream'
++import {
++  RoomForGuestsSerializer,
++  RoomSerializer,
++  RoomSummarySerializer,
++} from '@serializers/RoomSerializer.js'
++import { ApplianceTypesEnum, ApplianceTypesEnumValues, LocalesEnum } from '@src/types/db.js'
++import i18n from '@src/utils/i18n.js'
+ 
+ export const RoomKitchenSummarySerializer = (roomKitchen: Kitchen) =>
+   RoomSummarySerializer(Kitchen, roomKitchen)
+ 
+ export const RoomKitchenSerializer = (roomKitchen: Kitchen) =>
+   RoomSerializer(Kitchen, roomKitchen).attribute('appliances')
++
++export const ApplianceSerializer = (appliance: ApplianceTypesEnum, passthrough: { locale: LocalesEnum }) =>
++  ObjectSerializer({ appliance }, passthrough)
++    .attribute('appliance', { as: 'value', openapi: { type: 'string', enum: ApplianceTypesEnumValues } })
++    .customAttribute('label', () => i18n(passthrough.locale, `rooms.Kitchen.appliances.${appliance}`), {
++      openapi: 'string',
++    })
++
++export const RoomKitchenForGuestsSerializer = (roomKitchen: Kitchen, passthrough: { locale: LocalesEnum }) =>
++  RoomForGuestsSerializer(Kitchen, roomKitchen, passthrough).rendersMany('appliances', {
++    serializer: ApplianceSerializer,
++  })
+diff --git a/api/src/app/serializers/Room/LivingRoomSerializer.ts b/api/src/app/serializers/Room/LivingRoomSerializer.ts
+index 5a1ea3a..1d99426 100644
+--- a/api/src/app/serializers/Room/LivingRoomSerializer.ts
++++ b/api/src/app/serializers/Room/LivingRoomSerializer.ts
+@@ -1,8 +1,18 @@
+ import LivingRoom from '@models/Room/LivingRoom.js'
+-import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import {
++  RoomForGuestsSerializer,
++  RoomSerializer,
++  RoomSummarySerializer,
++} from '@serializers/RoomSerializer.js'
++import { LocalesEnum } from '@src/types/db.js'
+ 
+ export const RoomLivingRoomSummarySerializer = (roomLivingRoom: LivingRoom) =>
+   RoomSummarySerializer(LivingRoom, roomLivingRoom)
+ 
+ export const RoomLivingRoomSerializer = (roomLivingRoom: LivingRoom) =>
+   RoomSerializer(LivingRoom, roomLivingRoom)
++
++export const RoomLivingRoomForGuestsSerializer = (
++  roomLivingRoom: LivingRoom,
++  passthrough: { locale: LocalesEnum },
++) => RoomForGuestsSerializer(LivingRoom, roomLivingRoom, passthrough)
+diff --git a/api/src/app/serializers/RoomSerializer.ts b/api/src/app/serializers/RoomSerializer.ts
+index e1aa6a5..d39f192 100644
+--- a/api/src/app/serializers/RoomSerializer.ts
++++ b/api/src/app/serializers/RoomSerializer.ts
+@@ -1,5 +1,7 @@
+ import Room from '@models/Room.js'
+ import { DreamSerializer } from '@rvoh/dream'
++import { LocalesEnum } from '@src/types/db.js'
++import i18n from '@src/utils/i18n.js'
+ 
+ export const RoomSummarySerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
+   DreamSerializer(StiChildClass ?? Room, room)
+@@ -11,3 +13,16 @@ export const RoomSummarySerializer = <T extends Room>(StiChildClass: typeof Room
+ export const RoomSerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
+   RoomSummarySerializer(StiChildClass, room)
+     .attribute('deletedAt')
++
++export const RoomForGuestsSerializer = <T extends Room>(
++  StiChildClass: typeof Room,
++  room: T,
++  passthrough: { locale: LocalesEnum },
++) =>
++  DreamSerializer(StiChildClass ?? Room, room)
++    .attribute('id')
++    .attribute('type')
++    .customAttribute('displayType', () => i18n(passthrough.locale, `rooms.type.${room.type}`), {
++      openapi: 'string',
++    })
++    .delegatedAttribute<Room, 'currentLocalizedText'>('currentLocalizedText', 'title', { openapi: 'string' })
+diff --git a/api/src/conf/locales/en.ts b/api/src/conf/locales/en.ts
+index ae21584..1e720ed 100644
+--- a/api/src/conf/locales/en.ts
++++ b/api/src/conf/locales/en.ts
+@@ -1,3 +1,52 @@
+ export default {
+-  // add your application's localizable text in here
++  places: {
++    style: {
++      cottage: 'cottage',
++      cabin: 'cabin',
++      lean_to: 'lean to',
++      treehouse: 'treehouse',
++      tent: 'tent',
++      cave: 'cave',
++      dump: 'dump',
++    },
++  },
++
++  rooms: {
++    type: {
++      Bathroom: 'bathroom',
++      Bedroom: 'bedroom',
++      Kitchen: 'kitchen',
++      Den: 'den',
++      LivingRoom: 'living room',
++    },
++
++    Bathroom: {
++      bathOrShowerStyles: {
++        bath: 'bath',
++        shower: 'shower',
++        bath_and_shower: 'bath and shower',
++        none: 'none',
++      },
++    },
++
++    Bedroom: {
++      bedTypes: {
++        twin: 'twin',
++        bunk: 'bunk',
++        queen: 'queen',
++        king: 'king',
++        cot: 'cot',
++        sofabed: 'sofabed',
++      },
++    },
++
++    Kitchen: {
++      appliances: {
++        stove: 'stove',
++        oven: 'oven',
++        microwave: 'microwave',
++        dishwasher: 'dishwasher',
++      },
++    },
++  },
+ }
+diff --git a/api/src/conf/locales/es.ts b/api/src/conf/locales/es.ts
+new file mode 100644
+index 0000000..25eb876
+--- /dev/null
++++ b/api/src/conf/locales/es.ts
+@@ -0,0 +1,52 @@
++export default {
++  places: {
++    style: {
++      cottage: 'cabaña',
++      cabin: 'cabaña rústica',
++      lean_to: 'refugio',
++      treehouse: 'casa del árbol',
++      tent: 'tienda de campaña',
++      cave: 'cueva',
++      dump: 'basurero',
++    },
++  },
++
++  rooms: {
++    type: {
++      Bathroom: 'baño',
++      Bedroom: 'dormitorio',
++      Kitchen: 'cocina',
++      Den: 'estudio',
++      LivingRoom: 'sala de estar',
++    },
++
++    Bathroom: {
++      bathOrShowerStyles: {
++        bath: 'bañera',
++        shower: 'ducha',
++        bath_and_shower: 'bañera y ducha',
++        none: 'ninguno',
++      },
++    },
++
++    Bedroom: {
++      bedTypes: {
++        twin: 'individual',
++        bunk: 'litera',
++        queen: 'matrimonial',
++        king: 'king',
++        cot: 'catre',
++        sofabed: 'sofá cama',
++      },
++    },
++
++    Kitchen: {
++      appliances: {
++        stove: 'estufa',
++        oven: 'horno',
++        microwave: 'microondas',
++        dishwasher: 'lavavajillas',
++      },
++    },
++  },
++}
+diff --git a/api/src/conf/locales/index.ts b/api/src/conf/locales/index.ts
+index b798cf2..89d4f25 100644
+--- a/api/src/conf/locales/index.ts
++++ b/api/src/conf/locales/index.ts
+@@ -1,5 +1,7 @@
+ import en from '@conf/locales/en.js'
++import es from './es.js'
+ 
+ export default {
+   en,
++  es,
+ }
+diff --git a/api/src/conf/routes.ts b/api/src/conf/routes.ts
+index e0981a7..c99ddc9 100644
+--- a/api/src/conf/routes.ts
++++ b/api/src/conf/routes.ts
+@@ -3,14 +3,19 @@ import { PsychicRouter } from '@rvoh/psychic'
+ 
+ export default function routes(r: PsychicRouter) {
+   r.namespace('v1', r => {
++    r.namespace('guest', r => {
++      r.resources('places', { only: ['index', 'show'] })
++      // Alternatively, could have written the routes explicitly:
++      // r.get('places', V1GuestPlacesController, 'index')
++      // r.get('places/:id', V1GuestPlacesController, 'show')
++    })
++
+     r.namespace('host', r => {
+       r.resources('localized-texts', { only: ['update', 'destroy'] })
+ 
+       r.resources('places', r => {
+         r.resources('rooms')
+-
+       })
+-
+     })
+   })
+ 
+diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
+index edc0b39..e97bd9f 100644
+--- a/api/src/openapi/mobile.openapi.json
++++ b/api/src/openapi/mobile.openapi.json
+@@ -6,6 +6,131 @@
+     "description": "The autogenerated openapi spec for your app"
+   },
+   "paths": {
++    "/v1/guest/places": {
++      "parameters": [
++        {
++          "in": "query",
++          "required": false,
++          "name": "cursor",
++          "description": "Scroll pagination cursor",
++          "allowReserved": true,
++          "schema": {
++            "type": [
++              "string",
++              "null"
++            ]
++          }
++        }
++      ],
++      "get": {
++        "tags": [
++          "v1-guest-places"
++        ],
++        "description": "Place index endpoint for Guests",
++        "responses": {
++          "200": {
++            "content": {
++              "application/json": {
++                "schema": {
++                  "type": "object",
++                  "required": [
++                    "cursor",
++                    "results"
++                  ],
++                  "properties": {
++                    "cursor": {
++                      "type": [
++                        "string",
++                        "null"
++                      ]
++                    },
++                    "results": {
++                      "type": "array",
++                      "items": {
++                        "$ref": "#/components/schemas/PlaceSummaryForGuests"
++                      }
++                    }
++                  }
++                }
++              }
++            },
++            "description": "Success"
++          },
++          "400": {
++            "$ref": "#/components/responses/BadRequest"
++          },
++          "401": {
++            "$ref": "#/components/responses/Unauthorized"
++          },
++          "403": {
++            "$ref": "#/components/responses/Forbidden"
++          },
++          "404": {
++            "$ref": "#/components/responses/NotFound"
++          },
++          "409": {
++            "$ref": "#/components/responses/Conflict"
++          },
++          "422": {
++            "$ref": "#/components/responses/ValidationErrors"
++          },
++          "500": {
++            "$ref": "#/components/responses/InternalServerError"
++          }
++        }
++      }
++    },
++    "/v1/guest/places/{id}": {
++      "parameters": [
++        {
++          "in": "path",
++          "name": "id",
++          "required": true,
++          "schema": {
++            "type": "string"
++          }
++        }
++      ],
++      "get": {
++        "tags": [
++          "v1-guest-places"
++        ],
++        "description": "Place show endpoint for Guests",
++        "responses": {
++          "200": {
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/PlaceForGuests"
++                }
++              }
++            },
++            "description": "Success"
++          },
++          "400": {
++            "$ref": "#/components/responses/BadRequest"
++          },
++          "401": {
++            "$ref": "#/components/responses/Unauthorized"
++          },
++          "403": {
++            "$ref": "#/components/responses/Forbidden"
++          },
++          "404": {
++            "$ref": "#/components/responses/NotFound"
++          },
++          "409": {
++            "$ref": "#/components/responses/Conflict"
++          },
++          "422": {
++            "$ref": "#/components/responses/ValidationErrors"
++          },
++          "500": {
++            "$ref": "#/components/responses/InternalServerError"
++          }
++        }
++      }
++    },
+     "/v1/host/localized-texts/{id}": {
+       "parameters": [
+         {
+@@ -821,6 +946,54 @@
+   },
+   "components": {
+     "schemas": {
++      "Appliance": {
++        "type": "object",
++        "required": [
++          "label",
++          "value"
++        ],
++        "properties": {
++          "label": {
++            "type": "string"
++          },
++          "value": {
++            "type": "string",
++            "description": "\nThe following values will be allowed:\n  dishwasher,\n  microwave,\n  oven,\n  stove"
++          }
++        }
++      },
++      "BathOrShowerStyle": {
++        "type": "object",
++        "required": [
++          "label",
++          "value"
++        ],
++        "properties": {
++          "label": {
++            "type": "string"
++          },
++          "value": {
++            "type": "string",
++            "description": "\nThe following values will be allowed:\n  bath,\n  bath_and_shower,\n  none,\n  shower"
++          }
++        }
++      },
++      "BedType": {
++        "type": "object",
++        "required": [
++          "label",
++          "value"
++        ],
++        "properties": {
++          "label": {
++            "type": "string"
++          },
++          "value": {
++            "type": "string",
++            "description": "\nThe following values will be allowed:\n  bunk,\n  cot,\n  king,\n  queen,\n  sofabed,\n  twin"
++          }
++        }
++      },
+       "OpenapiValidationErrors": {
+         "type": "object",
+         "required": [
+@@ -908,6 +1081,57 @@
+           }
+         }
+       },
++      "PlaceForGuests": {
++        "type": "object",
++        "required": [
++          "displayStyle",
++          "id",
++          "rooms",
++          "sleeps",
++          "style",
++          "title"
++        ],
++        "properties": {
++          "displayStyle": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "rooms": {
++            "type": "array",
++            "items": {
++              "anyOf": [
++                {
++                  "$ref": "#/components/schemas/RoomBathroomForGuests"
++                },
++                {
++                  "$ref": "#/components/schemas/RoomBedroomForGuests"
++                },
++                {
++                  "$ref": "#/components/schemas/RoomDenForGuests"
++                },
++                {
++                  "$ref": "#/components/schemas/RoomKitchenForGuests"
++                },
++                {
++                  "$ref": "#/components/schemas/RoomLivingRoomForGuests"
++                }
++              ]
++            }
++          },
++          "sleeps": {
++            "type": "integer"
++          },
++          "style": {
++            "type": "string",
++            "description": "The following values will be allowed:\n  cabin,\n  cave,\n  cottage,\n  dump,\n  lean_to,\n  tent,\n  treehouse"
++          },
++          "title": {
++            "type": "string"
++          }
++        }
++      },
+       "PlaceSummary": {
+         "type": "object",
+         "required": [
+@@ -923,6 +1147,21 @@
+           }
+         }
+       },
++      "PlaceSummaryForGuests": {
++        "type": "object",
++        "required": [
++          "id",
++          "title"
++        ],
++        "properties": {
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          }
++        }
++      },
+       "RoomBathroom": {
+         "type": "object",
+         "required": [
+@@ -962,6 +1201,34 @@
+           }
+         }
+       },
++      "RoomBathroomForGuests": {
++        "type": "object",
++        "required": [
++          "bathOrShowerStyle",
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "bathOrShowerStyle": {
++            "$ref": "#/components/schemas/BathOrShowerStyle"
++          },
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "description": "The following values will be allowed:\n  Bathroom,\n  Bedroom,\n  Den,\n  Kitchen,\n  LivingRoom"
++          }
++        }
++      },
+       "RoomBathroomSummary": {
+         "type": "object",
+         "required": [
+@@ -1024,6 +1291,37 @@
+           }
+         }
+       },
++      "RoomBedroomForGuests": {
++        "type": "object",
++        "required": [
++          "bedTypes",
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "bedTypes": {
++            "type": "array",
++            "items": {
++              "$ref": "#/components/schemas/BedType"
++            }
++          },
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "description": "The following values will be allowed:\n  Bathroom,\n  Bedroom,\n  Den,\n  Kitchen,\n  LivingRoom"
++          }
++        }
++      },
+       "RoomBedroomSummary": {
+         "type": "object",
+         "required": [
+@@ -1078,6 +1376,30 @@
+           }
+         }
+       },
++      "RoomDenForGuests": {
++        "type": "object",
++        "required": [
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "description": "The following values will be allowed:\n  Bathroom,\n  Bedroom,\n  Den,\n  Kitchen,\n  LivingRoom"
++          }
++        }
++      },
+       "RoomDenSummary": {
+         "type": "object",
+         "required": [
+@@ -1140,6 +1462,37 @@
+           }
+         }
+       },
++      "RoomKitchenForGuests": {
++        "type": "object",
++        "required": [
++          "appliances",
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "appliances": {
++            "type": "array",
++            "items": {
++              "$ref": "#/components/schemas/Appliance"
++            }
++          },
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "description": "The following values will be allowed:\n  Bathroom,\n  Bedroom,\n  Den,\n  Kitchen,\n  LivingRoom"
++          }
++        }
++      },
+       "RoomKitchenSummary": {
+         "type": "object",
+         "required": [
+@@ -1194,6 +1547,30 @@
+           }
+         }
+       },
++      "RoomLivingRoomForGuests": {
++        "type": "object",
++        "required": [
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "description": "The following values will be allowed:\n  Bathroom,\n  Bedroom,\n  Den,\n  Kitchen,\n  LivingRoom"
++          }
++        }
++      },
+       "RoomLivingRoomSummary": {
+         "type": "object",
+         "required": [
+diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
+index ca0fe3d..35d6ec2 100644
+--- a/api/src/openapi/openapi.json
++++ b/api/src/openapi/openapi.json
+@@ -6,6 +6,131 @@
+     "description": "The autogenerated openapi spec for your app"
+   },
+   "paths": {
++    "/v1/guest/places": {
++      "parameters": [
++        {
++          "in": "query",
++          "required": false,
++          "name": "cursor",
++          "description": "Scroll pagination cursor",
++          "allowReserved": true,
++          "schema": {
++            "type": [
++              "string",
++              "null"
++            ]
++          }
++        }
++      ],
++      "get": {
++        "tags": [
++          "v1-guest-places"
++        ],
++        "description": "Place index endpoint for Guests",
++        "responses": {
++          "200": {
++            "content": {
++              "application/json": {
++                "schema": {
++                  "type": "object",
++                  "required": [
++                    "cursor",
++                    "results"
++                  ],
++                  "properties": {
++                    "cursor": {
++                      "type": [
++                        "string",
++                        "null"
++                      ]
++                    },
++                    "results": {
++                      "type": "array",
++                      "items": {
++                        "$ref": "#/components/schemas/PlaceSummaryForGuests"
++                      }
++                    }
++                  }
++                }
++              }
++            },
++            "description": "Success"
++          },
++          "400": {
++            "$ref": "#/components/responses/BadRequest"
++          },
++          "401": {
++            "$ref": "#/components/responses/Unauthorized"
++          },
++          "403": {
++            "$ref": "#/components/responses/Forbidden"
++          },
++          "404": {
++            "$ref": "#/components/responses/NotFound"
++          },
++          "409": {
++            "$ref": "#/components/responses/Conflict"
++          },
++          "422": {
++            "$ref": "#/components/responses/ValidationErrors"
++          },
++          "500": {
++            "$ref": "#/components/responses/InternalServerError"
++          }
++        }
++      }
++    },
++    "/v1/guest/places/{id}": {
++      "parameters": [
++        {
++          "in": "path",
++          "name": "id",
++          "required": true,
++          "schema": {
++            "type": "string"
++          }
++        }
++      ],
++      "get": {
++        "tags": [
++          "v1-guest-places"
++        ],
++        "description": "Place show endpoint for Guests",
++        "responses": {
++          "200": {
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/PlaceForGuests"
++                }
++              }
++            },
++            "description": "Success"
++          },
++          "400": {
++            "$ref": "#/components/responses/BadRequest"
++          },
++          "401": {
++            "$ref": "#/components/responses/Unauthorized"
++          },
++          "403": {
++            "$ref": "#/components/responses/Forbidden"
++          },
++          "404": {
++            "$ref": "#/components/responses/NotFound"
++          },
++          "409": {
++            "$ref": "#/components/responses/Conflict"
++          },
++          "422": {
++            "$ref": "#/components/responses/ValidationErrors"
++          },
++          "500": {
++            "$ref": "#/components/responses/InternalServerError"
++          }
++        }
++      }
++    },
+     "/v1/host/localized-texts/{id}": {
+       "parameters": [
+         {
+@@ -821,6 +946,71 @@
+   },
+   "components": {
+     "schemas": {
++      "Appliance": {
++        "type": "object",
++        "required": [
++          "label",
++          "value"
++        ],
++        "properties": {
++          "label": {
++            "type": "string"
++          },
++          "value": {
++            "type": "string",
++            "enum": [
++              "dishwasher",
++              "microwave",
++              "oven",
++              "stove"
++            ]
++          }
++        }
++      },
++      "BathOrShowerStyle": {
++        "type": "object",
++        "required": [
++          "label",
++          "value"
++        ],
++        "properties": {
++          "label": {
++            "type": "string"
++          },
++          "value": {
++            "type": "string",
++            "enum": [
++              "bath",
++              "bath_and_shower",
++              "none",
++              "shower"
++            ]
++          }
++        }
++      },
++      "BedType": {
++        "type": "object",
++        "required": [
++          "label",
++          "value"
++        ],
++        "properties": {
++          "label": {
++            "type": "string"
++          },
++          "value": {
++            "type": "string",
++            "enum": [
++              "bunk",
++              "cot",
++              "king",
++              "queen",
++              "sofabed",
++              "twin"
++            ]
++          }
++        }
++      },
+       "OpenapiValidationErrors": {
+         "type": "object",
+         "required": [
+@@ -916,6 +1106,65 @@
+           }
+         }
+       },
++      "PlaceForGuests": {
++        "type": "object",
++        "required": [
++          "displayStyle",
++          "id",
++          "rooms",
++          "sleeps",
++          "style",
++          "title"
++        ],
++        "properties": {
++          "displayStyle": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "rooms": {
++            "type": "array",
++            "items": {
++              "anyOf": [
++                {
++                  "$ref": "#/components/schemas/RoomBathroomForGuests"
++                },
++                {
++                  "$ref": "#/components/schemas/RoomBedroomForGuests"
++                },
++                {
++                  "$ref": "#/components/schemas/RoomDenForGuests"
++                },
++                {
++                  "$ref": "#/components/schemas/RoomKitchenForGuests"
++                },
++                {
++                  "$ref": "#/components/schemas/RoomLivingRoomForGuests"
++                }
++              ]
++            }
++          },
++          "sleeps": {
++            "type": "integer"
++          },
++          "style": {
++            "type": "string",
++            "enum": [
++              "cabin",
++              "cave",
++              "cottage",
++              "dump",
++              "lean_to",
++              "tent",
++              "treehouse"
++            ]
++          },
++          "title": {
++            "type": "string"
++          }
++        }
++      },
+       "PlaceSummary": {
+         "type": "object",
+         "required": [
+@@ -931,6 +1180,21 @@
+           }
+         }
+       },
++      "PlaceSummaryForGuests": {
++        "type": "object",
++        "required": [
++          "id",
++          "title"
++        ],
++        "properties": {
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          }
++        }
++      },
+       "RoomBathroom": {
+         "type": "object",
+         "required": [
+@@ -978,6 +1242,40 @@
+           }
+         }
+       },
++      "RoomBathroomForGuests": {
++        "type": "object",
++        "required": [
++          "bathOrShowerStyle",
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "bathOrShowerStyle": {
++            "$ref": "#/components/schemas/BathOrShowerStyle"
++          },
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bathroom",
++              "Bedroom",
++              "Den",
++              "Kitchen",
++              "LivingRoom"
++            ]
++          }
++        }
++      },
+       "RoomBathroomSummary": {
+         "type": "object",
+         "required": [
+@@ -1051,6 +1349,43 @@
+           }
+         }
+       },
++      "RoomBedroomForGuests": {
++        "type": "object",
++        "required": [
++          "bedTypes",
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "bedTypes": {
++            "type": "array",
++            "items": {
++              "$ref": "#/components/schemas/BedType"
++            }
++          },
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bathroom",
++              "Bedroom",
++              "Den",
++              "Kitchen",
++              "LivingRoom"
++            ]
++          }
++        }
++      },
+       "RoomBedroomSummary": {
+         "type": "object",
+         "required": [
+@@ -1109,6 +1444,36 @@
+           }
+         }
+       },
++      "RoomDenForGuests": {
++        "type": "object",
++        "required": [
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bathroom",
++              "Bedroom",
++              "Den",
++              "Kitchen",
++              "LivingRoom"
++            ]
++          }
++        }
++      },
+       "RoomDenSummary": {
+         "type": "object",
+         "required": [
+@@ -1180,6 +1545,43 @@
+           }
+         }
+       },
++      "RoomKitchenForGuests": {
++        "type": "object",
++        "required": [
++          "appliances",
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "appliances": {
++            "type": "array",
++            "items": {
++              "$ref": "#/components/schemas/Appliance"
++            }
++          },
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bathroom",
++              "Bedroom",
++              "Den",
++              "Kitchen",
++              "LivingRoom"
++            ]
++          }
++        }
++      },
+       "RoomKitchenSummary": {
+         "type": "object",
+         "required": [
+@@ -1238,6 +1640,36 @@
+           }
+         }
+       },
++      "RoomLivingRoomForGuests": {
++        "type": "object",
++        "required": [
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bathroom",
++              "Bedroom",
++              "Den",
++              "Kitchen",
++              "LivingRoom"
++            ]
++          }
++        }
++      },
+       "RoomLivingRoomSummary": {
+         "type": "object",
+         "required": [
+diff --git a/api/src/openapi/spec.openapi.json b/api/src/openapi/spec.openapi.json
+index ca0fe3d..35d6ec2 100644
+--- a/api/src/openapi/spec.openapi.json
++++ b/api/src/openapi/spec.openapi.json
+@@ -6,6 +6,131 @@
+     "description": "The autogenerated openapi spec for your app"
+   },
+   "paths": {
++    "/v1/guest/places": {
++      "parameters": [
++        {
++          "in": "query",
++          "required": false,
++          "name": "cursor",
++          "description": "Scroll pagination cursor",
++          "allowReserved": true,
++          "schema": {
++            "type": [
++              "string",
++              "null"
++            ]
++          }
++        }
++      ],
++      "get": {
++        "tags": [
++          "v1-guest-places"
++        ],
++        "description": "Place index endpoint for Guests",
++        "responses": {
++          "200": {
++            "content": {
++              "application/json": {
++                "schema": {
++                  "type": "object",
++                  "required": [
++                    "cursor",
++                    "results"
++                  ],
++                  "properties": {
++                    "cursor": {
++                      "type": [
++                        "string",
++                        "null"
++                      ]
++                    },
++                    "results": {
++                      "type": "array",
++                      "items": {
++                        "$ref": "#/components/schemas/PlaceSummaryForGuests"
++                      }
++                    }
++                  }
++                }
++              }
++            },
++            "description": "Success"
++          },
++          "400": {
++            "$ref": "#/components/responses/BadRequest"
++          },
++          "401": {
++            "$ref": "#/components/responses/Unauthorized"
++          },
++          "403": {
++            "$ref": "#/components/responses/Forbidden"
++          },
++          "404": {
++            "$ref": "#/components/responses/NotFound"
++          },
++          "409": {
++            "$ref": "#/components/responses/Conflict"
++          },
++          "422": {
++            "$ref": "#/components/responses/ValidationErrors"
++          },
++          "500": {
++            "$ref": "#/components/responses/InternalServerError"
++          }
++        }
++      }
++    },
++    "/v1/guest/places/{id}": {
++      "parameters": [
++        {
++          "in": "path",
++          "name": "id",
++          "required": true,
++          "schema": {
++            "type": "string"
++          }
++        }
++      ],
++      "get": {
++        "tags": [
++          "v1-guest-places"
++        ],
++        "description": "Place show endpoint for Guests",
++        "responses": {
++          "200": {
++            "content": {
++              "application/json": {
++                "schema": {
++                  "$ref": "#/components/schemas/PlaceForGuests"
++                }
++              }
++            },
++            "description": "Success"
++          },
++          "400": {
++            "$ref": "#/components/responses/BadRequest"
++          },
++          "401": {
++            "$ref": "#/components/responses/Unauthorized"
++          },
++          "403": {
++            "$ref": "#/components/responses/Forbidden"
++          },
++          "404": {
++            "$ref": "#/components/responses/NotFound"
++          },
++          "409": {
++            "$ref": "#/components/responses/Conflict"
++          },
++          "422": {
++            "$ref": "#/components/responses/ValidationErrors"
++          },
++          "500": {
++            "$ref": "#/components/responses/InternalServerError"
++          }
++        }
++      }
++    },
+     "/v1/host/localized-texts/{id}": {
+       "parameters": [
+         {
+@@ -821,6 +946,71 @@
+   },
+   "components": {
+     "schemas": {
++      "Appliance": {
++        "type": "object",
++        "required": [
++          "label",
++          "value"
++        ],
++        "properties": {
++          "label": {
++            "type": "string"
++          },
++          "value": {
++            "type": "string",
++            "enum": [
++              "dishwasher",
++              "microwave",
++              "oven",
++              "stove"
++            ]
++          }
++        }
++      },
++      "BathOrShowerStyle": {
++        "type": "object",
++        "required": [
++          "label",
++          "value"
++        ],
++        "properties": {
++          "label": {
++            "type": "string"
++          },
++          "value": {
++            "type": "string",
++            "enum": [
++              "bath",
++              "bath_and_shower",
++              "none",
++              "shower"
++            ]
++          }
++        }
++      },
++      "BedType": {
++        "type": "object",
++        "required": [
++          "label",
++          "value"
++        ],
++        "properties": {
++          "label": {
++            "type": "string"
++          },
++          "value": {
++            "type": "string",
++            "enum": [
++              "bunk",
++              "cot",
++              "king",
++              "queen",
++              "sofabed",
++              "twin"
++            ]
++          }
++        }
++      },
+       "OpenapiValidationErrors": {
+         "type": "object",
+         "required": [
+@@ -916,6 +1106,65 @@
+           }
+         }
+       },
++      "PlaceForGuests": {
++        "type": "object",
++        "required": [
++          "displayStyle",
++          "id",
++          "rooms",
++          "sleeps",
++          "style",
++          "title"
++        ],
++        "properties": {
++          "displayStyle": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "rooms": {
++            "type": "array",
++            "items": {
++              "anyOf": [
++                {
++                  "$ref": "#/components/schemas/RoomBathroomForGuests"
++                },
++                {
++                  "$ref": "#/components/schemas/RoomBedroomForGuests"
++                },
++                {
++                  "$ref": "#/components/schemas/RoomDenForGuests"
++                },
++                {
++                  "$ref": "#/components/schemas/RoomKitchenForGuests"
++                },
++                {
++                  "$ref": "#/components/schemas/RoomLivingRoomForGuests"
++                }
++              ]
++            }
++          },
++          "sleeps": {
++            "type": "integer"
++          },
++          "style": {
++            "type": "string",
++            "enum": [
++              "cabin",
++              "cave",
++              "cottage",
++              "dump",
++              "lean_to",
++              "tent",
++              "treehouse"
++            ]
++          },
++          "title": {
++            "type": "string"
++          }
++        }
++      },
+       "PlaceSummary": {
+         "type": "object",
+         "required": [
+@@ -931,6 +1180,21 @@
+           }
+         }
+       },
++      "PlaceSummaryForGuests": {
++        "type": "object",
++        "required": [
++          "id",
++          "title"
++        ],
++        "properties": {
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          }
++        }
++      },
+       "RoomBathroom": {
+         "type": "object",
+         "required": [
+@@ -978,6 +1242,40 @@
+           }
+         }
+       },
++      "RoomBathroomForGuests": {
++        "type": "object",
++        "required": [
++          "bathOrShowerStyle",
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "bathOrShowerStyle": {
++            "$ref": "#/components/schemas/BathOrShowerStyle"
++          },
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bathroom",
++              "Bedroom",
++              "Den",
++              "Kitchen",
++              "LivingRoom"
++            ]
++          }
++        }
++      },
+       "RoomBathroomSummary": {
+         "type": "object",
+         "required": [
+@@ -1051,6 +1349,43 @@
+           }
+         }
+       },
++      "RoomBedroomForGuests": {
++        "type": "object",
++        "required": [
++          "bedTypes",
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "bedTypes": {
++            "type": "array",
++            "items": {
++              "$ref": "#/components/schemas/BedType"
++            }
++          },
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bathroom",
++              "Bedroom",
++              "Den",
++              "Kitchen",
++              "LivingRoom"
++            ]
++          }
++        }
++      },
+       "RoomBedroomSummary": {
+         "type": "object",
+         "required": [
+@@ -1109,6 +1444,36 @@
+           }
+         }
+       },
++      "RoomDenForGuests": {
++        "type": "object",
++        "required": [
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bathroom",
++              "Bedroom",
++              "Den",
++              "Kitchen",
++              "LivingRoom"
++            ]
++          }
++        }
++      },
+       "RoomDenSummary": {
+         "type": "object",
+         "required": [
+@@ -1180,6 +1545,43 @@
+           }
+         }
+       },
++      "RoomKitchenForGuests": {
++        "type": "object",
++        "required": [
++          "appliances",
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "appliances": {
++            "type": "array",
++            "items": {
++              "$ref": "#/components/schemas/Appliance"
++            }
++          },
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bathroom",
++              "Bedroom",
++              "Den",
++              "Kitchen",
++              "LivingRoom"
++            ]
++          }
++        }
++      },
+       "RoomKitchenSummary": {
+         "type": "object",
+         "required": [
+@@ -1238,6 +1640,36 @@
+           }
+         }
+       },
++      "RoomLivingRoomForGuests": {
++        "type": "object",
++        "required": [
++          "displayType",
++          "id",
++          "title",
++          "type"
++        ],
++        "properties": {
++          "displayType": {
++            "type": "string"
++          },
++          "id": {
++            "type": "string"
++          },
++          "title": {
++            "type": "string"
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Bathroom",
++              "Bedroom",
++              "Den",
++              "Kitchen",
++              "LivingRoom"
++            ]
++          }
++        }
++      },
+       "RoomLivingRoomSummary": {
+         "type": "object",
+         "required": [
+diff --git a/api/src/types/dream.globals.ts b/api/src/types/dream.globals.ts
+index cdaea11..fe46932 100644
+--- a/api/src/types/dream.globals.ts
++++ b/api/src/types/dream.globals.ts
+@@ -6,18 +6,29 @@ export const globalTypeConfig = {
+       'HostSummarySerializer',
+       'LocalizedTextSerializer',
+       'LocalizedTextSummarySerializer',
++      'PlaceForGuestsSerializer',
+       'PlaceSerializer',
++      'PlaceSummaryForGuestsSerializer',
+       'PlaceSummarySerializer',
++      'Room/ApplianceSerializer',
++      'Room/BathOrShowerStyleSerializer',
++      'Room/BathroomForGuestsSerializer',
+       'Room/BathroomSerializer',
+       'Room/BathroomSummarySerializer',
++      'Room/BedTypeSerializer',
++      'Room/BedroomForGuestsSerializer',
+       'Room/BedroomSerializer',
+       'Room/BedroomSummarySerializer',
++      'Room/DenForGuestsSerializer',
+       'Room/DenSerializer',
+       'Room/DenSummarySerializer',
++      'Room/KitchenForGuestsSerializer',
+       'Room/KitchenSerializer',
+       'Room/KitchenSummarySerializer',
++      'Room/LivingRoomForGuestsSerializer',
+       'Room/LivingRoomSerializer',
+       'Room/LivingRoomSummarySerializer',
++      'RoomForGuestsSerializer',
+       'RoomSerializer',
+       'RoomSummarySerializer'
+     ],
+diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
+index b7231fb..ad88126 100644
+--- a/api/src/types/dream.ts
++++ b/api/src/types/dream.ts
+@@ -417,7 +417,7 @@ export const schema = {
+     },
+   },
+   places: {
+-    serializerKeys: ['default', 'summary'],
++    serializerKeys: ['default', 'forGuests', 'summary', 'summaryForGuests'],
+     scopes: {
+       default: [],
+       named: [],
+@@ -538,7 +538,7 @@ export const schema = {
+     },
+   },
+   rooms: {
+-    serializerKeys: ['default', 'summary'],
++    serializerKeys: ['default', 'forGuests', 'summary'],
+     scopes: {
+       default: ['dream:STI'],
+       named: [],
+diff --git a/api/src/types/openapi/spec.openapi.d.ts b/api/src/types/openapi/spec.openapi.d.ts
+index b577429..6e007d0 100644
+--- a/api/src/types/openapi/spec.openapi.d.ts
++++ b/api/src/types/openapi/spec.openapi.d.ts
+@@ -1,4 +1,103 @@
+ export interface paths {
++    "/v1/guest/places": {
++        parameters: {
++            query?: {
++                /** @description Scroll pagination cursor */
++                cursor?: string | null;
++            };
++            header?: never;
++            path?: never;
++            cookie?: never;
++        };
++        /** @description Place index endpoint for Guests */
++        get: {
++            parameters: {
++                query?: {
++                    /** @description Scroll pagination cursor */
++                    cursor?: string | null;
++                };
++                header?: never;
++                path?: never;
++                cookie?: never;
++            };
++            requestBody?: never;
++            responses: {
++                /** @description Success */
++                200: {
++                    headers: {
++                        [name: string]: unknown;
++                    };
++                    content: {
++                        "application/json": {
++                            cursor: string | null;
++                            results: components["schemas"]["PlaceSummaryForGuests"][];
++                        };
++                    };
++                };
++                400: components["responses"]["BadRequest"];
++                401: components["responses"]["Unauthorized"];
++                403: components["responses"]["Forbidden"];
++                404: components["responses"]["NotFound"];
++                409: components["responses"]["Conflict"];
++                422: components["responses"]["ValidationErrors"];
++                500: components["responses"]["InternalServerError"];
++            };
++        };
++        put?: never;
++        post?: never;
++        delete?: never;
++        options?: never;
++        head?: never;
++        patch?: never;
++        trace?: never;
++    };
++    "/v1/guest/places/{id}": {
++        parameters: {
++            query?: never;
++            header?: never;
++            path: {
++                id: string;
++            };
++            cookie?: never;
++        };
++        /** @description Place show endpoint for Guests */
++        get: {
++            parameters: {
++                query?: never;
++                header?: never;
++                path: {
++                    id: string;
++                };
++                cookie?: never;
++            };
++            requestBody?: never;
++            responses: {
++                /** @description Success */
++                200: {
++                    headers: {
++                        [name: string]: unknown;
++                    };
++                    content: {
++                        "application/json": components["schemas"]["PlaceForGuests"];
++                    };
++                };
++                400: components["responses"]["BadRequest"];
++                401: components["responses"]["Unauthorized"];
++                403: components["responses"]["Forbidden"];
++                404: components["responses"]["NotFound"];
++                409: components["responses"]["Conflict"];
++                422: components["responses"]["ValidationErrors"];
++                500: components["responses"]["InternalServerError"];
++            };
++        };
++        put?: never;
++        post?: never;
++        delete?: never;
++        options?: never;
++        head?: never;
++        patch?: never;
++        trace?: never;
++    };
+     "/v1/host/localized-texts/{id}": {
+         parameters: {
+             query?: never;
+@@ -470,6 +569,21 @@ export interface paths {
+ export type webhooks = Record<string, never>;
+ export interface components {
+     schemas: {
++        Appliance: {
++            label: string;
++            /** @enum {string} */
++            value: "dishwasher" | "microwave" | "oven" | "stove";
++        };
++        BathOrShowerStyle: {
++            label: string;
++            /** @enum {string} */
++            value: "bath" | "bath_and_shower" | "none" | "shower";
++        };
++        BedType: {
++            label: string;
++            /** @enum {string} */
++            value: "bunk" | "cot" | "king" | "queen" | "sofabed" | "twin";
++        };
+         OpenapiValidationErrors: {
+             /** @enum {string} */
+             type: "openapi";
+@@ -492,10 +606,23 @@ export interface components {
+             /** @enum {string} */
+             style: "cabin" | "cave" | "cottage" | "dump" | "lean_to" | "tent" | "treehouse";
+         };
++        PlaceForGuests: {
++            displayStyle: string;
++            id: string;
++            rooms: (components["schemas"]["RoomBathroomForGuests"] | components["schemas"]["RoomBedroomForGuests"] | components["schemas"]["RoomDenForGuests"] | components["schemas"]["RoomKitchenForGuests"] | components["schemas"]["RoomLivingRoomForGuests"])[];
++            sleeps: number;
++            /** @enum {string} */
++            style: "cabin" | "cave" | "cottage" | "dump" | "lean_to" | "tent" | "treehouse";
++            title: string;
++        };
+         PlaceSummary: {
+             id: string;
+             name: string;
+         };
++        PlaceSummaryForGuests: {
++            id: string;
++            title: string;
++        };
+         RoomBathroom: {
+             /** @enum {string|null} */
+             bathOrShowerStyle: "bath" | "bath_and_shower" | "none" | "shower" | null;
+@@ -506,6 +633,14 @@ export interface components {
+             /** @enum {string} */
+             type: "Bathroom";
+         };
++        RoomBathroomForGuests: {
++            bathOrShowerStyle: components["schemas"]["BathOrShowerStyle"];
++            displayType: string;
++            id: string;
++            title: string;
++            /** @enum {string} */
++            type: "Bathroom" | "Bedroom" | "Den" | "Kitchen" | "LivingRoom";
++        };
+         RoomBathroomSummary: {
+             id: string;
+             position: number | null;
+@@ -521,6 +656,14 @@ export interface components {
+             /** @enum {string} */
+             type: "Bedroom";
+         };
++        RoomBedroomForGuests: {
++            bedTypes: components["schemas"]["BedType"][];
++            displayType: string;
++            id: string;
++            title: string;
++            /** @enum {string} */
++            type: "Bathroom" | "Bedroom" | "Den" | "Kitchen" | "LivingRoom";
++        };
+         RoomBedroomSummary: {
+             id: string;
+             position: number | null;
+@@ -535,6 +678,13 @@ export interface components {
+             /** @enum {string} */
+             type: "Den";
+         };
++        RoomDenForGuests: {
++            displayType: string;
++            id: string;
++            title: string;
++            /** @enum {string} */
++            type: "Bathroom" | "Bedroom" | "Den" | "Kitchen" | "LivingRoom";
++        };
+         RoomDenSummary: {
+             id: string;
+             position: number | null;
+@@ -550,6 +700,14 @@ export interface components {
+             /** @enum {string} */
+             type: "Kitchen";
+         };
++        RoomKitchenForGuests: {
++            appliances: components["schemas"]["Appliance"][];
++            displayType: string;
++            id: string;
++            title: string;
++            /** @enum {string} */
++            type: "Bathroom" | "Bedroom" | "Den" | "Kitchen" | "LivingRoom";
++        };
+         RoomKitchenSummary: {
+             id: string;
+             position: number | null;
+@@ -564,6 +722,13 @@ export interface components {
+             /** @enum {string} */
+             type: "LivingRoom";
+         };
++        RoomLivingRoomForGuests: {
++            displayType: string;
++            id: string;
++            title: string;
++            /** @enum {string} */
++            type: "Bathroom" | "Bedroom" | "Den" | "Kitchen" | "LivingRoom";
++        };
+         RoomLivingRoomSummary: {
+             id: string;
+             position: number | null;
+diff --git a/api/src/utils/i18n.ts b/api/src/utils/i18n.ts
+index c99a20e..b5ec778 100644
+--- a/api/src/utils/i18n.ts
++++ b/api/src/utils/i18n.ts
+@@ -1,9 +1,9 @@
+ import locales from '@conf/locales/index.js'
+ import { I18nProvider } from '@rvoh/psychic/system'
++import { LocalesEnumValues } from '@src/types/db.js'
+ 
+-const SUPPORTED_LOCALES = ['en-US']
+ export function supportedLocales() {
+-  return SUPPORTED_LOCALES
++  return LocalesEnumValues
+ }
+ 
+ export default I18nProvider.provide(locales, 'en')
+```

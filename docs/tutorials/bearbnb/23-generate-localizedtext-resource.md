@@ -1,0 +1,307 @@
+---
+title: Generate LocalizedText resource
+---
+
+# Generate LocalizedText resource
+
+## Commit Message
+
+```
+Generate LocalizedText resource
+
+```console
+yarn psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText localizable_type:enum:localized_types:Host,Place,Room localizable_id:uuid locale:enum:locales:en-US,es-ES title:string markdown:text deleted_at:datetime:optional
+```
+
+Leverages `--only=update,destroy` to only generate the show, update, and destroy actions. Each polymorphically associated model's controller will have an action for creating an associated LocalizedText model, and Host-facing serializer can display its LocalizedTexts, but the actions for maintaining all LocalizedText will be centralized in the LocalizedText controller.
+```
+
+## Changes
+
+```diff
+diff --git a/api/spec/factories/LocalizedTextFactory.ts b/api/spec/factories/LocalizedTextFactory.ts
+new file mode 100644
+index 0000000..0df341b
+--- /dev/null
++++ b/api/spec/factories/LocalizedTextFactory.ts
+@@ -0,0 +1,13 @@
++import { UpdateableProperties } from '@rvoh/dream/types'
++import LocalizedText from '@models/LocalizedText.js'
++
++let counter = 0
++
++export default async function createLocalizedText(attrs: UpdateableProperties<LocalizedText> = {}) {
++  return await LocalizedText.create({
++    locale: 'en-US',
++    title: `LocalizedText title ${++counter}`,
++    markdown: `LocalizedText markdown ${counter}`,
++    ...attrs,
++  })
++}
+diff --git a/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts b/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
+new file mode 100644
+index 0000000..9cfebae
+--- /dev/null
++++ b/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
+@@ -0,0 +1,89 @@
++import LocalizedText from '@models/LocalizedText.js'
++import User from '@models/User.js'
++import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
++import createUser from '@spec/factories/UserFactory.js'
++import { RequestBody, session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
++
++describe('V1/Host/LocalizedTextsController', () => {
++  let request: SpecRequestType
++  let user: User
++
++  beforeEach(async () => {
++    user = await createUser()
++    request = await session(user)
++  })
++
++  describe('PATCH update', () => {
++    const updateLocalizedText = async <StatusCode extends 204 | 400 | 404>(
++      localizedText: LocalizedText,
++      data: RequestBody<'patch', '/v1/host/localized-texts/{id}'>,
++      expectedStatus: StatusCode
++    ) => {
++      return request.patch('/v1/host/localized-texts/{id}', expectedStatus, {
++        id: localizedText.id,
++        data,
++      })
++    }
++
++    it('updates the LocalizedText', async () => {
++      const localizedText = await createLocalizedText({ user })
++
++      await updateLocalizedText(localizedText, {
++        locale: 'es-ES',
++        title: 'Updated LocalizedText title',
++        markdown: 'Updated LocalizedText markdown',
++      }, 204)
++
++      await localizedText.reload()
++      expect(localizedText.locale).toEqual('es-ES')
++      expect(localizedText.title).toEqual('Updated LocalizedText title')
++      expect(localizedText.markdown).toEqual('Updated LocalizedText markdown')
++    })
++
++    context('a LocalizedText created by another User', () => {
++      it('is not updated', async () => {
++        const localizedText = await createLocalizedText()
++        const originalLocale = localizedText.locale
++        const originalTitle = localizedText.title
++        const originalMarkdown = localizedText.markdown
++
++        await updateLocalizedText(localizedText, {
++          locale: 'es-ES',
++          title: 'Updated LocalizedText title',
++          markdown: 'Updated LocalizedText markdown',
++        }, 404)
++
++        await localizedText.reload()
++        expect(localizedText.locale).toEqual(originalLocale)
++        expect(localizedText.title).toEqual(originalTitle)
++        expect(localizedText.markdown).toEqual(originalMarkdown)
++      })
++    })
++  })
++
++  describe('DELETE destroy', () => {
++    const destroyLocalizedText = async <StatusCode extends 204 | 400 | 404>(localizedText: LocalizedText, expectedStatus: StatusCode) => {
++      return request.delete('/v1/host/localized-texts/{id}', expectedStatus, {
++        id: localizedText.id,
++      })
++    }
++
++    it('deletes the LocalizedText', async () => {
++      const localizedText = await createLocalizedText({ user })
++
++      await destroyLocalizedText(localizedText, 204)
++
++      expect(await LocalizedText.find(localizedText.id)).toBeNull()
++    })
++
++    context('a LocalizedText created by another User', () => {
++      it('is not deleted', async () => {
++        const localizedText = await createLocalizedText()
++
++        await destroyLocalizedText(localizedText, 404)
++
++        expect(await LocalizedText.find(localizedText.id)).toMatchDreamModel(localizedText)
++      })
++    })
++  })
++})
+diff --git a/api/spec/unit/models/LocalizedText.spec.ts b/api/spec/unit/models/LocalizedText.spec.ts
+new file mode 100644
+index 0000000..132b046
+--- /dev/null
++++ b/api/spec/unit/models/LocalizedText.spec.ts
+@@ -0,0 +1,3 @@
++describe('LocalizedText', () => {
++  it.todo('add a test here to get started building LocalizedText')
++})
+diff --git a/api/src/app/controllers/V1/Host/LocalizedTextsController.ts b/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
+new file mode 100644
+index 0000000..38fd532
+--- /dev/null
++++ b/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
+@@ -0,0 +1,35 @@
++import { OpenAPI } from '@rvoh/psychic'
++import V1HostBaseController from './BaseController.js'
++import LocalizedText from '@models/LocalizedText.js'
++
++const openApiTags = ['localized-texts']
++
++export default class V1HostLocalizedTextsController extends V1HostBaseController {
++  @OpenAPI(LocalizedText, {
++    status: 204,
++    tags: openApiTags,
++    description: 'Update a LocalizedText',
++  })
++  public async update() {
++    // const localizedText = await this.localizedText()
++    // await localizedText.update(this.paramsFor(LocalizedText))
++    // this.noContent()
++  }
++
++  @OpenAPI({
++    status: 204,
++    tags: openApiTags,
++    description: 'Destroy a LocalizedText',
++  })
++  public async destroy() {
++    // const localizedText = await this.localizedText()
++    // await localizedText.destroy()
++    // this.noContent()
++  }
++
++  private async localizedText() {
++    // return await this.currentUser.associationQuery('localizedTexts')
++    //   .preloadFor('default')
++    //   .findOrFail(this.castParam('id', 'string'))
++  }
++}
+diff --git a/api/src/app/models/LocalizedText.ts b/api/src/app/models/LocalizedText.ts
+new file mode 100644
+index 0000000..d73684f
+--- /dev/null
++++ b/api/src/app/models/LocalizedText.ts
+@@ -0,0 +1,28 @@
++import { Decorators } from '@rvoh/dream'
++import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
++import ApplicationModel from '@models/ApplicationModel.js'
++
++const deco = new Decorators<typeof LocalizedText>()
++
++export default class LocalizedText extends ApplicationModel {
++  public override get table() {
++    return 'localized_texts' as const
++  }
++
++  public get serializers(): DreamSerializers<LocalizedText> {
++    return {
++      default: 'LocalizedTextSerializer',
++      summary: 'LocalizedTextSummarySerializer',
++    }
++  }
++
++  public id: DreamColumn<LocalizedText, 'id'>
++  public localizableType: DreamColumn<LocalizedText, 'localizableType'>
++  public localizableId: DreamColumn<LocalizedText, 'localizableId'>
++  public locale: DreamColumn<LocalizedText, 'locale'>
++  public title: DreamColumn<LocalizedText, 'title'>
++  public markdown: DreamColumn<LocalizedText, 'markdown'>
++  public deletedAt: DreamColumn<LocalizedText, 'deletedAt'>
++  public createdAt: DreamColumn<LocalizedText, 'createdAt'>
++  public updatedAt: DreamColumn<LocalizedText, 'updatedAt'>
++}
+diff --git a/api/src/app/serializers/LocalizedTextSerializer.ts b/api/src/app/serializers/LocalizedTextSerializer.ts
+new file mode 100644
+index 0000000..1351f86
+--- /dev/null
++++ b/api/src/app/serializers/LocalizedTextSerializer.ts
+@@ -0,0 +1,15 @@
++import { DreamSerializer } from '@rvoh/dream'
++import LocalizedText from '@models/LocalizedText.js'
++
++export const LocalizedTextSummarySerializer = (localizedText: LocalizedText) =>
++  DreamSerializer(LocalizedText, localizedText)
++    .attribute('id')
++
++export const LocalizedTextSerializer = (localizedText: LocalizedText) =>
++  LocalizedTextSummarySerializer(localizedText)
++    .attribute('localizableType')
++    .attribute('localizableId')
++    .attribute('locale')
++    .attribute('title')
++    .attribute('markdown')
++    .attribute('deletedAt')
+diff --git a/api/src/conf/routes.ts b/api/src/conf/routes.ts
+index 036f15f..e0981a7 100644
+--- a/api/src/conf/routes.ts
++++ b/api/src/conf/routes.ts
+@@ -4,6 +4,8 @@ import { PsychicRouter } from '@rvoh/psychic'
+ export default function routes(r: PsychicRouter) {
+   r.namespace('v1', r => {
+     r.namespace('host', r => {
++      r.resources('localized-texts', { only: ['update', 'destroy'] })
++
+       r.resources('places', r => {
+         r.resources('rooms')
+ 
+diff --git a/api/src/db/migrations/1764187753122-create-localized-text.ts b/api/src/db/migrations/1764187753122-create-localized-text.ts
+new file mode 100644
+index 0000000..13f64b4
+--- /dev/null
++++ b/api/src/db/migrations/1764187753122-create-localized-text.ts
+@@ -0,0 +1,46 @@
++import { Kysely, sql } from 'kysely'
++
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export async function up(db: Kysely<any>): Promise<void> {
++  await db.schema
++    .createType('localized_types_enum')
++    .asEnum([
++      'Host',
++      'Place',
++      'Room'
++    ])
++    .execute()
++
++  await db.schema
++    .createType('locales_enum')
++    .asEnum([
++      'en-US',
++      'es-ES'
++    ])
++    .execute()
++
++  await db.schema
++    .createTable('localized_texts')
++    .addColumn('id', 'uuid', col =>
++      col
++        .primaryKey()
++        .defaultTo(sql`uuid_generate_v4()`),
++    )
++    .addColumn('localizable_type', sql`localized_types_enum`, col => col.notNull())
++    .addColumn('localizable_id', 'uuid', col => col.notNull())
++    .addColumn('locale', sql`locales_enum`, col => col.notNull())
++    .addColumn('title', 'varchar(255)', col => col.notNull())
++    .addColumn('markdown', 'text', col => col.notNull())
++    .addColumn('deleted_at', 'timestamp')
++    .addColumn('created_at', 'timestamp', col => col.notNull())
++    .addColumn('updated_at', 'timestamp', col => col.notNull())
++    .execute()
++}
++
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export async function down(db: Kysely<any>): Promise<void> {
++  await db.schema.dropTable('localized_texts').execute()
++
++  await db.schema.dropType('localized_types_enum').execute()
++  await db.schema.dropType('locales_enum').execute()
++}
+\ No newline at end of file
+```
