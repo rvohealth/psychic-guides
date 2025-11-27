@@ -5,7 +5,7 @@ pagination_prev: null
 
 # Welcome
 
-In your grand search to find the perfect typescript web framework, we are humbled that you have stumbled upon us. We are new to the game, having just officially released in April of 2025, but we believe our offering to you was worth the wait.
+In your grand search to find the perfect, modern (ESM-forward, stage 3 decorators) Typescript web framework, we are humbled that you have stumbled upon us. We are new to the game, having just officially released the stable, v2 API in November of 2025, but we believe our offering to you was worth the wait.
 
 ## What is Dream?
 
@@ -52,30 +52,33 @@ export default class User extends ApplicationModel {
 
 ### Powerful associations
 
-In addition to powerful decorators for describing validations and custom scoping on your models, Dream also provides a powerful association layer, enabling you to describe rich, intimate associations with elegant simplicity:
+In addition to powerful decorators for describing validations and custom scoping on your models, Dream also provides a powerful association layer, enabling you to describe rich, intimate associations with elegant simplicity.
 
 ```ts
-const deco = new Decorators<typeof Post>()
+const deco = new Decorators<typeof Host>()
 
-class Post extends ApplicationModel {
+export default class Host extends ApplicationModel {
   ...
-
   @deco.BelongsTo('User')
   public user: User
+  public userId: DreamColumn<Host, 'userId'>
 
-  @deco.HasMany('Comment')
-  public comments: Comment[]
+  @deco.HasMany('HostPlace')
+  public hostPlaces: HostPlace[]
 
-  @deco.HasMany('Reply', { through: 'comments' })
-  public replies: Reply[]
+  @deco.HasMany('Place', { through: 'hostPlaces' })
+  public places: Place[]
+
+  @deco.HasMany('LocalizedText', { polymorphic: true, on: 'localizableId', dependent: 'destroy' })
+  public localizedTexts: LocalizedText[]
+
+  @deco.HasOne('LocalizedText', {
+    polymorphic: true,
+    on: 'localizableId',
+    and: { locale: DreamConst.passthrough },
+  })
+  public currentLocalizedText: LocalizedText
 }
-
-const post = await Post.firstOrFail()
-await post
-  .innerJoin('comments as c', { and: { body: ops.ilike('%oops%') } })
-  .where({ 'c.authorName': 'brittany' })
-  .all()
-// [Post{ body: 'oops' }, Post{ body: 'oops, I did it again' }]
 ```
 
 > See the [Dream guides](/docs/models/overview) for more information on modeling with Dream
@@ -94,7 +97,7 @@ class User extends ApplicationModel {
   }
 }
 
-// somewhere, maybe in a controller...
+// somewhere, usually in a controller...
 await User.preloadFor('summary').findOrFail(this.castParam('id', 'uuid'))
 ```
 
@@ -106,28 +109,73 @@ Psychic is a fully-featured, TypeScript-driven web framework built on [Express](
 
 ### Routing
 
-Psychic enables you to programatically define routes, as well as their connections to controllers within your app. With these routes defined, your web server will automatically point any requests to these paths to the matching controllers.
+Psychic provides an expressive routing layer to your controllers:
 
 ```ts
 // conf/routes.ts
 
+import V1HostPlacesController from '@controllers/V1/Host/PlacesController.js'
 import { PsychicRouter } from '@rvoh/psychic'
 
-export default (r: PsychicRouter) => {
-  r.get('', 'Welcome#index')
+export default function routes(r: PsychicRouter) {
   r.namespace('v1', r => {
+    r.namespace('guest', r => {
+      r.resources('places', { only: ['index', 'show'] })
+      // Alternatively, could have written the routes explicitly:
+      // r.get('places', V1GuestPlacesController, 'index')
+      // r.get('places/:id', V1GuestPlacesController, 'show')
+    })
+
     r.namespace('host', r => {
-      r.resources('places')
+      r.resources('localized-texts', { only: ['update', 'destroy'] })
+
+      r.resources('places', r => {
+        // nested resource
+        r.resources('rooms')
+
+        // add an action on an individual resource beyond show/create/update/destroy
+        r.post('rennovate', V1HostPlacesController, 'rennovate')
+
+        r.collection(r => {
+          // add an action on the collection beyond index
+          r.post('create-from-template', V1HostPlacesController, 'createFromTemplate')
+        })
+      })
     })
   })
 }
+```
+
+Use `yarn psy routes` to see what these resolve to:
+
+```console
+% yarn psy routes
+GET     /v1/guest/places                       V1/Guest/Places#index
+GET     /v1/guest/places/:id                   V1/Guest/Places#show
+PUT     /v1/host/localized-texts/:id           V1/Host/LocalizedTexts#update
+PATCH   /v1/host/localized-texts/:id           V1/Host/LocalizedTexts#update
+DELETE  /v1/host/localized-texts/:id           V1/Host/LocalizedTexts#destroy
+GET     /v1/host/places/:placeId/rooms         V1/Host/Places/Rooms#index
+POST    /v1/host/places/:placeId/rooms         V1/Host/Places/Rooms#create
+PUT     /v1/host/places/:placeId/rooms/:id     V1/Host/Places/Rooms#update
+PATCH   /v1/host/places/:placeId/rooms/:id     V1/Host/Places/Rooms#update
+GET     /v1/host/places/:placeId/rooms/:id     V1/Host/Places/Rooms#show
+DELETE  /v1/host/places/:placeId/rooms/:id     V1/Host/Places/Rooms#destroy
+POST    /v1/host/places/:id/rennovate          V1/Host/Places#rennovate
+POST    /v1/host/places/create-from-template   V1/Host/Places#createFromTemplate
+GET     /v1/host/places                        V1/Host/Places#index
+POST    /v1/host/places                        V1/Host/Places#create
+PUT     /v1/host/places/:id                    V1/Host/Places#update
+PATCH   /v1/host/places/:id                    V1/Host/Places#update
+GET     /v1/host/places/:id                    V1/Host/Places#show
+DELETE  /v1/host/places/:id                    V1/Host/Places#destroy
 ```
 
 > See our [Routing guide](/docs/routing/rest) for more information on routing
 
 ### Controllers
 
-With routes defined, you can build matching controllers to add functionality to your endpoints. Psychic deals strictly in json, so all endpoints will generally just be rendering json, if anything.
+With routes defined, you can build matching controllers to add functionality to your endpoints. By default, Psychic receives and returns, so all endpoints will generally just be rendering json, if anything.
 
 ```ts
 // controllers/V1/Host/PlacesController.ts
@@ -135,7 +183,7 @@ With routes defined, you can build matching controllers to add functionality to 
 export default class V1HostPlacesController extends AuthedController {
   public async create() {
     const place = await Place.create(this.paramsFor(Place))
-    this.created(place.id)
+    this.created(place)
   }
 
   public async index() {
@@ -169,7 +217,9 @@ As you can already see above, our Dream ORM is clearly at work to keep our code 
 
 ### Openapi
 
-Psychic provides a full-throttle openapi engine that can autogenerate openapi documents for your app by examining your models and serializers. This is very powerful, since it prevents you from needing to manually update your openapi specs any time you make changes to your models or serializers. It can also infer request body shapes for models on `POST`, `PATCH`, and `PUT` requests, enabling automatic request body generation as well.
+Psychic uses information from the routes, models, serializers, and an @OpenAPI decorator applied to controller actions to automatically generate OpenAPI specs. Different OpenAPI specs can be generated for different namespaces (e.g.: admin route OpenAPI spec separate from client route OpenAPI spec separate from OpenAPI specs for API service endpoints). It can also infer request body shapes for models on `POST`, `PATCH`, and `PUT` requests, enabling automatic request body generation as well. Since model attribute types flow from the database, this means that attribute types are defined once, in the migration, and flow through the entire application to the OpenAPI spec.
+
+This facilitates agile development and, when using a monorepo with a client web application or applications, a full behavior driven development (BDD) workflow. The resulting OpenAPI specs can then be used by mobile teams to develop the corresponding mobile features.
 
 ```ts
 // controllers/V1/Host/PlacesController.ts
@@ -202,8 +252,8 @@ export default class V1HostPlacesController extends AuthedController {
     serializerKey: 'summary',
   })
   public async index() {
-    const paginated = await Ingredient.preloadFor('summary').paginate()
-    this.ok(paginated)
+    const ingredients = await Ingredient.preloadFor('summary').all()
+    this.ok(ingredients)
   }
 }
 ```
