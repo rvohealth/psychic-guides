@@ -1,0 +1,118 @@
+---
+title: Generate Room/Kitchen STI model
+---
+
+# Generate Room/Kitchen STI model
+
+## Commit Message
+
+```
+Generate Room/Kitchen STI model
+
+```console
+yarn psy g:sti-child Room/Kitchen extends Room appliances:enum\[\]:appliance_types:stove,oven,microwave,dishwasher
+```
+```
+
+## Changes
+
+```diff
+diff --git a/api/spec/factories/Room/KitchenFactory.ts b/api/spec/factories/Room/KitchenFactory.ts
+new file mode 100644
+index 0000000..8aa2e13
+--- /dev/null
++++ b/api/spec/factories/Room/KitchenFactory.ts
+@@ -0,0 +1,9 @@
++import { UpdateableProperties } from '@rvoh/dream/types'
++import RoomKitchen from '@models/Room/Kitchen.js'
++
++export default async function createRoomKitchen(attrs: UpdateableProperties<RoomKitchen> = {}) {
++  return await RoomKitchen.create({
++    appliances: ['stove'],
++    ...attrs,
++  })
++}
+diff --git a/api/spec/unit/models/Room/Kitchen.spec.ts b/api/spec/unit/models/Room/Kitchen.spec.ts
+new file mode 100644
+index 0000000..d5dfbf9
+--- /dev/null
++++ b/api/spec/unit/models/Room/Kitchen.spec.ts
+@@ -0,0 +1,3 @@
++describe('Room/Kitchen', () => {
++  it.todo('add a test here to get started building Room/Kitchen')
++})
+diff --git a/api/src/app/models/Room/Kitchen.ts b/api/src/app/models/Room/Kitchen.ts
+new file mode 100644
+index 0000000..c213b1d
+--- /dev/null
++++ b/api/src/app/models/Room/Kitchen.ts
+@@ -0,0 +1,17 @@
++import { Decorators, STI } from '@rvoh/dream'
++import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
++import Room from '@models/Room.js'
++
++const deco = new Decorators<typeof RoomKitchen>()
++
++@STI(Room)
++export default class RoomKitchen extends Room {
++  public override get serializers(): DreamSerializers<RoomKitchen> {
++    return {
++      default: 'Room/KitchenSerializer',
++      summary: 'Room/KitchenSummarySerializer',
++    }
++  }
++
++  public appliances: DreamColumn<RoomKitchen, 'appliances'>
++}
+diff --git a/api/src/app/serializers/Room/KitchenSerializer.ts b/api/src/app/serializers/Room/KitchenSerializer.ts
+new file mode 100644
+index 0000000..f5a38d7
+--- /dev/null
++++ b/api/src/app/serializers/Room/KitchenSerializer.ts
+@@ -0,0 +1,9 @@
++import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import RoomKitchen from '@models/Room/Kitchen.js'
++
++export const RoomKitchenSummarySerializer = (roomKitchen: RoomKitchen) =>
++  RoomSummarySerializer(RoomKitchen, roomKitchen)
++
++export const RoomKitchenSerializer = (roomKitchen: RoomKitchen) =>
++  RoomSerializer(RoomKitchen, roomKitchen)
++    .attribute('appliances')
+diff --git a/api/src/db/migrations/1764184671580-create-room-kitchen.ts b/api/src/db/migrations/1764184671580-create-room-kitchen.ts
+new file mode 100644
+index 0000000..d798b22
+--- /dev/null
++++ b/api/src/db/migrations/1764184671580-create-room-kitchen.ts
+@@ -0,0 +1,29 @@
++import { Kysely, sql } from 'kysely'
++
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export async function up(db: Kysely<any>): Promise<void> {
++  await db.schema
++    .createType('appliance_types_enum')
++    .asEnum([
++      'stove',
++      'oven',
++      'microwave',
++      'dishwasher'
++    ])
++    .execute()
++
++  await db.schema
++    .alterTable('rooms')
++    .addColumn('appliances', sql`appliance_types_enum[]`, col => col.notNull().defaultTo('{}'))
++    .execute()
++}
++
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export async function down(db: Kysely<any>): Promise<void> {
++  await db.schema
++    .alterTable('rooms')
++    .dropColumn('appliances')
++    .execute()
++
++  await db.schema.dropType('appliance_types_enum').execute()
++}
+\ No newline at end of file
+```

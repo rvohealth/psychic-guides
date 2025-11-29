@@ -1,0 +1,455 @@
+---
+title: Generate Place resource
+---
+
+# Generate Place resource
+
+## Commit Message
+
+```
+Generate Place resource
+
+```console
+yarn psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional
+```
+```
+
+## Changes
+
+```diff
+diff --git a/api/spec/factories/PlaceFactory.ts b/api/spec/factories/PlaceFactory.ts
+new file mode 100644
+index 0000000..d0a664e
+--- /dev/null
++++ b/api/spec/factories/PlaceFactory.ts
+@@ -0,0 +1,13 @@
++import { UpdateableProperties } from '@rvoh/dream/types'
++import Place from '@models/Place.js'
++
++let counter = 0
++
++export default async function createPlace(attrs: UpdateableProperties<Place> = {}) {
++  return await Place.create({
++    name: `Place name ${++counter}`,
++    style: 'cottage',
++    sleeps: 1,
++    ...attrs,
++  })
++}
+diff --git a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
+new file mode 100644
+index 0000000..10c5a6a
+--- /dev/null
++++ b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
+@@ -0,0 +1,185 @@
++import Place from '@models/Place.js'
++import User from '@models/User.js'
++import Host from '@models/Host.js'
++import createPlace from '@spec/factories/PlaceFactory.js'
++import createUser from '@spec/factories/UserFactory.js'
++import createHost from '@spec/factories/HostFactory.js'
++import { RequestBody, session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
++
++describe('V1/Host/PlacesController', () => {
++  let request: SpecRequestType
++  let user: User
++  let host: Host
++
++  beforeEach(async () => {
++    user = await createUser()
++    host = await createHost({ user })
++    request = await session(user)
++  })
++
++  describe('GET index', () => {
++    const indexPlaces = async <StatusCode extends 200 | 400 | 404>(expectedStatus: StatusCode) => {
++      return request.get('/v1/host/places', expectedStatus)
++    }
++
++    it('returns the index of Places', async () => {
++      const place = await createPlace({ host })
++
++      const { body } = await indexPlaces(200)
++
++      expect(body.results).toEqual([
++        expect.objectContaining({
++          id: place.id,
++        }),
++      ])
++    })
++
++    context('Places created by another Host', () => {
++      it('are omitted', async () => {
++        await createPlace()
++
++        const { body } = await indexPlaces(200)
++
++        expect(body.results).toEqual([])
++      })
++    })
++  })
++
++  describe('GET show', () => {
++    const showPlace = async <StatusCode extends 200 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
++      return request.get('/v1/host/places/{id}', expectedStatus, {
++        id: place.id,
++      })
++    }
++
++    it('returns the specified Place', async () => {
++      const place = await createPlace({ host })
++
++      const { body } = await showPlace(place, 200)
++
++      expect(body).toEqual(
++        expect.objectContaining({
++          id: place.id,
++          name: place.name,
++          style: place.style,
++          sleeps: place.sleeps,
++        }),
++      )
++    })
++
++    context('Place created by another Host', () => {
++      it('is not found', async () => {
++        const otherHostPlace = await createPlace()
++
++        await showPlace(otherHostPlace, 404)
++      })
++    })
++  })
++
++  describe('POST create', () => {
++    const createPlace = async <StatusCode extends 201 | 400 | 404>(
++      data: RequestBody<'post', '/v1/host/places'>,
++      expectedStatus: StatusCode
++    ) => {
++      return request.post('/v1/host/places', expectedStatus, {
++        data
++      })
++    }
++
++    it('creates a Place for this Host', async () => {
++      const { body } = await createPlace({
++        name: 'The Place name',
++        style: 'cottage',
++        sleeps: 1,
++      }, 201)
++
++      const place = await host.associationQuery('places').firstOrFail()
++      expect(place.name).toEqual('The Place name')
++      expect(place.style).toEqual('cottage')
++      expect(place.sleeps).toEqual(1)
++
++      expect(body).toEqual(
++        expect.objectContaining({
++          id: place.id,
++          name: place.name,
++          style: place.style,
++          sleeps: place.sleeps,
++        }),
++      )
++    })
++  })
++
++  describe('PATCH update', () => {
++    const updatePlace = async <StatusCode extends 204 | 400 | 404>(
++      place: Place,
++      data: RequestBody<'patch', '/v1/host/places/{id}'>,
++      expectedStatus: StatusCode
++    ) => {
++      return request.patch('/v1/host/places/{id}', expectedStatus, {
++        id: place.id,
++        data,
++      })
++    }
++
++    it('updates the Place', async () => {
++      const place = await createPlace({ host })
++
++      await updatePlace(place, {
++        name: 'Updated Place name',
++        style: 'dump',
++        sleeps: 2,
++      }, 204)
++
++      await place.reload()
++      expect(place.name).toEqual('Updated Place name')
++      expect(place.style).toEqual('dump')
++      expect(place.sleeps).toEqual(2)
++    })
++
++    context('a Place created by another Host', () => {
++      it('is not updated', async () => {
++        const place = await createPlace()
++        const originalName = place.name
++        const originalStyle = place.style
++        const originalSleeps = place.sleeps
++
++        await updatePlace(place, {
++          name: 'Updated Place name',
++          style: 'dump',
++          sleeps: 2,
++        }, 404)
++
++        await place.reload()
++        expect(place.name).toEqual(originalName)
++        expect(place.style).toEqual(originalStyle)
++        expect(place.sleeps).toEqual(originalSleeps)
++      })
++    })
++  })
++
++  describe('DELETE destroy', () => {
++    const destroyPlace = async <StatusCode extends 204 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
++      return request.delete('/v1/host/places/{id}', expectedStatus, {
++        id: place.id,
++      })
++    }
++
++    it('deletes the Place', async () => {
++      const place = await createPlace({ host })
++
++      await destroyPlace(place, 204)
++
++      expect(await Place.find(place.id)).toBeNull()
++    })
++
++    context('a Place created by another Host', () => {
++      it('is not deleted', async () => {
++        const place = await createPlace()
++
++        await destroyPlace(place, 404)
++
++        expect(await Place.find(place.id)).toMatchDreamModel(place)
++      })
++    })
++  })
++})
+diff --git a/api/spec/unit/models/Place.spec.ts b/api/spec/unit/models/Place.spec.ts
+new file mode 100644
+index 0000000..10bcdd9
+--- /dev/null
++++ b/api/spec/unit/models/Place.spec.ts
+@@ -0,0 +1,3 @@
++describe('Place', () => {
++  it.todo('add a test here to get started building Place')
++})
+diff --git a/api/src/app/controllers/V1/BaseController.ts b/api/src/app/controllers/V1/BaseController.ts
+new file mode 100644
+index 0000000..a30ab80
+--- /dev/null
++++ b/api/src/app/controllers/V1/BaseController.ts
+@@ -0,0 +1,5 @@
++import AuthedController from '../AuthedController.js'
++
++export default class V1BaseController extends AuthedController {
++
++}
+diff --git a/api/src/app/controllers/V1/Host/BaseController.ts b/api/src/app/controllers/V1/Host/BaseController.ts
+new file mode 100644
+index 0000000..1a200d0
+--- /dev/null
++++ b/api/src/app/controllers/V1/Host/BaseController.ts
+@@ -0,0 +1,5 @@
++import V1BaseController from '../BaseController.js'
++
++export default class V1HostBaseController extends V1BaseController {
++
++}
+diff --git a/api/src/app/controllers/V1/Host/PlacesController.ts b/api/src/app/controllers/V1/Host/PlacesController.ts
+new file mode 100644
+index 0000000..fb2326a
+--- /dev/null
++++ b/api/src/app/controllers/V1/Host/PlacesController.ts
+@@ -0,0 +1,71 @@
++import { OpenAPI } from '@rvoh/psychic'
++import V1HostBaseController from './BaseController.js'
++import Place from '@models/Place.js'
++
++const openApiTags = ['places']
++
++export default class V1HostPlacesController extends V1HostBaseController {
++  @OpenAPI(Place, {
++    status: 200,
++    tags: openApiTags,
++    description: 'Paginated index of Places',
++    scrollPaginate: true,
++    serializerKey: 'summary',
++  })
++  public async index() {
++    // const places = await this.currentHost.associationQuery('places')
++    //   .preloadFor('summary')
++    //   .order({ createdAt: 'desc' })
++    //   .scrollPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
++    // this.ok(places)
++  }
++
++  @OpenAPI(Place, {
++    status: 200,
++    tags: openApiTags,
++    description: 'Fetch a Place',
++  })
++  public async show() {
++    // const place = await this.place()
++    // this.ok(place)
++  }
++
++  @OpenAPI(Place, {
++    status: 201,
++    tags: openApiTags,
++    description: 'Create a Place',
++  })
++  public async create() {
++    // let place = await this.currentHost.createAssociation('places', this.paramsFor(Place))
++    // if (place.isPersisted) place = await place.loadFor('default').execute()
++    // this.created(place)
++  }
++
++  @OpenAPI(Place, {
++    status: 204,
++    tags: openApiTags,
++    description: 'Update a Place',
++  })
++  public async update() {
++    // const place = await this.place()
++    // await place.update(this.paramsFor(Place))
++    // this.noContent()
++  }
++
++  @OpenAPI({
++    status: 204,
++    tags: openApiTags,
++    description: 'Destroy a Place',
++  })
++  public async destroy() {
++    // const place = await this.place()
++    // await place.destroy()
++    // this.noContent()
++  }
++
++  private async place() {
++    // return await this.currentHost.associationQuery('places')
++    //   .preloadFor('default')
++    //   .findOrFail(this.castParam('id', 'string'))
++  }
++}
+diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
+new file mode 100644
+index 0000000..ee1bcf4
+--- /dev/null
++++ b/api/src/app/models/Place.ts
+@@ -0,0 +1,26 @@
++import { Decorators } from '@rvoh/dream'
++import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
++import ApplicationModel from '@models/ApplicationModel.js'
++
++const deco = new Decorators<typeof Place>()
++
++export default class Place extends ApplicationModel {
++  public override get table() {
++    return 'places' as const
++  }
++
++  public get serializers(): DreamSerializers<Place> {
++    return {
++      default: 'PlaceSerializer',
++      summary: 'PlaceSummarySerializer',
++    }
++  }
++
++  public id: DreamColumn<Place, 'id'>
++  public name: DreamColumn<Place, 'name'>
++  public style: DreamColumn<Place, 'style'>
++  public sleeps: DreamColumn<Place, 'sleeps'>
++  public deletedAt: DreamColumn<Place, 'deletedAt'>
++  public createdAt: DreamColumn<Place, 'createdAt'>
++  public updatedAt: DreamColumn<Place, 'updatedAt'>
++}
+diff --git a/api/src/app/serializers/PlaceSerializer.ts b/api/src/app/serializers/PlaceSerializer.ts
+new file mode 100644
+index 0000000..83fab47
+--- /dev/null
++++ b/api/src/app/serializers/PlaceSerializer.ts
+@@ -0,0 +1,13 @@
++import { DreamSerializer } from '@rvoh/dream'
++import Place from '@models/Place.js'
++
++export const PlaceSummarySerializer = (place: Place) =>
++  DreamSerializer(Place, place)
++    .attribute('id')
++
++export const PlaceSerializer = (place: Place) =>
++  PlaceSummarySerializer(place)
++    .attribute('name')
++    .attribute('style')
++    .attribute('sleeps')
++    .attribute('deletedAt')
+diff --git a/api/src/conf/routes.ts b/api/src/conf/routes.ts
+index 67975fc..198aa15 100644
+--- a/api/src/conf/routes.ts
++++ b/api/src/conf/routes.ts
+@@ -2,6 +2,12 @@ import adminRoutes from '@conf/routes.admin.js'
+ import { PsychicRouter } from '@rvoh/psychic'
+ 
+ export default function routes(r: PsychicRouter) {
++  r.namespace('v1', r => {
++    r.namespace('host', r => {
++      r.resources('places')
++    })
++  })
++
+   adminRoutes(r)
+   // add routes here, perhaps by running `yarn psy g:resource v1/pets Pet name:citext birthdate:date species:enum:pet_species:dog,cat,fish`
+ }
+diff --git a/api/src/db/migrations/1764176714209-create-place.ts b/api/src/db/migrations/1764176714209-create-place.ts
+new file mode 100644
+index 0000000..e1e0e23
+--- /dev/null
++++ b/api/src/db/migrations/1764176714209-create-place.ts
+@@ -0,0 +1,42 @@
++import { DreamMigrationHelpers } from '@rvoh/dream/db'
++import { Kysely, sql } from 'kysely'
++
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export async function up(db: Kysely<any>): Promise<void> {
++  await DreamMigrationHelpers.createExtension(db, 'citext')
++
++  await db.schema
++    .createType('place_styles_enum')
++    .asEnum([
++      'cottage',
++      'cabin',
++      'lean_to',
++      'treehouse',
++      'tent',
++      'cave',
++      'dump'
++    ])
++    .execute()
++
++  await db.schema
++    .createTable('places')
++    .addColumn('id', 'uuid', col =>
++      col
++        .primaryKey()
++        .defaultTo(sql`uuid_generate_v4()`),
++    )
++    .addColumn('name', sql`citext`, col => col.notNull())
++    .addColumn('style', sql`place_styles_enum`, col => col.notNull())
++    .addColumn('sleeps', 'integer', col => col.notNull())
++    .addColumn('deleted_at', 'timestamp')
++    .addColumn('created_at', 'timestamp', col => col.notNull())
++    .addColumn('updated_at', 'timestamp', col => col.notNull())
++    .execute()
++}
++
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export async function down(db: Kysely<any>): Promise<void> {
++  await db.schema.dropTable('places').execute()
++
++  await db.schema.dropType('place_styles_enum').execute()
++}
+\ No newline at end of file
+```

@@ -1,0 +1,686 @@
+---
+title: Rename generated RoomDen to Den and
+---
+
+# Rename generated RoomDen to Den and
+
+## Commit Message
+
+```
+Rename generated RoomDen to Den and
+RoomLivingRoom to LivingRoom
+
+```console
+yarn psy sync
+```
+```
+
+## Changes
+
+```diff
+diff --git a/api/spec/factories/Room/DenFactory.ts b/api/spec/factories/Room/DenFactory.ts
+index 4840bb0..36df1c4 100644
+--- a/api/spec/factories/Room/DenFactory.ts
++++ b/api/spec/factories/Room/DenFactory.ts
+@@ -1,8 +1,8 @@
++import Den from '@models/Room/Den.js'
+ import { UpdateableProperties } from '@rvoh/dream/types'
+-import RoomDen from '@models/Room/Den.js'
+ 
+-export default async function createRoomDen(attrs: UpdateableProperties<RoomDen> = {}) {
+-  return await RoomDen.create({
++export default async function createRoomDen(attrs: UpdateableProperties<Den> = {}) {
++  return await Den.create({
+     ...attrs,
+   })
+ }
+diff --git a/api/spec/factories/Room/LivingRoomFactory.ts b/api/spec/factories/Room/LivingRoomFactory.ts
+index 501cde5..41b9807 100644
+--- a/api/spec/factories/Room/LivingRoomFactory.ts
++++ b/api/spec/factories/Room/LivingRoomFactory.ts
+@@ -1,8 +1,8 @@
++import LivingRoom from '@models/Room/LivingRoom.js'
+ import { UpdateableProperties } from '@rvoh/dream/types'
+-import RoomLivingRoom from '@models/Room/LivingRoom.js'
+ 
+-export default async function createRoomLivingRoom(attrs: UpdateableProperties<RoomLivingRoom> = {}) {
+-  return await RoomLivingRoom.create({
++export default async function createRoomLivingRoom(attrs: UpdateableProperties<LivingRoom> = {}) {
++  return await LivingRoom.create({
+     ...attrs,
+   })
+ }
+diff --git a/api/src/app/models/Room/Den.ts b/api/src/app/models/Room/Den.ts
+index 7f67007..8b65ee8 100644
+--- a/api/src/app/models/Room/Den.ts
++++ b/api/src/app/models/Room/Den.ts
+@@ -1,16 +1,15 @@
+-import { Decorators, STI } from '@rvoh/dream'
+-import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import Room from '@models/Room.js'
++import { Decorators, STI } from '@rvoh/dream'
++import { DreamSerializers } from '@rvoh/dream/types'
+ 
+-const deco = new Decorators<typeof RoomDen>()
++const deco = new Decorators<typeof Den>()
+ 
+ @STI(Room)
+-export default class RoomDen extends Room {
+-  public override get serializers(): DreamSerializers<RoomDen> {
++export default class Den extends Room {
++  public override get serializers(): DreamSerializers<Den> {
+     return {
+       default: 'Room/DenSerializer',
+       summary: 'Room/DenSummarySerializer',
+     }
+   }
+-
+ }
+diff --git a/api/src/app/models/Room/LivingRoom.ts b/api/src/app/models/Room/LivingRoom.ts
+index feaca2f..f6aaa38 100644
+--- a/api/src/app/models/Room/LivingRoom.ts
++++ b/api/src/app/models/Room/LivingRoom.ts
+@@ -1,16 +1,15 @@
+-import { Decorators, STI } from '@rvoh/dream'
+-import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import Room from '@models/Room.js'
++import { Decorators, STI } from '@rvoh/dream'
++import { DreamSerializers } from '@rvoh/dream/types'
+ 
+-const deco = new Decorators<typeof RoomLivingRoom>()
++const deco = new Decorators<typeof LivingRoom>()
+ 
+ @STI(Room)
+-export default class RoomLivingRoom extends Room {
+-  public override get serializers(): DreamSerializers<RoomLivingRoom> {
++export default class LivingRoom extends Room {
++  public override get serializers(): DreamSerializers<LivingRoom> {
+     return {
+       default: 'Room/LivingRoomSerializer',
+       summary: 'Room/LivingRoomSummarySerializer',
+     }
+   }
+-
+ }
+diff --git a/api/src/app/serializers/Room/DenSerializer.ts b/api/src/app/serializers/Room/DenSerializer.ts
+index 9030e23..86500fa 100644
+--- a/api/src/app/serializers/Room/DenSerializer.ts
++++ b/api/src/app/serializers/Room/DenSerializer.ts
+@@ -1,8 +1,6 @@
++import Den from '@models/Room/Den.js'
+ import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
+-import RoomDen from '@models/Room/Den.js'
+ 
+-export const RoomDenSummarySerializer = (roomDen: RoomDen) =>
+-  RoomSummarySerializer(RoomDen, roomDen)
++export const RoomDenSummarySerializer = (roomDen: Den) => RoomSummarySerializer(Den, roomDen)
+ 
+-export const RoomDenSerializer = (roomDen: RoomDen) =>
+-  RoomSerializer(RoomDen, roomDen)
++export const RoomDenSerializer = (roomDen: Den) => RoomSerializer(Den, roomDen)
+diff --git a/api/src/app/serializers/Room/LivingRoomSerializer.ts b/api/src/app/serializers/Room/LivingRoomSerializer.ts
+index e44755e..5a1ea3a 100644
+--- a/api/src/app/serializers/Room/LivingRoomSerializer.ts
++++ b/api/src/app/serializers/Room/LivingRoomSerializer.ts
+@@ -1,8 +1,8 @@
++import LivingRoom from '@models/Room/LivingRoom.js'
+ import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
+-import RoomLivingRoom from '@models/Room/LivingRoom.js'
+ 
+-export const RoomLivingRoomSummarySerializer = (roomLivingRoom: RoomLivingRoom) =>
+-  RoomSummarySerializer(RoomLivingRoom, roomLivingRoom)
++export const RoomLivingRoomSummarySerializer = (roomLivingRoom: LivingRoom) =>
++  RoomSummarySerializer(LivingRoom, roomLivingRoom)
+ 
+-export const RoomLivingRoomSerializer = (roomLivingRoom: RoomLivingRoom) =>
+-  RoomSerializer(RoomLivingRoom, roomLivingRoom)
++export const RoomLivingRoomSerializer = (roomLivingRoom: LivingRoom) =>
++  RoomSerializer(LivingRoom, roomLivingRoom)
+diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
+index c767b4c..ece4189 100644
+--- a/api/src/openapi/mobile.openapi.json
++++ b/api/src/openapi/mobile.openapi.json
+@@ -350,8 +350,14 @@
+                           {
+                             "$ref": "#/components/schemas/RoomBedroomSummary"
+                           },
++                          {
++                            "$ref": "#/components/schemas/RoomDenSummary"
++                          },
+                           {
+                             "$ref": "#/components/schemas/RoomKitchenSummary"
++                          },
++                          {
++                            "$ref": "#/components/schemas/RoomLivingRoomSummary"
+                           }
+                         ]
+                       }
+@@ -458,8 +464,14 @@
+                     {
+                       "$ref": "#/components/schemas/RoomBedroom"
+                     },
++                    {
++                      "$ref": "#/components/schemas/RoomDen"
++                    },
+                     {
+                       "$ref": "#/components/schemas/RoomKitchen"
++                    },
++                    {
++                      "$ref": "#/components/schemas/RoomLivingRoom"
+                     }
+                   ]
+                 }
+@@ -527,8 +539,14 @@
+                     {
+                       "$ref": "#/components/schemas/RoomBedroom"
+                     },
++                    {
++                      "$ref": "#/components/schemas/RoomDen"
++                    },
+                     {
+                       "$ref": "#/components/schemas/RoomKitchen"
++                    },
++                    {
++                      "$ref": "#/components/schemas/RoomLivingRoom"
+                     }
+                   ]
+                 }
+@@ -887,6 +905,48 @@
+           }
+         }
+       },
++      "RoomDen": {
++        "type": "object",
++        "required": [
++          "deletedAt",
++          "id",
++          "position",
++          "type"
++        ],
++        "properties": {
++          "deletedAt": {
++            "type": [
++              "string",
++              "null"
++            ],
++            "format": "date-time"
++          },
++          "id": {
++            "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "description": "The following values will be allowed:\n  Den"
++          }
++        }
++      },
++      "RoomDenSummary": {
++        "type": "object",
++        "required": [
++          "id"
++        ],
++        "properties": {
++          "id": {
++            "type": "string"
++          }
++        }
++      },
+       "RoomKitchen": {
+         "type": "object",
+         "required": [
+@@ -937,6 +997,48 @@
+           }
+         }
+       },
++      "RoomLivingRoom": {
++        "type": "object",
++        "required": [
++          "deletedAt",
++          "id",
++          "position",
++          "type"
++        ],
++        "properties": {
++          "deletedAt": {
++            "type": [
++              "string",
++              "null"
++            ],
++            "format": "date-time"
++          },
++          "id": {
++            "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "description": "The following values will be allowed:\n  LivingRoom"
++          }
++        }
++      },
++      "RoomLivingRoomSummary": {
++        "type": "object",
++        "required": [
++          "id"
++        ],
++        "properties": {
++          "id": {
++            "type": "string"
++          }
++        }
++      },
+       "ValidationErrors": {
+         "type": "object",
+         "required": [
+diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
+index b6c53c8..b12e018 100644
+--- a/api/src/openapi/openapi.json
++++ b/api/src/openapi/openapi.json
+@@ -350,8 +350,14 @@
+                           {
+                             "$ref": "#/components/schemas/RoomBedroomSummary"
+                           },
++                          {
++                            "$ref": "#/components/schemas/RoomDenSummary"
++                          },
+                           {
+                             "$ref": "#/components/schemas/RoomKitchenSummary"
++                          },
++                          {
++                            "$ref": "#/components/schemas/RoomLivingRoomSummary"
+                           }
+                         ]
+                       }
+@@ -458,8 +464,14 @@
+                     {
+                       "$ref": "#/components/schemas/RoomBedroom"
+                     },
++                    {
++                      "$ref": "#/components/schemas/RoomDen"
++                    },
+                     {
+                       "$ref": "#/components/schemas/RoomKitchen"
++                    },
++                    {
++                      "$ref": "#/components/schemas/RoomLivingRoom"
+                     }
+                   ]
+                 }
+@@ -527,8 +539,14 @@
+                     {
+                       "$ref": "#/components/schemas/RoomBedroom"
+                     },
++                    {
++                      "$ref": "#/components/schemas/RoomDen"
++                    },
+                     {
+                       "$ref": "#/components/schemas/RoomKitchen"
++                    },
++                    {
++                      "$ref": "#/components/schemas/RoomLivingRoom"
+                     }
+                   ]
+                 }
+@@ -912,6 +930,50 @@
+           }
+         }
+       },
++      "RoomDen": {
++        "type": "object",
++        "required": [
++          "deletedAt",
++          "id",
++          "position",
++          "type"
++        ],
++        "properties": {
++          "deletedAt": {
++            "type": [
++              "string",
++              "null"
++            ],
++            "format": "date-time"
++          },
++          "id": {
++            "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Den"
++            ]
++          }
++        }
++      },
++      "RoomDenSummary": {
++        "type": "object",
++        "required": [
++          "id"
++        ],
++        "properties": {
++          "id": {
++            "type": "string"
++          }
++        }
++      },
+       "RoomKitchen": {
+         "type": "object",
+         "required": [
+@@ -969,6 +1031,50 @@
+           }
+         }
+       },
++      "RoomLivingRoom": {
++        "type": "object",
++        "required": [
++          "deletedAt",
++          "id",
++          "position",
++          "type"
++        ],
++        "properties": {
++          "deletedAt": {
++            "type": [
++              "string",
++              "null"
++            ],
++            "format": "date-time"
++          },
++          "id": {
++            "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "LivingRoom"
++            ]
++          }
++        }
++      },
++      "RoomLivingRoomSummary": {
++        "type": "object",
++        "required": [
++          "id"
++        ],
++        "properties": {
++          "id": {
++            "type": "string"
++          }
++        }
++      },
+       "ValidationErrors": {
+         "type": "object",
+         "required": [
+diff --git a/api/src/openapi/spec.openapi.json b/api/src/openapi/spec.openapi.json
+index b6c53c8..b12e018 100644
+--- a/api/src/openapi/spec.openapi.json
++++ b/api/src/openapi/spec.openapi.json
+@@ -350,8 +350,14 @@
+                           {
+                             "$ref": "#/components/schemas/RoomBedroomSummary"
+                           },
++                          {
++                            "$ref": "#/components/schemas/RoomDenSummary"
++                          },
+                           {
+                             "$ref": "#/components/schemas/RoomKitchenSummary"
++                          },
++                          {
++                            "$ref": "#/components/schemas/RoomLivingRoomSummary"
+                           }
+                         ]
+                       }
+@@ -458,8 +464,14 @@
+                     {
+                       "$ref": "#/components/schemas/RoomBedroom"
+                     },
++                    {
++                      "$ref": "#/components/schemas/RoomDen"
++                    },
+                     {
+                       "$ref": "#/components/schemas/RoomKitchen"
++                    },
++                    {
++                      "$ref": "#/components/schemas/RoomLivingRoom"
+                     }
+                   ]
+                 }
+@@ -527,8 +539,14 @@
+                     {
+                       "$ref": "#/components/schemas/RoomBedroom"
+                     },
++                    {
++                      "$ref": "#/components/schemas/RoomDen"
++                    },
+                     {
+                       "$ref": "#/components/schemas/RoomKitchen"
++                    },
++                    {
++                      "$ref": "#/components/schemas/RoomLivingRoom"
+                     }
+                   ]
+                 }
+@@ -912,6 +930,50 @@
+           }
+         }
+       },
++      "RoomDen": {
++        "type": "object",
++        "required": [
++          "deletedAt",
++          "id",
++          "position",
++          "type"
++        ],
++        "properties": {
++          "deletedAt": {
++            "type": [
++              "string",
++              "null"
++            ],
++            "format": "date-time"
++          },
++          "id": {
++            "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "Den"
++            ]
++          }
++        }
++      },
++      "RoomDenSummary": {
++        "type": "object",
++        "required": [
++          "id"
++        ],
++        "properties": {
++          "id": {
++            "type": "string"
++          }
++        }
++      },
+       "RoomKitchen": {
+         "type": "object",
+         "required": [
+@@ -969,6 +1031,50 @@
+           }
+         }
+       },
++      "RoomLivingRoom": {
++        "type": "object",
++        "required": [
++          "deletedAt",
++          "id",
++          "position",
++          "type"
++        ],
++        "properties": {
++          "deletedAt": {
++            "type": [
++              "string",
++              "null"
++            ],
++            "format": "date-time"
++          },
++          "id": {
++            "type": "string"
++          },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
++          "type": {
++            "type": "string",
++            "enum": [
++              "LivingRoom"
++            ]
++          }
++        }
++      },
++      "RoomLivingRoomSummary": {
++        "type": "object",
++        "required": [
++          "id"
++        ],
++        "properties": {
++          "id": {
++            "type": "string"
++          }
++        }
++      },
+       "ValidationErrors": {
+         "type": "object",
+         "required": [
+diff --git a/api/src/types/dream.globals.ts b/api/src/types/dream.globals.ts
+index 9432dcc..d52af7a 100644
+--- a/api/src/types/dream.globals.ts
++++ b/api/src/types/dream.globals.ts
+@@ -10,8 +10,12 @@ export const globalTypeConfig = {
+       'Room/BathroomSummarySerializer',
+       'Room/BedroomSerializer',
+       'Room/BedroomSummarySerializer',
++      'Room/DenSerializer',
++      'Room/DenSummarySerializer',
+       'Room/KitchenSerializer',
+       'Room/KitchenSummarySerializer',
++      'Room/LivingRoomSerializer',
++      'Room/LivingRoomSummarySerializer',
+       'RoomSerializer',
+       'RoomSummarySerializer'
+     ],
+diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
+index 7f41eb1..d6d38a0 100644
+--- a/api/src/types/dream.ts
++++ b/api/src/types/dream.ts
+@@ -577,7 +577,9 @@ export const connectionTypeConfig = {
+       'Place': 'places',
+       'Room/Bathroom': 'rooms',
+       'Room/Bedroom': 'rooms',
++      'Room/Den': 'rooms',
+       'Room/Kitchen': 'rooms',
++      'Room/LivingRoom': 'rooms',
+       'Room': 'rooms',
+       'User': 'users'
+     },
+diff --git a/api/src/types/openapi/spec.openapi.d.ts b/api/src/types/openapi/spec.openapi.d.ts
+index f346e96..fc626a3 100644
+--- a/api/src/types/openapi/spec.openapi.d.ts
++++ b/api/src/types/openapi/spec.openapi.d.ts
+@@ -225,7 +225,7 @@ export interface paths {
+                     content: {
+                         "application/json": {
+                             cursor: string | null;
+-                            results: (components["schemas"]["RoomBathroomSummary"] | components["schemas"]["RoomBedroomSummary"] | components["schemas"]["RoomKitchenSummary"])[];
++                            results: (components["schemas"]["RoomBathroomSummary"] | components["schemas"]["RoomBedroomSummary"] | components["schemas"]["RoomDenSummary"] | components["schemas"]["RoomKitchenSummary"] | components["schemas"]["RoomLivingRoomSummary"])[];
+                         };
+                     };
+                 };
+@@ -270,7 +270,7 @@ export interface paths {
+                         [name: string]: unknown;
+                     };
+                     content: {
+-                        "application/json": components["schemas"]["RoomBathroom"] | components["schemas"]["RoomBedroom"] | components["schemas"]["RoomKitchen"];
++                        "application/json": components["schemas"]["RoomBathroom"] | components["schemas"]["RoomBedroom"] | components["schemas"]["RoomDen"] | components["schemas"]["RoomKitchen"] | components["schemas"]["RoomLivingRoom"];
+                     };
+                 };
+                 400: components["responses"]["BadRequest"];
+@@ -317,7 +317,7 @@ export interface paths {
+                         [name: string]: unknown;
+                     };
+                     content: {
+-                        "application/json": components["schemas"]["RoomBathroom"] | components["schemas"]["RoomBedroom"] | components["schemas"]["RoomKitchen"];
++                        "application/json": components["schemas"]["RoomBathroom"] | components["schemas"]["RoomBedroom"] | components["schemas"]["RoomDen"] | components["schemas"]["RoomKitchen"] | components["schemas"]["RoomLivingRoom"];
+                     };
+                 };
+                 400: components["responses"]["BadRequest"];
+@@ -448,6 +448,17 @@ export interface components {
+         RoomBedroomSummary: {
+             id: string;
+         };
++        RoomDen: {
++            /** Format: date-time */
++            deletedAt: string | null;
++            id: string;
++            position: number | null;
++            /** @enum {string} */
++            type: "Den";
++        };
++        RoomDenSummary: {
++            id: string;
++        };
+         RoomKitchen: {
+             appliances: ("dishwasher" | "microwave" | "oven" | "stove")[];
+             /** Format: date-time */
+@@ -460,6 +471,17 @@ export interface components {
+         RoomKitchenSummary: {
+             id: string;
+         };
++        RoomLivingRoom: {
++            /** Format: date-time */
++            deletedAt: string | null;
++            id: string;
++            position: number | null;
++            /** @enum {string} */
++            type: "LivingRoom";
++        };
++        RoomLivingRoomSummary: {
++            id: string;
++        };
+         ValidationErrors: {
+             /** @enum {string} */
+             type: "validation";
+```
