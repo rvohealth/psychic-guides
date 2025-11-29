@@ -236,35 +236,52 @@ export default class V1HostPlacesController extends AuthedController {
     },
   })
   public async create() {
-    const place = await Place.create(this.paramsFor(Place))
+    const place = await ApplicationModel.transaction(async txn => {
+      const place = await Place.txn(txn).create(this.paramsFor(Place))
+      await HostPlace.txn(txn).create({ host: this.currentHost, place })
+      return place
+    })
+
     this.created(place.id)
   }
 
-  // passing many: true will specify an openapi document that renders
-  // an array of ingredients. using the "summary" serializerKey will
-  // tell openapi to use the "summary" serializer, which should be
-  // defined somewhere in the inheritance chain for the Ingredient
-  // model, if not directly on the Ingredient model, as one of the
-  // `serializers` getter return value properties.
-  @OpenAPI(Ingredient, {
+  // Automatically serializes using the "default" serializer
+  // declared in the Place model's `serializers` getter.
+  @OpenAPI(Place, {
     status: 200,
-    paginate: true,
+  })
+  public async show() {
+    const place = await this.place()
+    this.ok(place)
+  }
+
+  // Passing `scrollPaginate: true` will specify an openapi document
+  // that renders an array of placesand the scroll "cursor". Using the
+  // "summary" `serializerKey` will tell openapi to use the "summary"
+  // serializer, declared in the Place model's `serializers` getter.
+  @OpenAPI(Place, {
+    status: 200,
+    scrollPaginate: true,
     serializerKey: 'summary',
   })
   public async index() {
-    const ingredients = await Ingredient.preloadFor('summary').all()
-    this.ok(ingredients)
+    const places = await this.currentHost
+      .associationQuery('places')
+      .preloadFor('summary')
+      .order({ createdAt: 'desc' })
+      .scrollPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
+    this.ok(places)
   }
 }
 ```
 
-The `create` method will automatically generate an openapi document for this endpoint which responds with a 201 status and a string, but has a request body that matches all of the `safeParams` getter on user. This will default to all of the attributes on the Place model, except for any belongs to association foreign keys, the primary key, or the timestamp fields.
+In the above example, the `create` method will automatically generate an OpenAPI spec for this endpoint which responds with a 201 status and a string, but has a request body that matches all of the "safe params" on Place (see [`paramSafeColumns/paramUnsafeColumns`](/docs/models/paramSafeColumns.mdx) for details).
 
-Utilizing the `preloadFor` method, we can load all nested association chains required to serve up the model for this particular serializer.
+The OpenAPI spec for the `show` method is automatically defined by the "default" serializer declared on the Place model.
 
-The `index` method will automatically generate an openapi document that responds with a 200, and renders an array of Places using the PlaceSummarySerializer, paginated automatically by dream using the `paginate` method. Passing the `paginate: true` flag, we indicate that the response will also contain additional aside from the data payload to help support pagination flows for a client. You can do quite a lot with the OpenAPI decorator, so it is worth reading up on the docs there to unlock the full potential of our powerful openapi integration.
+Since the the OpenAPI decorator for the `index` method includes `scrollPaginate true`, the OpenAPI shape will reflect the `scrollPaginate` shape, with an array of results rendered using the "summary" serializer declared in the Place model's `serializers` getter. Alternatives to [scrollPaginate](/docs/openapi/pagination.mdx#scroll-pagination-cursor-based) for index endpoints are [paginate](/docs/openapi/pagination.mdx), for traditional pagination with page numbers (slower than `scrollPaginate` when results may include many records) and [many](/docs/openapi/controllers#many), for when pagination is unnecessary and you simply want to return an array of results.
 
-> See our [Openapi guides](/docs/openapi/overview) for more information on implementing controllers
+You can do quite a lot with the OpenAPI decorator, so it is worth reading up on the [Openapi guides](/docs/openapi/overview) to unlock the full potential of our powerful openapi integration.
 
 ## Philosophy
 
@@ -307,13 +324,12 @@ Dream automatically converts database `timestamp` fields to `DateTime` objects a
 
 ### Use familiar technologies
 
-In choosing to provide a framework, we were not interested in reinventing the wheel at every turn, which is why, like most in the nodejs world, have turned to leaning on popular open source tooling to provide the underlying mechanisms of our framework. This enables us to focus on providing the important features we care about, while leaning on tools everyone is familiar with for driving the rest.
-
-Considering, here is a breakdown of the technologies we are leaning on for our application stack:
+Dream and Psychic are built on trusted open source pacakges, which not only provide robust, secure, vetted foundations, but also enable applications built on Dream and Psychic to leverage those packages (e.g. a Dream query can be turned into a Kysely query with [toKysely](/docs/models/querying/toKysely.mdx)):
 
 - [kysely](https://kysely.dev) (used for driving the Dream ORM)
 - [expressjs](https://expressjs.com) (drives the underlying web server)
 - [openapi](https://www.openapis.org) (drives integration with front end clients)
+- [luxon](https://moment.github.io/luxon/#/?id=luxon) (Dream’s DateTime is a simple repackaging of Luxon for ESM, and CalendarDate is built on DateTime)
 - [node-pg](https://node-postgres.com) (used for driving the ORM)
 - [ioredis](https://github.com/redis/ioredis) (adds node bindings to redis, enabling us to support both distributed websocket systems, as well as background job systems)
 - [bullmq](https://bullmq.io) (used for driving background jobs)
