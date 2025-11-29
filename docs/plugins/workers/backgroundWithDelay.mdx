@@ -29,7 +29,7 @@ class IntercomSync extends ApplicationBackgroundedService {
 
 Debounce works by specifying a `jobId`. If a job with that `jobId` has already been backgrounded with a delay, then backgrounding with that same `jobId` will overwrite the previous job information, but with the a delay from the current time.
 
-See https://docs.bullmq.io/patterns/throttle-jobs for implementation details.
+See https://docs.bullmq.io/guide/jobs/deduplication#debounce-mode for implementation details.
 
 ```ts
 class IntercomSync extends ApplicationBackgroundedService {
