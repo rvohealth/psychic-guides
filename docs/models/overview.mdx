@@ -1,6 +1,7 @@
 ---
 sidebar_position: 0
 pagination_prev: null
+ai_summary: Dream is a TypeScript ORM using Active Record patterns. Models extend ApplicationModel and bridge database schema to TypeScript properties. Supports querying (where, find, first, all), creating (create, new/save, createOrFindBy), updating (update, save), destroying (destroy), associations (BelongsTo, HasOne, HasMany, through), and validations.
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -10,7 +11,9 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 Dream, which can be found at [https://github.com/rvohealth/dream](https://github.com/rvohealth/dream), is a custom ORM that provides the heartbeat of our framework. Psychic was built around and alongside this ORM, with the intention of providing powerful web bindings to couple with the ORM and make developing backend or fullstack applications absolutely seamless.
 
-Since most web applications will require a database, Dream is the tool for abstracting the interaction with the database. Using conventional active record patterns, Dream leverages models to hold the individual values stored within the database, creating a powerful bridge between the types held in the database and the properties designated to the model.
+Since most web applications will require a database, Dream is the tool for abstracting the interaction with the database. Using conventional Active Record patterns, Dream leverages models to hold the individual values stored within the database, creating a powerful bridge between the types held in the database and the properties designated to the model.
+
+## Model Definition
 
 ```ts
 export async function up(db: Kysely<any>): Promise<void> {
@@ -31,7 +34,7 @@ class User extends ApplicationModel {
 }
 ```
 
-With migrations run, and the above model in place, you can begin leveraging some of the powerful methods built into Dream to simplify your interactions with the database.
+With migrations run, and the above model in place, you can begin leveraging some of the powerful methods built into Dream to simplify your interactions with the database:
 
 ```ts
 const user = await User.create({ email: 'how@yadoin' })
@@ -41,9 +44,9 @@ await User.all()
 // [User{ email: 'how@yadoin' }]
 ```
 
-## generators
+## Generators
 
-Use generators to quickly prop up the scaffolding for your application. Using the provided CLI utils, you can customize the shape of your models without writing a line of code.
+Use generators to quickly prop up the scaffolding for your application. Using the provided CLI utils, you can customize the shape of your models without writing a line of code:
 
 <PackageManagerTabs
   code={`{{PM}} psy g:model User name:string email:string birthdate:date
@@ -54,7 +57,7 @@ To learn more about generators, see our [generating guide](/docs/models/generati
 
 ## Querying records
 
-Searching your database has never been so intuitive using the suite of Dream tools provided.
+Searching your database has never been so intuitive using the suite of Dream tools provided:
 
 ```ts
 // find many records by condition
@@ -72,7 +75,7 @@ To learn how to query records, see our [creating guide](/docs/models/querying/ov
 
 ## Creating new records
 
-Tap into the underlying power of Dream to insert new records into your database
+Tap into the underlying power of Dream to insert new records into your database:
 
 ```ts
 // create in one call
@@ -102,7 +105,7 @@ To learn how to create new records, see our [creating guide](/docs/models/creati
 
 ## Updating existing records
 
-With records that are already in the database, making changes to that data is made trivial by Dream.
+With records that are already in the database, making changes to that data is made trivial by Dream:
 
 ```ts
 // in a single call
@@ -117,9 +120,9 @@ await user.save()
 
 To learn how to update records, see our [updating guide](/docs/models/updating).
 
-## Destroying
+## Destroying records
 
-With records that are already in the database, making changes to that data is made trivial by Dream.
+With records that are already in the database, deleting records is made trivial by Dream:
 
 ```ts
 // in a single call
@@ -133,7 +136,7 @@ To learn how to delete records, see our [destroying guide](/docs/models/destroyi
 
 ## Associations
 
-Take advantage of powerful association mechanisms within Dream to forge relationships between your models
+Take advantage of powerful association mechanisms within Dream to forge relationships between your models:
 
 ```ts
 class Post extends ApplicationModel {
@@ -152,7 +155,7 @@ To learn how to build associations, see our [associations guide](/docs/models/as
 
 ## Validations
 
-Use validations to ensure the integrity of data entering your system, empowering psychic to automatically raise clean validation errors to the client in contexts where these validation criterion fail.
+Use validations to ensure the integrity of data entering your system, empowering Psychic to automatically raise clean validation errors to the client in contexts where these validation criterion fail:
 
 ```ts
 class User extends ApplicationModel {

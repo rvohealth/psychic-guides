@@ -1,6 +1,7 @@
 ---
 sidebar_position: 7
 pagination_next: null
+ai_summary: DreamMigrationHelpers provides migration utilities including renameTable (renames table and sequence), addDeferrableUniqueConstraint (for @Sortable decorator), dropConstraint, and other helper methods for common migration operations.
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -12,7 +13,7 @@ Dream provides a set of migration utilities through the `DreamMigrationHelpers` 
 
 ## renameTable
 
-The `renameTable` helper automatically renames both the table and its associated sequence (for tables with serial primary keys).
+The `renameTable` helper automatically renames both the table and its associated sequence (for tables with serial primary keys):
 
 ```ts
 import { DreamMigrationHelpers } from '@rvoh/dream/db'
@@ -31,7 +32,7 @@ export async function down(db: Kysely<any>): Promise<void> {
 
 ### addDeferrableUniqueConstraint
 
-Creates deferrable unique constraints, which are required for the `@deco.Sortable` decorator. Deferrable constraints allow constraint checking to be deferred until the end of a transaction, enabling operations that temporarily violate the constraint.
+Creates deferrable unique constraints, which are required for the `@deco.Sortable` decorator. Deferrable constraints allow constraint checking to be deferred until the end of a transaction, enabling operations that temporarily violate the constraint:
 
 ```ts
 import { DreamMigrationHelpers } from '@rvoh/dream/db'
@@ -53,7 +54,7 @@ export async function down(db: Kysely<any>): Promise<void> {
 
 ### dropConstraint
 
-Drops a constraint from a table.
+Drops a constraint from a table:
 
 ```ts
 import { DreamMigrationHelpers } from '@rvoh/dream/db'

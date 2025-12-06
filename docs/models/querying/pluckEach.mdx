@@ -1,6 +1,9 @@
+---
+ai_summary: The pluckEach method is similar to pluck but processes records in batches to prevent loading all data into memory. Useful for large tables. Calls a callback function for each plucked value.
+---
 # pluckEach
 
-The pluckEach method Is very similar to the [pluck](/docs/models/querying/pluck) method, except that it safely collects records in batches to prevent loading all the queryable data into memory at once. This should be used in cases where you are dealing with tables with large amounts of data.
+The `pluckEach` method is very similar to the [`pluck`](/docs/models/querying/pluck) method, except that it safely collects records in batches to prevent loading all the queryable data into memory at once. This should be used in cases where you are dealing with tables with large amounts of data:
 
 ```ts
 await User.pluckEach('id', id => {

@@ -1,6 +1,9 @@
+---
+ai_summary: The leftJoinPreload method side-loads associations using SQL LEFT JOIN in a single query (unlike preload which uses multiple queries). Supports arrays for multiple associations and chaining. Cannot be mixed with preload in the same query.
+---
 # leftJoinPreload
 
-Similar to [preload](/docs/models/querying/preload), the `leftJoinPreload` method enables you to side-load other associations into your query. The difference is, while `preload` does this in multiple queries, `leftJoinPreload` does it all in one query. The end result is identical to `preload`, meaning that your associations will be attached exactly the same way.
+Similar to [`preload`](/docs/models/querying/preload), the `leftJoinPreload` method enables you to side-load other associations into your query. The difference is, while `preload` does this in multiple queries, `leftJoinPreload` does it all in one query. The end result is identical to `preload`, meaning that your associations will be attached exactly the same way:
 
 ```ts
 const users = await User.leftJoinPreload('posts', 'comments').all()
@@ -9,7 +12,7 @@ const firstComments = users[0].posts[0].comments
 
 ## Arrays
 
-If one needs to gain access to multiple resources, the last argument can always be an array. In this case, everything in the final array will be attached to the previous association, in this case `posts`.
+If one needs to gain access to multiple resources, the last argument can always be an array. In this case, everything in the final array will be attached to the previous association, in this case `posts`:
 
 ```ts
 const users = await User.leftJoinPreload('posts', [
@@ -21,7 +24,7 @@ const users = await User.leftJoinPreload('posts', [
 
 ## Chaining
 
-Multiple preload statements can be chained together to successfully sideload all of your associations, enabling you to capture all associated records. In some cases, you may need to travel through the same association twice. In the example below, we load both `comments` and `ratings` onto posts, then, in a second statement, we travel through posts again, this time loading `images` onto posts, and then side-loading `credits` and `captions` back onto each post's images.
+Multiple `leftJoinPreload` statements can be chained together to successfully sideload all of your associations, enabling you to capture all associated records. In some cases, you may need to travel through the same association twice. In the example below, we load both `comments` and `ratings` onto posts, then, in a second statement, we travel through posts again, this time loading `images` onto posts, and then side-loading `credits` and `captions` back onto each post's images:
 
 ```ts
 const users = await User.leftJoinPreload('posts', ['comments', 'ratings'])
@@ -31,7 +34,7 @@ const users = await User.leftJoinPreload('posts', ['comments', 'ratings'])
 
 ## Incompatibilities
 
-Due to the complex nature of query building, we do not permit you to build a query that combines both `leftJoinPreload` _and_ `preload` together in one call. Type guards are in place within Dream to prevent you from making this mistake, but it is still worth mentioning, since it can be quite confusing.
+Due to the complex nature of query building, we do not permit you to build a query that combines both `leftJoinPreload` _and_ `preload` together in one call. Type guards are in place within Dream to prevent you from making this mistake, but it is still worth mentioning, since it can be quite confusing:
 
 ```ts
 // INVALID to mix leftJoinPreload and preload in a single query:

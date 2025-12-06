@@ -2,6 +2,7 @@
 sidebar_position: 2
 title: feature
 pagination_next: null
+ai_summary: Feature specs (end-to-end/e2e) test interactions outside backend using headless browser (Puppeteer). Written from backend context but drive frontend client. Uses Vitest. Configuration in spec/features/vite.config.ts. Launches Vite dev server for client. Programmatically starts/stops Psychic server.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -14,15 +15,15 @@ Psychic believes strongly in this philosophy, and recognizes that many teams wil
 
 ## What is a "feature" spec?
 
-Feature specs are also commonly referred to as `end-to-end`, or `e2e` specs. We borrowed the classic term from `rspec` to continue to nod to the amazing ruby ecosystem we were so inspired by as we wrote Psychic. While unit tests can also have an end-to-end-like quality to them, especially when you are testing endpoints, feature specs are meant to test interactions outside your back end application.
+Feature specs are also commonly referred to as `end-to-end`, or `e2e` specs. We borrowed the classic term from `rspec` to continue to nod to the amazing Ruby ecosystem we were so inspired by as we wrote Psychic. While unit tests can also have an end-to-end-like quality to them, especially when you are testing endpoints, feature specs are meant to test interactions outside your backend application.
 
-A feature spec, like a unit spec, is written and executed from the back end context. This is amazingly powerful, since it provides you all the tools to provision your database between specs, enabling you to do proper set up, tear down, and assert the state of your database in between.
+A feature spec, like a unit spec, is written and executed from the backend context. This is amazingly powerful, since it provides you all the tools to provision your database between specs, enabling you to do proper set up, tear down, and assert the state of your database in between.
 
-Where feature specs differ from unit specs is that a headless browser is used to drive through any number of your client applications, enabling them to interact with your back end application and providing the ability to test the results of those interactions however you see fit.
+Where feature specs differ from unit specs is that a headless browser is used to drive through any number of your client applications, enabling them to interact with your backend application and providing the ability to test the results of those interactions however you see fit.
 
 ## How is this done?
 
-Feature specs will use [vitest](http://vitest.dev/) to run, but will additionally leverage [puppeteer](https://pptr.dev/guides/page-interactions) to drive a headless browser through your client. Psychic comes prepared with assertion helpers to make working in this environment very comfortable for you, though the assertion library exposed by puppeteer is powerful enough to not need anything else.
+Feature specs will use [Vitest](http://vitest.dev/) to run, but will additionally leverage [Puppeteer](https://pptr.dev/guides/page-interactions) to drive a headless browser through your client. Psychic comes prepared with assertion helpers to make working in this environment very comfortable for you, though the assertion library exposed by Puppeteer is powerful enough to not need anything else.
 
 When provisioning your application, psychic asks if you would like a client and admin application. If you select either of these options, the new app provisioner will automatically provision new client and admin applications in the front end framework of choice. All of the client application provisioning is done using the latest version of vite, and no additional code is added to the front end.
 
@@ -54,7 +55,7 @@ export function teardown() {
   language='ts'
 />
 
-The second point of departure from unit specs can be found at `spec/features/setup/hooks.ts`. Here you will see that we additionally start and stop a psychic server programatically. Doing so enables us to spy on back end modules, which is extremely important for end to end tests.
+The second point of departure from unit specs can be found at `spec/features/setup/hooks.ts`. Here you will see that we additionally start and stop a Psychic server programmatically. Doing so enables us to spy on backend modules, which is extremely important for end-to-end tests.
 
 ```ts
 // spec/features/setup/hooks.ts

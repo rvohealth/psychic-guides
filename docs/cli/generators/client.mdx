@@ -2,17 +2,18 @@
 sidebar_position: 6
 title: client
 pagination_next: null
+ai_summary: Client generators include openapi:redux for generating Redux bindings from OpenAPI specs using @rtk-query/codegen-openapi. Automatically syncs bindings when psy sync is called. Also supports openapi:typescript for TypeScript type generation.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
-In addition to strict backend utilities, Psychic also exports a few cli utilities that can be used to help smooth out a client integration with psychic.
+In addition to strict backend utilities, Psychic also exports a few CLI utilities that can be used to help smooth out a client integration with Psychic.
 
-## openapi redux
+## openapi:redux
 
-Since the majority of the world is using React, we have provided a util which easily generates redux bindings for a given client application. The bindings provided will create a bridge that keeps client openapi integrations up to date with the latest openapi files, syncing the newly-generated bindings over to your client any time `psy sync` is called.
+Since the majority of the world is using React, we have provided a util which easily generates Redux bindings for a given client application. The bindings provided will create a bridge that keeps client OpenAPI integrations up to date with the latest OpenAPI files, syncing the newly-generated bindings over to your client any time `psy sync` is called:
 
-Under the hood, psychic uses the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) util to provision this for you, but also adds an initializer to your app that taps into lifecycle hooks within psychic to make sure that the codegen tool is run every time your app changes. With this utility in place, calling `psy sync` is all you need to do to have the latest api endpoints available to you within your React app.
+Under the hood, Psychic uses the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) util to provision this for you, but also adds an initializer to your app that taps into lifecycle hooks within Psychic to make sure that the codegen tool is run every time your app changes. With this utility in place, calling `psy sync` is all you need to do to have the latest API endpoints available to you within your React app.
 
 To make use of this utility, you can run the following:
 
@@ -20,9 +21,9 @@ To make use of this utility, you can run the following:
   code={`{{PM}} psy g:openapi:redux`}
 />
 
-You will be prompted to answer a few questions, primarily to fill out the configuration file provided by the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) package. The configuration for this package is confusing, and also _must_ be set up using json as of now, due to limitiations in their own library when paired with an esm package. These nuances are hard to tango with and can lead to frustration, which is why we provided this generator to begin with.
+You will be prompted to answer a few questions, primarily to fill out the configuration file provided by the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) package. The configuration for this package is confusing, and also _must_ be set up using JSON as of now, due to limitations in their own library when paired with an ESM package. These nuances are hard to tango with and can lead to frustration, which is why we provided this generator to begin with.
 
-Nuances aside, the package does an incredible job at providing useful, redux-driven bindings to your application that will create a seamless integration between your client and back end applications. By default, psychic will attempt to sync to your `openapi/openapi.json` file, but you can redirect it to any openapi file of your choosing. Psychic will make a few other intelligent guesses as to a few of the configuration options, but feel free to override any of the defaults.
+Nuances aside, the package does an incredible job at providing useful, Redux-driven bindings to your application that will create a seamless integration between your client and back end applications. By default, Psychic will attempt to sync to your `openapi/openapi.json` file, but you can redirect it to any OpenAPI file of your choosing. Psychic will make a few other intelligent guesses as to a few of the configuration options, but feel free to override any of the defaults.
 
 It will automatically generate an initializer for you that will keep your client openapi file in sync:
 

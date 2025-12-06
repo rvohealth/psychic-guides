@@ -1,6 +1,7 @@
 ---
 sidebar_position: 2
 title: config
+ai_summary: Workers configuration uses BullMQ. Psychic scans config on sync to capture workstream names for types. Extend ApplicationBackgroundedService and ApplicationScheduledService. Workstreams are groups containing a queue and workers. Multiple workstreams useful for rate-limited APIs. Supports BullMQ Pro for rate limiting.
 ---
 
 # Workers - config
@@ -39,11 +40,11 @@ export default class ApplicationScheduledService extends BaseScheduledService {
 }
 ```
 
-You can now inhgerit from each of these classes in your application, allowing the types to flow gracefully through and protect you from making any mistakes.
+You can now inherit from each of these classes in your application, allowing the types to flow gracefully through and protect you from making any mistakes:
 
 ## Workstreams
 
-Psychic superimposes a new concept, called a `workstream`, on top of bullmq's existing system, which enables one to easily grasp, configure, and express their background systems. In essense, you can think of a workstream as a group, containing a queue and a set of workers to work off that queue.
+Psychic superimposes a new concept, called a `workstream`, on top of BullMQ's existing system, which enables one to easily grasp, configure, and express their background systems. In essence, you can think of a workstream as a group, containing a queue and a set of workers to work off that queue:
 
 Many applications will only need one workstream, but multiple workstreams are extremely useful when, for example, you have background jobs responsible for hitting external APIs which are rate limited. Having a background system that doesn't respect rate limits can lead to real chaos in your systems, so it is useful to partition those out into their own workstreams. By doing so, you can ensure that only one worker is working off that queue, and you can either manually ensure that it breathes a certain amount of time before issuing another request, or else leverage [BullMQ Pro](https://docs.bullmq.io/bullmq-pro/introduction), which provides rate limiting tools out of the box that would enable you to spin up multiple workers on this workstream without concern of rate limit abuse.
 

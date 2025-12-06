@@ -1,12 +1,13 @@
 ---
 sidebar_position: 7
+ai_summary: Dream lifecycle hooks include BeforeCreate, BeforeUpdate, BeforeSave, AfterCreate, AfterUpdate, AfterSave, AfterCreateCommit, AfterSaveCommit, AfterUpdateCommit, AfterDestroy, AfterDestroyCommit. Hooks can be conditional using ifChanging option. All hooks are async methods.
 ---
 
 # lifecycle hooks
 
-## before create
+## BeforeCreate
 
-BeforeCreate hooks are run whenever a new record is being saved to the database. A decorator pattern is leveraged, so no arguments need to be passed to the hook, it simply needs to live above the property, like so:
+`BeforeCreate` hooks are run whenever a new record is being saved to the database. A decorator pattern is leveraged, so no arguments need to be passed to the hook, it simply needs to live above the property, like so:
 
 ```ts
 export default class User extends Dream {
@@ -18,9 +19,9 @@ export default class User extends Dream {
 }
 ```
 
-## before update
+## BeforeUpdate
 
-BeforeUpdate hooks are run whenever an existing (meanin, previously-saved) record is updated, and can be leveraged like so:
+`BeforeUpdate` hooks are run whenever an existing (meaning, previously-saved) record is updated, and can be leveraged like so:
 
 ```ts
 export default class Post extends Dream {
@@ -44,9 +45,9 @@ export default class Post extends Dream {
 }
 ```
 
-## before save
+## BeforeSave
 
-BeforeSave hooks are run whenever either an existing OR new record is written to the DB, and can be leveraged like so:
+`BeforeSave` hooks are run whenever either an existing OR new record is written to the DB, and can be leveraged like so:
 
 ```ts
 export default class Post extends Dream {

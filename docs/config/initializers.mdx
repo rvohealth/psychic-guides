@@ -1,10 +1,11 @@
 ---
 sidebar_position: 3
+ai_summary: Initializers are Psychic configuration files (similar to conf/app.ts) that enable organizing configuration into separate files. Load via psy.load('initializers') in conf/app.ts. Run after conf/app.ts but before plugins. Useful for organizing large apps.
 ---
 
 # initializers
 
-Initializers are psychic configuration files, very similar to the `conf/app.ts` file that is provided with a psychic app, which enable devs to package discreet application configurations into files. This is useful to organize the configuration of your psychic app, since having all the configuration in a single file can be verbose, and initializers enable the file system to clarify the configuration at the file name level, which can be really nice, especially if your app is large, i.e.
+Initializers are Psychic configuration files, very similar to the `conf/app.ts` file that is provided with a Psychic app, which enable developers to package discrete application configurations into files. This is useful to organize the configuration of your Psychic app, since having all the configuration in a single file can be verbose, and initializers enable the file system to clarify the configuration at the file name level, which can be really nice, especially if your app is large, i.e.:
 
 ```
 ├── app

@@ -1,20 +1,21 @@
 ---
 sidebar_position: 2
+ai_summary: Dream configuration is done in conf/dream.ts. Configures database connections (primary and replica), supports multiple database connections, primary key types, pagination page size, and other Dream-specific settings.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # dream
 
-Since dream is an independent library that is imported by psychic, we expose configuration for you which enables dream to understand, for example, what your database credentials are, or where you want your database migrations to go. These configuration items are set in the `conf/dream.ts` file, which we will be covering in depth in this guide.
+Since Dream is an independent library that is imported by Psychic, we expose configuration for you which enables Dream to understand, for example, what your database credentials are, or where you want your database migrations to go. These configuration items are set in the `conf/dream.ts` file, which we will be covering in depth in this guide.
 
 ## conf/dream.ts
 
-A configuration file is used to configure dream, and can be found at the `conf/dream.ts` location. This file is concerned with provisioning your dream application with database credentials, primary key types, etc...
+A configuration file is used to configure Dream, and can be found at the `conf/dream.ts` location. This file is concerned with provisioning your Dream application with database credentials, primary key types, etc.
 
 ### database connection
 
-In order for Dream to connect to your database, you need to provide it with explicit credentials. Dream supports both primary and replica db connections, and configuration for both can be provided. While this example taps into env vars, we recommend that in production, you switch to something more secure, like [AWS Secrets Manager](https://aws.amazon.com/secrets-manager).
+In order for Dream to connect to your database, you need to provide it with explicit credentials. Dream supports both primary and replica DB connections, and configuration for both can be provided. While this example taps into env vars, we recommend that in production, you switch to something more secure, like [AWS Secrets Manager](https://aws.amazon.com/secrets-manager):
 
 ```ts
 export default async function (dream: DreamApp) {
@@ -42,9 +43,9 @@ export default async function (dream: DreamApp) {
 }
 ```
 
-#### leveraging multiple database connections simultaneously
+#### Multiple database connections
 
-Dream provides the ability for you to house multiple database connections within your application. To do this, simply call the `set` method a second time, this time providing it with a string argument for a connectionName before providing it your connection options.
+Dream provides the ability for you to house multiple database connections within your application. To do this, simply call the `set` method a second time, this time providing it with a string argument for a `connectionName` before providing it your connection options:
 
 ```ts
   dream.set('db', 'myAlternateConnection', {

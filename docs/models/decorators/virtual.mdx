@@ -1,13 +1,14 @@
 ---
 pagination_next: null
+ai_summary: The @deco.Virtual decorator enables setting fields as if they corresponded to database columns, allowing them to be passed to new, create, and update methods. Useful for computed properties, unit conversions, or password hashing.
 ---
 # @deco.Virtual
 
-The `@deco.Virtual` decorator enables setting of fields as if they corresponded to columns in the model's table so they can be passed to [new](../creating#dreamsave), [create](../creating#dreamcreate), and [update](../updating).
+The `@deco.Virtual` decorator enables setting of fields as if they corresponded to columns in the model's table so they can be passed to [`new`](../creating#dreamsave), [`create`](../creating#dreamcreate), and [`update`](../updating).
 
-For example, in the first example, below, one could call `await bodyMeasurement.update({ lbs 180.1 })`, and `180.1` will be passed into the `lbs` setter, which then translates lbs to grams to be stored in the `grams` column in the metrics table.
+For example, in the first example, below, one could call `await bodyMeasurement.update({ lbs: 180.1 })`, and `180.1` will be passed into the `lbs` setter, which then translates lbs to grams to be stored in the `grams` column in the metrics table.
 
-And in the second example, below, one could call `await user.update({ password })`, and, in the BeforeSave lifecycle hook, the password would be hashed into `hashedPassword`. (This is just an example to illustrate using the Virtual decorator on a simple field; it might be better design to use the getter/setter pattern for password, with the getter simply returning `undefined`.)
+And in the second example, below, one could call `await user.update({ password })`, and, in the `BeforeSave` lifecycle hook, the password would be hashed into `hashedPassword`. (This is just an example to illustrate using the Virtual decorator on a simple field; it might be better design to use the getter/setter pattern for password, with the getter simply returning `undefined`.)
 
 ```ts
 class BodyMeasurement extends ApplicationModel {

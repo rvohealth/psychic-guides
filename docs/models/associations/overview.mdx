@@ -1,11 +1,12 @@
 ---
 sidebar_position: 0
 pagination_prev: null
+ai_summary: Dream associations express database relationships in the model layer. Types include BelongsTo, HasOne, HasMany, through (many-to-many), and polymorphic. Associations enable createAssociation, associationQuery, and automatic preloading. Relationships are defined using decorators on model properties.
 ---
 
 # overview
 
-In postgres, it is possible to codify relationships between various tables in your database using foreign key constraints. The migration engine used by Dream provides the `references` method for doing this:
+In PostgreSQL, it is possible to codify relationships between various tables in your database using foreign key constraints. The migration engine used by Dream provides the `references` method for doing this:
 
 ```ts
 export async function up(db: Kysely<any>): Promise<void> {
@@ -18,7 +19,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 }
 ```
 
-Since these types of relationships can exist at the database level, Dream exposes mechanisms so they can be expressed within the model layer as well. This can be done using the [BelongsTo](/docs/models/associations/belongs-to), [HasOne and HasMany](/docs/models/associations/has-one-and-has-many) associations to make those expose those relationships to your application:
+Since these types of relationships can exist at the database level, Dream exposes mechanisms so they can be expressed within the model layer as well. This can be done using the [`BelongsTo`](/docs/models/associations/belongs-to), [`HasOne` and `HasMany`](/docs/models/associations/has-one-and-has-many) associations to expose those relationships to your application:
 
 ```ts
 class User extends ApplicationModel {
@@ -31,6 +32,8 @@ class Post extends ApplicationModel {
   public user: User
 }
 ```
+
+## Using associations
 
 Once the association is defined, you can begin using it to simplify your domain interactions:
 
@@ -47,9 +50,9 @@ const posts = await user
 :::tip
 There is much to learn about the power of Dream associations.
 
-- To learn more about BelongsTo associations, see our [BelongsTo guides](/docs/models/associations/belongs-to)
-- To learn more about HasOne and HasMany associations, see our [HasOne and HasMany guides](/docs/models/associations/has-one-and-has-many)
-- To learn about through associations, see our [through guides](/docs/models/associations/through)
+- To learn more about `BelongsTo` associations, see our [BelongsTo guides](/docs/models/associations/belongs-to)
+- To learn more about `HasOne` and `HasMany` associations, see our [HasOne and HasMany guides](/docs/models/associations/has-one-and-has-many)
+- To learn about `through` associations, see our [through guides](/docs/models/associations/through)
 - To learn about polymorphic associations, see our [polymorphism guides](/docs/models/associations/polymorphism)
 - For extended usage guides, see our [usage guides](/docs/models/associations/usage)
 

@@ -1,11 +1,12 @@
 ---
 sidebar_position: 1
 pagination_prev: null
+ai_summary: Psychic configuration is done in conf/app.ts using the set method. Configurable options include appName, packageManager, apiOnly, encryption (cookies), apiRoot, clientRoot, inflections, routes, and many other settings for Redis, Socket.IO, BullMQ, etc.
 ---
 
 # psychic
 
-Psychic exposes a few different configuration points within the `conf` directory, but most of the configuration is done in `conf/app.ts`. This file enables you to express the underlying configuration for your psychic application, including encryption keys, cookie configurations, and much more.
+Psychic exposes a few different configuration points within the `conf` directory, but most of the configuration is done in `conf/app.ts`. This file enables you to express the underlying configuration for your Psychic application, including encryption keys, cookie configurations, and much more.
 
 ```
 ├── app
@@ -21,11 +22,11 @@ Psychic exposes a few different configuration points within the `conf` directory
 
 ## conf/app.ts
 
-The `conf/app.ts` file is the primary configuration entrypoint for Psychic applications. In here, you can specify your cookie configuration, encryption keys, as well as integration options for redis, socket.io, bullmq, etc...
+The `conf/app.ts` file is the primary configuration entrypoint for Psychic applications. In here, you can specify your cookie configuration, encryption keys, as well as integration options for Redis, Socket.IO, BullMQ, etc.
 
 ### set method
 
-The `set` method is the primary method used to configure a Psychic application. The first argument to the `set` call is the specific configuration option that you want to adjust, such as `appName`, or `apiOnly`. Based on what is provided to the first argument, careful type helpers will guide you through specifying the second argument, which will be different based on what was provided to the first argument.
+The `set` method is the primary method used to configure a Psychic application. The first argument to the `set` call is the specific configuration option that you want to adjust, such as `appName`, or `apiOnly`. Based on what is provided to the first argument, careful type helpers will guide you through specifying the second argument, which will be different based on what was provided to the first argument:
 
 Below is a brief example of some of the settings that can be adjusted, while each option will be carefully illustrated in the subsequent sections of this guide.
 
@@ -52,7 +53,7 @@ export default (psy: Psyconf) => {
 
 ### appName
 
-This configuration informs Psychic what your app's name is, which is primarily used for logging purposes.
+This configuration informs Psychic what your app's name is, which is primarily used for logging purposes:
 
 ```ts
 export default (psy: Psyconf) => {

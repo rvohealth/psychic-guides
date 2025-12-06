@@ -2,13 +2,14 @@
 sidebar_position: 1
 title: unit
 pagination_prev: null
+ai_summary: Unit specs test backend components in isolation (helpers, models, services, controllers). Uses Vitest. Configuration in spec/unit/vite.config.ts. Database truncated between runs. Supports parallelism. Provides special unit spec helpers for endpoint testing.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # Unit
 
-Unit specs are meant testing for strictly your backend components in isolation. Unlike your feature specs, in your unit specs you are not driving a headless browser through your front end. Instead, you are testing individual units of code in your backend to make sure they behave correctly. This could mean testing the behavior of a single helper function, as well as for testing models, services, and controllers within your app.
+Unit specs are meant for testing strictly your backend components in isolation. Unlike your feature specs, in your unit specs you are not driving a headless browser through your front end. Instead, you are testing individual units of code in your backend to make sure they behave correctly. This could mean testing the behavior of a single helper function, as well as for testing models, services, and controllers within your app.
 
 ## Configuration
 

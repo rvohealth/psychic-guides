@@ -1,6 +1,9 @@
+---
+ai_summary: The paginate method applies limit and offset based on page and pageSize arguments, returning results with pagination metadata (recordCount, pageCount, currentPage). Requires order to be set before paginating. Default pageSize is 25 (configurable in conf/dream.ts). scrollPaginate provides cursor-based pagination for high-performance scenarios.
+---
 # paginate
 
-The paginate method is similar to the [all](/docs/models/querying/all) method, except that it will automatically apply limit and offset based on the `page` and `pageSize` arguments that are provided. Additionally, unlike the `all` method, `paginate` will return extra metadata about the requests, which is useful for driving front-end pagination tools.
+The `paginate` method is similar to the [`all`](/docs/models/querying/all) method, except that it will automatically apply `limit` and `offset` based on the `page` and `pageSize` arguments that are provided. Additionally, unlike the `all` method, `paginate` will return extra metadata about the requests, which is useful for driving front-end pagination tools:
 
 ```ts
 await User.order('id').paginate({ pageSize: 10, page: 2 })
@@ -12,11 +15,11 @@ await User.order('id').paginate({ pageSize: 10, page: 2 })
 // }
 ```
 
-It is essential that you apply an order before paginating, since offset and limit both only function correctly when the order is set.
+It is essential that you apply an `order` before paginating, since `offset` and `limit` both only function correctly when the order is set.
 
-## implicit pageSize
+## Implicit pageSize
 
-Psychic will automatically provide a default pageSize of 25, enabling you to only provide the page number when calling paginate, like so:
+Psychic will automatically provide a default `pageSize` of 25, enabling you to only provide the page number when calling `paginate`:
 
 ```ts
 await User.order('id').paginate({
@@ -30,7 +33,9 @@ await User.order('id').paginate({
 // }
 ```
 
-If you would like to override the default pageSize of 25, you can do so in your `conf/dream.ts` file by setting the `paginationPageSize` field, like so:
+## Customizing default pageSize
+
+If you would like to override the default `pageSize` of 25, you can do so in your `conf/dream.ts` file by setting the `paginationPageSize` field:
 
 ```ts
 // conf/dream.ts
@@ -42,7 +47,7 @@ export default (app: DreamApp) => {
 
 ## scrollPaginate (Cursor-Based Pagination)
 
-For high-performance scenarios with large datasets, use `scrollPaginate` instead of `paginate`. This method uses cursor-based pagination, which is more efficient than offset-based pagination and ideal for infinite scroll UX patterns.
+For high-performance scenarios with large datasets, use `scrollPaginate` instead of `paginate`. This method uses cursor-based pagination, which is more efficient than offset-based pagination and ideal for infinite scroll UX patterns:
 
 ```ts
 await User.order('createdAt').scrollPaginate({

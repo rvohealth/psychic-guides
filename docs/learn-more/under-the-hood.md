@@ -2,6 +2,7 @@
 sidebar_position: 2
 title: Under the hood
 pagination_next: null
+ai_summary: Dream uses Kysely for database queries, generates types from database introspection. Psychic wraps Express with MVC patterns, automatic OpenAPI generation. Decorators require syncing for types. Circular dependencies handled with lookup method. Node.js >= 22 recommended for decorator support.
 ---
 
 ## Dream
@@ -16,7 +17,7 @@ Dream provides the underlying ORM in a Psychic application. As such, it does not
 
 ### kysely
 
-Dream uses [kysely](https://kysely.dev) to drive its database engine, which means that all queries executed by dream will run through the kysely engine. Kysely uses database introspection to build types from your database, which it can then be supplied with to provide powerful type completion mechanisms to drive your kysely queries. Dream by default bootstraps the migration engine to automatically re-sync these types whenever a new migration is run, or the database is reset. It will also happen any time `pnpm psy sync` is called.
+Dream uses [Kysely](https://kysely.dev) to drive its database engine, which means that all queries executed by Dream will run through the Kysely engine. Kysely uses database introspection to build types from your database, which it can then be supplied with to provide powerful type completion mechanisms to drive your Kysely queries. Dream by default bootstraps the migration engine to automatically re-sync these types whenever a new migration is run, or the database is reset. It will also happen any time `pnpm psy sync` is called.
 
 The types generated for kysely are located in `src/types/db.ts`. They take slight augmentations from Dream, so that their datetime and date types can properly sync up with the DateTime and CalendarDate classes provided by Dream.
 
@@ -26,13 +27,13 @@ Psychic provides the web server bindings for a Psychic application. You can esse
 
 ### express
 
-Expressjs is a very popular, minimalistic web framework for nodejs. We have selected it so that those interested in tapping into the bountiful dev tools built around the expressjs ecosystem, they would still have a way to do that when using Psychic. By default, we configure express to leverage the `cors`, `cookie`, and `body-parser` libraries, but exposes the configuration to you in `conf/app.ts`, enabling you to easily make adjustments. In addition, we provide lifecycle hooks for startup, enabling you to patch in express middleware to your heart's desire!
+Express.js is a very popular, minimalistic web framework for Node.js. We have selected it so that those interested in tapping into the bountiful dev tools built around the Express.js ecosystem, they would still have a way to do that when using Psychic. By default, we configure Express to leverage the `cors`, `cookie`, and `body-parser` libraries, but exposes the configuration to you in `conf/app.ts`, enabling you to easily make adjustments. In addition, we provide lifecycle hooks for startup, enabling you to patch in Express middleware to your heart's desire!
 
 ### openapi
 
-Openapi is an essential tool both for communicating your API to other teams, as well as for using codegen tools to auto-build api mechanisms and other utilities to ease the burden of integrating with your backend services. That being said, it is cumbersome to maintain openapi documents, and tricky to keep them up to date with changes in your application's code.
+OpenAPI is an essential tool both for communicating your API to other teams, as well as for using codegen tools to auto-build API mechanisms and other utilities to ease the burden of integrating with your backend services. That being said, it is cumbersome to maintain OpenAPI documents, and tricky to keep them up to date with changes in your application's code.
 
-Psychic provides powerful integration with Dream models and serializers to automatically understand and generate clean openapi documents that represent your schema, and automatically shift as changes are made to your models and serializers, meaning that you no longer have to maintain your openapi documents to coerce them into reflecting the underlying changes to your models, it will now happen automatically for you.
+Psychic provides powerful integration with Dream models and serializers to automatically understand and generate clean OpenAPI documents that represent your schema, and automatically shift as changes are made to your models and serializers, meaning that you no longer have to maintain your OpenAPI documents to coerce them into reflecting the underlying changes to your models, it will now happen automatically for you.
 
 ## decorators
 
@@ -42,7 +43,7 @@ As such, we have leaned into using syncing functions provided by both Dream and 
 
 ## circular dependencies
 
-Circular dependencies are one of the most frustrating bugs that can endlessly plague you in the Nodejs world. It happens when a file imports from another file, which then, either eventually or immediately, imports back from the original file and uses that for anything other than typing. If this happens, Nodejs will at some point in the import cycle have undefined for one or more of the classes involved, leaving your application to error out in bizarre and unexpected ways. This usually only happens when your application grows to a certain scale.
+Circular dependencies are one of the most frustrating bugs that can endlessly plague you in the Node.js world. It happens when a file imports from another file, which then, either eventually or immediately, imports back from the original file and uses that for anything other than typing. If this happens, Node.js will at some point in the import cycle have undefined for one or more of the classes involved, leaving your application to error out in bizarre and unexpected ways. This usually only happens when your application grows to a certain scale.
 
 For example, this code demonstrates a pattern encouraged by our ORM. It will break on a version of Nodejs < 22, because the usage of User in the call to `DreamSerializer` creates a circular reference for the User class, since User is used as a real argument, instead of just being used for typing.
 

@@ -1,6 +1,7 @@
 ---
 sidebar_position: 0
 pagination_prev: null
+ai_summary: Psychic controllers extend PsychicController and handle HTTP requests. They work with routes, provide status code response methods (ok, created, noContent, etc.), support OpenAPI decorator for automatic spec generation, and include helpers for params, cookies, serialization, and exception handling.
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -11,6 +12,8 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 In a standard MVC (Model, View, Controller) paradigm, a controller represents the entity which responds to an HTTP request. Controllers in Psychic are classes which inherit from the base `PsychicController` class, which can be imported from Psychic. They will inherit many useful methods for responding to requests, as well as many useful helpers for setting and reading cookies, accessing request parameters, and much more.
 
 In order for a controller's methods to be reached, a corresponding route entry must be established to point to those methods, so the controllers and routes work hand-in-hand. You should never have a route that points to a controller method that doesn't exist, nor should you ever have a controller method with no corresponding route entry.
+
+## Routes and Controllers
 
 ### Connecting routes to your controllers
 
@@ -34,11 +37,11 @@ Ordinarily, controllers will be driven by resourceful patterns tied to underlyin
   code={`{{PM}} psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional`}
 />
 
-This will also produce route entries for the new Places controller, using the `r.resources('places')` call, which will automatically provide sensible routes for indexing, showing, creating, updating, and deleting a place.
+This will also produce route entries for the new `PlacesController`, using the `r.resources('places')` call, which will automatically provide sensible routes for indexing, showing, creating, updating, and deleting a place.
 
-### Status code responses
+## Status code responses
 
-Psychic leverages method names which correspond to http status codes to make rendering data a little more human for us.
+Psychic leverages method names which correspond to HTTP status codes to make rendering data a little more human for us:
 
 ```ts
 export default class V1HostPlacesController extends V1HostBaseController {
@@ -59,11 +62,11 @@ export default class V1HostPlacesController extends V1HostBaseController {
 }
 ```
 
-Learn more about how status codes work in psychic controllers by visiting our [status code guides](/docs/controllers/status-codes).
+Learn more about how status codes work in Psychic controllers by visiting our [status code guides](/docs/controllers/status-codes).
 
-### OPENAPI
+## OpenAPI
 
-Psychic Controllers contains powerful bindings to openapi through the usage of the `@OpenAPI` decorator. This enables you to automatically generate openapi documents based on the shape of your models. The below example will auto-generate an openapi document with an array of serialized Places as the response body for this endpoint.
+Psychic Controllers contains powerful bindings to OpenAPI through the usage of the `@OpenAPI` decorator. This enables you to automatically generate OpenAPI documents based on the shape of your models. The below example will auto-generate an OpenAPI document with an array of serialized `Place` models as the response body for this endpoint:
 
 ```ts
 import { OpenAPI } from '@rvoh/psychic'

@@ -1,14 +1,15 @@
 ---
 sidebar_position: 2
+ai_summary: Methods for creating records include create (static method), new/save (build then save), findOrCreateBy (locate or create), and createOrFindBy (create first, relies on unique constraints). All trigger lifecycle hooks (BeforeCreate, BeforeSave, AfterCreate, AfterSave, etc.).
 ---
 
 # creating
 
 In any application, you will often times find yourself in need of having some things in your database. Otherwise...I mean... what are we doing here? Snarcasm aside, Dream provides many different ways to insert records into the database, depending on what you are doing and why.
 
-## Dream.create
+## create
 
-When looking for a clean, direct way to get something into a table in your database, look no further than the static `Dream.create` method. As reliable as your cat stealing your spot as soon as you get up (it turns out, you were stealing _their_ spot), the create method will provide you with a simple, type-protected way to safely insert attributes into the database.
+When looking for a clean, direct way to get something into a table in your database, look no further than the static `create` method. The `create` method will provide you with a simple, type-protected way to safely insert attributes into the database:
 
 ```ts
 import User from 'app/models/user'
@@ -19,11 +20,11 @@ const user = await User.create({
 })
 ```
 
-When using the static create method, the `BeforeCreate`, `BeforeSave`, `AfterCreate`, `AfterSave`, `AfterCreateCommit`, and `AfterSaveCommit` hooks will all fire, enabling lifecycle events defined in your model layer to kick off additional changes to your application's ecosystem.
+When using the static `create` method, the `BeforeCreate`, `BeforeSave`, `AfterCreate`, `AfterSave`, `AfterCreateCommit`, and `AfterSaveCommit` hooks will all fire, enabling lifecycle events defined in your model layer to kick off additional changes to your application's ecosystem.
 
-## Dream#save
+## new and save
 
-Sometimes, you may find yourself wanting to slowly build up attributes, or just making change to one field, conditionally. This is the perfect time to leverage the `Dream#save` method!
+Sometimes, you may find yourself wanting to slowly build up attributes, or just making change to one field, conditionally. This is the perfect time to leverage the `new` and `save` methods:
 
 ```ts
 const user = User.new()
@@ -39,19 +40,19 @@ await user.save()
 
 Dream also provides two methods to use for a locate-or-create pattern:
 
-## using "findOrCreateBy"
+## findOrCreateBy
 
-Utilizing `findOrCreateBy`, we can either collect a record if it exists, or else create it. Any fields passed into the `createWith` option will be applied _only_ if the record is being created.
+Utilizing `findOrCreateBy`, we can either collect a record if it exists, or else create it. Any fields passed into the `createWith` option will be applied _only_ if the record is being created:
 
 ```ts
 const user = await User.findOrCreateBy({ email: 'how@yadoin' }, { createWith: { password: 'mypassword' } })
 ```
 
-## using "createOrFindBy"
+## createOrFindBy
 
-The `createOrFindBy` method is very similar to [`findOrCreateBy`](./querying/findOrCreateBy), except it will attempt to create the record first. This pattern relies on unique contraints at the DB level to reject the create statement if another record already exists with those fields. Since the create action will fail at the database level when a matching record already exists, `createOrFindBy` may not be used in a transaction.
+The `createOrFindBy` method is very similar to [`findOrCreateBy`](./querying/findOrCreateBy), except it will attempt to create the record first. This pattern relies on unique constraints at the DB level to reject the create statement if another record already exists with those fields. Since the create action will fail at the database level when a matching record already exists, `createOrFindBy` may not be used in a transaction:
 
 ```ts
-// this expects that the `email` column with have a unique contraint in the DB
+// this expects that the `email` column will have a unique constraint in the DB
 const user = await User.createOrFindBy({ email: 'how@yadoin' }, { createWith: { password: 'mypassword' } })
 ```

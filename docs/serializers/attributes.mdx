@@ -1,11 +1,12 @@
 ---
 sidebar_position: 2
 title: attributes
+ai_summary: Serializer attribute methods include attribute (with options: openapi, default, as, precision), delegatedAttribute (renders from nested objects/associations), and customAttribute (arbitrary transformation with flatten option). All support OpenAPI shape definitions.
 ---
 
 # Serializing Attributes
 
-## Basic Attributes
+## attribute
 
 The `attribute` method includes a property from your source object in the serialized output.
 
@@ -26,19 +27,19 @@ export const PlaceSerializer = (place: Place) =>
 CalendarDate and DateTime attributes (even arrays of CalendarDate and DateTime values) are automatically converted to their ISO values as part of serialization.
 :::
 
-### `openapi` option
+### attribute.openapi
 
-When serializing a Dream model with DreamSerializer, the OpenAPI shape of attributes corresponding to database columns is determined automatically (except for json and jsonb columns). However, you may still want to include an openapi description:
+When serializing a Dream model with `DreamSerializer`, the OpenAPI shape of attributes corresponding to database columns is determined automatically (except for json and jsonb columns). However, you may still want to include an OpenAPI description:
 
 ```ts
 .attribute('name', { openapi: { description: 'The name of the Place' } })`
 ```
 
 :::info
-ObjectSerializer serializer attributes always requires the `openapi` option.
+`ObjectSerializer` serializer attributes always requires the `openapi` option.
 :::
 
-For a [virtual attribute](/docs/models/decorators/virtual) on a Dream model, `openapi` is required even for DreamSerializer:
+For a [virtual attribute](/docs/models/decorators/virtual) on a Dream model, `openapi` is required even for `DreamSerializer`:
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
@@ -47,7 +48,7 @@ export const PlaceSerializer = (place: Place) =>
     .attribute('myVirtualAttribute', { openapi: ['string', 'null'] })
 ```
 
-This example leverages [OpenAPI shorthand](/docs/openapi/serializers#shorthand), but the full OpenAPI shape is available for representing complex shapes, as one must do for attributes that correspond to json/jsonb columns:
+This example leverages [OpenAPI shorthand](/docs/openapi/serializers#shorthand), but the full OpenAPI shape is available for representing complex shapes, as one must do for attributes that correspond to `json`/`jsonb` columns:
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
@@ -64,9 +65,9 @@ export const PlaceSerializer = (place: Place) =>
     })
 ```
 
-### `default` option
+### attribute.default
 
-The `default` option provides a fallback value when the attribute is `null` or `undefined`. The default value undergoes the same transformations as regular data (e.g., decimals are rounded, dates are converted to ISO format).
+The `default` option provides a fallback value when the attribute is `null` or `undefined`. The default value undergoes the same transformations as regular data (e.g., decimals are rounded, dates are converted to ISO format):
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
@@ -76,9 +77,9 @@ export const PlaceSerializer = (place: Place) =>
     .attribute('sleeps', { default: 0 })
 ```
 
-### renaming attributes with `as`
+### attribute.as
 
-Use the `as` option to change the name of the attribute in the output.
+Use the `as` option to change the name of the attribute in the output:
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
@@ -88,9 +89,9 @@ export const PlaceSerializer = (place: Place) =>
 // { id: 1234, accomodates: 5 }
 ```
 
-### precision
+### attribute.precision
 
-Decimal values can be automatically rounded with the `precision` option.
+Decimal values can be automatically rounded with the `precision` option:
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
@@ -100,9 +101,9 @@ export const PlaceSerializer = (place: Place) =>
 // { id: 1234, rating: 4.7 }
 ```
 
-## Delegated Attributes
+## delegatedAttribute
 
-The `delegatedAttribute` method renders an attribute from a nested object into the serialized output. `delegatedAttribute` attributes are automatically inspected as part of [preloadFor](/docs/models/querying/preloadFor) (so when delegating to an association, that association will be automatically preloaded).
+The `delegatedAttribute` method renders an attribute from a nested object into the serialized output. `delegatedAttribute` attributes are automatically inspected as part of [preloadFor](/docs/models/querying/preloadFor) (so when delegating to an association, that association will be automatically preloaded):
 
 ```ts
 export const PlaceSummaryForGuestsSerializer = (place: Place) =>
@@ -114,9 +115,9 @@ export const PlaceSummaryForGuestsSerializer = (place: Place) =>
 // { id: 1234, title: 'Hello world' }
 ```
 
-### `default` option
+### delegatedAttribute.default
 
-All options from the `attribute` method are supported on `delegatedAttribute`. On a delegated attribute, the default will be applied whether then association is null or the attribute on the association is null:
+All options from the `attribute` method are supported on `delegatedAttribute`. On a delegated attribute, the default will be applied whether the association is null or the attribute on the association is null:
 
 ```ts
 export const PlaceSummaryForGuestsSerializer = (place: Place) =>
@@ -131,9 +132,9 @@ export const PlaceSummaryForGuestsSerializer = (place: Place) =>
 
 The `default` option provides a fallback value when either the target object is `null`/`undefined` OR when the delegated attribute itself is `null`/`undefined`.
 
-## Custom Attributes
+## customAttribute
 
-`customAttribute` is used for arbitrary data transformation. It is especially useful for rendering or leveraging passthrough data into the serialized output. `customAttribute` always requires the `openapi` option.
+The `customAttribute` method is used for arbitrary data transformation. It is especially useful for rendering or leveraging passthrough data into the serialized output. `customAttribute` always requires the `openapi` option:
 
 ```ts
 export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
@@ -148,9 +149,9 @@ export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: Lo
 
 See the [passthrough setting documentation](/docs/serializers/render#serializer-passthrough-data) for details on how to set passthrough data on automatically rendered serializers.
 
-### `flatten`
+### customAttribute.flatten
 
-When `flatten: true` is included, the attributes of the returned object are flattened into the serialized results.
+When `flatten: true` is included, the attributes of the returned object are flattened into the serialized results:
 
 ```ts
 const UserSerializer = (user: User) =>

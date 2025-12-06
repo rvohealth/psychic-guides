@@ -2,17 +2,18 @@
 sidebar_position: 0
 title: overview
 pagination_prev: null
+ai_summary: Dream serializers translate data into JSON for API responses and participate in OpenAPI generation. Use DreamSerializer (for Dream models) or ObjectSerializer (for view models/plain objects). Fluent API with attribute, customAttribute, delegatedAttribute, rendersOne, rendersMany. Synchronous by design to prevent N+1 queries. Each model can have multiple serializers for different contexts.
 ---
 
 # Overview
 
-Dream serializers translate data into json, usually for returning as an API response. They also participate in Psychic’s automatic OpenAPI generation.
+Dream serializers translate data into JSON, usually for returning as an API response. They also participate in Psychic's automatic OpenAPI generation.
 
-- **`DreamSerializer` and `ObjectSerializer`**: All serializers will return the result of calling DreamSerializer (for serializing Dream models) or ObjectSerializer (for serializing [view models](./view-models.mdx) or simple javascript objects). DreamSerializer leverages Dream’s knowledge of the database schema and associations to automatically determine OpenAPI shape. ObjectSerializer requires the OpenAPI shape of each attribute to be provided.
+- **`DreamSerializer` and `ObjectSerializer`**: All serializers will return the result of calling `DreamSerializer` (for serializing Dream models) or `ObjectSerializer` (for serializing [view models](./view-models.mdx) or simple JavaScript objects). `DreamSerializer` leverages Dream's knowledge of the database schema and associations to automatically determine OpenAPI shape. `ObjectSerializer` requires the OpenAPI shape of each attribute to be provided.
 
 - **Fluent API**: The structure is defined by chaining calls to `.attribute()`, `.customAttribute()`, `.delegatedAttribute()`, `.rendersOne()`, and `.rendersMany()`.
 
-- **OpenAPI Generation**: Serializers feed into Psychic’s automatic OpenAPI gneration, thereby keeping API documentation consistent with its implementation.
+- **OpenAPI Generation**: Serializers feed into Psychic's automatic OpenAPI generation, thereby keeping API documentation consistent with its implementation.
 
 - **Flexibility**: Each model can have multiple serializers, so different data can be rendered in different contexts (e.g. `index` vs. `show` endpoints).
 

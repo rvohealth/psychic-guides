@@ -1,8 +1,11 @@
+---
+ai_summary: The innerJoin method joins associations as part of queries using SQL INNER JOIN. Supports and, andNot, and andAny clauses on join conditions. Can join multiple associations in a single query.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # innerJoin
 
-The innerJoin method enables you to join associations as part of your queries.
+The `innerJoin` method enables you to join associations as part of your queries:
 
 ```ts
 const hosts = await Host.innerJoin('places', 'rooms').all()
@@ -17,6 +20,8 @@ inner join "rooms" on "places"."id" = "rooms"."place_id"
 `}
   </pre>
 </RoutesOutput>
+
+## Join conditions
 
 You can also attach `and`, `andNot`, and `andAny` clauses to join statements. The second argument (the object) in the following code generates an `and` condition on the join:
 

@@ -2,6 +2,7 @@
 sidebar_position: 0
 title: overview
 pagination_prev: null
+ai_summary: @Snapshotable decorator adds takeSnapshot instance method to Dream models. Recursively traverses HasMany and HasOne associations, building JSON object of entire model tree. Skips BelongsTo and through associations (unless @SnapshotableFollowThrough used). Use @SnapshotableIgnore to filter associations. Not optimized for N+1. Recommended for background jobs.
 ---
 
 # @Snapshotable - overview

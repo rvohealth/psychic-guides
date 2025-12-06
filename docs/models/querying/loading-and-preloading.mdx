@@ -1,12 +1,13 @@
 ---
 sidebar_position: 1
+ai_summary: Loading and preloading associations for serialization. Must eager load all associations before serialization (no async in serializers). Use preloadFor to automatically load all associations required by a serializer. Use inspect:serialization CLI command to view serialization needs.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # loading and preloading
 
-When querying your database in sql, you will often be joining relational tables together using foreign keys to bind relationships to data entities. Dream provides associations as a way to abstract this away from you, enabling you to simply think in terms of the entities you are dealing with, not the underlying mechanisms required to join them together. This can turn a terrible amount of sql into a fairly trivial expression, like so:
+When querying your database in SQL, you will often be joining relational tables together using foreign keys to bind relationships to data entities. Dream provides associations as a way to abstract this away from you, enabling you to simply think in terms of the entities you are dealing with, not the underlying mechanisms required to join them together. This can turn a terrible amount of SQL into a fairly trivial expression, like so:
 
 ```ts
 const posts = await user
@@ -20,11 +21,11 @@ console.log(posts.flatMap((post) => post.comments))
 
 By leveraging `associationQuery`, for example, we don't have to worry about manually applying a foreign key clause to target the correct userId on posts, that is done automatically for us by Dream. Additionally, by `preload`ing comments, we are ensuring that each post will have a `comments` property attached, pointing to a list of comments in the DB that have `null` bodies. Each of the loaded comments will only be loaded if the foreign key pointing to that post is present, and Dream will do this automatically without you needing to specify anything.
 
-## preloading to serialize
+## Preloading to serialize
 
-Serializing, in short, is the act of representing your backend models to some kind of client. In most systems, there will be many different serializers in place all to represent a single model. For example, you might have a `PostSerializer`, and then an `AdminPostSerializer`. You may find that you need to sync these posts to an RSS feed, so you build another `RSSPostSerializer`. You may want to partition your serializers out based on if you are rendering them for an index endpoint, vs a show. In Dream, we will automatically encourage this pattern in our generators by auto-generating both a summary and detail variant for each serializer we generate. We encourage you to lean into this practice, withholding from rendering deeply-nested model chains onto your summary serializers, since this can force you to eager-load a mind-bending number of associations before hand to make it happen.
+Serializing, in short, is the act of representing your backend models to some kind of client. In most systems, there will be many different serializers in place all to represent a single model. For example, you might have a `PostSerializer`, and then an `AdminPostSerializer`. You may find that you need to sync these posts to an RSS feed, so you build another `RSSPostSerializer`. You may want to partition your serializers out based on if you are rendering them for an index endpoint, vs a show. In Dream, we will automatically encourage this pattern in our generators by auto-generating both a summary and detail variant for each serializer we generate. We encourage you to lean into this practice, withholding from rendering deeply-nested model chains onto your summary serializers, since this can force you to eager-load a mind-bending number of associations beforehand to make it happen.
 
-Since each serializer in your system will have different eager loading needs, you will need to determine the needs of your association chain, and make sure that all the eager loading requirements are met before serialization. Unlike many other ORMs and frameworks you may have previously used, Dream and Psychic do not permit any async calls within the serialization layer, since this can lead to famous N+1 chaos for the systems who don't work to discourage it. Additionally, any association in your serialization chain that you attempt to access without first eager loading will raise a hard exception in your system, alerting you to fix the probelm.
+Since each serializer in your system will have different eager loading needs, you will need to determine the needs of your association chain, and make sure that all the eager loading requirements are met before serialization. Unlike many other ORMs and frameworks you may have previously used, Dream and Psychic do not permit any async calls within the serialization layer, since this can lead to famous N+1 chaos for the systems who don't work to discourage it. Additionally, any association in your serialization chain that you attempt to access without first eager loading will raise a hard exception in your system, alerting you to fix the problem.
 
 Considering all of this, it is very important to eager load all associations that are needed to properly render your serializer tree up front. For example, in the serializer tree below, we have several layers deep worth of associations that need to be rendered, and all of those associations will need to be loaded up front.
 
@@ -81,13 +82,13 @@ const user = await User.preload('posts', 'comments', ['images', 'videos'])
 const user = await User.preloadFor('detail').findOrFail(userId)
 ```
 
-Both of these statements are technically equivilent at this moment, but the first one is not only cluttered with preload statements that you otherwise couldn't care less about seeing, it is also only narrowly satisfying your serialization requirements.
+Both of these statements are technically equivalent at this moment, but the first one is not only cluttered with preload statements that you otherwise couldn't care less about seeing, it is also only narrowly satisfying your serialization requirements.
 
-By using preloadFor, we manage to both clean up code, and ensure that we never have to refactor it, no matter how much the serialization chains shift beneath us over time.
+By using `preloadFor`, we manage to both clean up code, and ensure that we never have to refactor it, no matter how much the serialization chains shift beneath us over time.
 
 ## inspect:serialization
 
-A CLI command can be run which will spell out the serialization needs of a provided model. This is useful if you are trying to get a quick window into the dense layer of nested associations you may be trying to render.
+A CLI command can be run which will spell out the serialization needs of a provided model. This is useful if you are trying to get a quick window into the dense layer of nested associations you may be trying to render:
 
 <PackageManagerTabs
   code={`{{PM}} psy inspect:serialization Post`}

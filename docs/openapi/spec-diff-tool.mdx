@@ -1,6 +1,7 @@
 ---
 sidebar_position: 7
 pagination_next: null
+ai_summary: OpenAPI spec diff tool automatically detects breaking and non-breaking changes between current branch and HEAD. Requires oasdiff installation and checkDiffs: true in OpenAPI config. Runs automatically on psy sync or manually via psy diff:openapi. Supports --fail-on-breaking flag.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -9,13 +10,11 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 This tool helps developers automatically detect **breaking** and **non-breaking** changes between the current OpenAPI specification(s) in your branch and the `HEAD` branch (e.g., `main`). It uses [`oasdiff`](https://github.com/Tufin/oasdiff) under the hood.
 
-It’s designed to integrate easily into your existing workflows, either automatically or on-demand.
-
----
+It's designed to integrate easily into your existing workflows, either automatically or on-demand.
 
 ## Prerequisites
 
-[`oasdiff`](https://github.com/Tufin/oasdiff) **must be installed** and available on your local system or CI environment.
+[`oasdiff`](https://github.com/Tufin/oasdiff) **must be installed** and available on your local system or CI environment:
 
 
 ```bash
@@ -31,30 +30,29 @@ go install github.com/Tufin/oasdiff@latest
 ```
 
 
-_Your project must be configured using a `PsychicApp` where `checkDiffs: true` is enabled for any OpenAPI configuration you'd like to compare._
+Your project must be configured using a `PsychicApp` where `checkDiffs: true` is enabled for any OpenAPI configuration you'd like to compare.
 
 ## Usage
 
 Once `checkDiffs: true` is set in your OpenAPI config, there are two ways to run the diff tool:
 
-### 1. **Automatic check**
+### Automatic check
 
 <PackageManagerTabs
   code={`{{PM}} psy sync`}
 />
 
-* Automatically runs OpenAPI diff checks for all configs that have `checkDiffs: true`.
-* Recommended for use in CI pipelines or as part of your standard sync process.
+- Automatically runs OpenAPI diff checks for all configs that have `checkDiffs: true`.
+- Recommended for use in CI pipelines or as part of your standard sync process.
 
-### 2. **Manual check**
+### Manual check
 
 <PackageManagerTabs
   code={`{{PM}} psy diff:openapi`}
 />
 
-* Manually triggers the diff comparison for enabled OpenAPI configs.
-* Useful during development or pre-PR review.
-
+- Manually triggers the diff comparison for enabled OpenAPI configs.
+- Useful during development or pre-PR review.
 
 ## Fail on Breaking Changes
 
@@ -68,26 +66,25 @@ Use the `--fail-on-breaking`, or `-f` flag to **fail the command** if any breaki
 {{PM}} psy diff:openapi --fail-on-breaking`}
 />
 
-* This will throw an error and exit the process if breaking changes are found compared to the `HEAD` branch (usually `main`).
+- This will throw an error and exit the process if breaking changes are found compared to the `HEAD` branch (usually `main`).
 
 ## What It Compares
 
 For each OpenAPI config:
 
-* Fetches the OpenAPI spec from the `HEAD` branch (e.g., `main`)
-* Compares it with the spec in your current working branch
-* Uses `oasdiff` to generate:
-
-  * A list of **breaking changes**
-  * A **changelog** of all changes
+- Fetches the OpenAPI spec from the `HEAD` branch (e.g., `main`)
+- Compares it with the spec in your current working branch
+- Uses `oasdiff` to generate:
+  - A list of **breaking changes**
+  - A **changelog** of all changes
 
 ## Output Summary
 
 The CLI output will include:
 
-* ✅ **No changes** — when files match
-* 🚨 **Breaking changes** — highlighted in red
-* 📋 **Changelog** — a detailed diff of modifications
+- ✅ **No changes** — when files match
+- 🚨 **Breaking changes** — highlighted in red
+- 📋 **Changelog** — a detailed diff of modifications
 
 ### Example Output
 

@@ -1,13 +1,14 @@
 ---
 sidebar_position: 4
 pagination_next: null
+ai_summary: Namespacing creates nested route structures and enforces folder structure for controllers. Use namespace() for folder enforcement, scope() for path-only namespacing without folder enforcement. Supports explicit controller overrides and nested middleware.
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # namespacing
 
-You can also use namespacing to reflect folder and uri structures at once. The following example would require the respective users controller to be located at `app/controllers/Api/V1/UsersController.ts`
+You can also use namespacing to reflect folder and URI structures at once. The following example would require the respective users controller to be located at `app/controllers/Api/V1/UsersController.ts`:
 
 ```ts // conf/routes.ts
 import { PsychicRouter } from 'psychic'
@@ -31,7 +32,7 @@ GET api/v1/users/hi Api/V1/Users#hi
   </pre>
 </RoutesOutput>
 
-Namespacing will always enforce the folder structure when presented with multiple route segments, which means you are required to put controllers in the expected folder structure in order for an action to be called when its corresponding route is hit. This can, of course, be overridden by passing an explicit controller to the namespace call.
+Namespacing will always enforce the folder structure when presented with multiple route segments, which means you are required to put controllers in the expected folder structure in order for an action to be called when its corresponding route is hit. This can, of course, be overridden by passing an explicit controller to the namespace call:
 
 ```ts
 r.namespace('api', (r) => {
@@ -58,7 +59,9 @@ GET api/v1/users/hi HelloWorld#hi
   </pre>
 </RoutesOutput>
 
-Additionally, controller overrides can be passed to the child routes
+## Controller overrides
+
+Additionally, controller overrides can be passed to the child routes:
 
 ```ts
 r.namespace('api', (r) => {
@@ -80,9 +83,9 @@ GET api/v1/users/hi HelloWorld#hi
   </pre>
 </RoutesOutput>
 
-# scope
+## scope
 
-In addition to `namespace`, Psychic also provides the `scope` method, which behaves identically to namespace, except that it does not enforce that particular segment within the path of the controller. In the following example, the `UsersController` will be expected to be located at `app/controllers/UsersController.ts`.
+In addition to `namespace`, Psychic also provides the `scope` method, which behaves identically to namespace, except that it does not enforce that particular segment within the path of the controller. In the following example, the `UsersController` will be expected to be located at `app/controllers/UsersController.ts`:
 
 ```ts
 r.scope('api', (r) => {

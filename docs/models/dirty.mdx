@@ -1,14 +1,14 @@
 ---
-{}
+ai_summary: Dirty tracking methods: isDirty (boolean indicating if record has changes), changes (detailed object showing was/now for each changed field), changedAttributes (object with only changed attributes and their new values).
 ---
 
 # dirty
 
-In an ORM ecosystem, it is often necessary to determine if a record has any changes to be saved or not. Dream provides powerful methods for introspecting the changing state of your model
+In an ORM ecosystem, it is often necessary to determine if a record has any changes to be saved or not. Dream provides powerful methods for introspecting the changing state of your model.
 
 ## isDirty
 
-The `isDirty` will return true or false, depending on if a record has changes
+The `isDirty` property will return `true` or `false`, depending on if a record has changes:
 
 ```ts
 const user = await User.first()
@@ -20,7 +20,7 @@ console.log(user.isDirty) // true
 
 ## changes
 
-For more verbose information on what has changed, you can also call the `changes` method, which will give you an in-depth explanation of the changes for each field
+For more verbose information on what has changed, you can also call the `changes` method, which will give you an in-depth explanation of the changes for each field:
 
 ```ts
 const user = await User.first()
@@ -37,7 +37,7 @@ console.log(user.changes())
 
 ## changedAttributes
 
-To retrieve only the changed attributes and their values, you can use `changedAttributes`
+To retrieve only the changed attributes and their values, you can use `changedAttributes`:
 
 ```ts
 const user = await User.first()

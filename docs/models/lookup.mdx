@@ -1,11 +1,11 @@
 ---
-{}
+ai_summary: The lookup method enables safe circular imports using Dream's IoC. Use ApplicationModel.lookup('Model/Path') to access models without circular import issues. Wrap top-level usage in callback functions to avoid issues during syncing.
 ---
 # lookup
 
 ## The problem of circular imports
 
-In Nodejs, there are limitations that prevent you from circular importing, i.e.
+In Node.js, there are limitations that prevent you from circular importing, i.e.:
 
 ```ts
 // LogEntry/Base.ts
@@ -24,13 +24,13 @@ import BaseLogEntry from './Base.js'
 export default class SleepLogEntry extends BaseLogEntry {}
 ```
 
-Contrary to many other programming languages you may be familiar with, Nodejs has issues with classes who's signatures depend on eachother to be understood, and will often eventually resolve one or the other class to be `undefined`, creating a mysterious error in your system.
+Contrary to many other programming languages you may be familiar with, Node.js has issues with classes whose signatures depend on each other to be understood, and will often eventually resolve one or the other class to be `undefined`, creating a mysterious error in your system.
 
 However, the nature of the relationships in an ORM naturally creates the types of relationships between various models in your app to encourage this type of circularity.
 
-## using the ioc
+## Using the IoC
 
-Dream leverages inversion of control (ioc) to ingest your models, and exposes a helpful utility to enable you to safely perform circular imports without causing a circular reference issue.
+Dream leverages inversion of control (IoC) to ingest your models, and exposes a helpful utility to enable you to safely perform circular imports without causing a circular reference issue:
 
 ```ts
 // LogEntry/Base.ts
@@ -60,11 +60,11 @@ export default class BaseLogEntry extends ApplicationModel {
 }
 ```
 
-The `lookup` method provided by dream enables us to import models or serializers directly from Dream's ioc, which enables us to get past our dreaded undefined issues caused by circular import errors. We recommend that you use this sparingly, since it can create clutter in your code where it needn't be. Instead, we recommend that you use this when you run into this type of problem as an escape hatch, rather than a hard rule for your system.
+The `lookup` method provided by Dream enables us to import models or serializers directly from Dream's IoC, which enables us to get past our dreaded undefined issues caused by circular import errors. We recommend that you use this sparingly, since it can create clutter in your code where it needn't be. Instead, we recommend that you use this when you run into this type of problem as an escape hatch, rather than a hard rule for your system.
 
 ## Issues when syncing
 
-top-level usage of the `lookup` method is not safe, and will cause mysterious exceptions in your app during syncing. To avoid this, make sure to wrap any top-level usage in a callback function, like so:
+Top-level usage of the `lookup` method is not safe, and will cause mysterious exceptions in your app during syncing. To avoid this, make sure to wrap any top-level usage in a callback function, like so:
 
 ```ts
 import UnsafeSleepLogEntry from './Sleep.js'

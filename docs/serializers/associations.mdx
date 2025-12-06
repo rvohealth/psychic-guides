@@ -1,13 +1,24 @@
 ---
 sidebar_position: 3
 title: associations
+ai_summary: Serializer association methods include rendersOne (single association) and rendersMany (array of associations). Options include serializerKey (specify which serializer to use), as (rename in output), and flatten (for rendersOne only, flattens nested attributes into parent).
 ---
 
 # Serializing Associations
 
-## Rendering Associated Objects
+## rendersOne
 
-Use `.rendersOne()` and `.rendersMany()` to include associated models in serialized output.
+Use `.rendersOne()` to include a single associated model in serialized output:
+
+```ts
+// Room with place
+export const RoomWithPlaceSerializer = (room: Room) =>
+  DreamSerializer(Room, room).attribute('id').attribute('name').rendersOne('place')
+```
+
+## rendersMany
+
+Use `.rendersMany()` to include an array of associated models in serialized output:
 
 ```ts
 // From BearBnB: Place with rooms
@@ -16,13 +27,9 @@ export const PlaceForGuestsSerializer = (place: Place) =>
     .attribute('id')
     .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
     .rendersMany('rooms', { serializerKey: 'forGuests' })
-
-// Room with place
-export const RoomWithPlaceSerializer = (room: Room) =>
-  DreamSerializer(Room, room).attribute('id').attribute('name').rendersOne('place')
 ```
 
-### `serializerKey` option
+### rendersOne.serializerKey / rendersMany.serializerKey
 
 Specify which serializer to use for the associated model (defaults to 'default'):
 
@@ -35,7 +42,7 @@ export const PlaceDetailSerializer = (place: Place) =>
     .rendersMany('bookings') // renders using the default serializer
 ```
 
-### `as` option
+### rendersOne.as / rendersMany.as
 
 Rename the association in the output:
 
@@ -46,9 +53,9 @@ export const PlaceSerializer = (place: Place) =>
 // Output: { id: 1234, accommodations: [...] }
 ```
 
-### `flatten` option (for `rendersOne` only)
+### rendersOne.flatten
 
-When `flatten: true` is included, the attributes of the serialized, associated object are flattened into the serialized results.
+When `flatten: true` is included, the attributes of the serialized, associated object are flattened into the serialized results:
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
@@ -66,7 +73,7 @@ When the goal is to incorporate a property or two from the associated model, a [
 
 ## Loading Associations
 
-Associations must be loaded before serialization. Use [preloadFor](/docs/models/querying/preloadFor) to automatically load everything needed for a serializer:
+Associations must be loaded before serialization. Use [`preloadFor`](/docs/models/querying/preloadFor) to automatically load everything needed for a serializer:
 
 ```ts
 // Loads all associations needed for PlaceForGuestsSerializer

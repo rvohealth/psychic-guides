@@ -1,13 +1,14 @@
 ---
 sidebar_position: 0
 pagination_prev: null
+ai_summary: Dream validations prevent invalid records from being saved. Use isValid/isInvalid to check validity. Validation decorators include contains, length, numericality, presence, inclusion, exclusion, and custom validators. Failed validations raise exceptions that Psychic converts to 422 errors with errors payload.
 ---
 
 # overview
 
-Validity is an important concept in dream, since it can invalidate a record before saved, which prevents the record from being saved. To determine if a record is valid, Dream provides some useful helpers:
+Validity is an important concept in Dream, since it can invalidate a record before saved, which prevents the record from being saved. To determine if a record is valid, Dream provides some useful helpers:
 
-## #isValid / #isInvalid
+## isValid / isInvalid
 
 ```ts
 export default class User extends Dream {
@@ -25,4 +26,4 @@ console.log(user.isValid) // true
 console.log(user.isInvalid) // false
 ```
 
-If a save is attempted against a record, each of its validations will be called. If any of the validations fail, an exception will raise which prevents the record from being saved. When Psychic intercepts this error, it will automatically trigger a `422` error code, delivering an `errors` payload describing the list of validation failures.
+If a `save` is attempted against a record, each of its validations will be called. If any of the validations fail, an exception will raise which prevents the record from being saved. When Psychic intercepts this error, it will automatically trigger a `422` error code, delivering an `errors` payload describing the list of validation failures.

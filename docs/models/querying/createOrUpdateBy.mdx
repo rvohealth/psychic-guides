@@ -1,17 +1,22 @@
+---
+ai_summary: The createOrUpdateBy method creates a record first, or updates it if it already exists (relies on unique constraints). Functionally equivalent to upsert but runs in two queries. Useful for avoiding race conditions when creating duplicates. Cannot be used in transactions. All lifecycle hooks run unless skipHooks is passed.
+---
 # createOrUpdateBy
 
-The `createOrUpdateBy` method is very similar to [`updateOrCreateBy`](./updateOrCreateBy), except it will attempt to create the record first. This pattern relies on unique contraints at the DB level to reject the create statement if another record already exists with those fields. Since the create action will fail at the database level when a matching record already exists, `createOrFindBy` may not be used in a transaction.
+The `createOrUpdateBy` method is very similar to [`updateOrCreateBy`](./updateOrCreateBy), except it will attempt to create the record first. This pattern relies on unique constraints at the DB level to reject the create statement if another record already exists with those fields. Since the create action will fail at the database level when a matching record already exists, `createOrUpdateBy` may not be used in a transaction.
 
 This is functionally equivalent to an upsert, except it is run in two database queries. This variation is useful in situations where we want to avoid a race condition creating duplicate records (as opposed to `updateOrCreateBy`).
 
-All lifecycle hooks are run for whichever action is taken, unless `skipHooks` is passed.
+All lifecycle hooks are run for whichever action is taken, unless `skipHooks` is passed:
 
 ```ts
 const user = await User.createOrUpdateBy({ email: 'test@example.com' }, { with: { name: 'Alice' } })
 // User{email: 'test@example.com', name: 'Alice'}
 ```
 
-`createOrUpdateBy` cannot be chained with other chainable query methods.
+The `createOrUpdateBy` method cannot be chained with other chainable query methods.
+
+## Skipping hooks
 
 You can also choose to skip lifecycle hooks:
 

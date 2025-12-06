@@ -1,8 +1,11 @@
+---
+ai_summary: The last method returns the last record found in the table. Can be chained with query building methods like order. Use lastOrFail to raise RecordNotFound exception instead of returning null.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # last
 
-The last method returns the last record found in the given table.
+The `last` method returns the last record found in the given table:
 
 ```ts
 const user = await User.last()
@@ -38,5 +41,5 @@ limit 1
 </RoutesOutput>
 
 :::tip
-In some cases, [lastOrFail](/docs/models/querying/lastOrFail) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.
+In some cases, [`lastOrFail`](/docs/models/querying/lastOrFail) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.
 :::

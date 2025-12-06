@@ -1,8 +1,11 @@
+---
+ai_summary: The avg method returns the average (arithmetic mean) of a set of numeric values. Must pass a numeric column (integer or decimal). Can be chained with query building methods like where.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # avg
 
-The `avg` method returns the average (arithmetic mean) of a set of numeric values.
+The `avg` method returns the average (arithmetic mean) of a set of numeric values:
 
 ```ts
 const avgOfAllScoresForAllGames = await Game.avg('score')
@@ -20,7 +23,7 @@ select avg("score") from "games"
 
 ## Chaining
 
-You can leverage chainable methods to filter out records at the sql level before calling min.
+You can leverage chainable methods to filter out records at the SQL level before calling `avg`:
 
 ```ts
 const sportsballScoresAvg = await Game.where({ type: 'sportsball' }).avg('score')

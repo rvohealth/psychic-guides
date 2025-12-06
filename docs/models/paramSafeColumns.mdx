@@ -1,6 +1,7 @@
 ---
 title: paramSafeColumns
 pagination_next: null
+ai_summary: paramSafeColumns and paramUnsafeColumns work with paramsFor to limit allowed attributes. Default protection excludes primary key, timestamps, deleted_at, STI type, foreign keys. paramSafeColumns restricts to only specified columns. paramUnsafeColumns disallows specific columns. Restricted params automatically omitted from OpenAPI request body.
 ---
 
 # paramSafeColumns / paramUnsafeColumns
@@ -35,9 +36,11 @@ export default class HostPlacesController extends HostBaseController {
 
 :::
 
-`paramSafeColumns`/`paramUnsafeColumns` work in conjunction with `PsychicController#paramsFor` to limit what attributes are allowed to be set from params. This concept is similar to Rails’ "strong params", but implemented at the model level and with different defaults.
+The `paramSafeColumns`/`paramUnsafeColumns` methods work in conjunction with `PsychicController#paramsFor` to limit what attributes are allowed to be set from params. This concept is similar to Rails' "strong params", but implemented at the model level and with different defaults.
 
-Default protection is provided automatically, since `PsychicController#paramsFor` will never include the following attributes (this cannot be overridden by `paramSafeColumms` or `paramUnsafeColumns`):
+## Default protection
+
+Default protection is provided automatically, since `PsychicController#paramsFor` will never include the following attributes (this cannot be overridden by `paramSafeColumns` or `paramUnsafeColumns`):
 
 - the primary key (defaults to `id`)
 - the created at field (defaults to `createdAt`)
@@ -63,7 +66,7 @@ Adding default restricted column names to `paramSafeColumns` will have no effect
 
 ## paramUnsafeColumns
 
-Aternately, individual attributes may be disallowed (in addition to the defaults) by adding a `paramUnsafeColumns` getter that returns the names of columns that may not be updated:
+Alternatively, individual attributes may be disallowed (in addition to the defaults) by adding a `paramUnsafeColumns` getter that returns the names of columns that may not be updated:
 
 ```ts
 class Friend extends ApplicationModel {
@@ -75,7 +78,7 @@ class Friend extends ApplicationModel {
 
 ## OpenAPI
 
-Restricted params (both defaults and any additional limitations imposed by `paramSafeColumns` and `paramUnsafeColumns`) are automatically omitted from the request body OpenAPI shape.
+Restricted params (both defaults and any additional limitations imposed by `paramSafeColumns` and `paramUnsafeColumns`) are automatically omitted from the request body OpenAPI shape:
 
 ```ts
 export default class HostPlacesRoomsController extends HostPlacesBaseController {

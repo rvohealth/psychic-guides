@@ -1,6 +1,9 @@
+---
+ai_summary: The load method loads associations onto an existing model instance using multiple queries (unlike leftJoinLoad which uses a single query). Returns a new instance with associations loaded. Supports chaining multiple calls and nested associations. Similar to preload but works on instances rather than queries.
+---
 # load
 
-The `Dream#load` method provides a way to load associations onto an already existing Dream model instance. This is particularly useful when you have an instance of a model and need to fetch its related data without re-querying the instance itself.
+The `load` method provides a way to load associations onto an already existing Dream model instance. This is particularly useful when you have an instance of a model and need to fetch its related data without re-querying the instance itself.
 
 The call signature for `load` is very similar to [`preload`](./preload.mdx), and it leverages the same underlying mechanisms for fetching associated data.
 

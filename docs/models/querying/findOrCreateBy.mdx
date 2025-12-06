@@ -1,6 +1,9 @@
+---
+ai_summary: The findOrCreateBy method finds a record by attributes or creates it if not found. The createWith option specifies attributes to apply only when creating. Cannot be chained with query methods. Can be used within transactions.
+---
 # findOrCreateBy
 
-The findOrCreateBy static method attempts to find a model with the given attributes. If no record is found, then a new record is created.
+The `findOrCreateBy` static method attempts to find a model with the given attributes. If no record is found, then a new record is created:
 
 ```ts
 const user = await User.findOrCreateBy(
@@ -10,11 +13,11 @@ const user = await User.findOrCreateBy(
 // User{email: 'test@example.com', name: 'Alice'}
 ```
 
-`findOrCreateBy` cannot be chained with other chainable query methods.
+The `findOrCreateBy` method cannot be chained with other chainable query methods.
 
 ## Transactions
 
-`findOrCreateBy` can be used with transactions:
+The `findOrCreateBy` method can be used with transactions:
 
 ```ts
 let user: User

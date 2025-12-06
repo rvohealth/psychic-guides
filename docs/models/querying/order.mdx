@@ -1,6 +1,9 @@
+---
+ai_summary: The order method sorts query results. Accepts a string (column name, sorts ascending) or an object (column => direction). Multiple columns can be specified with earlier columns taking precedence. Call order(null) to remove ordering.
+---
 # order
 
-Any query can be ordered. `order` accepts either a string (the name of a column), and sorts ascending, or a column => direction object. In the object notation, columns that appear earlier in the object take prescendence over subsequent columns. Calling `column(null)` removes any previously applied ordering.
+Any query can be ordered. The `order` method accepts either a string (the name of a column), and sorts ascending, or a column => direction object. In the object notation, columns that appear earlier in the object take precedence over subsequent columns. Calling `order(null)` removes any previously applied ordering:
 
 ```ts
 // sort by `id`, ascending

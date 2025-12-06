@@ -1,10 +1,11 @@
 ---
 sidebar_position: 11
+ai_summary: Transactions tie the success of multiple queries together, guaranteeing valid database state. Use ApplicationModel.transaction with txn callback. Pass txn to queries using .txn(txn) method. Methods that rely on foreign key violations (like createOrFindBy) cannot be used in transactions.
 ---
 
 # transactions
 
-Transactions are useful if you want to tie the success of one query to another, enabling you to guarantee a valid state for your database in the event that anything might go wrong.
+Transactions are useful if you want to tie the success of one query to another, enabling you to guarantee a valid state for your database in the event that anything might go wrong:
 
 ```ts
 await ApplicationModel.transaction(async txn => {

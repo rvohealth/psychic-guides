@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+ai_summary: BelongsTo associations link a model to another model via a foreign key. The model containing the foreign key belongs to the referenced model. Options include optional (for nullable foreign keys) and on (to specify custom foreign key column name).
 ---
 
 import Tabs from '@theme/Tabs'
@@ -9,7 +10,7 @@ import TabItem from '@theme/TabItem'
 
 ## Overview
 
-Belongs to associations are to be used when the model in question is related to another model, and contains a foreign key to that model within its table. An example of a belongs to would be in the case of a `User` and `Post` model, where a `User` can write many `Post`s, and each `Post` would contain a field (called a foreign key) which points back to the id field of a `User` who owns it. In this context, we would say that the `Post` belongs to the `User`.
+Belongs to associations are to be used when the model in question is related to another model, and contains a foreign key to that model within its table. An example of a belongs to would be in the case of a `User` and `Post` model, where a `User` can write many `Post`s, and each `Post` would contain a field (called a foreign key) which points back to the `id` field of a `User` who owns it. In this context, we would say that the `Post` belongs to the `User`:
 
 ```ts
 export default class Post extends Dream {
@@ -22,9 +23,9 @@ export default class Post extends Dream {
 
 ## Options
 
-### Optional
+### optional
 
-BelongsTo associations are required by default (and should have a corresponding not-null declaration on the foreign key column). To make an association optional, pass the `optional: true` option (and ensure that the column allows null values).
+`BelongsTo` associations are required by default (and should have a corresponding not-null declaration on the foreign key column). To make an association optional, pass the `optional: true` option (and ensure that the column allows null values):
 
 ```ts
 export default class Post extends Dream {
@@ -35,13 +36,11 @@ export default class Post extends Dream {
 }
 ```
 
-IMPORTANT: `optional` belongs-to associations do _not_ automatically result in `optional` `RendersOne` declarations in serializers. In cases when a serializer is rendering an optional belongs-to association on a Dream model, [declare the RendersOne as optional](/docs/serializers/associations#rendering-associated-objects) (it is uncommon for model serializers to render belongs-to associations, so this is a rare requirement).
+IMPORTANT: `optional` belongs-to associations do _not_ automatically result in `optional` `rendersOne` declarations in serializers. In cases when a serializer is rendering an optional belongs-to association on a Dream model, [declare the rendersOne as optional](/docs/serializers/associations#rendering-associated-objects) (it is uncommon for model serializers to render belongs-to associations, so this is a rare requirement).
 
-### Foreign key
+### Foreign key (on option)
 
-By default, the foreign key is derived from the association name. E.g., in the example below, the
-default foreign key would be `userId`. This can be overridden by including an explicit
-`on: '<camelized-column-name-on-this-table>'` option.
+By default, the foreign key is derived from the association name. E.g., in the example below, the default foreign key would be `userId`. This can be overridden by including an explicit `on: '<camelized-column-name-on-this-table>'` option:
 
 ```ts
 export default class Post extends Dream {

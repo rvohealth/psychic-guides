@@ -1,10 +1,11 @@
 ---
 sidebar_position: 6
+ai_summary: db provides direct Kysely database access. Import db and use Kysely query builder. Supports connection specification (e.g., 'replica'). Dream queries can be converted to Kysely using toKysely method.
 ---
 
 # db
 
-Once your database connection is configured, you are able to import it and begin making queries to your db using [kysely](https://kysely.dev) as your database driver. This means rather than write raw queries, you will have Kysely to help you build queries and provide helpful typescript autocomplete power at a low level.
+Once your database connection is configured, you are able to import it and begin making queries to your DB using [Kysely](https://kysely.dev) as your database driver. This means rather than write raw queries, you will have Kysely to help you build queries and provide helpful TypeScript autocomplete power at a low level:
 
 ```ts
 import db from '../db'
@@ -15,13 +16,13 @@ await db()
   .execute()
 ```
 
-Dream enables you to specify a connection when connecting to the db, like so:
+Dream enables you to specify a connection when connecting to the DB, like so:
 
 ```ts
 await db('replica').selectAll('users').execute()
 ```
 
-You can additionally turn any query built in dream to a kysely query by calling `#toKysely`, like so:
+You can additionally turn any query built in Dream to a Kysely query by calling `#toKysely`, like so:
 
 ```ts
 await User.where({ email: ops.ilike('%burpcollaborator%') })

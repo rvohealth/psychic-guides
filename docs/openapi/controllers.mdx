@@ -1,13 +1,14 @@
 ---
 sidebar_position: 2
 title: controllers
+ai_summary: The @OpenAPI decorator generates OpenAPI specifications for controller endpoints. It supports response configuration (serializerKey, many, nullable, status), request body configuration (for, only, including, combining), query parameters, path parameters, headers, security, and default behavior control.
 ---
 
 # OpenAPI - Controllers
 
-Controllers provide an entry point for all openapi entries. When Psychic builds openapi files for your application, it starts by scanning all of your controllers and finding all openapi decorators. It then computes the schema for those endpoints, and then spits that schema out into the corresponding json files.
+Controllers provide an entry point for all openapi entries. When Psychic builds openapi files for your application, it starts by scanning all of your controllers and finding all `@OpenAPI` decorators. It then computes the schema for those endpoints, and then spits that schema out into the corresponding json files.
 
-To leverage the OpenAPI decorator in your controllers, simply import it and use it to decorate the methods you wish to expose, like so:
+To leverage the `@OpenAPI` decorator in your controllers, simply import it and use it to decorate the methods you wish to expose, like so:
 
 ```ts
 import { OpenAPI } from '@rvoh/psychic'
@@ -24,7 +25,7 @@ export default class PlacesController extends PsychicController {
 }
 ```
 
-By default, Psychic will match this endpoint to the corresponding route entry in your `conf/routes.ts` file. If it does not find a matching route, it will raise an exception, so be sure to add a matching entry pointing to that method on your controller, i.e.
+By default, Psychic will match this endpoint to the corresponding route entry in your `conf/routes.ts` file. If it does not find a matching route, it will raise an exception, so be sure to add a matching entry pointing to that method on your controller.
 
 ```ts
 // conf/routes.ts
@@ -37,7 +38,7 @@ export default function routes(r: PsychicRouter) {
 
 ## Implicit serialization
 
-If a serializable class is provided as the first argument to the `@OpenAPI` decorator, it will automatically read all related attribute definitions on the corresponding serializer, formulating an object shape that it injects into the openapi document.
+If a serializable class is provided as the first argument to the `@OpenAPI` decorator, it will automatically read all related attribute definitions on the corresponding serializer, formulating an object shape that it injects into the OpenAPI document.
 
 ```ts
 export default class PlacesController extends PsychicController {
@@ -56,6 +57,8 @@ export default class PlacesController extends PsychicController {
 
 In addition to providing a model class as the first argument, you can also specify a serializer directly, which takes away the implicit decision making that Psychic does to decide on a serializer for you.
 
+## Direct serializer specification
+
 ```ts
 @OpenAPI(PlaceSerializer, {
   status: 200,
@@ -64,7 +67,7 @@ In addition to providing a model class as the first argument, you can also speci
 
 ## serializerKey
 
-You can provide a `serializerKey` option, which will inform the decorator to use a specific serializer attached to your model, like so:
+You can provide a `serializerKey` option, which will inform the `@OpenAPI` decorator to use a specific serializer attached to your model, like so:
 
 ```ts
 // models/Place.ts
@@ -96,7 +99,7 @@ export default class V1HostPlacesController extends PsychicController {
 
 ## many
 
-Use the `many` option when you are providing a serializable class, and you want the endpoint to render an array of them. This can be done like so:
+Use the `many` option when you are providing a serializable class, and you want the endpoint to render an array of them:
 
 ```ts
 export default class AdminPlacesController extends PsychicController {
@@ -112,7 +115,7 @@ export default class AdminPlacesController extends PsychicController {
 
 ## nullable
 
-As expected, the `nullable` option enables you to specify that the default response can also be null.
+The `nullable` option enables you to specify that the default response can also be null:
 
 ```ts
 export default class AdminPlacesController extends PsychicController {
@@ -128,7 +131,7 @@ export default class AdminPlacesController extends PsychicController {
 
 ## status
 
-By providing a `status` option to the OpenAPI decorator, you can specify which HTTP status code will be returned if the request succeeds.
+By providing a `status` option to the `@OpenAPI` decorator, you can specify which HTTP status code will be returned if the request succeeds:
 
 ```ts
 export default class PostsController extends PsychicController {
@@ -143,7 +146,7 @@ export default class PostsController extends PsychicController {
 
 ## requestBody
 
-Using the `requestBody` option, we can inform OpenAPI what the shape of our incoming request will be, using standard OpenAPI notation.
+Using the `requestBody` option, we can inform OpenAPI what the shape of our incoming request will be, using standard OpenAPI notation:
 
 ```ts
 export default class PostsController extends PsychicController {
@@ -166,7 +169,9 @@ export default class PostsController extends PsychicController {
 }
 ```
 
-Request bodies will by default be inferred from the serializable argument, if it is provided and is pointing to a dream model, like so:
+## Automatic request body inference
+
+Request bodies will by default be inferred from the serializable argument, if it is provided and is pointing to a Dream model:
 
 ```ts
 export default class UsersController extends PsychicController {
@@ -180,9 +185,9 @@ export default class UsersController extends PsychicController {
 }
 ```
 
-### for, only, including, and combining
+### requestBody.for
 
-For more granular specification, you can take advantage of the `for`, `only`, and `including` options, which enable you to explicitly provide certain params for a model class.
+For more granular specification, you can take advantage of the `for` option, which enables you to specify a different model class for request body generation:
 
 ```ts
 export default class UsersController extends PsychicController {
@@ -200,7 +205,7 @@ export default class UsersController extends PsychicController {
 }
 ```
 
-If the `for` argument is left off, the allowed fields will fall back to the base model provided to the decorator, i.e.
+If the `for` argument is left off, the allowed fields will fall back to the base model provided to the `@OpenAPI` decorator:
 
 ```ts
 export default class UsersController extends PsychicController {
@@ -217,7 +222,28 @@ export default class UsersController extends PsychicController {
 }
 ```
 
-Tapping into the `including` arg, we can explicitly provide params that would otherwise be excluded (see [paramSafeColumns](/docs/models/paramSafeColumns)).
+### requestBody.only
+
+The `only` option restricts request body fields to a specific subset:
+
+```ts
+export default class UsersController extends PsychicController {
+  @OpenAPI(User, {
+    status: 204,
+    requestBody: {
+      only: ['email'],
+    },
+  })
+  public async create() {
+    await User.create(this.paramsFor(User, { only: ['email'] }))
+    this.noContent()
+  }
+}
+```
+
+### requestBody.including
+
+The `including` option enables you to explicitly provide params that would otherwise be excluded (see [paramSafeColumns](/docs/models/paramSafeColumns)):
 
 ```ts
 export default class HostPlacesRoomsController extends HostPlacesBaseController {
@@ -237,7 +263,9 @@ export default class HostPlacesRoomsController extends HostPlacesBaseController 
 }
 ```
 
-The `combining` attribute enables addition of fields unrelated to the model to the OpenAPI spec.
+### requestBody.combining
+
+The `combining` attribute enables addition of fields unrelated to the model to the OpenAPI spec:
 
 ```ts
 export default class PetsController extends PsychicController {
@@ -258,7 +286,7 @@ export default class PetsController extends PsychicController {
 
 ## headers
 
-Provide the `headers` option to specify which headers are expected for this endpoint.
+Provide the `headers` option to specify which headers are expected for this endpoint:
 
 ```ts
 export default class PostsController extends PsychicController {
@@ -275,7 +303,7 @@ export default class PostsController extends PsychicController {
 
 ## responses
 
-Use the `responses` option to specify the payload shape for specific response statuses, like so:
+Use the `responses` option to specify the payload shape for specific response statuses:
 
 ```ts
 export default class PostsController extends PsychicController {
@@ -302,7 +330,7 @@ export default class PostsController extends PsychicController {
 
 ## query
 
-The `query` option enables you to specify the shape of custom query params for your endpoint. By default, all query params are automatically assumed to be strings, but you can customize their shape if desired, using the `schema` suboption, as shown below
+The `query` option enables you to specify the shape of custom query params for your endpoint. By default, all query params are automatically assumed to be strings, but you can customize their shape if desired, using the `schema` suboption:
 
 ```ts
 export default class PostsController extends PsychicController {
@@ -344,7 +372,7 @@ export default class PostsController extends PsychicController {
 
 ## security
 
-Use the `security` option to provide security entries for openapi. The shape provided here is identical to the shape required by openapi itself, which is an array of objects, where the keys are the names, and the values are arrays of scopes required (or a blank array if there are no scopes).
+Use the `security` option to provide security entries for OpenAPI. The shape provided here is identical to the shape required by OpenAPI itself, which is an array of objects, where the keys are the names, and the values are arrays of scopes required (or a blank array if there are no scopes):
 
 ```ts
 export default class PostsController extends PsychicController {
@@ -366,7 +394,7 @@ export default class PostsController extends PsychicController {
 
 ## omitDefaultHeaders
 
-The `omitDefaultHeaders` option enables you to exclude all default-provided headers (which are configured in `conf/app.ts`).
+The `omitDefaultHeaders` option enables you to exclude all default-provided headers (which are configured in `conf/app.ts`):
 
 ```ts
 export default class PostsController extends PsychicController {
@@ -379,9 +407,9 @@ export default class PostsController extends PsychicController {
 }
 ```
 
-### omitDefaultResponses
+## omitDefaultResponses
 
-Similar to the omitDefaultHeaders option, the `omitDefaultResponses` option enables you to exclude all default-provided responses (which are also configured in `conf/app.ts`).
+Similar to the `omitDefaultHeaders` option, the `omitDefaultResponses` option enables you to exclude all default-provided responses (which are also configured in `conf/app.ts`):
 
 ```ts
 export default class PostsController extends PsychicController {
@@ -394,7 +422,9 @@ export default class PostsController extends PsychicController {
 }
 ```
 
-### pathParams
+## pathParams
+
+Add descriptions and metadata for path parameters:
 
 ```ts
 export default class PostsController extends PsychicController {

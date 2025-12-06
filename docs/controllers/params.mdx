@@ -1,5 +1,6 @@
 ---
 sidebar_position: 2
+ai_summary: Controller parameter handling with castParam for individual parameter validation and paramsFor for automatic extraction of model-safe parameters. Supports type casting, OpenAPI shape validation, and parameter filtering with only and including options.
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -10,7 +11,7 @@ Requests to your server will often contain either a request body, path params, o
 
 ## castParam
 
-The castParam method provides the developer with a unique way to both absorb _and_ validate a specific param simultaneously. In the following example, the `show` action will find any places belonging to the currentHost with the id provided in the params. Psychic is param-location ambiguous, meaning that it will search the path, query, and body for a param with the key `id`, and will then cast it to a `string` type. However, if the param passed is not a valid string, Psychic will raise a `400` status code error.
+The `castParam` method provides the developer with a unique way to both absorb _and_ validate a specific param simultaneously. In the following example, the `show` action will find any places belonging to the `currentHost` with the `id` provided in the params. Psychic is param-location ambiguous, meaning that it will search the path, query, and body for a param with the key `id`, and will then cast it to a `string` type. However, if the param passed is not a valid string, Psychic will raise a `400` status code error.
 
 ```ts
 import { OpenAPI } from '@rvoh/psychic'
@@ -74,7 +75,7 @@ export default class V1HostPlacesController extends V1HostBaseController {
 
 ### casting openapi shapes
 
-The castParam method is also able to interpret openapi shapes, and will return types data back to you based on the provided shape.
+The `castParam` method is also able to interpret OpenAPI shapes, and will return types data back to you based on the provided shape.
 
 ```ts
 const data = this.castParam('myData', {
@@ -88,11 +89,11 @@ data.a // number | undefined
 data.b // string | number | undefined
 ```
 
-When using castParam with openapi shapes, params will automatically be coerced by the Ajv library.
+When using `castParam` with OpenAPI shapes, params will automatically be coerced by the Ajv library.
 
 ## paramsFor
 
-In addition to individual param casting, Psychic also provides the ability to automatically ingest all params for a given Dream model. This enables developers to easily bring in params for a model without having to specify their types manually:
+In addition to individual param casting, Psychic also provides the ability to automatically ingest all params for a given Dream model. The `paramsFor` method enables developers to easily bring in params for a model without having to specify their types manually:
 
 ```ts
 export default class V1HostPlacesController extends V1HostBaseController {
@@ -109,9 +110,11 @@ export default class V1HostPlacesController extends V1HostBaseController {
 }
 ```
 
-This will automatically bring in all params for the Place model, barring generated fields like `id`, `createdAt`, `updatedAt`, `deletedAt`, or any belongs-to foreign keys or foreign key types.
+This will automatically bring in all params for the `Place` model, barring generated fields like `id`, `createdAt`, `updatedAt`, `deletedAt`, or any belongs-to foreign keys or foreign key types.
 
-The attributes that can be updated via params can be further restricted by providing a `paramSafeColumns` getter in any Dream model see [paramSafeColumns](/docs/models/paramSafeColumns):
+## paramSafeColumns
+
+The attributes that can be updated via params can be further restricted by providing a `paramSafeColumns` getter in any Dream model (see [paramSafeColumns](/docs/models/paramSafeColumns)):
 
 ```ts
 export default class User extends ApplicationModel {
@@ -121,7 +124,9 @@ export default class User extends ApplicationModel {
 }
 ```
 
-The paramsFor method also accepts the ability to customize which params should be allowed, enabling you to only bring in specific params without needing to cast their types:
+## paramsFor with only
+
+The `paramsFor` method also accepts the ability to customize which params should be allowed, enabling you to only bring in specific params without needing to cast their types:
 
 ```ts
 export default class V1HostPlacesController extends V1HostBaseController {

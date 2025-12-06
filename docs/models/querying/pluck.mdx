@@ -1,8 +1,11 @@
+---
+ai_summary: The pluck method returns raw values for specified attributes. Single attribute returns flattened array. Multiple attributes return array of arrays. Can be chained with query methods. Use pluckEach for large datasets to avoid loading all data into memory.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # pluck
 
-The pluck method returns raw objects containing just the attributes specified. If only one attribute is passed, it is returned as a flattened array.
+The `pluck` method returns raw objects containing just the attributes specified. If only one attribute is passed, it is returned as a flattened array:
 
 ```ts
 await User.pluck('id')
@@ -14,7 +17,7 @@ await User.pluck('id', 'email')
 
 ## Chaining
 
-You can leverage chainable methods to filter out records at the sql level before calling pluck.
+You can leverage chainable methods to filter out records at the SQL level before calling `pluck`:
 
 ```ts
 const id = await User.where({ email: ops.ilike('%burpcollaborator%') }).pluck(
@@ -31,5 +34,5 @@ select "users"."id" as "id" from "users" where "users"."email" ilike $1
 </RoutesOutput>
 
 :::tip
-If the query you are building could potentially return a very large amount of data, and you are unsure that you want to bring all that data into memory at once, try using [pluckEach](/docs/models/querying/pluckEach).
+If the query you are building could potentially return a very large amount of data, and you are unsure that you want to bring all that data into memory at once, try using [`pluckEach`](/docs/models/querying/pluckEach).
 :::

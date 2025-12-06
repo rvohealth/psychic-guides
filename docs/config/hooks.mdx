@@ -1,6 +1,7 @@
 ---
 sidebar_position: 3
 title: hooks
+ai_summary: Psychic and Dream expose lifecycle hooks. Psychic hooks (cli:sync, server:init:before-middleware, server:init:after-middleware, etc.) are configured in conf/app.ts or initializers. Dream hooks (model lifecycle hooks) are configured in conf/dream.ts. Hooks enable tapping into core internal events.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -13,7 +14,7 @@ Psychic hooks can be tapped into in your `conf/app.ts` file, or in one of your i
 
 ### cli:sync
 
-The cli:sync event is called whenever the sync command is called in the cli. This will happen, for example, when calling `pnpm psy sync` directly, but will also happen if you call `pnpm psy db:migrate`, or `pnpm psy db:reset`. You can tap into this lifecycle hook inside your `conf/app.ts` file, as well as in one of your initializers.
+The `cli:sync` event is called whenever the sync command is called in the CLI. This will happen, for example, when calling `pnpm psy sync` directly, but will also happen if you call `pnpm psy db:migrate`, or `pnpm psy db:reset`. You can tap into this lifecycle hook inside your `conf/app.ts` file, as well as in one of your initializers:
 
 ```ts
 // conf/app.ts
@@ -26,7 +27,7 @@ export default async (app: PsychicApp) => {
 }
 ```
 
-One interesting side-effect of the `cli:sync` hook is that you can actually append new types to the `types/psychic.ts` file by returning an object at the end of this callback, i.e.
+One interesting side-effect of the `cli:sync` hook is that you can actually append new types to the `types/psychic.ts` file by returning an object at the end of this callback:
 
 ```ts
 // conf/app.ts, or any initializer
@@ -44,7 +45,7 @@ Doing this will splat the returned object into the end of the `types/psychic.ts`
 
 ### server:init:before-middleware
 
-When the psychic web server is starting, this is the first hook to run. At this stage, Psychic has not processed any express middleware, nor has it processed your routes. It is the perfect spot to establish logging, or any other monitoring tools.
+When the Psychic web server is starting, this is the first hook to run. At this stage, Psychic has not processed any Express middleware, nor has it processed your routes. It is the perfect spot to establish logging, or any other monitoring tools:
 
 ```ts
 // conf/app.ts, or any initializer

@@ -1,8 +1,11 @@
+---
+ai_summary: The findEach method processes records in batches (default 1000, customizable via batchSize option) and calls a callback function for each record. Useful for processing large datasets without loading all records into memory. Can be chained with query building methods.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # findEach
 
-The `findEach` method will collect records in batches of 1000 by default (though you can customize the batch size with a second argument), and then will proceed to call your callback function for each record found.
+The `findEach` method will collect records in batches of 1000 by default (though you can customize the batch size with a second argument), and then will proceed to call your callback function for each record found:
 
 ```ts
 await User.findEach(async (user) => {
@@ -19,7 +22,7 @@ await User.findEach(
 
 ## Chaining
 
-Similar to other execution methods, `findEach` can be chained with other chainable query methods, such as `where` and `whereNot`.
+Similar to other execution methods, `findEach` can be chained with other chainable query methods, such as `where` and `whereNot`:
 
 ```ts
 await User.whereNot({ email: null }).findEach(async (user) => {

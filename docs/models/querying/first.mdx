@@ -1,8 +1,11 @@
+---
+ai_summary: The first method returns the first record found in the given table. Can be chained with query building methods like order. Use firstOrFail to raise RecordNotFound exception instead of returning null.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # first
 
-The first method returns the first record found in the given table.
+The `first` method returns the first record found in the given table:
 
 ```ts
 const user = await User.first()
@@ -21,7 +24,7 @@ limit $1
 
 ## Chaining
 
-Similar to other execution methods, `first` can be chained with other chainable query methods, such as `order`.
+Similar to other execution methods, `first` can be chained with other chainable query methods, such as `order`:
 
 ```ts
 await User.order({ email: 'asc' }).first()
@@ -38,5 +41,5 @@ limit 1
 </RoutesOutput>
 
 :::tip
-In some cases, [firstOrFail](/docs/models/querying/firstOrFail) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.
+In some cases, [`firstOrFail`](/docs/models/querying/firstOrFail) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.
 :::

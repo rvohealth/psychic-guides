@@ -1,12 +1,15 @@
+---
+ai_summary: Attribute methods for accessing and setting model attributes. Bypassing methods (getAttributes, getAttribute, setAttributes, setAttribute) bypass custom getters/setters. Non-bypassing methods (assignAttributes, assignAttribute) use custom setters.
+---
 # attributes
 
-Attributes are usually set as part of [create](./creating) or [update](./updating) calls, or directly using dot notation (`balloon.color = red` and then calling `balloon.save`); however, there are times (e.g. when adding custom getters and setters that transform the data prior to persisting) when it is helpful to bypass the getters and setters.
+Attributes are usually set as part of [`create`](./creating) or [`update`](./updating) calls, or directly using dot notation (`balloon.color = 'red'` and then calling `balloon.save`); however, there are times (e.g. when adding custom getters and setters that transform the data prior to persisting) when it is helpful to bypass the getters and setters.
 
 ## Bypassing methods
 
 ### getAttributes
 
-Returns an object containing all the columns on this dream class, as well as their values, bypassing getters.
+Returns an object containing all the columns on this Dream class, as well as their values, bypassing getters:
 
 ```ts
 const user = User.new({ email: 'how@yadoin' })
@@ -19,7 +22,7 @@ user.getAttributes()
 
 ### getAttribute
 
-Returns the value for a columnName provided, bypassing the getters.
+Returns the value for a `columnName` provided, bypassing the getters:
 
 ```ts
 const user = User.new({ email: 'how@yadoin' })
@@ -29,7 +32,7 @@ user.getAttribute('email')
 
 ### setAttributes
 
-Takes the attributes passed in and sets their values internally, bypassing custom setters defined for these attributes.
+Takes the attributes passed in and sets their values internally, bypassing custom setters defined for these attributes:
 
 ```ts
 const user = new User()
@@ -38,7 +41,7 @@ user.setAttributes({ email: 'my@email', password: 'my password' })
 
 ### setAttribute
 
-Changes the attribute value for a single attribute internally, bypassing custom-defined setters.
+Changes the attribute value for a single attribute internally, bypassing custom-defined setters:
 
 ```ts
 const user = new User()
@@ -49,7 +52,7 @@ user.setAttribute('email', 'sally@gmail.com')
 
 ### assignAttributes
 
-Takes the attributes passed in and sets their values, leveraging custom setters defined for these attributes.
+Takes the attributes passed in and sets their values, leveraging custom setters defined for these attributes:
 
 ```ts
 const user = new User()

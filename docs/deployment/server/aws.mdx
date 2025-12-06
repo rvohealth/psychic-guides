@@ -2,11 +2,12 @@
 sidebar_position: 1
 title: aws
 pagination_next: null
+ai_summary: Deploy to AWS using Fargate. Single Dockerfile provisions web server, worker, and console instances. Different initialization commands for worker, console, or web. Requires ECR instances for each. Includes Dockerfile example and Fargate task definitions.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
-To deploy your application to aws, we will be leveraging aws fargate to provision our web server, worker, and console instances. We will be using a single Dockerfile to provision all of them, but will run different initialization commands depending on if the instance provisioned is a `worker`, `console`, or `web` instance. For now, this guide assumes you have the following already set up:
+To deploy your application to AWS, we will be leveraging AWS Fargate to provision our web server, worker, and console instances. We will be using a single Dockerfile to provision all of them, but will run different initialization commands depending on if the instance provisioned is a `worker`, `console`, or `web` instance. For now, this guide assumes you have the following already set up:
 
 - an ecr instance for your worker
 - an ecr instance for your console

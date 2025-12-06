@@ -2,6 +2,7 @@
 sidebar_position: 1
 title: model
 pagination_prev: null
+ai_summary: The generate:model command creates a Dream model with migration, spec factory, and serializer. Supports various column types (citext, string, text, date, datetime, integer, decimal, enum, belongs_to), arrays, optional columns, and custom connection names.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -20,7 +21,7 @@ The `generate:model` CLI documentation follows below, but more details about gen
   code={`{{PM}} psy g:model [options] <modelName> [columnsWithTypes...]`}
 />
 
-**Arguments:**
+### Arguments
 
 - `<modelName>`: The name of the model to create, e.g. `Post` or `Settings/CommunicationPreferences`.
 - `[columnsWithTypes...]`: Space separated snake-case (except for belongs_to model name) properties like this:
@@ -47,7 +48,7 @@ The `generate:model` CLI documentation follows below, but more details about gen
     - Include the fully qualified model name, e.g., if the Coach model is in `src/app/models/Health/Coach`:
       `Health/Coach:belongs_to`
 
-**Options:**
+### Options
 
 - `--no-serializer`: Do not generate a serializer for the model.
 - `--connection-name <connectionName>`: The db connection you want this attached to (defaults to the default db connection) (default: "default").

@@ -1,6 +1,9 @@
+---
+ai_summary: The @deco.Encrypted decorator automatically encrypts/decrypts values on insert and access. Uses a pseudo-column whose value is stored in a separate encrypted field. Supports current and legacy encryption keys for key rotation. Configuration done in conf/dream.ts.
+---
 # @deco.Encrypted
 
-Leverage the `@deco.Encrypted` decorator to automatically encrypt and decrypt values upon inserting and accessing values from the db. This works by defining a sudo-column, who's value is stored in a separate, encrypted field that is persisted to the db. Any time you access the decorated property, you will receive the payload of decrypting the corresponding encrypted field. Any time you make changes, those will persist to the db, encrypted and stored in the corresponding encrypted field.
+Leverage the `@deco.Encrypted` decorator to automatically encrypt and decrypt values upon inserting and accessing values from the DB. This works by defining a pseudo-column, whose value is stored in a separate, encrypted field that is persisted to the DB. Any time you access the decorated property, you will receive the payload of decrypting the corresponding encrypted field. Any time you make changes, those will persist to the DB, encrypted and stored in the corresponding encrypted field:
 
 ```ts
 export default class User extends ApplicationModel {
@@ -19,11 +22,11 @@ console.log(reloaded.secret)
 // { token: 'abc123' }
 ```
 
-By default, a given property that is decorated with the `@deco.Encrypted` decorator will be expected to have a column in the db with the same name, but with the word `encrypted` up front, and camel-cased. This means that if your decorated property is `secret`, the expected corresponding column in your database will need to be called `encryptedSecret`. This column will store the encrypted data for retreival later.
+By default, a given property that is decorated with the `@deco.Encrypted` decorator will be expected to have a column in the DB with the same name, but with the word `encrypted` up front, and camel-cased. This means that if your decorated property is `secret`, the expected corresponding column in your database will need to be called `encryptedSecret`. This column will store the encrypted data for retrieval later.
 
 ## Configuration
 
-Dream will use the values provided in your `conf/dream.ts` file to perform encryption and decryption. Dream also has built-in fallback support, enabling you to temporarily have both a current _and_ a legacy encryption encryption key at once, which can be set in the dream config using the `encryption` configuration setting, like so:
+Dream will use the values provided in your `conf/dream.ts` file to perform encryption and decryption. Dream also has built-in fallback support, enabling you to temporarily have both a current _and_ a legacy encryption key at once, which can be set in the Dream config using the `encryption` configuration setting, like so:
 
 ```ts
 // conf/dream.ts
@@ -43,4 +46,4 @@ export default function configureDream(dream: DreamApp) {
 }
 ```
 
-If Dream is unable to encrypt a value using the `current` encryption key, it will attempt to use the `legacy` encryption key before failing, enabling you to switch encryption keys without sweating the complexity of migrating existing data off of one and onto the other.
+If Dream is unable to decrypt a value using the `current` encryption key, it will attempt to use the `legacy` encryption key before failing, enabling you to switch encryption keys without sweating the complexity of migrating existing data off of one and onto the other.

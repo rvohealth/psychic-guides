@@ -1,8 +1,11 @@
+---
+ai_summary: The max method returns the maximum value for a specified field. Automatically casts return type based on field type. Can be chained with query building methods like where.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # max
 
-The `max` method will pluck a field with the highest value.
+The `max` method will pluck a field with the highest value:
 
 ```ts
 const id = await User.max('id')
@@ -16,11 +19,11 @@ select max("id") from "users"
   </pre>
 </RoutesOutput>
 
-`max` is smart enough to know the return type for id, so the returned value will already have the correct type cast for the `id` field.
+The `max` method is smart enough to know the return type for `id`, so the returned value will already have the correct type cast for the `id` field.
 
 ## Chaining
 
-You can leverage chainable methods to filter out records at the sql level before calling max.
+You can leverage chainable methods to filter out records at the SQL level before calling `max`:
 
 ```ts
 const id = await User.where({ email: ops.ilike('%burpcollaborator%') }).max(
