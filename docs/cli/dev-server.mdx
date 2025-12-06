@@ -2,14 +2,16 @@
 sidebar_position: 3
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # dev server
 
 The dev command starts a dev server for local development. this command written directly to your api/package.json file (or your package.json file if your app is api-only), enabling you to customize it to your liking.
 
-```ts
-# launch your psychic server
-pnpm dev
+<PackageManagerTabs
+  code={`# launch your psychic server
+{{PM}} dev
 
 # launch your psychic server AND your client app
-CLIENT=1 pnpm dev
-```
+CLIENT=1 {{PM}} dev`}
+/>

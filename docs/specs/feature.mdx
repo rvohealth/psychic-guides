@@ -4,6 +4,8 @@ title: feature
 pagination_next: null
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # Feature
 
 Over the years, the landscape of web development has changed dramatically. We have come far from our jQuery beginnings, and preferences in that time have shifted in a big way in terms of web application development. One of the biggest shifts has been a great decoupling of front ends and back ends. This serves the modern app ecosystem well, since a team can exclusively focus on servicing a front end, while another team works on building out a back end, allowing coders to specialize and deliver higher quality products faster.
@@ -30,7 +32,8 @@ This is, generally speaking, magical, since most everyone I know has a totally d
 
 The configuration entry point is found at `spec/features/vite.config.ts`. This file will look near-identical to the vite.config.ts file found in the unit folder. Where the feature specs differ is really in two places. The first is the global setup and teardown, both located at `spec/features/setup/globalSetup.ts`. In this file, a new vite server is launched, pointing at the client app that was provisioned for you.
 
-```ts
+<PackageManagerTabs
+  code={`
 // spec/features/setup/globalSetup.ts
 
 import '../../../src/conf/global.js'
@@ -40,14 +43,16 @@ import { PsychicDevtools } from '@rvoh/psychic'
 export async function setup() {
   await PsychicDevtools.launchDevServer('client', {
     port: 3000,
-    cmd: 'pnpm client:fspec',
+    cmd: '{{PM}} client:fspec',
   })
 }
 
 export function teardown() {
   PsychicDevtools.stopDevServer('client')
 }
-```
+`}
+  language='ts'
+/>
 
 The second point of departure from unit specs can be found at `spec/features/setup/hooks.ts`. Here you will see that we additionally start and stop a psychic server programatically. Doing so enables us to spy on back end modules, which is extremely important for end to end tests.
 
@@ -79,10 +84,10 @@ afterEach(async () => {
 
 To run feature specs, Psychic automatically provides a script in your package.json file, called `fspec` (short for "feature spec"). You can run it, simply by calling `pnpm fspec` from your api directory
 
-```sh
-cd api
-pnpm fspec
-```
+<PackageManagerTabs
+  code={`cd api
+{{PM}} fspec`}
+/>
 
 ## Custom assertion matchers
 

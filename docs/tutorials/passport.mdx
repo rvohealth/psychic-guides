@@ -72,11 +72,13 @@ We will need a User model to be able to sign in with, so let's go ahead and conf
 
 ## Installing passport
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 With our User model created, lets install the necessary dependencies for the local authentication strategy. We will also bring in the session package so that we can add http-only cookies to our requests.
 
-```sh
-pnpm add passport passport-local @types/passport @types/passport-local express-session @types/express-session
-```
+<PackageManagerTabs
+  code={`{{PM}} add passport passport-local @types/passport @types/passport-local express-session @types/express-session`}
+/>
 
 First, let's configure passport, as well as express-session, which is required by passport:
 

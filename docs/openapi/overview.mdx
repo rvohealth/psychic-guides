@@ -4,6 +4,8 @@ title: overview
 pagination_prev: null
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # OpenAPI Overview
 
 [OpenAPI](https://spec.openapis.org/oas/v3.0.2.html) is a standard for representing API specifications. It is useful whether your service will be consumed by other services or front end clients such as mobile devices. Psychic and Dream work together to automatically generate [OpenAPI 3.0.2](https://spec.openapis.org/oas/v3.0.2.html) specs for your web application with as little additional work from you as possible. They do this by leveraging:
@@ -20,9 +22,9 @@ OpenAPI validation is enabled on all requests (when a request doesn't match, it 
 
 To generate the OpenAPI spec, simply run:
 
-```sh
-pnpm psy sync:openapi
-```
+<PackageManagerTabs
+  code={`{{PM}} psy sync:openapi`}
+/>
 
 Psychic provides built-in support for generating openapi schema to define your response payloads. Using the definitions you provide, Psychic will regenerate an `openapi.json` file at the root of your project whenever a sync occurs. Psychic will also use this to generate type files for your client app, facilitating easy synchronization of your api mechanisms to the current values provided by the backend.
 

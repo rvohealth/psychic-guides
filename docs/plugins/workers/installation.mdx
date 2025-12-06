@@ -3,6 +3,8 @@ sidebar_position: 1
 title: installation
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # Workers - installation
 
 There are two ways to install the `psychic-workers` package. The first is by selecting `yes` when prompted during the initial psychic app provisioning stage. If you select yes, the package will be automatically installed, and your app bootstrapped to use workers automatically.
@@ -11,9 +13,9 @@ However, if this is not the case for you and you are looking to install websocke
 
 1. Install the package.
 
-```sh
-pnpm add @rvoh/psychic-workers
-```
+<PackageManagerTabs
+  code={`{{PM}} add @rvoh/psychic-workers`}
+/>
 
 2. Add the missing configuration file to `src/conf/workers.ts`:
 

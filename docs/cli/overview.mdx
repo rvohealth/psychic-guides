@@ -3,13 +3,15 @@ sidebar_position: 0
 pagination_prev: null
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # overview
 
 Psychic and Dream both provide a cli for interfacing with underlying bin scripts. These scripts are useful for doing things like database operations, syncing types, listing your routes, etc... To see the available list of commands, you can use the `--help` flag:
 
-```sh
-pnpm psy --help
-```
+<PackageManagerTabs
+  code={`{{PM}} psy --help`}
+/>
 
 ## Commands
 

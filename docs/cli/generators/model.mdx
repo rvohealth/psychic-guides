@@ -4,6 +4,8 @@ title: model
 pagination_prev: null
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # generate:model
 
 If you are looking to generate a resourceful (CRUD) controller with a model, see the [resource generator documentation](/docs/controllers/generating#resources).
@@ -14,9 +16,9 @@ The `generate:model` CLI documentation follows below, but more details about gen
 
 ## Usage
 
-```sh
-pnpm psy g:model [options] <modelName> [columnsWithTypes...]
-```
+<PackageManagerTabs
+  code={`{{PM}} psy g:model [options] <modelName> [columnsWithTypes...]`}
+/>
 
 **Arguments:**
 

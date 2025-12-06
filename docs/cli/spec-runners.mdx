@@ -2,14 +2,16 @@
 sidebar_position: 2
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # spec runners
 
 Spec runners enable you to run either unit or feature specs. These are written directly to your api/package.json file (or your package.json file if your app is api-only), enabling you to customize them to your liking.
 
-```ts
-# run unit specs
-pnpm uspec
+<PackageManagerTabs
+  code={`# run unit specs
+{{PM}} uspec
 
 # run feature specs
-pnpm fspec
-```
+{{PM}} fspec`}
+/>

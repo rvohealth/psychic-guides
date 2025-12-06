@@ -3,6 +3,8 @@ sidebar_position: 3
 title: hooks
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 Psychic and Dream expose hooks to enable developers to tap into core internal events. The majority of these events are lifecycle event hooks that fire off internally as the web server is bootstrapped, but there are other useful hooks to discuss as well. Due to the fact that Psychic and Dream are separate libraries, some of the hooks you will tap into will be in the `conf/dream.ts` file, while others will be in the `conf/app.ts` file.
 
 ## Psychic hooks
@@ -179,8 +181,11 @@ export default async function (app: DreamApp) {
 }
 ```
 
-```sh
-pnpm console
+<PackageManagerTabs
+  code={`{{PM}} console`}
+/>
+
+```ts
 > chalupas
 // 'delicious'
 ```

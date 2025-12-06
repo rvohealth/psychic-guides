@@ -4,6 +4,8 @@ title: aws
 pagination_next: null
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 To deploy your application to aws, we will be leveraging aws fargate to provision our web server, worker, and console instances. We will be using a single Dockerfile to provision all of them, but will run different initialization commands depending on if the instance provisioned is a `worker`, `console`, or `web` instance. For now, this guide assumes you have the following already set up:
 
 - an ecr instance for your worker
@@ -126,8 +128,8 @@ This will provision whatever server pulls from this image to prepare it for use 
 
 With the Dockerfile in place, we will need the corresponding `migrate_and_serve.sh` file, which is used to further initialize your instance. Add this next to your Dockerfile with the following contents:
 
-```sh
-# migrate_and_serve.sh
+<PackageManagerTabs
+  code={`# migrate_and_serve.sh
 
 #!/bin/sh
 
@@ -143,8 +145,8 @@ elif [ $WORKER_SERVICE ]; then
   pm2-runtime start ./worker.ecosystem.config.js --env production && pm2 save
 elif [ $CONSOLE_SERVICE ]; then
   sleep infinity
-fi
-```
+fi`}
+/>
 
 Finally, we will use some github actions to automatically trigger continuous deployment. Depending on your needs, you may have many different environments, so we will just present an example for deploying to production, and let you reason about how to do the same for other environments, since the process should be very similar. To do so, add the following workflow file to your project root:
 

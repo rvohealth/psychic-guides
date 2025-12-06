@@ -3,6 +3,7 @@ sidebar_position: 5
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # destroying
 
@@ -54,9 +55,9 @@ Soft deletion enables a model to be hidden, by default, from all queries, withou
 
 To activate soft deletion, first create a migration to add a `deleted_at` column to the database:
 
-```sh
-pnpm psy g:migration add-deleted-at-to-rooms deleted_at:datetime
-```
+<PackageManagerTabs
+  code={`{{PM}} psy g:migration add-deleted-at-to-rooms deleted_at:datetime`}
+/>
 
 Then apply the `@SoftDelete` decorator to the Dream model class:
 

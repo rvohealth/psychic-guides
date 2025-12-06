@@ -3,6 +3,8 @@ sidebar_position: 1
 pagination_prev: null
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # Welcome
 
 In your grand search to find the perfect, modern (ESM-forward, stage 3 decorators) Typescript web framework, we are humbled that you have stumbled upon us. We are new to the game, having just officially released the stable, v2 API in November of 2025, but we believe our offering to you was worth the wait.
@@ -146,10 +148,15 @@ export default function routes(r: PsychicRouter) {
 }
 ```
 
-Use `pnpm psy routes` to see what these resolve to:
+Use `psy routes` to see what these resolve to:
 
-```console
-% pnpm psy routes
+<PackageManagerTabs
+  code={`{{PM}} psy routes`}
+/>
+
+Example output:
+
+```
 GET     /v1/guest/places                       V1/Guest/Places#index
 GET     /v1/guest/places/:id                   V1/Guest/Places#show
 PUT     /v1/host/localized-texts/:id           V1/Host/LocalizedTexts#update
@@ -349,14 +356,16 @@ In the modern front end javascript ecosystem, there are simply too many options 
 
 If you opt into a client when provisioning your Psychic app, you will automatically have a few lines of code added to your `conf/app.ts` file, which will automatically launch your client server whenever your app launches with `NODE_ENV=development`.
 
-```ts
+<PackageManagerTabs
+  language='ts'
+  code={`
 // conf/app.ts
 
 export default async (psy: PsychicApp) => {
   ...
   psy.on('server:start', async psychicServer => {
     if (AppEnv.isDevelopment && AppEnv.boolean('CLIENT')) {
-      await PsychicDevtools.launchDevServer('client', { port: 3000, cmd: 'pnpm client' })
+      await PsychicDevtools.launchDevServer('client', { port: 3000, cmd: '{{PM}} client' })
     }
   })
 
@@ -366,7 +375,8 @@ export default async (psy: PsychicApp) => {
     }
   })
 }
-```
+`}
+/>
 
 The `PsychicDevtools.launchDevServer` command is extremely flexible. Providing it with a command to run and a port to expect to be occupied once the command launches will enable psychic to side-launch your client server. If you have multiple servers you need to launch, there is nothing to prevent you from adding it. Just don't forget that any server launched in the `server:start` hook will need a corresponding `stopDevServer` call in `server:shutdown`.
 

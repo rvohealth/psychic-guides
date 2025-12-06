@@ -3,95 +3,97 @@ sidebar_position: 6
 pagination_next: null
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # migrate/rollback
 
-## db:migrate
+## db\:migrate
 
 Runs any outstanding database migrations.
 
-```sh
-NODE_ENV=development pnpm psy db:migrate
-NODE_ENV=test pnpm psy db:migrate
-```
+<PackageManagerTabs
+  code={`NODE_ENV=development {{PM}} psy db:migrate
+NODE_ENV=test {{PM}} psy db:migrate`}
+/>
 
 **Options:**
 - `--skip-sync`: Skips syncing local schema after running migrations.
 - `-h, --help`: Display help for command.
 
-## db:rollback
+## db\:rollback
 
 Rolls back the specified number of migration steps (defaults to 1).
 
-```sh
-NODE_ENV=test pnpm psy db:rollback
-```
+<PackageManagerTabs
+    code={`NODE_ENV=test {{PM}} psy db:rollback`}
+/>
 
 Roll back multiple migrations at once:
 
-```sh
-NODE_ENV=test pnpm psy db:rollback --steps 3
-```
+<PackageManagerTabs
+    code={`NODE_ENV=test {{PM}} psy db:rollback --steps 3`}
+/>
 
 **Options:**
 - `--steps <number>`: Number of steps back to travel (default: 1).
 - `--skip-sync`: Skips syncing local schema after running migrations.
 - `-h, --help`: Display help for command.
 
-## db:create
+## db\:create
 
 Creates a new database.
 
-```sh
-NODE_ENV=development pnpm psy db:create
-NODE_ENV=test pnpm psy db:create
-```
+<PackageManagerTabs
+  code={`NODE_ENV=development {{PM}} psy db:create
+NODE_ENV=test {{PM}} psy db:create`}
+/>
 
 **Options:**
 - `-h, --help`: Display help for command.
 
-## db:drop
+## db\:drop
 
 Drops the database.
 
-```sh
-NODE_ENV=development pnpm psy db:drop
-NODE_ENV=test pnpm psy db:drop
-```
+<PackageManagerTabs
+  code={`NODE_ENV=development {{PM}} psy db:drop
+NODE_ENV=test {{PM}} psy db:drop`}
+/>
 
 **Options:**
 - `-h, --help`: Display help for command.
 
-## db:reset
+## db\:reset
 
 Runs `db:drop` (safely), `db:create`, `db:migrate`, and `db:seed`.
 
-```sh
-NODE_ENV=development pnpm psy db:reset
-NODE_ENV=test pnpm psy db:reset
-```
+<PackageManagerTabs
+  code={`NODE_ENV=development {{PM}} psy db:reset
+NODE_ENV=test {{PM}} psy db:reset`}
+/>
 
 **Options:**
 - `-h, --help`: Display help for command.
 
-## db:seed
+## db\:seed
 
 Seeds the database using the file located in `db/seed.ts`.
 
-```sh
-NODE_ENV=development pnpm psy db:seed
-NODE_ENV=test pnpm psy db:seed
-```
+<PackageManagerTabs
+  code={`NODE_ENV=development {{PM}} psy db:seed
+NODE_ENV=test {{PM}} psy db:seed`}
+/>
 
 **Options:**
 - `-h, --help`: Display help for command.
 
-## db:integrity-check
+## db\:integrity-check
 
 Fails if migrations need to be run.
 
-```sh
-pnpm psy db:integrity-check
-```
+<PackageManagerTabs
+    code={`NODE_ENV=test {{PM}} psy db:integrity-check`}
+/>
 
 **Options:**
 - `-h, --help`: Display help for command.
