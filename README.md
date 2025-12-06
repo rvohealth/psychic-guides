@@ -5,13 +5,13 @@ Leverages [Docusaurus](https://docusaurus.io/) to provide a documentation site f
 ### Installation
 
 ```
-yarn
+pnpm
 ```
 
 ### Local Development
 
 ```
-yarn start
+pnpm start
 ```
 
 This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
@@ -21,13 +21,13 @@ This command starts a local development server and opens up a browser window. Mo
 The next and previous links at the bottom of each page should not pass beyond the borders of a particular section of navigation. After changing `sidebar_position` or adding or removing pages, run `fix-pagination` to fix the pagination controls:
 
 ```bash
-yarn fix-pagination
+pnpm fix-pagination
 ```
 
 ### Build
 
 ```
-yarn build
+pnpm build
 ```
 
 ### Search
@@ -35,7 +35,7 @@ yarn build
 To leverage the built-in local search locally, you must run the following:
 
 ```sh
-yarn build && yarn serve
+pnpm build && pnpm serve
 ```
 
 This command generates static content into the `build` directory and can be served using any static contents hosting service.
@@ -49,9 +49,9 @@ This documentation is deployed via Netlify, the hooks for which are built into t
 Follow this guide for updating dependencies: <https://docusaurus.io/docs/migration>
 
 ```sh
-yarn clear # remove existing build
-rm -rf node_modules yarn.lock # destroy lock
-yarn # re-install
+pnpm clear # remove existing build
+rm -rf node_modules pnpm.lock # destroy lock
+pnpm # re-install
 ```
 
 ## Questions?

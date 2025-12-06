@@ -6,13 +6,14 @@ title: Generate Room/Kitchen STI model
 
 ## Commit Message
 
-```
+````
 Generate Room/Kitchen STI model
 
 ```console
-yarn psy g:sti-child Room/Kitchen extends Room appliances:enum\[\]:appliance_types:stove,oven,microwave,dishwasher
-```
-```
+pnpm psy g:sti-child Room/Kitchen extends Room appliances:enum\[\]:appliance_types:stove,oven,microwave,dishwasher
+````
+
+````
 
 ## Changes
 
@@ -115,4 +116,4 @@ index 0000000..d798b22
 +  await db.schema.dropType('appliance_types_enum').execute()
 +}
 \ No newline at end of file
-```
+````

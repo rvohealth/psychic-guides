@@ -6,7 +6,7 @@ title: User HasOne Host
 
 ## Commit Message
 
-```
+````
 User HasOne Host
 
 Users do _not_ automatically get a Host (special onboarding process for
@@ -15,17 +15,18 @@ Each User can have at most one Host (unique index on user_id foreign key).
 Sync association types.
 
 ```console
-yarn psy db:migrate
-```
+pnpm psy db:migrate
+````
 
 If migrations had already been run, after adding
 a new association, one could run `sync` instead
 (`db:migrate` runs `sync` implicitly):
 
 ```console
-yarn psy sync
+pnpm psy sync
 ```
-```
+
+````
 
 ## Changes
 
@@ -39,11 +40,11 @@ index 09fd61c..93297cb 100644
  import { DreamColumn } from '@rvoh/dream/types'
  import Guest from './Guest.js'
 +import Host from './Host.js'
- 
+
  const deco = new Decorators<typeof User>()
- 
+
 @@ -22,4 +23,7 @@ export default class User extends ApplicationModel {
- 
+
    @deco.HasOne('Guest')
    public guest: Guest
 +
@@ -69,7 +70,7 @@ index 9157b9b..8caf853 100644
      .addColumn('created_at', 'timestamp', col => col.notNull())
      .addColumn('updated_at', 'timestamp', col => col.notNull())
      .execute()
- 
+
 -  await db.schema
 -    .createIndex('hosts_user_id')
 -    .on('hosts')
@@ -77,7 +78,7 @@ index 9157b9b..8caf853 100644
 -    .execute()
 +  await db.schema.createIndex('hosts_user_id').on('hosts').column('user_id').execute()
  }
- 
+
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  export async function down(db: Kysely<any>): Promise<void> {
    await db.schema.dropIndex('hosts_user_id').execute()
@@ -92,7 +93,7 @@ index 75755cd..ffdeba9 100644
 @@ -76,6 +76,13 @@ export interface Guests {
    userId: string;
  }
- 
+
 +export interface Hosts {
 +  createdAt: Timestamp;
 +  id: Generated<string>;
@@ -104,14 +105,14 @@ index 75755cd..ffdeba9 100644
    createdAt: Timestamp;
    email: string;
 @@ -85,11 +92,13 @@ export interface Users {
- 
+
  export interface DB {
    guests: Guests;
 +  hosts: Hosts;
    users: Users;
  }
- 
- 
+
+
  export class DBClass {
    guests: Guests
 +  hosts: Hosts
@@ -224,4 +225,4 @@ index 95c1d07..c3158a7 100644
        'User': 'users'
      },
    },
-```
+````

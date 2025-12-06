@@ -16,7 +16,7 @@ Dream provides the underlying ORM in a Psychic application. As such, it does not
 
 ### kysely
 
-Dream uses [kysely](https://kysely.dev) to drive its database engine, which means that all queries executed by dream will run through the kysely engine. Kysely uses database introspection to build types from your database, which it can then be supplied with to provide powerful type completion mechanisms to drive your kysely queries. Dream by default bootstraps the migration engine to automatically re-sync these types whenever a new migration is run, or the database is reset. It will also happen any time `yarn psy sync` is called.
+Dream uses [kysely](https://kysely.dev) to drive its database engine, which means that all queries executed by dream will run through the kysely engine. Kysely uses database introspection to build types from your database, which it can then be supplied with to provide powerful type completion mechanisms to drive your kysely queries. Dream by default bootstraps the migration engine to automatically re-sync these types whenever a new migration is run, or the database is reset. It will also happen any time `pnpm psy sync` is called.
 
 The types generated for kysely are located in `src/types/db.ts`. They take slight augmentations from Dream, so that their datetime and date types can properly sync up with the DateTime and CalendarDate classes provided by Dream.
 
@@ -115,7 +115,7 @@ As mentioned previously, syncing will happen automatically for you whenever you 
 - changing an openapi configuration for psychic (using `psy.set('openapi', ...)`)
 - adding new queues or workstreams to your workers initializer (only if you are using @rvoh/psychic-workers)
 
-For example, say you just generated a new `Post` model. If you open up the `Post` model, you will also be assaulted with a barrage of type errors. Fear not, this is all normal. Our type system is incredibly strict, and it does not yet know about the Post model you just generated. To fix this, you can simply run `yarn psy db:migrate` to run migrations for your new model and regenerate the types. Once this is done, your editor should no longer be showing any type errors. If it is, it can sometimes be necessary to force TypeScript to reload, or to get your editor to reload the file, so that it can pick up on the changes that were written to those files outside your editor, but it should just automatically clear all the type errors in those files.
+For example, say you just generated a new `Post` model. If you open up the `Post` model, you will also be assaulted with a barrage of type errors. Fear not, this is all normal. Our type system is incredibly strict, and it does not yet know about the Post model you just generated. To fix this, you can simply run `pnpm psy db:migrate` to run migrations for your new model and regenerate the types. Once this is done, your editor should no longer be showing any type errors. If it is, it can sometimes be necessary to force TypeScript to reload, or to get your editor to reload the file, so that it can pick up on the changes that were written to those files outside your editor, but it should just automatically clear all the type errors in those files.
 
 Be sure to commit your changes to files in the `src/types` folder, since these will enable other developers to automatically pick up on the shifts to schema as well without having to sync.
 

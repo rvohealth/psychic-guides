@@ -8,14 +8,14 @@ In addition to strict backend utilities, Psychic also exports a few cli utilitie
 
 ## openapi redux
 
-Since the majority of the world is using React, we have provided a util which easily generates redux bindings for a given client application. The bindings provided will create a bridge that keeps client openapi integrations up to date with the latest openapi files, syncing the newly-generated bindings over to your client any time `yarn psy sync` is called.
+Since the majority of the world is using React, we have provided a util which easily generates redux bindings for a given client application. The bindings provided will create a bridge that keeps client openapi integrations up to date with the latest openapi files, syncing the newly-generated bindings over to your client any time `pnpm psy sync` is called.
 
-Under the hood, psychic uses the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) util to provision this for you, but also adds an initializer to your app that taps into lifecycle hooks within psychic to make sure that the codegen tool is run every time your app changes. With this utility in place, calling `yarn psy sync` is all you need to do to have the latest api endpoints available to you within your React app.
+Under the hood, psychic uses the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) util to provision this for you, but also adds an initializer to your app that taps into lifecycle hooks within psychic to make sure that the codegen tool is run every time your app changes. With this utility in place, calling `pnpm psy sync` is all you need to do to have the latest api endpoints available to you within your React app.
 
 To make use of this utility, you can run the following:
 
 ```sh
-yarn psy g:openapi:redux
+pnpm psy g:openapi:redux
 ```
 
 You will be prompted to answer a few questions, primarily to fill out the configuration file provided by the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) package. The configuration for this package is confusing, and also _must_ be set up using json as of now, due to limitiations in their own library when paired with an esm package. These nuances are hard to tango with and can lead to frustration, which is why we provided this generator to begin with.
@@ -126,7 +126,7 @@ you may find yourself wishing to have access to your backend enums from your cli
 To do this, simply run
 
 ```sh
-yarn psy g:initializer:sync-enums ../client/src/enums.ts
+pnpm psy g:initializer:sync-enums ../client/src/enums.ts
 ```
 
-This will generate an initializer that will tap into psychic lifecycle hooks, ensuring that any time `yarn psy sync` is run, the enums will be synced to the outfile destination of your choosing.
+This will generate an initializer that will tap into psychic lifecycle hooks, ensuring that any time `pnpm psy sync` is run, the enums will be synced to the outfile destination of your choosing.

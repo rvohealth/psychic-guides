@@ -6,16 +6,17 @@ title: Sortable
 
 ## Commit Message
 
-```
+````
 Sortable
 
 ```console
-yarn psy g:migration add-deferrable-unique-constraint-to-rooms
-yarn psy db:migrate
-yarn uspec spec/unit/models/Room.spec.ts
-yarn uspec
-```
-```
+pnpm psy g:migration add-deferrable-unique-constraint-to-rooms
+pnpm psy db:migrate
+pnpm uspec spec/unit/models/Room.spec.ts
+pnpm uspec
+````
+
+````
 
 ## Changes
 
@@ -30,11 +31,11 @@ index e6c7481..f34ea18 100644
 +import createRoomBedroom from '@spec/factories/Room/BedroomFactory.js'
  import createRoomDen from '@spec/factories/Room/DenFactory.js'
 +import createRoomKitchen from '@spec/factories/Room/KitchenFactory.js'
- 
+
  describe('Room', () => {
    it('has many LocalizedTexts', async () => {
 @@ -37,4 +40,17 @@ describe('Room', () => {
- 
+
      expect(room.currentLocalizedText).toMatchDreamModel(esLocalizedText)
    })
 +
@@ -58,7 +59,7 @@ index bb10df8..23f0515 100644
 @@ -37,7 +37,7 @@ export default class Place extends ApplicationModel {
    @deco.HasMany('Host', { through: 'hostPlaces' })
    public hosts: Host[]
- 
+
 -  @deco.HasMany('Room', { order: 'createdAt', dependent: 'destroy' })
 +  @deco.HasMany('Room', { order: 'position', dependent: 'destroy' })
    // make sure this imports from `import Room from '@models/Room.js'`
@@ -69,7 +70,7 @@ index eb177b3..0eb640b 100644
 --- a/api/src/app/models/Room.ts
 +++ b/api/src/app/models/Room.ts
 @@ -14,7 +14,10 @@ export default class Room extends ApplicationModel {
- 
+
    public id: DreamColumn<Room, 'id'>
    public type: DreamColumn<Room, 'type'>
 +
@@ -100,4 +101,4 @@ index 0000000..49e3c5f
 +export async function down(db: Kysely<any>): Promise<void> {
 +  await DreamMigrationHelpers.dropConstraint(db, 'room_position_contraint', { table: 'rooms' })
 +}
-```
+````

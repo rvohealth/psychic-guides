@@ -6,13 +6,14 @@ title: Run the migration
 
 ## Commit Message
 
-```
+````
 Run the migration
 
 ```console
-yarn psy db:migrate
-```
-```
+pnpm psy db:migrate
+````
+
+````
 
 ## Changes
 
@@ -1110,12 +1111,12 @@ index ffdeba9..81b5fd3 100644
 +] as const
 +
  export type Timestamp = ColumnType<DateTime | CalendarDate>
- 
+
  export interface Guests {
 @@ -83,6 +95,16 @@ export interface Hosts {
    userId: string;
  }
- 
+
 +export interface Places {
 +  createdAt: Timestamp;
 +  deletedAt: Timestamp | null;
@@ -1136,7 +1137,7 @@ index ffdeba9..81b5fd3 100644
 +  places: Places;
    users: Users;
  }
- 
+
 @@ -100,5 +123,6 @@ export interface DB {
  export class DBClass {
    guests: Guests
@@ -1164,14 +1165,14 @@ index c3158a7..2f77946 100644
 +++ b/api/src/types/dream.ts
 @@ -58,7 +58,10 @@ us humans, he says:
  */
- 
+
  import { type CalendarDate, type DateTime } from '@rvoh/dream'
 -
 +import {
 +  PlaceStylesEnum,
 +  PlaceStylesEnumValues
 +} from './db.js'
- 
+
  export const schema = {
    guests: {
 @@ -177,6 +180,83 @@ export const schema = {
@@ -1252,7 +1253,7 @@ index c3158a7..2f77946 100644
 +    },
 +    virtualColumns: [],
 +    associations: {
-+      
++
 +    },
 +  },
    users: {
@@ -1487,4 +1488,4 @@ index 36895e1..9d9b2a8 100644
          ValidationErrors: {
              /** @enum {string} */
              type: "validation";
-```
+````

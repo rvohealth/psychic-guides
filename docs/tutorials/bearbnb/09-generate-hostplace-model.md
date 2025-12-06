@@ -6,13 +6,14 @@ title: Generate HostPlace model
 
 ## Commit Message
 
-```
+````
 Generate HostPlace model
 
 ```console
-yarn psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to deleted_at:datetime:optional
-```
-```
+pnpm psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to deleted_at:datetime:optional
+````
+
+````
 
 ## Changes
 
@@ -120,4 +121,4 @@ index 0000000..7d47d55
 +  await db.schema.dropTable('host_places').execute()
 +}
 \ No newline at end of file
-```
+````

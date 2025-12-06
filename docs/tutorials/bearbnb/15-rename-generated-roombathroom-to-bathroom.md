@@ -6,14 +6,15 @@ title: Rename generated RoomBathroom to Bathroom,
 
 ## Commit Message
 
-```
+````
 Rename generated RoomBathroom to Bathroom,
 including in the check constraint in the migration
 
 ```console
-yarn psy db:migrate
-```
-```
+pnpm psy db:migrate
+````
+
+````
 
 ## Changes
 
@@ -26,7 +27,7 @@ index a7bf14e..7ffc1b1 100644
 +import Bathroom from '@models/Room/Bathroom.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 -import RoomBathroom from '@models/Room/Bathroom.js'
- 
+
 -export default async function createRoomBathroom(attrs: UpdateableProperties<RoomBathroom> = {}) {
 -  return await RoomBathroom.create({
 +export default async function createRoomBathroom(attrs: UpdateableProperties<Bathroom> = {}) {
@@ -43,10 +44,10 @@ index be5bd2d..ede559a 100644
  import { Decorators, STI } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 -import Room from '@models/Room.js'
- 
+
 -const deco = new Decorators<typeof RoomBathroom>()
 +const deco = new Decorators<typeof Bathroom>()
- 
+
  @STI(Room)
 -export default class RoomBathroom extends Room {
 -  public override get serializers(): DreamSerializers<RoomBathroom> {
@@ -57,7 +58,7 @@ index be5bd2d..ede559a 100644
        summary: 'Room/BathroomSummarySerializer',
      }
    }
- 
+
 -  public bathOrShowerStyle: DreamColumn<RoomBathroom, 'bathOrShowerStyle'>
 +  public bathOrShowerStyle: DreamColumn<Bathroom, 'bathOrShowerStyle'>
  }
@@ -69,12 +70,12 @@ index 1e713c1..0f6953e 100644
 +import Bathroom from '@models/Room/Bathroom.js'
  import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 -import RoomBathroom from '@models/Room/Bathroom.js'
- 
+
 -export const RoomBathroomSummarySerializer = (roomBathroom: RoomBathroom) =>
 -  RoomSummarySerializer(RoomBathroom, roomBathroom)
 +export const RoomBathroomSummarySerializer = (roomBathroom: Bathroom) =>
 +  RoomSummarySerializer(Bathroom, roomBathroom)
- 
+
 -export const RoomBathroomSerializer = (roomBathroom: RoomBathroom) =>
 -  RoomSerializer(RoomBathroom, roomBathroom)
 -    .attribute('bathOrShowerStyle')
@@ -96,7 +97,7 @@ index 8896e86..94158e4 100644
 -    ])
 +    .asEnum(['bath', 'shower', 'bath_and_shower', 'none'])
      .execute()
- 
+
    await db.schema
 @@ -21,17 +16,14 @@ export async function up(db: Kysely<any>): Promise<void> {
      .alterTable('rooms')
@@ -107,7 +108,7 @@ index 8896e86..94158e4 100644
      )
      .execute()
  }
- 
+
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  export async function down(db: Kysely<any>): Promise<void> {
 -  await db.schema
@@ -115,7 +116,7 @@ index 8896e86..94158e4 100644
 -    .dropColumn('bath_or_shower_style')
 -    .execute()
 +  await db.schema.alterTable('rooms').dropColumn('bath_or_shower_style').execute()
- 
+
    await db.schema.dropType('bath_or_shower_styles_enum').execute()
 -}
 \ No newline at end of file
@@ -1263,9 +1264,9 @@ index 0a88afd..12da87b 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
 @@ -64,6 +64,15 @@ import { type CalendarDate, type DateTime } from '@rvoh/dream'
- 
+
  import type { ColumnType } from "kysely";
- 
+
 +export type BathOrShowerStylesEnum = "bath" | "bath_and_shower" | "none" | "shower";
 +export const BathOrShowerStylesEnumValues = [
 +  "bath",
@@ -1281,7 +1282,7 @@ index 0a88afd..12da87b 100644
 @@ -79,6 +88,16 @@ export const PlaceStylesEnumValues = [
    "treehouse"
  ] as const
- 
+
 +
 +export type RoomTypesEnum = "Bathroom" | "Bedroom" | "Den" | "Kitchen" | "LivingRoom";
 +export const RoomTypesEnumValues = [
@@ -1293,12 +1294,12 @@ index 0a88afd..12da87b 100644
 +] as const
 +
  export type Timestamp = ColumnType<DateTime | CalendarDate>
- 
+
  export interface Guests {
 @@ -114,6 +133,17 @@ export interface Places {
    updatedAt: Timestamp;
  }
- 
+
 +export interface Rooms {
 +  bathOrShowerStyle: BathOrShowerStylesEnum | null;
 +  createdAt: Timestamp;
@@ -1320,7 +1321,7 @@ index 0a88afd..12da87b 100644
 +  rooms: Rooms;
    users: Users;
  }
- 
+
 @@ -135,5 +166,6 @@ export class DBClass {
    host_places: HostPlaces
    hosts: Hosts
@@ -1349,7 +1350,7 @@ index f25e8ae..ed90981 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
 @@ -59,8 +59,12 @@ us humans, he says:
- 
+
  import { type CalendarDate, type DateTime } from '@rvoh/dream'
  import {
 +  BathOrShowerStylesEnum,
@@ -1360,7 +1361,7 @@ index f25e8ae..ed90981 100644
 +  RoomTypesEnum,
 +  RoomTypesEnumValues
  } from './db.js'
- 
+
  export const schema = {
 @@ -377,6 +381,100 @@ export const schema = {
        },
@@ -1464,7 +1465,7 @@ index f25e8ae..ed90981 100644
      serializerKeys: [],
      scopes: {
 @@ -448,13 +546,15 @@ export const schema = {
- 
+
  export const connectionTypeConfig = {
    passthroughColumns: [],
 -  allDefaultScopeNames: [],
@@ -1710,4 +1711,4 @@ index 4c6f75e..5b355af 100644
          ValidationErrors: {
              /** @enum {string} */
              type: "validation";
-```
+````

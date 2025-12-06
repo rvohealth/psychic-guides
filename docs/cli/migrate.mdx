@@ -10,8 +10,8 @@ pagination_next: null
 Runs any outstanding database migrations.
 
 ```sh
-NODE_ENV=development yarn psy db:migrate
-NODE_ENV=test yarn psy db:migrate
+NODE_ENV=development pnpm psy db:migrate
+NODE_ENV=test pnpm psy db:migrate
 ```
 
 **Options:**
@@ -23,13 +23,13 @@ NODE_ENV=test yarn psy db:migrate
 Rolls back the specified number of migration steps (defaults to 1).
 
 ```sh
-NODE_ENV=test yarn psy db:rollback
+NODE_ENV=test pnpm psy db:rollback
 ```
 
 Roll back multiple migrations at once:
 
 ```sh
-NODE_ENV=test yarn psy db:rollback --steps 3
+NODE_ENV=test pnpm psy db:rollback --steps 3
 ```
 
 **Options:**
@@ -42,8 +42,8 @@ NODE_ENV=test yarn psy db:rollback --steps 3
 Creates a new database.
 
 ```sh
-NODE_ENV=development yarn psy db:create
-NODE_ENV=test yarn psy db:create
+NODE_ENV=development pnpm psy db:create
+NODE_ENV=test pnpm psy db:create
 ```
 
 **Options:**
@@ -54,8 +54,8 @@ NODE_ENV=test yarn psy db:create
 Drops the database.
 
 ```sh
-NODE_ENV=development yarn psy db:drop
-NODE_ENV=test yarn psy db:drop
+NODE_ENV=development pnpm psy db:drop
+NODE_ENV=test pnpm psy db:drop
 ```
 
 **Options:**
@@ -66,8 +66,8 @@ NODE_ENV=test yarn psy db:drop
 Runs `db:drop` (safely), `db:create`, `db:migrate`, and `db:seed`.
 
 ```sh
-NODE_ENV=development yarn psy db:reset
-NODE_ENV=test yarn psy db:reset
+NODE_ENV=development pnpm psy db:reset
+NODE_ENV=test pnpm psy db:reset
 ```
 
 **Options:**
@@ -78,8 +78,8 @@ NODE_ENV=test yarn psy db:reset
 Seeds the database using the file located in `db/seed.ts`.
 
 ```sh
-NODE_ENV=development yarn psy db:seed
-NODE_ENV=test yarn psy db:seed
+NODE_ENV=development pnpm psy db:seed
+NODE_ENV=test pnpm psy db:seed
 ```
 
 **Options:**
@@ -90,7 +90,7 @@ NODE_ENV=test yarn psy db:seed
 Fails if migrations need to be run.
 
 ```sh
-yarn psy db:integrity-check
+pnpm psy db:integrity-check
 ```
 
 **Options:**

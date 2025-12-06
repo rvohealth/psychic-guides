@@ -6,7 +6,7 @@ title: Generate User model
 
 ## Commit Message
 
-```
+````
 Generate User model
 
 The User model is primaryily used for authentication
@@ -20,10 +20,11 @@ unique, and that all queries are automatically case-
 insensitve.
 
 ```console
-yarn psy db:create
-yarn psy g:model --no-serializer User email:citext
-```
-```
+pnpm psy db:create
+pnpm psy g:model --no-serializer User email:citext
+````
+
+````
 
 ## Changes
 
@@ -107,4 +108,4 @@ index 0000000..7e99b85
 +  await db.schema.dropTable('users').execute()
 +}
 \ No newline at end of file
-```
+````

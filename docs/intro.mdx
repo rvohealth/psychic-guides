@@ -146,10 +146,10 @@ export default function routes(r: PsychicRouter) {
 }
 ```
 
-Use `yarn psy routes` to see what these resolve to:
+Use `pnpm psy routes` to see what these resolve to:
 
 ```console
-% yarn psy routes
+% pnpm psy routes
 GET     /v1/guest/places                       V1/Guest/Places#index
 GET     /v1/guest/places/:id                   V1/Guest/Places#show
 PUT     /v1/host/localized-texts/:id           V1/Host/LocalizedTexts#update
@@ -356,7 +356,7 @@ export default async (psy: PsychicApp) => {
   ...
   psy.on('server:start', async psychicServer => {
     if (AppEnv.isDevelopment && AppEnv.boolean('CLIENT')) {
-      await PsychicDevtools.launchDevServer('client', { port: 3000, cmd: 'yarn client' })
+      await PsychicDevtools.launchDevServer('client', { port: 3000, cmd: 'pnpm client' })
     }
   })
 

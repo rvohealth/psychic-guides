@@ -6,14 +6,15 @@ title: Rename generated RoomDen to Den and
 
 ## Commit Message
 
-```
+````
 Rename generated RoomDen to Den and
 RoomLivingRoom to LivingRoom
 
 ```console
-yarn psy sync
-```
-```
+pnpm psy sync
+````
+
+````
 
 ## Changes
 
@@ -26,7 +27,7 @@ index 4840bb0..36df1c4 100644
 +import Den from '@models/Room/Den.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 -import RoomDen from '@models/Room/Den.js'
- 
+
 -export default async function createRoomDen(attrs: UpdateableProperties<RoomDen> = {}) {
 -  return await RoomDen.create({
 +export default async function createRoomDen(attrs: UpdateableProperties<Den> = {}) {
@@ -42,7 +43,7 @@ index 501cde5..41b9807 100644
 +import LivingRoom from '@models/Room/LivingRoom.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 -import RoomLivingRoom from '@models/Room/LivingRoom.js'
- 
+
 -export default async function createRoomLivingRoom(attrs: UpdateableProperties<RoomLivingRoom> = {}) {
 -  return await RoomLivingRoom.create({
 +export default async function createRoomLivingRoom(attrs: UpdateableProperties<LivingRoom> = {}) {
@@ -60,10 +61,10 @@ index 7f67007..8b65ee8 100644
  import Room from '@models/Room.js'
 +import { Decorators, STI } from '@rvoh/dream'
 +import { DreamSerializers } from '@rvoh/dream/types'
- 
+
 -const deco = new Decorators<typeof RoomDen>()
 +const deco = new Decorators<typeof Den>()
- 
+
  @STI(Room)
 -export default class RoomDen extends Room {
 -  public override get serializers(): DreamSerializers<RoomDen> {
@@ -86,10 +87,10 @@ index feaca2f..f6aaa38 100644
  import Room from '@models/Room.js'
 +import { Decorators, STI } from '@rvoh/dream'
 +import { DreamSerializers } from '@rvoh/dream/types'
- 
+
 -const deco = new Decorators<typeof RoomLivingRoom>()
 +const deco = new Decorators<typeof LivingRoom>()
- 
+
  @STI(Room)
 -export default class RoomLivingRoom extends Room {
 -  public override get serializers(): DreamSerializers<RoomLivingRoom> {
@@ -110,11 +111,11 @@ index 9030e23..86500fa 100644
 +import Den from '@models/Room/Den.js'
  import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 -import RoomDen from '@models/Room/Den.js'
- 
+
 -export const RoomDenSummarySerializer = (roomDen: RoomDen) =>
 -  RoomSummarySerializer(RoomDen, roomDen)
 +export const RoomDenSummarySerializer = (roomDen: Den) => RoomSummarySerializer(Den, roomDen)
- 
+
 -export const RoomDenSerializer = (roomDen: RoomDen) =>
 -  RoomSerializer(RoomDen, roomDen)
 +export const RoomDenSerializer = (roomDen: Den) => RoomSerializer(Den, roomDen)
@@ -126,12 +127,12 @@ index e44755e..5a1ea3a 100644
 +import LivingRoom from '@models/Room/LivingRoom.js'
  import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 -import RoomLivingRoom from '@models/Room/LivingRoom.js'
- 
+
 -export const RoomLivingRoomSummarySerializer = (roomLivingRoom: RoomLivingRoom) =>
 -  RoomSummarySerializer(RoomLivingRoom, roomLivingRoom)
 +export const RoomLivingRoomSummarySerializer = (roomLivingRoom: LivingRoom) =>
 +  RoomSummarySerializer(LivingRoom, roomLivingRoom)
- 
+
 -export const RoomLivingRoomSerializer = (roomLivingRoom: RoomLivingRoom) =>
 -  RoomSerializer(RoomLivingRoom, roomLivingRoom)
 +export const RoomLivingRoomSerializer = (roomLivingRoom: LivingRoom) =>
@@ -683,4 +684,4 @@ index f346e96..fc626a3 100644
          ValidationErrors: {
              /** @enum {string} */
              type: "validation";
-```
+````

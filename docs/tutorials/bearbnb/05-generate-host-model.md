@@ -6,13 +6,14 @@ title: Generate Host model
 
 ## Commit Message
 
-```
+````
 Generate Host model
 
 ```console
-yarn psy g:model Host User:belongs_to
-```
-```
+pnpm psy g:model Host User:belongs_to
+````
+
+````
 
 ## Changes
 
@@ -125,4 +126,4 @@ index 0000000..9157b9b
 +  await db.schema.dropTable('hosts').execute()
 +}
 \ No newline at end of file
-```
+````

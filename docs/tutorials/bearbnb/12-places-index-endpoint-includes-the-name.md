@@ -6,14 +6,15 @@ title: Places index endpoint includes the name
 
 ## Commit Message
 
-```
+````
 Places index endpoint includes the name
 
 ```cosole
-yarn psy sync
-yarn uspec spec/unit/controllers/V1/Host/PlacesController.spec.ts
-```
-```
+pnpm psy sync
+pnpm uspec spec/unit/controllers/V1/Host/PlacesController.spec.ts
+````
+
+````
 
 ## Changes
 
@@ -38,13 +39,13 @@ index 83fab47..ba698d3 100644
 -import { DreamSerializer } from '@rvoh/dream'
  import Place from '@models/Place.js'
 +import { DreamSerializer } from '@rvoh/dream'
- 
+
 +// prettier-ignore
  export const PlaceSummarySerializer = (place: Place) =>
    DreamSerializer(Place, place)
      .attribute('id')
 +    .attribute('name')
- 
+
 +// prettier-ignore
  export const PlaceSerializer = (place: Place) =>
    PlaceSummarySerializer(place)
@@ -127,4 +128,4 @@ index 9d9b2a8..4c6f75e 100644
          };
          ValidationErrors: {
              /** @enum {string} */
-```
+````

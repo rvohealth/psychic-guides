@@ -40,7 +40,7 @@ import { PsychicDevtools } from '@rvoh/psychic'
 export async function setup() {
   await PsychicDevtools.launchDevServer('client', {
     port: 3000,
-    cmd: 'yarn client:fspec',
+    cmd: 'pnpm client:fspec',
   })
 }
 
@@ -77,11 +77,11 @@ afterEach(async () => {
 
 ## Running specs
 
-To run feature specs, Psychic automatically provides a script in your package.json file, called `fspec` (short for "feature spec"). You can run it, simply by calling `yarn fspec` from your api directory
+To run feature specs, Psychic automatically provides a script in your package.json file, called `fspec` (short for "feature spec"). You can run it, simply by calling `pnpm fspec` from your api directory
 
 ```sh
 cd api
-yarn fspec
+pnpm fspec
 ```
 
 ## Custom assertion matchers

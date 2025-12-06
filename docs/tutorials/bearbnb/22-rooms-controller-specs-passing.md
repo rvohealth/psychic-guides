@@ -6,7 +6,7 @@ title: Rooms controller specs passing
 
 ## Commit Message
 
-```
+````
 Rooms controller specs passing
 
 Note the changes in api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts:
@@ -21,11 +21,12 @@ Note the changes in api/spec/unit/controllers/V1/Host/Places/RoomsController.spe
    child we are creating / updating.
 
 ```console
-yarn psy sync
+pnpm psy sync
 
-yarn uspec spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
-```
-```
+pnpm uspec spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
+````
+
+````
 
 ## Changes
 
@@ -38,7 +39,7 @@ index 7ffc1b1..ea574b2 100644
  import Bathroom from '@models/Room/Bathroom.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 +import createPlace from '@spec/factories/PlaceFactory.js'
- 
+
  export default async function createRoomBathroom(attrs: UpdateableProperties<Bathroom> = {}) {
    return await Bathroom.create({
 +    place: attrs.place ? null : await createPlace(),
@@ -53,7 +54,7 @@ index 67bb8ec..349886c 100644
  import Bedroom from '@models/Room/Bedroom.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 +import createPlace from '@spec/factories/PlaceFactory.js'
- 
+
  export default async function createRoomBedroom(attrs: UpdateableProperties<Bedroom> = {}) {
    return await Bedroom.create({
 +    place: attrs.place ? null : await createPlace(),
@@ -68,7 +69,7 @@ index 36df1c4..bc39d86 100644
  import Den from '@models/Room/Den.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 +import createPlace from '@spec/factories/PlaceFactory.js'
- 
+
  export default async function createRoomDen(attrs: UpdateableProperties<Den> = {}) {
    return await Den.create({
 +    place: attrs.place ? null : await createPlace(),
@@ -83,7 +84,7 @@ index 2e89aa9..66ef239 100644
  import Kitchen from '@models/Room/Kitchen.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 +import createPlace from '@spec/factories/PlaceFactory.js'
- 
+
  export default async function createRoomKitchen(attrs: UpdateableProperties<Kitchen> = {}) {
    return await Kitchen.create({
 +    place: attrs.place ? null : await createPlace(),
@@ -98,7 +99,7 @@ index 41b9807..d57edae 100644
  import LivingRoom from '@models/Room/LivingRoom.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 +import createPlace from '@spec/factories/PlaceFactory.js'
- 
+
  export default async function createRoomLivingRoom(attrs: UpdateableProperties<LivingRoom> = {}) {
    return await LivingRoom.create({
 +    place: attrs.place ? null : await createPlace(),
@@ -139,10 +140,10 @@ index 6c5f66d..f1ded04 100644
 +import createRoomKitchen from '@spec/factories/Room/KitchenFactory.js'
 +import createUser from '@spec/factories/UserFactory.js'
  import { RequestBody, session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
- 
+
  describe('V1/Host/Places/RoomsController', () => {
 @@ -13,7 +16,9 @@ describe('V1/Host/Places/RoomsController', () => {
- 
+
    beforeEach(async () => {
      user = await createUser()
 -    place = await createPlace({ user })
@@ -151,41 +152,41 @@ index 6c5f66d..f1ded04 100644
 +    await createHostPlace({ host, place })
      request = await session(user)
    })
- 
+
 @@ -25,7 +30,7 @@ describe('V1/Host/Places/RoomsController', () => {
      }
- 
+
      it('returns the index of Rooms', async () => {
 -      const room = await createRoom({ place })
 +      const room = await createRoomKitchen({ place })
- 
+
        const { body } = await indexRooms(200)
- 
+
 @@ -38,7 +43,7 @@ describe('V1/Host/Places/RoomsController', () => {
- 
+
      context('Rooms created by another Place', () => {
        it('are omitted', async () => {
 -        await createRoom()
 +        await createRoomKitchen()
- 
+
          const { body } = await indexRooms(200)
- 
+
 @@ -56,7 +61,7 @@ describe('V1/Host/Places/RoomsController', () => {
      }
- 
+
      it('returns the specified Room', async () => {
 -      const room = await createRoom({ place })
 +      const room = await createRoomKitchen({ place })
- 
+
        const { body } = await showRoom(room, 200)
- 
+
 @@ -71,7 +76,7 @@ describe('V1/Host/Places/RoomsController', () => {
- 
+
      context('Room created by another Place', () => {
        it('is not found', async () => {
 -        const otherPlaceRoom = await createRoom()
 +        const otherPlaceRoom = await createRoomKitchen()
- 
+
          await showRoom(otherPlaceRoom, 404)
        })
 @@ -81,27 +86,32 @@ describe('V1/Host/Places/RoomsController', () => {
@@ -201,7 +202,7 @@ index 6c5f66d..f1ded04 100644
 +        data,
        })
      }
- 
+
      it('creates a Room for this Place', async () => {
 -      const { body } = await createRoom({
 -        position: 1,
@@ -213,12 +214,12 @@ index 6c5f66d..f1ded04 100644
 +        },
 +        201,
 +      )
- 
+
        const room = await place.associationQuery('rooms').firstOrFail()
 -      expect(room.position).toEqual(1)
 +      expect(room.type).toEqual('Kitchen')
 +      expect((room as Kitchen).appliances).toEqual(['oven', 'stove'])
- 
+
        expect(body).toEqual(
          expect.objectContaining({
            id: room.id,
@@ -240,7 +241,7 @@ index 6c5f66d..f1ded04 100644
          placeId: place.id,
 @@ -121,33 +131,44 @@ describe('V1/Host/Places/RoomsController', () => {
      }
- 
+
      it('updates the Room', async () => {
 -      const room = await createRoom({ place })
 -
@@ -256,19 +257,19 @@ index 6c5f66d..f1ded04 100644
 +        },
 +        204,
 +      )
- 
+
        await room.reload()
 -      expect(room.position).toEqual(2)
 +      expect(room.appliances).toEqual(['dishwasher'])
      })
- 
+
      context('a Room created by another Place', () => {
        it('is not updated', async () => {
 -        const room = await createRoom()
 -        const originalPosition = room.position
 +        const room = await createRoomKitchen()
 +        const originalAppliances = room.appliances
- 
+
 -        await updateRoom(room, {
 -          position: 2,
 -        }, 404)
@@ -279,14 +280,14 @@ index 6c5f66d..f1ded04 100644
 +          },
 +          404,
 +        )
- 
+
          await room.reload()
 -        expect(room.position).toEqual(originalPosition)
 +        expect(room.appliances).toEqual(originalAppliances)
        })
      })
    })
- 
+
    describe('DELETE destroy', () => {
 -    const destroyRoom = async <StatusCode extends 204 | 400 | 404>(room: Room, expectedStatus: StatusCode) => {
 +    const destroyRoom = async <StatusCode extends 204 | 400 | 404>(
@@ -298,22 +299,22 @@ index 6c5f66d..f1ded04 100644
          id: room.id,
 @@ -155,7 +176,7 @@ describe('V1/Host/Places/RoomsController', () => {
      }
- 
+
      it('deletes the Room', async () => {
 -      const room = await createRoom({ place })
 +      const room = await createRoomKitchen({ place })
- 
+
        await destroyRoom(room, 204)
- 
+
 @@ -164,7 +185,7 @@ describe('V1/Host/Places/RoomsController', () => {
- 
+
      context('a Room created by another Place', () => {
        it('is not deleted', async () => {
 -        const room = await createRoom()
 +        const room = await createRoomKitchen()
- 
+
          await destroyRoom(room, 404)
- 
+
 diff --git a/api/src/app/controllers/V1/Host/Places/BaseController.ts b/api/src/app/controllers/V1/Host/Places/BaseController.ts
 index 475dacc..9da129a 100644
 --- a/api/src/app/controllers/V1/Host/Places/BaseController.ts
@@ -322,10 +323,10 @@ index 475dacc..9da129a 100644
 +import Place from '@models/Place.js'
 +import { BeforeAction } from '@rvoh/psychic'
  import V1HostBaseController from '../BaseController.js'
- 
+
  export default class V1HostPlacesBaseController extends V1HostBaseController {
 +  protected currentPlace: Place
- 
+
 +  @BeforeAction()
 +  protected async loadCurrentPlace() {
 +    this.currentPlace = await this.currentHost
@@ -348,9 +349,9 @@ index b64c592..c3d0339 100644
 +import { RoomTypesEnumValues } from '@src/types/db.js'
  import V1HostPlacesBaseController from './BaseController.js'
 -import Room from '@models/Room.js'
- 
+
  const openApiTags = ['rooms']
- 
+
 @@ -13,11 +19,12 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      serializerKey: 'summary',
    })
@@ -367,7 +368,7 @@ index b64c592..c3d0339 100644
 +      .scrollPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
 +    this.ok(rooms)
    }
- 
+
    @OpenAPI(Room, {
 @@ -26,19 +33,67 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      description: 'Fetch a Room',
@@ -378,7 +379,7 @@ index b64c592..c3d0339 100644
 +    const room = await this.room()
 +    this.ok(room)
    }
- 
+
    @OpenAPI(Room, {
      status: 201,
      tags: openApiTags,
@@ -440,7 +441,7 @@ index b64c592..c3d0339 100644
 +    if (room.isPersisted) room = await room.loadFor('default').execute()
 +    this.created(room)
    }
- 
+
    @OpenAPI(Room, {
 @@ -47,9 +102,9 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      description: 'Update a Room',
@@ -453,7 +454,7 @@ index b64c592..c3d0339 100644
 +    await room.update(this.paramsFor(Room))
 +    this.noContent()
    }
- 
+
    @OpenAPI({
 @@ -58,14 +113,15 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      description: 'Destroy a Room',
@@ -466,7 +467,7 @@ index b64c592..c3d0339 100644
 +    await room.destroy()
 +    this.noContent()
    }
- 
+
    private async room() {
 -    // return await this.currentPlace.associationQuery('rooms')
 -    //   .preloadFor('default')
@@ -486,11 +487,11 @@ index 64ddfc8..399d7a9 100644
  import Host from './Host.js'
  import HostPlace from './HostPlace.js'
 +import Room from './Room.js'
- 
+
  const deco = new Decorators<typeof Place>()
- 
+
 @@ -31,4 +32,9 @@ export default class Place extends ApplicationModel {
- 
+
    @deco.HasMany('Host', { through: 'hostPlaces' })
    public hosts: Host[]
 +
@@ -510,13 +511,13 @@ index 4ea9146..7b34e52 100644
  import Place from '@models/Place.js'
 +import { Decorators } from '@rvoh/dream'
 +import { DreamColumn } from '@rvoh/dream/types'
- 
+
  const deco = new Decorators<typeof Room>()
- 
+
 @@ -10,13 +10,6 @@ export default class Room extends ApplicationModel {
      return 'rooms' as const
    }
- 
+
 -  public get serializers(): DreamSerializers<Room> {
 -    return {
 -      default: 'RoomSerializer',
@@ -532,7 +533,7 @@ index ede559a..9d57fc5 100644
 --- a/api/src/app/models/Room/Bathroom.ts
 +++ b/api/src/app/models/Room/Bathroom.ts
 @@ -6,7 +6,7 @@ const deco = new Decorators<typeof Bathroom>()
- 
+
  @STI(Room)
  export default class Bathroom extends Room {
 -  public override get serializers(): DreamSerializers<Bathroom> {
@@ -545,7 +546,7 @@ index 451c883..203a911 100644
 --- a/api/src/app/models/Room/Bedroom.ts
 +++ b/api/src/app/models/Room/Bedroom.ts
 @@ -6,7 +6,7 @@ const deco = new Decorators<typeof Bedroom>()
- 
+
  @STI(Room)
  export default class Bedroom extends Room {
 -  public override get serializers(): DreamSerializers<Bedroom> {
@@ -558,7 +559,7 @@ index 8b65ee8..f80981a 100644
 --- a/api/src/app/models/Room/Den.ts
 +++ b/api/src/app/models/Room/Den.ts
 @@ -6,7 +6,7 @@ const deco = new Decorators<typeof Den>()
- 
+
  @STI(Room)
  export default class Den extends Room {
 -  public override get serializers(): DreamSerializers<Den> {
@@ -571,7 +572,7 @@ index 0a7b3f1..bcf3068 100644
 --- a/api/src/app/models/Room/Kitchen.ts
 +++ b/api/src/app/models/Room/Kitchen.ts
 @@ -6,7 +6,7 @@ const deco = new Decorators<typeof Kitchen>()
- 
+
  @STI(Room)
  export default class Kitchen extends Room {
 -  public override get serializers(): DreamSerializers<Kitchen> {
@@ -584,7 +585,7 @@ index f6aaa38..64c5cd7 100644
 --- a/api/src/app/models/Room/LivingRoom.ts
 +++ b/api/src/app/models/Room/LivingRoom.ts
 @@ -6,7 +6,7 @@ const deco = new Decorators<typeof LivingRoom>()
- 
+
  @STI(Room)
  export default class LivingRoom extends Room {
 -  public override get serializers(): DreamSerializers<LivingRoom> {
@@ -600,13 +601,13 @@ index 79390f9..e1aa6a5 100644
 -import { DreamSerializer } from '@rvoh/dream'
  import Room from '@models/Room.js'
 +import { DreamSerializer } from '@rvoh/dream'
- 
+
  export const RoomSummarySerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
    DreamSerializer(StiChildClass ?? Room, room)
 +    .attribute('type', { openapi: { type: 'string', enum: [(StiChildClass ?? Room).sanitizedName] } })
      .attribute('id')
 +    .attribute('position')
- 
+
 +// prettier-ignore
  export const RoomSerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
    RoomSummarySerializer(StiChildClass, room)
@@ -1154,4 +1155,4 @@ index fc626a3..4f0c02f 100644
          };
          ValidationErrors: {
              /** @enum {string} */
-```
+````

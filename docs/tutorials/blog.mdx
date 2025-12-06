@@ -34,7 +34,7 @@ This will prompt you with a few questions, which I will answer thusly, providing
 
 ```sh
 what package manager would you like to use?
- > yarn
+ > pnpm
    pnpm
    npm
 
@@ -113,8 +113,8 @@ With the .env files set up correctly, we are now ready to provision the database
 # always make sure you are in the api folder before running any psy commands
 cd api
 
-NODE_ENV=test yarn psy db:create
-NODE_ENV=development yarn psy db:create
+NODE_ENV=test pnpm psy db:create
+NODE_ENV=development pnpm psy db:create
 ```
 
 This command will create new postgres databases for your test and development environments.
@@ -131,7 +131,7 @@ This command will create new postgres databases for your test and development en
 Since we are creating a blog, we are going to need at minimum a users and blogs table in our database, so that we can allow users to sign up, sign in, and create new blog posts. To get started, let's generate the user model and begin building out the scaffolding for authentication.
 
 ```sh
-yarn psy g:model User email:string passwordDigest:string
+pnpm psy g:model User email:string passwordDigest:string
 ```
 
 This will spit out a model, spec, factory, serializer, and migration for the new User model.
@@ -188,8 +188,8 @@ Let's also switch the `password_digest` column to utilize `text` instead of `var
 With the migration updated, we can run migrations using the cli:
 
 ```sh
-NODE_ENV=test yarn psy db:migrate
-NODE_ENV=development yarn psy db:migrate
+NODE_ENV=test pnpm psy db:migrate
+NODE_ENV=development pnpm psy db:migrate
 ```
 
 With the migrations run, you can re-open the `src/app/models/User.ts` file, and all type errors should now be cleared.
@@ -208,7 +208,7 @@ Next, we want to add a `password` field, which, when updated, will be converted 
 To do this, let's first add argon2 as a dependency. We will use this package to generate one-way hashes of our user's passwords.
 
 ```sh
-yarn add argon2
+pnpm add argon2
 ```
 
 With the package added, let's first write a spec to cover the new behavior for our virtual column:
@@ -262,7 +262,7 @@ export default class User extends ApplicationModel {
 with the new Virtual decorator applied, we can now run `sync` to rebuild types for our app:
 
 ```sh
-yarn psy sync
+pnpm psy sync
 ```
 
 With the new virtual attribute in place, re-running our specs should produce a successful run:
@@ -317,7 +317,7 @@ describe('User', () => {
 Let's run the spec to get a failure:
 
 ```sh
-yarn uspec spec/unit/models/User.spec.ts
+pnpm uspec spec/unit/models/User.spec.ts
 
 ❯ spec/unit/models/User.spec.ts (3 tests | 2 failed) 613ms
   ✓ User > upon save > password is saved > hashes the user password 189ms
@@ -378,7 +378,7 @@ describe('Signup', () => {
 Running our feature spec, we should get failures:
 
 ```sh
-yarn fspec spec/features/signup.spec.ts
+pnpm fspec spec/features/signup.spec.ts
 
  RUN  v3.2.4 /Users/fgarbutt/Sites/sandbox/myblog/api
 
@@ -412,7 +412,7 @@ Let's proceed by beginning to modify our client react application, to add routin
 
 ```sh
 cd ../client
-yarn add react-router
+pnpm add react-router
 
 # switch back to the api folder afterwards so you can continue
 # to run psy scripts.
@@ -560,7 +560,7 @@ It is now failing because it successfully filled out the form and clicked Submit
 Let's add a new endpoint to handle signup. This endpoint will take an email and a password, and it will create a new user in the database. We'll start by generating a new controller.
 
 ```sh
-yarn psy g:controller AuthSessionController
+pnpm psy g:controller AuthSessionController
 ```
 
 This will generate both a controller and spec for us. Let's start by editing the controller spec that was generated, to add tests to make sure the endpoint behaves correctly.
@@ -723,10 +723,10 @@ export default class AuthSessionController extends AuthedController {
 }
 ```
 
-With this controller in place, we can now run `yarn psy sync` to update our types to acknowledge the new endpoint.
+With this controller in place, we can now run `pnpm psy sync` to update our types to acknowledge the new endpoint.
 
 ```sh
-yarn psy sync
+pnpm psy sync
 ```
 
 With types sycned, we should now see all our errors disappear in our spec file, since it is now aware of the new endpoint we added. Running the spec again, we should see our endpoint tests passing.
@@ -752,7 +752,7 @@ Let's start by adding redux to our client project dependencies.
 # switch to client folder to install new packages
 cd ../client
 
-yarn add @reduxjs/toolkit react-redux
+pnpm add @reduxjs/toolkit react-redux
 
 # switch back to api folder afterwards
 cd ../api
@@ -852,7 +852,7 @@ export const useAppStore: () => AppStore = useStore
 Now that we have redux integrated into our application, let's add an openapi-redux bridge to enable us to sync our backend openapi to redux whenever the openapi document is synced. To do this, let's use the `setup:sync:openapi-redux` cli command, like so:
 
 ```sh
-yarn psy setup:sync:openapi-redux
+pnpm psy setup:sync:openapi-redux
 ```
 
 This is going to give you a prompt to configure the openapi-redux setup. This setup can be quite confusing, though the prompts provided by psychic do their best to explain the complexities of this process.
@@ -928,7 +928,7 @@ With these arguments provided, psychic proceeds to generate the necessary boiler
 The output from the command we just ran is also alerting us to another set of updates we need to make to our redux configuration. First, let's run sync:
 
 ```sh
-yarn psy sync
+pnpm psy sync
 ```
 
 Now, let's make our changes to the store.ts file, which were requested in the CLI output of our redux setup:
@@ -1226,7 +1226,7 @@ export default (r: PsychicRouter) => {
 Next, let's run `sync` so we can generate types for the new endpoint:
 
 ```sh
-yarn psy sync
+pnpm psy sync
 ```
 
 Now we can run our endpoint test again, and it should be passing.
@@ -1311,7 +1311,7 @@ Our routes file will show a type error because the `status` arg, which will be c
 let's sync, since we have added a new endpoint, then check our controller spec again. The errors will have cleared now.
 
 ```sh
-yarn psy sync
+pnpm psy sync
 ```
 
 Running our controller spec again, we got all successes:
@@ -1374,7 +1374,7 @@ export default function SigninPage() {
 Now, running our spec again, we should be getting the same error. But, if we run it in visual mode, we will see that we _do_ in fact get redirected to the home page after signing in, it just doesn't show us a dashboard page. Use the `fspec:visible` command to run it in a browser, so you can observe the behavior for yourself:
 
 ```sh
-yarn fspec:visible spec/features/signin.spec.ts
+pnpm fspec:visible spec/features/signin.spec.ts
 ```
 
 Let's fix this by adding the ability to detect authenticated users. First, let's add a dashboard page to the `pages/authed` folder, which we will also create:
@@ -1464,7 +1464,7 @@ git commit -m 'add functioning auth system'
 Next, we will set up the scaffolding for our blog. To do anything, we will need to start by generating a Post model. This model will belong to a User, and it will have a title and a body. We can now tap into psychic's resource generator to make this very trivial for ourselves.
 
 ```sh
-yarn psy g:resource api/v1/posts Post user:belongs_to title:text body:text
+pnpm psy g:resource api/v1/posts Post user:belongs_to title:text body:text
 ```
 
 This automatically generates a controller, model, serializer, controller spec, and model spec. It additionally adds the necessary route entry to build this route in our routes file. Opening the `api/spec/unit/controllers/Api/V1/PostsController.spec.ts` spec, you will find it has basically exactly what we need to test our new resource. Here is a copy of that file, for reference:
@@ -1659,8 +1659,8 @@ describe('Api/V1/PostsController', () => {
 Let's first run our migrations to capture the new model
 
 ```sh
-NODE_ENV=test yarn psy db:migrate
-NODE_ENV=development yarn psy db:migrate
+NODE_ENV=test pnpm psy db:migrate
+NODE_ENV=development pnpm psy db:migrate
 ```
 
 Examining the spec file now, most of our type errors will have gone away, but a few remain. Let's fix them by adding the reverse association to the User model.
@@ -1677,13 +1677,13 @@ export default class User extends ApplicationModel {
 Now let's run sync again to sync the new associations to our type layer.
 
 ```sh
-yarn psy sync
+pnpm psy sync
 ```
 
 With sync having been run, the specs are now completely free of type errors. That doesn't mean they will pass when being run, however. Let's give it a try:
 
 ```sh
-yarn uspec spec/unit/controllers/Api/V1/PostsController.spec.ts
+pnpm uspec spec/unit/controllers/Api/V1/PostsController.spec.ts
 ```
 
 What you will get, unfortunately, is specs that take forever to fail. This is funny, why are we experiencing this? Well, if we open the controller that was generated for us, we will see:
@@ -1842,7 +1842,7 @@ export default class ApiV1PostsController extends ApiV1BaseController {
 With the implementations uncommented, we can immediately see that we will be wrangling with how to set "currentUser" on our controller, so we'll get to that soon. Let's run our spec first:
 
 ```sh
-yarn uspec spec/unit/controllers/Api/V1/PostsController.spec.ts
+pnpm uspec spec/unit/controllers/Api/V1/PostsController.spec.ts
 ```
 
 Now we get a much quicker host of 500 errors, the result of `currentUser` not being defined:
@@ -1925,7 +1925,7 @@ Now, we can run our PostsController spec again and find it passing!
 This makes our life much easier. Now, we can simply run sync to make sure our front end openapi types are totally compiled, and then we can begin to write our feature specs, which will now be much easier to solve, since our Post endpoints are already built, and their redux bindings are already available to us.
 
 ```sh
-yarn psy sync
+pnpm psy sync
 ```
 
 For good measure, let's commit
@@ -2059,7 +2059,7 @@ export const PostSerializer = (post: Post) => PostSummarySerializer(post)
 Now re-sync to update the openapi files on your frontend
 
 ```sh
-yarn psy sync
+pnpm psy sync
 ```
 
 Revisiting our `PostsIndex`, we should see our type error has been vanquished! Psychic is intelligent about syncing serializer shapes down through the openapi decorators on your controller, which informs the redux bindings that sync to your client, keeping the whole process pretty much hands-off for you.

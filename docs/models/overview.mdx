@@ -45,8 +45,8 @@ await User.all()
 Use generators to quickly prop up the scaffolding for your application. Using the provided CLI utils, you can customize the shape of your models without writing a line of code.
 
 ```sh
-yarn psy g:model User name:string email:string birthdate:date
-yarn psy g:model Post user:belongs_to body:string
+pnpm psy g:model User name:string email:string birthdate:date
+pnpm psy g:model Post user:belongs_to body:string
 ```
 
 To learn more about generators, see our [generating guide](/docs/models/generating).

@@ -6,15 +6,16 @@ title: Generate LocalizedText resource
 
 ## Commit Message
 
-```
+````
 Generate LocalizedText resource
 
 ```console
-yarn psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText localizable_type:enum:localized_types:Host,Place,Room localizable_id:uuid locale:enum:locales:en-US,es-ES title:string markdown:text deleted_at:datetime:optional
-```
+pnpm psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText localizable_type:enum:localized_types:Host,Place,Room localizable_id:uuid locale:enum:locales:en-US,es-ES title:string markdown:text deleted_at:datetime:optional
+````
 
 Leverages `--only=update,destroy` to only generate the show, update, and destroy actions. Each polymorphically associated model's controller will have an action for creating an associated LocalizedText model, and Host-facing serializer can display its LocalizedTexts, but the actions for maintaining all LocalizedText will be centralized in the LocalizedText controller.
-```
+
+````
 
 ## Changes
 
@@ -250,7 +251,7 @@ index 036f15f..e0981a7 100644
 +
        r.resources('places', r => {
          r.resources('rooms')
- 
+
 diff --git a/api/src/db/migrations/1764187753122-create-localized-text.ts b/api/src/db/migrations/1764187753122-create-localized-text.ts
 new file mode 100644
 index 0000000..13f64b4
@@ -304,4 +305,4 @@ index 0000000..13f64b4
 +  await db.schema.dropType('locales_enum').execute()
 +}
 \ No newline at end of file
-```
+````

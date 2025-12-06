@@ -6,22 +6,23 @@ title: Generate Room resource
 
 ## Commit Message
 
-```
+````
 Generate Room resource
 
 ```console
-yarn psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\{\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom Place:belongs_to position:integer:optional deleted_at:datetime:optional
-```
+pnpm psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\{\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom Place:belongs_to position:integer:optional deleted_at:datetime:optional
+````
 
 The `places/{}` (escaped to `places/\{\}` for the console) makes
 rooms a nested resource within the places resource, which you can
-see with `yarn psy routes`:
+see with `pnpm psy routes`:
 
 ```console
-yarn psy db:migrate
-yarn psy routes
+pnpm psy db:migrate
+pnpm psy routes
 ```
-```
+
+````
 
 ## Changes
 
@@ -390,7 +391,7 @@ index 198aa15..036f15f 100644
 +
      })
    })
- 
+
 diff --git a/api/src/db/migrations/1764184174971-create-room.ts b/api/src/db/migrations/1764184174971-create-room.ts
 new file mode 100644
 index 0000000..ab4029e
@@ -449,4 +450,4 @@ index 0000000..ab4029e
 +  await db.schema.dropType('room_types_enum').execute()
 +}
 \ No newline at end of file
-```
+````

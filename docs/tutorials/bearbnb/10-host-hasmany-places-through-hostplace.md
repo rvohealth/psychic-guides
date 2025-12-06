@@ -6,7 +6,7 @@ title: Host hasMany places through HostPlace
 
 ## Commit Message
 
-```
+````
 Host hasMany places through HostPlace
 Place hasMany hosts through HostPlace
 
@@ -16,33 +16,36 @@ Model specs
 To run migration:
 
 ```console
-yarn psy db:migrate
-```
+pnpm psy db:migrate
+````
 
-If you changed a migration that you already ran (_only_ before the feature has been merged into `main`...once a migration has been run on a server, it must not be changed or removed; instead, create a new migration with `yarn psy g:migration ...`), either:
+If you changed a migration that you already ran (_only_ before the feature has been merged into `main`...once a migration has been run on a server, it must not be changed or removed; instead, create a new migration with `pnpm psy g:migration ...`), either:
 
 ```console
-yarn psy db:rollback
-yarn psy db:migrate
+pnpm psy db:rollback
+pnpm psy db:migrate
 ```
+
 or
+
 ```console
-yarn psy db:reset
+pnpm psy db:reset
 ```
 
 After adding HasMany/HasOne/BelongsTo associations:
 
 ```console
-yarn psy sync
-// yarn psy db:migrate will also sync
+pnpm psy sync
+// pnpm psy db:migrate will also sync
 ```
 
 To run model unit specs:
 
 ```console
-yarn uspec spec/unit/models
+pnpm uspec spec/unit/models
 ```
-```
+
+````
 
 ## Changes
 
@@ -98,9 +101,9 @@ index 8536e0d..b7d7420 100644
 +import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 +import HostPlace from './HostPlace.js'
 +import Place from './Place.js'
- 
+
  const deco = new Decorators<typeof Host>()
- 
+
 @@ -24,4 +26,10 @@ export default class Host extends ApplicationModel {
    @deco.BelongsTo('User', { on: 'userId' })
    public user: User
@@ -123,9 +126,9 @@ index ee1bcf4..64ddfc8 100644
 -import ApplicationModel from '@models/ApplicationModel.js'
 +import Host from './Host.js'
 +import HostPlace from './HostPlace.js'
- 
+
  const deco = new Decorators<typeof Place>()
- 
+
 @@ -23,4 +25,10 @@ export default class Place extends ApplicationModel {
    public deletedAt: DreamColumn<Place, 'deletedAt'>
    public createdAt: DreamColumn<Place, 'createdAt'>
@@ -144,7 +147,7 @@ index 81b5fd3..0a88afd 100644
 @@ -88,6 +88,15 @@ export interface Guests {
    userId: string;
  }
- 
+
 +export interface HostPlaces {
 +  createdAt: Timestamp;
 +  deletedAt: Timestamp | null;
@@ -158,7 +161,7 @@ index 81b5fd3..0a88afd 100644
    createdAt: Timestamp;
    id: Generated<string>;
 @@ -114,6 +123,7 @@ export interface Users {
- 
+
  export interface DB {
    guests: Guests;
 +  host_places: HostPlaces;
@@ -166,7 +169,7 @@ index 81b5fd3..0a88afd 100644
    places: Places;
    users: Users;
 @@ -122,6 +132,7 @@ export interface DB {
- 
+
  export class DBClass {
    guests: Guests
 +  host_places: HostPlaces
@@ -298,7 +301,7 @@ index 2f77946..f25e8ae 100644
      },
      virtualColumns: [],
      associations: {
--      
+-
 +      hostPlaces: {
 +        type: 'HasMany',
 +        foreignKey: 'placeId',
@@ -328,4 +331,4 @@ index 2f77946..f25e8ae 100644
        'Place': 'places',
        'User': 'users'
      },
-```
+````

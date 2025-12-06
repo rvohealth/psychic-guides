@@ -11,7 +11,7 @@ Psychic hooks can be tapped into in your `conf/app.ts` file, or in one of your i
 
 ### cli:sync
 
-The cli:sync event is called whenever the sync command is called in the cli. This will happen, for example, when calling `yarn psy sync` directly, but will also happen if you call `yarn psy db:migrate`, or `yarn psy db:reset`. You can tap into this lifecycle hook inside your `conf/app.ts` file, as well as in one of your initializers.
+The cli:sync event is called whenever the sync command is called in the cli. This will happen, for example, when calling `pnpm psy sync` directly, but will also happen if you call `pnpm psy db:migrate`, or `pnpm psy db:reset`. You can tap into this lifecycle hook inside your `conf/app.ts` file, as well as in one of your initializers.
 
 ```ts
 // conf/app.ts
@@ -180,7 +180,7 @@ export default async function (app: DreamApp) {
 ```
 
 ```sh
-yarn console
+pnpm console
 > chalupas
 // 'delicious'
 ```

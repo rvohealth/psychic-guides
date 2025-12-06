@@ -30,7 +30,7 @@ export default class WelcomeController extends ApplicationController {
 Ordinarily, controllers will be driven by resourceful patterns tied to underlying models. In these cases, we highly recommend you see our [generating resources guides](/docs/controllers/generating), since this will automatically compose sensible default functionality and testing for your controller, as well as the underlying model.
 
 ```sh
-yarn psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional
+pnpm psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional
 ```
 
 This will also produce route entries for the new Places controller, using the `r.resources('places')` call, which will automatically provide sensible routes for indexing, showing, creating, updating, and deleting a place.
