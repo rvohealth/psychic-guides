@@ -1,0 +1,35 @@
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
+# sum
+
+The `sum` method will sum a numeric column for all found records in the query.
+
+```ts
+const sumOfAllScoresForAllGames = await Game.sum('score')
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select sum("score") from "games"
+`}
+  </pre>
+</RoutesOutput>
+
+> NOTE: You _must_ pass a column that can be summed, such as an integer or decimal. Summing non-numeric types will result in runtime exceptions.
+
+## Chaining
+
+You can leverage chainable methods to filter out records at the sql level before calling min.
+
+```ts
+const sportsballScoresSum = await Game.where({ type: 'sportsball' }).sum('score')
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select sum("score") from "games" where ("games"."type" ilike $1)
+`}
+  </pre>
+</RoutesOutput>

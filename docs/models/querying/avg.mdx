@@ -1,0 +1,35 @@
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
+# avg
+
+The `avg` method returns the average (arithmetic mean) of a set of numeric values.
+
+```ts
+const avgOfAllScoresForAllGames = await Game.avg('score')
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select avg("score") from "games"
+`}
+  </pre>
+</RoutesOutput>
+
+> NOTE: You _must_ pass a column that can be averaged, such as an integer or decimal. Averaging non-numeric columns will result in runtime exceptions.
+
+## Chaining
+
+You can leverage chainable methods to filter out records at the sql level before calling min.
+
+```ts
+const sportsballScoresAvg = await Game.where({ type: 'sportsball' }).avg('score')
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select avg("score") from "games" where ("games"."type" ilike $1)
+`}
+  </pre>
+</RoutesOutput>

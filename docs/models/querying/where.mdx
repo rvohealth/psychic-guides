@@ -24,3 +24,9 @@ If an array is passed as a value to a non-array field, the query will select any
 await User.where({ email: ['hi@hi', 'bye@bye'] }).all()
 // [User{ email: 'hi@hi' }, User{ email: 'bye@bye' }]
 ```
+
+BelongsTo associations can also be provided as arguments. Polymorphic associations will also have their type fields extracted into the query.
+
+```ts
+await Pet.where({ user }).count()
+```
