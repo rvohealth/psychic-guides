@@ -6,14 +6,13 @@ title: Generate Guest model
 
 ## Commit Message
 
-````
+```
 Generate Guest model
 
 ```console
 pnpm psy g:model Guest User:belongs_to
-````
-
-````
+```
+```
 
 ## Changes
 
@@ -91,11 +90,11 @@ index 0000000..1fa3936
 +
 +export const GuestSerializer = (guest: Guest) =>
 +  GuestSummarySerializer(guest)
-diff --git a/api/src/db/migrations/1764175590862-create-guest.ts b/api/src/db/migrations/1764175590862-create-guest.ts
+diff --git a/api/src/db/migrations/1765049123929-create-guest.ts b/api/src/db/migrations/1765049123929-create-guest.ts
 new file mode 100644
 index 0000000..acc776a
 --- /dev/null
-+++ b/api/src/db/migrations/1764175590862-create-guest.ts
++++ b/api/src/db/migrations/1765049123929-create-guest.ts
 @@ -0,0 +1,28 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -126,4 +125,4 @@ index 0000000..acc776a
 +  await db.schema.dropTable('guests').execute()
 +}
 \ No newline at end of file
-````
+```

@@ -1,3 +1,6 @@
+---
+pagination_next: null
+---
 # BearBnB
 
 An AirBnB clone for bears to demonstrate [Dream ORM](https://github.com/rvohealth/dream) and [Psychic web framework](https://github.com/rvohealth/psychic).
@@ -10,6 +13,16 @@ A good way to follow along with building a new Psychic app is:
 4. Then follow along with the changes, commit by commit, making the changes in your project. The commits are broken down into generated code and hand coded features, and the commit message includes generator commands that were run. [This YouTube video](https://www.youtube.com/watch?v=dag9YVMXqGM) walks through the commits in this project, explaining each step. **NOTE: several steps in the video are no longer necessary since the generators now support array attributes and nested resources.**
 
 Full guides available at [https://psychicframework.com/](https://psychicframework.com/).
+
+### A.I.
+
+Since Dream and Psychic are new, and not understood by the LLMs, there is a custom RAG (Retrieval-Augmented Generation) system for Dream and Psychic documentation. In Cursor: cmd-shift-p, select "View: Open MCP Settings", and add a "New MCP Server" named "dream-psychic-rag". Copy and paste the JSON from `./api/mcp.json.example`\* into the mcp.json file, editing the absolute path to the `mcp-http-bridge.ts` file.
+
+A.I. rules for developing a Dream and Psychic application are provided in `./api/AGENTS.md`\*. These rules may be customized by adding to the bottom of the file (a rule exists in the file to instruct A.I. to add new rules outside of the official Psychic rules).
+
+To fetch the current version of the A.I. rules, use `yarn psy sync:ai-rules`.
+
+\* if this Psychic app was created without a front-end client, then these files are in the project root
 
 ## Running specs locally
 
@@ -27,9 +40,9 @@ TZ=UTC
 Then:
 
 ```bash
-pnpm psy db:create
-pnpm psy db:migrate
-pnpm uspec
+yarn psy db:create
+yarn psy db:migrate
+yarn uspec
 ```
 
 ## State of the repo
@@ -121,24 +134,24 @@ erDiagram
 ## Generator commands used to create BearBnB
 
 ```bash
-pnpm psy g:model --no-serializer User email:citext
-pnpm psy g:model Guest User:belongs_to
-pnpm psy g:model Host User:belongs_to
-pnpm psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,
-pnpm psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to deleted_at:datetime:optional
+yarn psy g:model --no-serializer User email:citext
+yarn psy g:model Guest User:belongs_to
+yarn psy g:model Host User:belongs_to
+yarn psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,
+yarn psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to deleted_at:datetime:optional
 
-pnpm psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\{\}/rooms Room type:enum:room_types:Bathroom,
-pnpm psy g:sti-child Room/Bathroom extends Room bath_or_shower_style:enum:bath_or_shower_styles:bath,shower,bath_and_shower,
-pnpm psy g:sti-child --help
-pnpm psy g:sti-child Room/Bedroom extends Room bed_types:enum\[\]:bed_types:twin,bunk,queen,king,cot,sofabed
-pnpm psy g:sti-child Room/Kitchen extends Room appliances:enum\[\]:appliance_types:stove,oven,microwave,dishwasher
-pnpm psy g:sti-child Room/Den extends Room
-pnpm psy g:sti-child Room/LivingRoom extends Room
+yarn psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\{\}/rooms Room type:enum:room_types:Bathroom,
+yarn psy g:sti-child Room/Bathroom extends Room bath_or_shower_style:enum:bath_or_shower_styles:bath,shower,bath_and_shower,
+yarn psy g:sti-child --help
+yarn psy g:sti-child Room/Bedroom extends Room bed_types:enum\[\]:bed_types:twin,bunk,queen,king,cot,sofabed
+yarn psy g:sti-child Room/Kitchen extends Room appliances:enum\[\]:appliance_types:stove,oven,microwave,dishwasher
+yarn psy g:sti-child Room/Den extends Room
+yarn psy g:sti-child Room/LivingRoom extends Room
 
-pnpm psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText localizable_type:enum:localized_types:Host,
-pnpm psy g:controller V1/Guest/Places index show
-pnpm psy g:migration add-deferrable-unique-constraint-to-rooms
+yarn psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText localizable_type:enum:localized_types:Host,
+yarn psy g:controller V1/Guest/Places index show
+yarn psy g:migration add-deferrable-unique-constraint-to-rooms
 
 # pending future work
-pnpm psy g:resource v1/guest/stays Booking Guest:belongs_to Place:belongs_to arrive_on:date depart_on:date adults:integer cubs:integer deleted_at:date:optional
+yarn psy g:resource v1/guest/stays Booking Guest:belongs_to Place:belongs_to arrive_on:date depart_on:date adults:integer cubs:integer deleted_at:date:optional
 ```

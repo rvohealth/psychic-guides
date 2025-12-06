@@ -6,14 +6,13 @@ title: Generate Room/Bedroom STI model
 
 ## Commit Message
 
-````
+```
 Generate Room/Bedroom STI model
 
 ```console
 pnpm psy g:sti-child Room/Bedroom extends Room bed_types:enum\[\]:bed_types:twin,bunk,queen,king,cot,sofabed
-````
-
-````
+```
+```
 
 ## Changes
 
@@ -80,11 +79,11 @@ index 0000000..e705036
 +export const RoomBedroomSerializer = (roomBedroom: RoomBedroom) =>
 +  RoomSerializer(RoomBedroom, roomBedroom)
 +    .attribute('bedTypes')
-diff --git a/api/src/db/migrations/1764184609121-create-room-bedroom.ts b/api/src/db/migrations/1764184609121-create-room-bedroom.ts
+diff --git a/api/src/db/migrations/1765052343369-create-room-bedroom.ts b/api/src/db/migrations/1765052343369-create-room-bedroom.ts
 new file mode 100644
 index 0000000..55d5d4c
 --- /dev/null
-+++ b/api/src/db/migrations/1764184609121-create-room-bedroom.ts
++++ b/api/src/db/migrations/1765052343369-create-room-bedroom.ts
 @@ -0,0 +1,31 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -118,4 +117,4 @@ index 0000000..55d5d4c
 +  await db.schema.dropType('bed_types_enum').execute()
 +}
 \ No newline at end of file
-````
+```

@@ -6,7 +6,7 @@ title: Rename generated RoomBedroom to Bedroom.
 
 ## Commit Message
 
-````
+```
 Rename generated RoomBedroom to Bedroom.
 
 No check constraint to update in the migration because, for
@@ -16,9 +16,8 @@ so even non-Bedroom Rooms will have non-null, empty-array `bed_types`
 
 ```console
 pnpm psy db:migrate
-````
-
-````
+```
+```
 
 ## Changes
 
@@ -31,7 +30,7 @@ index 0f25e2e..67bb8ec 100644
 +import Bedroom from '@models/Room/Bedroom.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 -import RoomBedroom from '@models/Room/Bedroom.js'
-
+ 
 -export default async function createRoomBedroom(attrs: UpdateableProperties<RoomBedroom> = {}) {
 -  return await RoomBedroom.create({
 +export default async function createRoomBedroom(attrs: UpdateableProperties<Bedroom> = {}) {
@@ -48,10 +47,10 @@ index b01cab6..451c883 100644
  import { Decorators, STI } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 -import Room from '@models/Room.js'
-
+ 
 -const deco = new Decorators<typeof RoomBedroom>()
 +const deco = new Decorators<typeof Bedroom>()
-
+ 
  @STI(Room)
 -export default class RoomBedroom extends Room {
 -  public override get serializers(): DreamSerializers<RoomBedroom> {
@@ -62,31 +61,31 @@ index b01cab6..451c883 100644
        summary: 'Room/BedroomSummarySerializer',
      }
    }
-
+ 
 -  public bedTypes: DreamColumn<RoomBedroom, 'bedTypes'>
 +  public bedTypes: DreamColumn<Bedroom, 'bedTypes'>
  }
 diff --git a/api/src/app/serializers/Room/BedroomSerializer.ts b/api/src/app/serializers/Room/BedroomSerializer.ts
-index e705036..09b4589 100644
+index e705036..85e9783 100644
 --- a/api/src/app/serializers/Room/BedroomSerializer.ts
 +++ b/api/src/app/serializers/Room/BedroomSerializer.ts
-@@ -1,9 +1,8 @@
+@@ -1,9 +1,9 @@
 +import Bedroom from '@models/Room/Bedroom.js'
  import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 -import RoomBedroom from '@models/Room/Bedroom.js'
-
+ 
 -export const RoomBedroomSummarySerializer = (roomBedroom: RoomBedroom) =>
 -  RoomSummarySerializer(RoomBedroom, roomBedroom)
 +export const RoomBedroomSummarySerializer = (roomBedroom: Bedroom) =>
 +  RoomSummarySerializer(Bedroom, roomBedroom)
-
+ 
 -export const RoomBedroomSerializer = (roomBedroom: RoomBedroom) =>
 -  RoomSerializer(RoomBedroom, roomBedroom)
--    .attribute('bedTypes')
 +export const RoomBedroomSerializer = (roomBedroom: Bedroom) =>
-+  RoomSerializer(Bedroom, roomBedroom).attribute('bedTypes')
++  RoomSerializer(Bedroom, roomBedroom)
+     .attribute('bedTypes')
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 6e87275..856dcf2 100644
+index 630747e..934ff47 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -343,7 +343,14 @@
@@ -237,7 +236,7 @@ index 6e87275..856dcf2 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index efd1fb2..21db2c7 100644
+index 8f9901a..667a2dd 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -343,7 +343,14 @@
@@ -396,10 +395,10 @@ index efd1fb2..21db2c7 100644
        "ValidationErrors": {
          "type": "object",
          "required": [
-diff --git a/api/src/openapi/spec.openapi.json b/api/src/openapi/spec.openapi.json
-index efd1fb2..21db2c7 100644
---- a/api/src/openapi/spec.openapi.json
-+++ b/api/src/openapi/spec.openapi.json
+diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
+index 67ef78a..1cb2422 100644
+--- a/api/src/openapi/tests.openapi.json
++++ b/api/src/openapi/tests.openapi.json
 @@ -343,7 +343,14 @@
                      "results": {
                        "type": "array",
@@ -557,86 +556,94 @@ index efd1fb2..21db2c7 100644
          "type": "object",
          "required": [
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 12da87b..3fd51e7 100644
+index 2e9b1b0..c66af38 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -64,6 +64,14 @@ import { type CalendarDate, type DateTime } from '@rvoh/dream'
-
- import type { ColumnType } from "kysely";
-
-+export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[]
-+  ? U[]
-+  : ArrayTypeImpl<T>;
+@@ -63,6 +63,14 @@ import { type CalendarDate, type DateTime } from '@rvoh/dream'
+  */
+ import type { ColumnType } from 'kysely'
+ 
++export type ArrayType<T> =
++  ArrayTypeImpl<T> extends (infer U)[] ? U[] : ArrayTypeImpl<T>
 +
-+export type ArrayTypeImpl<T> = T extends ColumnType<infer S, infer I, infer U>
-+  ? ColumnType<S[], I[], U[]>
-+  : T[];
++export type ArrayTypeImpl<T> =
++  T extends ColumnType<infer S, infer I, infer U>
++    ? ColumnType<S[], I[], U[]>
++    : T[]
 +
- export type BathOrShowerStylesEnum = "bath" | "bath_and_shower" | "none" | "shower";
- export const BathOrShowerStylesEnumValues = [
-   "bath",
-@@ -73,6 +81,17 @@ export const BathOrShowerStylesEnumValues = [
+ export type BathOrShowerStylesEnum =
+   | 'bath'
+   | 'bath_and_shower'
+@@ -76,6 +84,23 @@ export const BathOrShowerStylesEnumValues = [
+   'shower',
  ] as const
-
-
-+export type BedTypesEnum = "bunk" | "cot" | "king" | "queen" | "sofabed" | "twin";
+ 
++export type BedTypesEnum =
++  | 'bunk'
++  | 'cot'
++  | 'king'
++  | 'queen'
++  | 'sofabed'
++  | 'twin'
++
 +export const BedTypesEnumValues = [
-+  "bunk",
-+  "cot",
-+  "king",
-+  "queen",
-+  "sofabed",
-+  "twin"
++  'bunk',
++  'cot',
++  'king',
++  'queen',
++  'sofabed',
++  'twin',
 +] as const
 +
-+
- export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
-   ? ColumnType<S, I | undefined, U>
-   : ColumnType<T, T | undefined, T>;
-@@ -135,6 +154,7 @@ export interface Places {
-
+ export type Generated<T> =
+   T extends ColumnType<infer S, infer I, infer U>
+     ? ColumnType<S, I | undefined, U>
+@@ -152,6 +177,7 @@ export interface Places {
+ 
  export interface Rooms {
-   bathOrShowerStyle: BathOrShowerStylesEnum | null;
-+  bedTypes: Generated<ArrayType<BedTypesEnum>>;
-   createdAt: Timestamp;
-   deletedAt: Timestamp | null;
-   id: Generated<string>;
+   bathOrShowerStyle: BathOrShowerStylesEnum | null
++  bedTypes: Generated<ArrayType<BedTypesEnum>>
+   createdAt: Timestamp
+   deletedAt: Timestamp | null
+   id: Generated<string>
 diff --git a/api/src/types/dream.globals.ts b/api/src/types/dream.globals.ts
-index ca2eb31..bc30c46 100644
+index b4348f8..6109591 100644
 --- a/api/src/types/dream.globals.ts
 +++ b/api/src/types/dream.globals.ts
-@@ -8,6 +8,8 @@ export const globalTypeConfig = {
-       'PlaceSummarySerializer',
-       'Room/BathroomSerializer',
-       'Room/BathroomSummarySerializer',
-+      'Room/BedroomSerializer',
-+      'Room/BedroomSummarySerializer',
-       'RoomSerializer',
-       'RoomSummarySerializer'
-     ],
+@@ -66,6 +66,8 @@ export const globalTypeConfig = {
+     'PlaceSummarySerializer',
+     'Room/BathroomSerializer',
+     'Room/BathroomSummarySerializer',
++    'Room/BedroomSerializer',
++    'Room/BedroomSummarySerializer',
+     'RoomSerializer',
+     'RoomSummarySerializer',
+   ],
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index ed90981..9cde824 100644
+index 73660b8..7ff53e5 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -61,6 +61,8 @@ import { type CalendarDate, type DateTime } from '@rvoh/dream'
+@@ -59,9 +59,11 @@ us humans, he says:
+ import { type CalendarDate, type DateTime } from '@rvoh/dream'
  import {
-   BathOrShowerStylesEnum,
+   type BathOrShowerStylesEnum,
++  type BedTypesEnum,
+   type PlaceStylesEnum,
+   type RoomTypesEnum,
    BathOrShowerStylesEnumValues,
-+  BedTypesEnum,
 +  BedTypesEnumValues,
-   PlaceStylesEnum,
    PlaceStylesEnumValues,
-   RoomTypesEnum,
-@@ -387,7 +389,7 @@ export const schema = {
-       default: ['dream:STI'],
-       named: [],
+   RoomTypesEnumValues,
+ } from './db.js'
+@@ -403,6 +405,7 @@ export const schema = {
      },
--    nonJsonColumnNames: ['bathOrShowerStyle', 'createdAt', 'deletedAt', 'id', 'placeId', 'position', 'type', 'updatedAt'],
-+    nonJsonColumnNames: ['bathOrShowerStyle', 'bedTypes', 'createdAt', 'deletedAt', 'id', 'placeId', 'position', 'type', 'updatedAt'],
-     columns: {
-       bathOrShowerStyle: {
-         coercedType: {} as BathOrShowerStylesEnum | null,
-@@ -398,6 +400,15 @@ export const schema = {
+     nonJsonColumnNames: [
+       'bathOrShowerStyle',
++      'bedTypes',
+       'createdAt',
+       'deletedAt',
+       'id',
+@@ -421,6 +424,15 @@ export const schema = {
          allowNull: true,
          isArray: false,
        },
@@ -652,18 +659,18 @@ index ed90981..9cde824 100644
        createdAt: {
          coercedType: {} as DateTime,
          enumType: null,
-@@ -554,6 +565,7 @@ export const connectionTypeConfig = {
-       'HostPlace': 'host_places',
-       'Place': 'places',
+@@ -578,6 +590,7 @@ export const connectionTypeConfig = {
+       Place: 'places',
+       Room: 'rooms',
        'Room/Bathroom': 'rooms',
 +      'Room/Bedroom': 'rooms',
-       'Room': 'rooms',
-       'User': 'users'
+       User: 'users',
      },
-diff --git a/api/src/types/openapi/spec.openapi.d.ts b/api/src/types/openapi/spec.openapi.d.ts
+   },
+diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
 index 5b355af..7a1fc89 100644
---- a/api/src/types/openapi/spec.openapi.d.ts
-+++ b/api/src/types/openapi/spec.openapi.d.ts
+--- a/api/src/types/openapi/tests.openapi.d.ts
++++ b/api/src/types/openapi/tests.openapi.d.ts
 @@ -225,7 +225,7 @@ export interface paths {
                      content: {
                          "application/json": {
@@ -726,4 +733,4 @@ index 5b355af..7a1fc89 100644
          ValidationErrors: {
              /** @enum {string} */
              type: "validation";
-````
+```

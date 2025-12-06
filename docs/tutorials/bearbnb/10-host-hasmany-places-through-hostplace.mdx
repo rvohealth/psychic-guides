@@ -6,18 +6,16 @@ title: Host hasMany places through HostPlace
 
 ## Commit Message
 
-````
+```
 Host hasMany places through HostPlace
 Place hasMany hosts through HostPlace
 
 Association types synced
 Model specs
 
-To run migration:
-
 ```console
 pnpm psy db:migrate
-````
+```
 
 If you changed a migration that you already ran (_only_ before the feature has been merged into `main`...once a migration has been run on a server, it must not be changed or removed; instead, create a new migration with `pnpm psy g:migration ...`), either:
 
@@ -25,9 +23,7 @@ If you changed a migration that you already ran (_only_ before the feature has b
 pnpm psy db:rollback
 pnpm psy db:migrate
 ```
-
 or
-
 ```console
 pnpm psy db:reset
 ```
@@ -44,8 +40,7 @@ To run model unit specs:
 ```console
 pnpm uspec spec/unit/models
 ```
-
-````
+```
 
 ## Changes
 
@@ -89,21 +84,21 @@ index 10bcdd9..6315065 100644
 +  })
  })
 diff --git a/api/src/app/models/Host.ts b/api/src/app/models/Host.ts
-index 8536e0d..b7d7420 100644
+index 8536e0d..b5e8782 100644
 --- a/api/src/app/models/Host.ts
 +++ b/api/src/app/models/Host.ts
 @@ -1,7 +1,9 @@
 -import { Decorators } from '@rvoh/dream'
 -import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
  import ApplicationModel from '@models/ApplicationModel.js'
++import HostPlace from '@models/HostPlace.js'
++import Place from '@models/Place.js'
  import User from '@models/User.js'
 +import { Decorators } from '@rvoh/dream'
 +import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
-+import HostPlace from './HostPlace.js'
-+import Place from './Place.js'
-
+ 
  const deco = new Decorators<typeof Host>()
-
+ 
 @@ -24,4 +26,10 @@ export default class Host extends ApplicationModel {
    @deco.BelongsTo('User', { on: 'userId' })
    public user: User
@@ -116,19 +111,19 @@ index 8536e0d..b7d7420 100644
 +  public places: Place[]
  }
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index ee1bcf4..64ddfc8 100644
+index ee1bcf4..9f8b47d 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
 @@ -1,6 +1,8 @@
 +import ApplicationModel from '@models/ApplicationModel.js'
++import Host from '@models/Host.js'
++import HostPlace from '@models/HostPlace.js'
  import { Decorators } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 -import ApplicationModel from '@models/ApplicationModel.js'
-+import Host from './Host.js'
-+import HostPlace from './HostPlace.js'
-
+ 
  const deco = new Decorators<typeof Place>()
-
+ 
 @@ -23,4 +25,10 @@ export default class Place extends ApplicationModel {
    public deletedAt: DreamColumn<Place, 'deletedAt'>
    public createdAt: DreamColumn<Place, 'createdAt'>
@@ -141,35 +136,35 @@ index ee1bcf4..64ddfc8 100644
 +  public hosts: Host[]
  }
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 81b5fd3..0a88afd 100644
+index 9cb8801..6769319 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -88,6 +88,15 @@ export interface Guests {
-   userId: string;
+@@ -96,6 +96,15 @@ export interface Guests {
+   userId: string
  }
-
+ 
 +export interface HostPlaces {
-+  createdAt: Timestamp;
-+  deletedAt: Timestamp | null;
-+  hostId: string;
-+  id: Generated<string>;
-+  placeId: string;
-+  updatedAt: Timestamp;
++  createdAt: Timestamp
++  deletedAt: Timestamp | null
++  hostId: string
++  id: Generated<string>
++  placeId: string
++  updatedAt: Timestamp
 +}
 +
  export interface Hosts {
-   createdAt: Timestamp;
-   id: Generated<string>;
-@@ -114,6 +123,7 @@ export interface Users {
-
+   createdAt: Timestamp
+   id: Generated<string>
+@@ -122,6 +131,7 @@ export interface Users {
+ 
  export interface DB {
-   guests: Guests;
-+  host_places: HostPlaces;
-   hosts: Hosts;
-   places: Places;
-   users: Users;
-@@ -122,6 +132,7 @@ export interface DB {
-
+   guests: Guests
++  host_places: HostPlaces
+   hosts: Hosts
+   places: Places
+   users: Users
+@@ -129,6 +139,7 @@ export interface DB {
+ 
  export class DBClass {
    guests: Guests
 +  host_places: HostPlaces
@@ -177,10 +172,10 @@ index 81b5fd3..0a88afd 100644
    places: Places
    users: Users
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 2f77946..f25e8ae 100644
+index 6bdb2a0..6efd28d 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -122,6 +122,91 @@ export const schema = {
+@@ -118,6 +118,98 @@ export const schema = {
        },
      },
    },
@@ -190,7 +185,14 @@ index 2f77946..f25e8ae 100644
 +      default: [],
 +      named: [],
 +    },
-+    nonJsonColumnNames: ['createdAt', 'deletedAt', 'hostId', 'id', 'placeId', 'updatedAt'],
++    nonJsonColumnNames: [
++      'createdAt',
++      'deletedAt',
++      'hostId',
++      'id',
++      'placeId',
++      'updatedAt',
++    ],
 +    columns: {
 +      createdAt: {
 +        coercedType: {} as DateTime,
@@ -272,7 +274,7 @@ index 2f77946..f25e8ae 100644
    hosts: {
      serializerKeys: ['default', 'summary'],
      scopes: {
-@@ -169,6 +254,24 @@ export const schema = {
+@@ -165,6 +257,24 @@ export const schema = {
      },
      virtualColumns: [],
      associations: {
@@ -297,11 +299,12 @@ index 2f77946..f25e8ae 100644
        user: {
          type: 'BelongsTo',
          foreignKey: 'userId',
-@@ -254,7 +357,24 @@ export const schema = {
+@@ -257,7 +367,26 @@ export const schema = {
+       },
      },
      virtualColumns: [],
-     associations: {
--
+-    associations: {},
++    associations: {
 +      hostPlaces: {
 +        type: 'HasMany',
 +        foreignKey: 'placeId',
@@ -320,15 +323,16 @@ index 2f77946..f25e8ae 100644
 +        requiredAndClauses: null,
 +        passthroughAndClauses: null,
 +      },
-     },
++    },
    },
    users: {
-@@ -333,6 +453,7 @@ export const connectionTypeConfig = {
+     serializerKeys: [],
+@@ -335,6 +464,7 @@ export const connectionTypeConfig = {
      models: {
-       'Guest': 'guests',
-       'Host': 'hosts',
-+      'HostPlace': 'host_places',
-       'Place': 'places',
-       'User': 'users'
+       Guest: 'guests',
+       Host: 'hosts',
++      HostPlace: 'host_places',
+       Place: 'places',
+       User: 'users',
      },
-````
+```

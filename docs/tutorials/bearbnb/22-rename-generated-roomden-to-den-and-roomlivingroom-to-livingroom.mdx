@@ -1,20 +1,18 @@
 ---
-title: Rename generated RoomDen to Den and
+title: Rename generated RoomDen to Den and RoomLivingRoom to LivingRoom
 ---
 
-# Rename generated RoomDen to Den and
+# Rename generated RoomDen to Den and RoomLivingRoom to LivingRoom
 
 ## Commit Message
 
-````
-Rename generated RoomDen to Den and
-RoomLivingRoom to LivingRoom
+```
+Rename generated RoomDen to Den and RoomLivingRoom to LivingRoom
 
 ```console
 pnpm psy sync
-````
-
-````
+```
+```
 
 ## Changes
 
@@ -27,7 +25,7 @@ index 4840bb0..36df1c4 100644
 +import Den from '@models/Room/Den.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 -import RoomDen from '@models/Room/Den.js'
-
+ 
 -export default async function createRoomDen(attrs: UpdateableProperties<RoomDen> = {}) {
 -  return await RoomDen.create({
 +export default async function createRoomDen(attrs: UpdateableProperties<Den> = {}) {
@@ -43,7 +41,7 @@ index 501cde5..41b9807 100644
 +import LivingRoom from '@models/Room/LivingRoom.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 -import RoomLivingRoom from '@models/Room/LivingRoom.js'
-
+ 
 -export default async function createRoomLivingRoom(attrs: UpdateableProperties<RoomLivingRoom> = {}) {
 -  return await RoomLivingRoom.create({
 +export default async function createRoomLivingRoom(attrs: UpdateableProperties<LivingRoom> = {}) {
@@ -61,10 +59,10 @@ index 7f67007..8b65ee8 100644
  import Room from '@models/Room.js'
 +import { Decorators, STI } from '@rvoh/dream'
 +import { DreamSerializers } from '@rvoh/dream/types'
-
+ 
 -const deco = new Decorators<typeof RoomDen>()
 +const deco = new Decorators<typeof Den>()
-
+ 
  @STI(Room)
 -export default class RoomDen extends Room {
 -  public override get serializers(): DreamSerializers<RoomDen> {
@@ -87,10 +85,10 @@ index feaca2f..f6aaa38 100644
  import Room from '@models/Room.js'
 +import { Decorators, STI } from '@rvoh/dream'
 +import { DreamSerializers } from '@rvoh/dream/types'
-
+ 
 -const deco = new Decorators<typeof RoomLivingRoom>()
 +const deco = new Decorators<typeof LivingRoom>()
-
+ 
  @STI(Room)
 -export default class RoomLivingRoom extends Room {
 -  public override get serializers(): DreamSerializers<RoomLivingRoom> {
@@ -104,21 +102,23 @@ index feaca2f..f6aaa38 100644
 -
  }
 diff --git a/api/src/app/serializers/Room/DenSerializer.ts b/api/src/app/serializers/Room/DenSerializer.ts
-index 9030e23..86500fa 100644
+index 9030e23..111d141 100644
 --- a/api/src/app/serializers/Room/DenSerializer.ts
 +++ b/api/src/app/serializers/Room/DenSerializer.ts
-@@ -1,8 +1,6 @@
+@@ -1,8 +1,8 @@
 +import Den from '@models/Room/Den.js'
  import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 -import RoomDen from '@models/Room/Den.js'
-
+ 
 -export const RoomDenSummarySerializer = (roomDen: RoomDen) =>
 -  RoomSummarySerializer(RoomDen, roomDen)
-+export const RoomDenSummarySerializer = (roomDen: Den) => RoomSummarySerializer(Den, roomDen)
-
++export const RoomDenSummarySerializer = (roomDen: Den) =>
++  RoomSummarySerializer(Den, roomDen)
+ 
 -export const RoomDenSerializer = (roomDen: RoomDen) =>
 -  RoomSerializer(RoomDen, roomDen)
-+export const RoomDenSerializer = (roomDen: Den) => RoomSerializer(Den, roomDen)
++export const RoomDenSerializer = (roomDen: Den) =>
++  RoomSerializer(Den, roomDen)
 diff --git a/api/src/app/serializers/Room/LivingRoomSerializer.ts b/api/src/app/serializers/Room/LivingRoomSerializer.ts
 index e44755e..5a1ea3a 100644
 --- a/api/src/app/serializers/Room/LivingRoomSerializer.ts
@@ -127,18 +127,18 @@ index e44755e..5a1ea3a 100644
 +import LivingRoom from '@models/Room/LivingRoom.js'
  import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 -import RoomLivingRoom from '@models/Room/LivingRoom.js'
-
+ 
 -export const RoomLivingRoomSummarySerializer = (roomLivingRoom: RoomLivingRoom) =>
 -  RoomSummarySerializer(RoomLivingRoom, roomLivingRoom)
 +export const RoomLivingRoomSummarySerializer = (roomLivingRoom: LivingRoom) =>
 +  RoomSummarySerializer(LivingRoom, roomLivingRoom)
-
+ 
 -export const RoomLivingRoomSerializer = (roomLivingRoom: RoomLivingRoom) =>
 -  RoomSerializer(RoomLivingRoom, roomLivingRoom)
 +export const RoomLivingRoomSerializer = (roomLivingRoom: LivingRoom) =>
 +  RoomSerializer(LivingRoom, roomLivingRoom)
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index c767b4c..ece4189 100644
+index 5b4acb8..54ae737 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -350,8 +350,14 @@
@@ -285,7 +285,7 @@ index c767b4c..ece4189 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index b6c53c8..b12e018 100644
+index be9476f..5020c19 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -350,8 +350,14 @@
@@ -435,10 +435,10 @@ index b6c53c8..b12e018 100644
        "ValidationErrors": {
          "type": "object",
          "required": [
-diff --git a/api/src/openapi/spec.openapi.json b/api/src/openapi/spec.openapi.json
-index b6c53c8..b12e018 100644
---- a/api/src/openapi/spec.openapi.json
-+++ b/api/src/openapi/spec.openapi.json
+diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
+index e867312..90075bd 100644
+--- a/api/src/openapi/tests.openapi.json
++++ b/api/src/openapi/tests.openapi.json
 @@ -350,8 +350,14 @@
                            {
                              "$ref": "#/components/schemas/RoomBedroomSummary"
@@ -587,40 +587,40 @@ index b6c53c8..b12e018 100644
          "type": "object",
          "required": [
 diff --git a/api/src/types/dream.globals.ts b/api/src/types/dream.globals.ts
-index 9432dcc..d52af7a 100644
+index a014277..b6e5538 100644
 --- a/api/src/types/dream.globals.ts
 +++ b/api/src/types/dream.globals.ts
-@@ -10,8 +10,12 @@ export const globalTypeConfig = {
-       'Room/BathroomSummarySerializer',
-       'Room/BedroomSerializer',
-       'Room/BedroomSummarySerializer',
-+      'Room/DenSerializer',
-+      'Room/DenSummarySerializer',
-       'Room/KitchenSerializer',
-       'Room/KitchenSummarySerializer',
-+      'Room/LivingRoomSerializer',
-+      'Room/LivingRoomSummarySerializer',
-       'RoomSerializer',
-       'RoomSummarySerializer'
-     ],
+@@ -68,8 +68,12 @@ export const globalTypeConfig = {
+     'Room/BathroomSummarySerializer',
+     'Room/BedroomSerializer',
+     'Room/BedroomSummarySerializer',
++    'Room/DenSerializer',
++    'Room/DenSummarySerializer',
+     'Room/KitchenSerializer',
+     'Room/KitchenSummarySerializer',
++    'Room/LivingRoomSerializer',
++    'Room/LivingRoomSummarySerializer',
+     'RoomSerializer',
+     'RoomSummarySerializer',
+   ],
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 7f41eb1..d6d38a0 100644
+index f271b70..c146340 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -577,7 +577,9 @@ export const connectionTypeConfig = {
-       'Place': 'places',
+@@ -603,7 +603,9 @@ export const connectionTypeConfig = {
+       Room: 'rooms',
        'Room/Bathroom': 'rooms',
        'Room/Bedroom': 'rooms',
 +      'Room/Den': 'rooms',
        'Room/Kitchen': 'rooms',
 +      'Room/LivingRoom': 'rooms',
-       'Room': 'rooms',
-       'User': 'users'
+       User: 'users',
      },
-diff --git a/api/src/types/openapi/spec.openapi.d.ts b/api/src/types/openapi/spec.openapi.d.ts
+   },
+diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
 index f346e96..fc626a3 100644
---- a/api/src/types/openapi/spec.openapi.d.ts
-+++ b/api/src/types/openapi/spec.openapi.d.ts
+--- a/api/src/types/openapi/tests.openapi.d.ts
++++ b/api/src/types/openapi/tests.openapi.d.ts
 @@ -225,7 +225,7 @@ export interface paths {
                      content: {
                          "application/json": {
@@ -684,4 +684,4 @@ index f346e96..fc626a3 100644
          ValidationErrors: {
              /** @enum {string} */
              type: "validation";
-````
+```

@@ -6,14 +6,13 @@ title: Generate Room/Kitchen STI model
 
 ## Commit Message
 
-````
+```
 Generate Room/Kitchen STI model
 
 ```console
 pnpm psy g:sti-child Room/Kitchen extends Room appliances:enum\[\]:appliance_types:stove,oven,microwave,dishwasher
-````
-
-````
+```
+```
 
 ## Changes
 
@@ -80,11 +79,11 @@ index 0000000..f5a38d7
 +export const RoomKitchenSerializer = (roomKitchen: RoomKitchen) =>
 +  RoomSerializer(RoomKitchen, roomKitchen)
 +    .attribute('appliances')
-diff --git a/api/src/db/migrations/1764184671580-create-room-kitchen.ts b/api/src/db/migrations/1764184671580-create-room-kitchen.ts
+diff --git a/api/src/db/migrations/1765052418307-create-room-kitchen.ts b/api/src/db/migrations/1765052418307-create-room-kitchen.ts
 new file mode 100644
 index 0000000..d798b22
 --- /dev/null
-+++ b/api/src/db/migrations/1764184671580-create-room-kitchen.ts
++++ b/api/src/db/migrations/1765052418307-create-room-kitchen.ts
 @@ -0,0 +1,29 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -116,4 +115,4 @@ index 0000000..d798b22
 +  await db.schema.dropType('appliance_types_enum').execute()
 +}
 \ No newline at end of file
-````
+```

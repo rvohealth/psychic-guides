@@ -6,7 +6,7 @@ title: Generate User model
 
 ## Commit Message
 
-````
+```
 Generate User model
 
 The User model is primaryily used for authentication
@@ -22,9 +22,8 @@ insensitve.
 ```console
 pnpm psy db:create
 pnpm psy g:model --no-serializer User email:citext
-````
-
-````
+```
+```
 
 ## Changes
 
@@ -77,11 +76,11 @@ index 0000000..0c415a7
 +  public createdAt: DreamColumn<User, 'createdAt'>
 +  public updatedAt: DreamColumn<User, 'updatedAt'>
 +}
-diff --git a/api/src/db/migrations/1764175528349-create-user.ts b/api/src/db/migrations/1764175528349-create-user.ts
+diff --git a/api/src/db/migrations/1765049053419-create-user.ts b/api/src/db/migrations/1765049053419-create-user.ts
 new file mode 100644
 index 0000000..7e99b85
 --- /dev/null
-+++ b/api/src/db/migrations/1764175528349-create-user.ts
++++ b/api/src/db/migrations/1765049053419-create-user.ts
 @@ -0,0 +1,24 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely, sql } from 'kysely'
@@ -108,4 +107,4 @@ index 0000000..7e99b85
 +  await db.schema.dropTable('users').execute()
 +}
 \ No newline at end of file
-````
+```

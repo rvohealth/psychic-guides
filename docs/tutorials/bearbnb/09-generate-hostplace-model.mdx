@@ -6,14 +6,13 @@ title: Generate HostPlace model
 
 ## Commit Message
 
-````
+```
 Generate HostPlace model
 
 ```console
 pnpm psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to deleted_at:datetime:optional
-````
-
-````
+```
+```
 
 ## Changes
 
@@ -77,11 +76,11 @@ index 0000000..baf74e2
 +  public place: Place
 +  public placeId: DreamColumn<HostPlace, 'placeId'>
 +}
-diff --git a/api/src/db/migrations/1764176778158-create-host-place.ts b/api/src/db/migrations/1764176778158-create-host-place.ts
+diff --git a/api/src/db/migrations/1765051358136-create-host-place.ts b/api/src/db/migrations/1765051358136-create-host-place.ts
 new file mode 100644
 index 0000000..7d47d55
 --- /dev/null
-+++ b/api/src/db/migrations/1764176778158-create-host-place.ts
++++ b/api/src/db/migrations/1765051358136-create-host-place.ts
 @@ -0,0 +1,37 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -121,4 +120,4 @@ index 0000000..7d47d55
 +  await db.schema.dropTable('host_places').execute()
 +}
 \ No newline at end of file
-````
+```

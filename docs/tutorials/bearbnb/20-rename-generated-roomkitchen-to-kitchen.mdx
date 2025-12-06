@@ -6,7 +6,7 @@ title: Rename generated RoomKitchen to Kitchen.
 
 ## Commit Message
 
-````
+```
 Rename generated RoomKitchen to Kitchen.
 
 No check constraint to update in the migration because, for
@@ -16,9 +16,8 @@ so even non-Kitchen Rooms will have non-null, empty-array `appliances`
 
 ```console
 pnpm psy db:migrate
-````
-
-````
+```
+```
 
 ## Changes
 
@@ -31,7 +30,7 @@ index 8aa2e13..2e89aa9 100644
 +import Kitchen from '@models/Room/Kitchen.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 -import RoomKitchen from '@models/Room/Kitchen.js'
-
+ 
 -export default async function createRoomKitchen(attrs: UpdateableProperties<RoomKitchen> = {}) {
 -  return await RoomKitchen.create({
 +export default async function createRoomKitchen(attrs: UpdateableProperties<Kitchen> = {}) {
@@ -48,10 +47,10 @@ index c213b1d..0a7b3f1 100644
  import { Decorators, STI } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 -import Room from '@models/Room.js'
-
+ 
 -const deco = new Decorators<typeof RoomKitchen>()
 +const deco = new Decorators<typeof Kitchen>()
-
+ 
  @STI(Room)
 -export default class RoomKitchen extends Room {
 -  public override get serializers(): DreamSerializers<RoomKitchen> {
@@ -62,31 +61,31 @@ index c213b1d..0a7b3f1 100644
        summary: 'Room/KitchenSummarySerializer',
      }
    }
-
+ 
 -  public appliances: DreamColumn<RoomKitchen, 'appliances'>
 +  public appliances: DreamColumn<Kitchen, 'appliances'>
  }
 diff --git a/api/src/app/serializers/Room/KitchenSerializer.ts b/api/src/app/serializers/Room/KitchenSerializer.ts
-index f5a38d7..618c25a 100644
+index f5a38d7..17a7d34 100644
 --- a/api/src/app/serializers/Room/KitchenSerializer.ts
 +++ b/api/src/app/serializers/Room/KitchenSerializer.ts
-@@ -1,9 +1,8 @@
+@@ -1,9 +1,9 @@
 +import Kitchen from '@models/Room/Kitchen.js'
  import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 -import RoomKitchen from '@models/Room/Kitchen.js'
-
+ 
 -export const RoomKitchenSummarySerializer = (roomKitchen: RoomKitchen) =>
 -  RoomSummarySerializer(RoomKitchen, roomKitchen)
 +export const RoomKitchenSummarySerializer = (roomKitchen: Kitchen) =>
 +  RoomSummarySerializer(Kitchen, roomKitchen)
-
+ 
 -export const RoomKitchenSerializer = (roomKitchen: RoomKitchen) =>
 -  RoomSerializer(RoomKitchen, roomKitchen)
--    .attribute('appliances')
 +export const RoomKitchenSerializer = (roomKitchen: Kitchen) =>
-+  RoomSerializer(Kitchen, roomKitchen).attribute('appliances')
++  RoomSerializer(Kitchen, roomKitchen)
+     .attribute('appliances')
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 856dcf2..c767b4c 100644
+index 934ff47..5b4acb8 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -349,6 +349,9 @@
@@ -215,7 +214,7 @@ index 856dcf2..c767b4c 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 21db2c7..b6c53c8 100644
+index 667a2dd..be9476f 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -349,6 +349,9 @@
@@ -350,10 +349,10 @@ index 21db2c7..b6c53c8 100644
        "ValidationErrors": {
          "type": "object",
          "required": [
-diff --git a/api/src/openapi/spec.openapi.json b/api/src/openapi/spec.openapi.json
-index 21db2c7..b6c53c8 100644
---- a/api/src/openapi/spec.openapi.json
-+++ b/api/src/openapi/spec.openapi.json
+diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
+index 1cb2422..e867312 100644
+--- a/api/src/openapi/tests.openapi.json
++++ b/api/src/openapi/tests.openapi.json
 @@ -349,6 +349,9 @@
                            },
                            {
@@ -487,65 +486,74 @@ index 21db2c7..b6c53c8 100644
          "type": "object",
          "required": [
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 3fd51e7..4ec7262 100644
+index c66af38..34aae49 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -64,6 +64,15 @@ import { type CalendarDate, type DateTime } from '@rvoh/dream'
-
- import type { ColumnType } from "kysely";
-
-+export type ApplianceTypesEnum = "dishwasher" | "microwave" | "oven" | "stove";
+@@ -63,6 +63,15 @@ import { type CalendarDate, type DateTime } from '@rvoh/dream'
+  */
+ import type { ColumnType } from 'kysely'
+ 
++export type ApplianceTypesEnum = 'dishwasher' | 'microwave' | 'oven' | 'stove'
++
 +export const ApplianceTypesEnumValues = [
-+  "dishwasher",
-+  "microwave",
-+  "oven",
-+  "stove"
++  'dishwasher',
++  'microwave',
++  'oven',
++  'stove',
 +] as const
 +
-+
- export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[]
-   ? U[]
-   : ArrayTypeImpl<T>;
-@@ -153,6 +162,7 @@ export interface Places {
+ export type ArrayType<T> =
+   ArrayTypeImpl<T> extends (infer U)[] ? U[] : ArrayTypeImpl<T>
+ 
+@@ -176,6 +185,7 @@ export interface Places {
  }
-
+ 
  export interface Rooms {
-+  appliances: Generated<ArrayType<ApplianceTypesEnum>>;
-   bathOrShowerStyle: BathOrShowerStylesEnum | null;
-   bedTypes: Generated<ArrayType<BedTypesEnum>>;
-   createdAt: Timestamp;
++  appliances: Generated<ArrayType<ApplianceTypesEnum>>
+   bathOrShowerStyle: BathOrShowerStylesEnum | null
+   bedTypes: Generated<ArrayType<BedTypesEnum>>
+   createdAt: Timestamp
 diff --git a/api/src/types/dream.globals.ts b/api/src/types/dream.globals.ts
-index bc30c46..9432dcc 100644
+index 6109591..a014277 100644
 --- a/api/src/types/dream.globals.ts
 +++ b/api/src/types/dream.globals.ts
-@@ -10,6 +10,8 @@ export const globalTypeConfig = {
-       'Room/BathroomSummarySerializer',
-       'Room/BedroomSerializer',
-       'Room/BedroomSummarySerializer',
-+      'Room/KitchenSerializer',
-+      'Room/KitchenSummarySerializer',
-       'RoomSerializer',
-       'RoomSummarySerializer'
-     ],
+@@ -68,6 +68,8 @@ export const globalTypeConfig = {
+     'Room/BathroomSummarySerializer',
+     'Room/BedroomSerializer',
+     'Room/BedroomSummarySerializer',
++    'Room/KitchenSerializer',
++    'Room/KitchenSummarySerializer',
+     'RoomSerializer',
+     'RoomSummarySerializer',
+   ],
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 9cde824..7f41eb1 100644
+index 7ff53e5..f271b70 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -59,6 +59,8 @@ us humans, he says:
-
+@@ -58,10 +58,12 @@ us humans, he says:
+ 
  import { type CalendarDate, type DateTime } from '@rvoh/dream'
  import {
-+  ApplianceTypesEnum,
++  type ApplianceTypesEnum,
+   type BathOrShowerStylesEnum,
+   type BedTypesEnum,
+   type PlaceStylesEnum,
+   type RoomTypesEnum,
 +  ApplianceTypesEnumValues,
-   BathOrShowerStylesEnum,
    BathOrShowerStylesEnumValues,
-   BedTypesEnum,
-@@ -389,8 +391,17 @@ export const schema = {
-       default: ['dream:STI'],
+   BedTypesEnumValues,
+   PlaceStylesEnumValues,
+@@ -404,6 +406,7 @@ export const schema = {
        named: [],
      },
--    nonJsonColumnNames: ['bathOrShowerStyle', 'bedTypes', 'createdAt', 'deletedAt', 'id', 'placeId', 'position', 'type', 'updatedAt'],
-+    nonJsonColumnNames: ['appliances', 'bathOrShowerStyle', 'bedTypes', 'createdAt', 'deletedAt', 'id', 'placeId', 'position', 'type', 'updatedAt'],
+     nonJsonColumnNames: [
++      'appliances',
+       'bathOrShowerStyle',
+       'bedTypes',
+       'createdAt',
+@@ -415,6 +418,15 @@ export const schema = {
+       'updatedAt',
+     ],
      columns: {
 +      appliances: {
 +        coercedType: {} as ApplianceTypesEnum[],
@@ -559,18 +567,18 @@ index 9cde824..7f41eb1 100644
        bathOrShowerStyle: {
          coercedType: {} as BathOrShowerStylesEnum | null,
          enumType: {} as BathOrShowerStylesEnum,
-@@ -566,6 +577,7 @@ export const connectionTypeConfig = {
-       'Place': 'places',
+@@ -591,6 +603,7 @@ export const connectionTypeConfig = {
+       Room: 'rooms',
        'Room/Bathroom': 'rooms',
        'Room/Bedroom': 'rooms',
 +      'Room/Kitchen': 'rooms',
-       'Room': 'rooms',
-       'User': 'users'
+       User: 'users',
      },
-diff --git a/api/src/types/openapi/spec.openapi.d.ts b/api/src/types/openapi/spec.openapi.d.ts
+   },
+diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
 index 7a1fc89..f346e96 100644
---- a/api/src/types/openapi/spec.openapi.d.ts
-+++ b/api/src/types/openapi/spec.openapi.d.ts
+--- a/api/src/types/openapi/tests.openapi.d.ts
++++ b/api/src/types/openapi/tests.openapi.d.ts
 @@ -225,7 +225,7 @@ export interface paths {
                      content: {
                          "application/json": {
@@ -633,4 +641,4 @@ index 7a1fc89..f346e96 100644
          ValidationErrors: {
              /** @enum {string} */
              type: "validation";
-````
+```
