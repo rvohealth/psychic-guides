@@ -2,7 +2,7 @@
 sidebar_position: 2
 title: Under the hood
 pagination_next: null
-ai_summary: Dream uses Kysely for database queries, generates types from database introspection. Psychic wraps Express with MVC patterns, automatic OpenAPI generation. Decorators require syncing for types. Circular dependencies handled with lookup method. Node.js >= 22 recommended for decorator support.
+ai_summary: "Dream uses Kysely for database queries, generates types from database introspection. Psychic wraps Express with MVC patterns, automatic OpenAPI generation. Decorators require syncing for types. Circular dependencies handled with lookup method. Node.js >= 22 recommended for decorator support."
 ---
 
 ## Dream

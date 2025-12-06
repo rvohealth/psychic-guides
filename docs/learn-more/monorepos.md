@@ -2,7 +2,7 @@
 sidebar_position: 1
 title: Monorepos
 pagination_prev: null
-ai_summary: Monorepo option during provisioning creates api, client, and/or admin directories. Psychic doesn't couple backend with frontend. Uses Vite or Next.js for client provisioning. Provides helper scripts and feature test bindings. Loose coupling allows easy replacement of client directories.
+ai_summary: "Monorepo option during provisioning creates api, client, and/or admin directories. Psychic doesn't couple backend with frontend. Uses Vite or Next.js for client provisioning. Provides helper scripts and feature test bindings. Loose coupling allows easy replacement of client directories."
 ---
 
 When provisioning a new Psychic application, you will be asked if you want to build a monorepo or not. You may be wondering what this means and why you've been asked.

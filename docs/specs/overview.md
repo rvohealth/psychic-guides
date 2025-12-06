@@ -1,7 +1,7 @@
 ---
 sidebar_position: 0
 pagination_prev: null
-ai_summary: Psychic uses Vitest for both unit and feature test suites. Configuration exposed at top level. Two spec folders: unit and features. Enhanced with extra assertion helpers for Psychic apps. See unit and feature spec guides for details.
+ai_summary: "Psychic uses Vitest for both unit and feature test suites. Configuration exposed at top level. Two spec folders: unit and features. Enhanced with extra assertion helpers for Psychic apps. See unit and feature spec guides for details."
 ---
 
 # overview
