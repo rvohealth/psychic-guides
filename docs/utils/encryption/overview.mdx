@@ -3,6 +3,8 @@ sidebar_position: 0
 pagination_prev: null
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # Overview
 
 A light-weight `Encrypt` class is provided by `Dream`, which can be freely utilized throughout your app for symmetrical encryption tasks.
@@ -40,8 +42,11 @@ Encryption keys are an essential part of any encryption algorithm, and _must_ be
 
 Luckily, Dream handles the complexity of figuring out how to generate keys for your application for you. To generate a key, simply open your console and generate them with the `.generateKey` method, passing the algorithm you wish to use, like so:
 
+<PackageManagerTabs
+  code={`NODE_ENV=development {{PM}} console`}
+/>
+
 ```ts
-NODE_ENV=development pnpm console
 > Encrypt.generateKey('aes-256-gcm')
 // '65ogKxacRKyNxj20PCQKuBnxKgOty5eQnY4Ktbk04U0='
 ```

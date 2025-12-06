@@ -4,6 +4,7 @@ pagination_next: null
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # migration helpers
 
@@ -143,10 +144,10 @@ export async function down(db: Kysely<any>): Promise<void> {
 
 New enum values cannot be both added and used as a replacement in a single transaction, and new migration files are generally run in a single transaction. To both add a new enum and replace existing values with that new value, use two migration files, and include both `newTransaction` and the `dropEnumValue` in the second file, e.g.:
 
-```console
-pnpm psy g:migration add-bathroom-to-room-types
-pnpm psy g:migration replace-watercloset-with-bathroom
-```
+<PackageManagerTabs
+  code={`{{PM}} psy g:migration add-bathroom-to-room-types
+{{PM}} psy g:migration replace-watercloset-with-bathroom`}
+/>
 
 ```ts
 // in <timestamp>-add-bathroom-to-room-types:

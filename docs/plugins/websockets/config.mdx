@@ -2,6 +2,8 @@
 sidebar_position: 1
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # Config
 
 ## Installation
@@ -12,9 +14,9 @@ However, if this is not the case for you and you are looking to install websocke
 
 1. Install the package.
 
-```sh
-pnpm add @rvoh/psychic-websockets
-```
+<PackageManagerTabs
+  code={`{{PM}} add @rvoh/psychic-websockets`}
+/>
 
 2. Add the missing configuration file to `src/conf/websockets.ts`:
 

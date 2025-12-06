@@ -3,6 +3,8 @@ sidebar_position: 0
 pagination_prev: null
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # migrations
 
 Migrations are generated implicitly as by the [model](/docs/cli/generators/model) and [controller](/docs/cli/generators/controller) generators or explicitly using the [migration](/docs/cli/generators/migration) generator.
@@ -36,10 +38,10 @@ export async function down(db: Kysely<any>): Promise<void> {
 
 To run this migration, we can use the migrate cli command, like so:
 
-```sh
-NODE_ENV=development pnpm psy db:migrate
-NODE_ENV=test pnpm psy db:migrate
-```
+<PackageManagerTabs
+  code={`NODE_ENV=development {{PM}} psy db:migrate
+NODE_ENV=test {{PM}} psy db:migrate`}
+/>
 
 The following column types are supported out of the box (though it isn't guaranteed that the Typescript types will be well defined for anything beyond `text`, `character varying` (`string` in Dream generators), `uuid`, `integer`, `numeric` (`decimal` in Dream generators), `bigint`, `bigserial`, `serial`, `boolean`, `date`, `timestamp` (`datetime` in Dream generators), `json`, `jsonb` and array versions of these types):
 
@@ -61,13 +63,13 @@ Dream migrations will allow whatever data types are supported by postgres. The c
 
 Along with migrations, Psychic provides additional cli commands for governing migrations:
 
-```sh
-NODE_ENV=test pnpm psy db:drop
-NODE_ENV=test pnpm psy db:create
-NODE_ENV=test pnpm psy db:migrate
-NODE_ENV=test pnpm psy db:rollback
-NODE_ENV=test pnpm psy db:reset # drop, create, migrate
-```
+<PackageManagerTabs
+  code={`NODE_ENV=test {{PM}} psy db:drop
+NODE_ENV=test {{PM}} psy db:create
+NODE_ENV=test {{PM}} psy db:migrate
+NODE_ENV=test {{PM}} psy db:rollback
+NODE_ENV=test {{PM}} psy db:reset # drop, create, migrate`}
+/>
 
 Dream runs Kysely migrations with `allowUnorderedMigrations: true`, which facilitates collaboration by large teams (see https://github.com/kysely-org/kysely/issues/697 for the rationale). [Keysely's migration documentation](https://kysely.dev/docs/migrations) may be a helpful reference. Of particular importance is the following guarantee:
 

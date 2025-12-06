@@ -2,13 +2,18 @@
 sidebar_position: 4
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # repl
 
 The REPL (called `console`) enables you to inspect the database through the lense of your application. The code used to bootstrap your repl can be found in `conf/repl.ts`
 
+<PackageManagerTabs
+  code={`# start local repl
+{{PM}} console`}
+/>
+
 ```ts
-# start local repl
-pnpm console
 > u = await User.all()
 ```
 

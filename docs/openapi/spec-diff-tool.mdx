@@ -3,6 +3,8 @@ sidebar_position: 7
 pagination_next: null
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 ## OpenAPI Spec Diff Tool
 
 This tool helps developers automatically detect **breaking** and **non-breaking** changes between the current OpenAPI specification(s) in your branch and the `HEAD` branch (e.g., `main`). It uses [`oasdiff`](https://github.com/Tufin/oasdiff) under the hood.
@@ -37,18 +39,18 @@ Once `checkDiffs: true` is set in your OpenAPI config, there are two ways to run
 
 ### 1. **Automatic check**
 
-```bash
-pnpm psy sync
-```
+<PackageManagerTabs
+  code={`{{PM}} psy sync`}
+/>
 
 * Automatically runs OpenAPI diff checks for all configs that have `checkDiffs: true`.
 * Recommended for use in CI pipelines or as part of your standard sync process.
 
 ### 2. **Manual check**
 
-```bash
-pnpm psy diff:openapi
-```
+<PackageManagerTabs
+  code={`{{PM}} psy diff:openapi`}
+/>
 
 * Manually triggers the diff comparison for enabled OpenAPI configs.
 * Useful during development or pre-PR review.
@@ -58,13 +60,13 @@ pnpm psy diff:openapi
 
 Use the `--fail-on-breaking`, or `-f` flag to **fail the command** if any breaking changes are detected:
 
-```bash
-# when running sync
-pnpm psy sync --fail-on-breaking
+<PackageManagerTabs
+  code={`# when running sync
+{{PM}} psy sync --fail-on-breaking
 
 # when running directly
-pnpm psy diff:openapi --fail-on-breaking
-```
+{{PM}} psy diff:openapi --fail-on-breaking`}
+/>
 
 * This will throw an error and exit the process if breaking changes are found compared to the `HEAD` branch (usually `main`).
 

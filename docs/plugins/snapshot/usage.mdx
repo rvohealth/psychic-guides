@@ -4,13 +4,15 @@ title: usage
 pagination_next: null
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # Usage
 
 To use `Snapshotable`, first make sure to install the package
 
-```sh
-pnpm add @rvoh/dream-plugin-json-snapshot
-```
+<PackageManagerTabs
+  code={`{{PM}} add @rvoh/dream-plugin-json-snapshot`}
+/>
 
 Once done, find the model you want to take snapshots with, and be sure to extend the parent model using the provided mixin:
 

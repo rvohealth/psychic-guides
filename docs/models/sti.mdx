@@ -2,6 +2,8 @@
 sidebar_position: 12
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # single table inheritance
 
 Single Table Inheritance, or "STI" for short, is a design pattern which enables a single table to reflect multiple unique models, all of which inherit from a base model. In order for STI to work, a `type` field _must_ be present on the STI model, like so:
@@ -74,6 +76,6 @@ await Dog.all()
 
 The sti-child generator makes it easy to create STI children:
 
-```sh
-pnpm psy g:sti-child Foo/Bar extends Foo/Base hello:string
-```
+<PackageManagerTabs
+  code={`{{PM}} psy g:sti-child Foo/Bar extends Foo/Base hello:string`}
+/>

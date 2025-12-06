@@ -3,20 +3,22 @@ sidebar_position: 4
 title: migration
 ---
 
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
 # generate:migration
 
 Use the built-in cli command for generating migrations to easily get up and running. Psychic will automatically timestamp the filename for your migrations, keeping them in sequential order, and will generate boilerplate to get you started with writing a migration.
 
-```bash
-pnpm psy g:migration --help
-pnpm psy g:migration add-deleted-at-to-posts deleted_at:datetime
-```
+<PackageManagerTabs
+  code={`{{PM}} psy g:migration --help
+{{PM}} psy g:migration add-deleted-at-to-posts deleted_at:datetime`}
+/>
 
 ## Usage
 
-```sh
-pnpm psy g:migration [options] <migrationName> [columnsWithTypes...]
-```
+<PackageManagerTabs
+  code={`{{PM}} psy g:migration [options] <migrationName> [columnsWithTypes...]`}
+/>
 
 **Arguments:**
 
