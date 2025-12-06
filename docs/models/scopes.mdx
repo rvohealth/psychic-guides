@@ -1,12 +1,13 @@
 ---
 sidebar_position: 10
+ai_summary: Scopes capture recurring query behavior into reusable functions. Use @deco.Scope() decorator. Default scopes automatically apply to all queries. Scope functions receive Query instance and return modified query (usually via where).
 ---
 
 # scopes
 
-The scoping system will be familiar to those coming from the Ruby on Rails camp, but for those who are new to this, our design was inspired by the Ruby on Rails scope pattern, and can be used to elegantly capture recurring query behavior into partialized functions which can then be applied to your quieries, enabling your complex statements to be replaced with beautiful business logic.
+The scoping system will be familiar to those coming from the Ruby on Rails camp, but for those who are new to this, our design was inspired by the Ruby on Rails scope pattern, and can be used to elegantly capture recurring query behavior into partialized functions which can then be applied to your queries, enabling your complex statements to be replaced with beautiful business logic.
 
-All scope functions receive a `Query<ClassName>` (where `ClassName` is the name of the Dream class defining the Scope) instance and return a clone of that instance (usually by calling `where` on that instance).
+All scope functions receive a `Query<ClassName>` (where `ClassName` is the name of the Dream class defining the Scope) instance and return a clone of that instance (usually by calling `where` on that instance):
 
 ```ts
 export default class Post extends Dream {
@@ -26,9 +27,9 @@ export default class Post extends Dream {
 const posts = await Post.scope('withFunnyName').all()
 ```
 
-## default scopes
+## Default scopes
 
-While regular scopes are meant to be applied manually, default scopes will automatically be applied to all queries. This behavior should be used sparingly, but there are occasionally pretty good cases for it, as seen below, emulating the Ruby on Rails paranoid gem pattern.
+While regular scopes are meant to be applied manually, default scopes will automatically be applied to all queries. This behavior should be used sparingly, but there are occasionally pretty good cases for it, as seen below, emulating the Ruby on Rails paranoid gem pattern:
 
 ```ts
 export default class Post extends Dream {

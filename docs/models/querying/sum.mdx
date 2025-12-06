@@ -1,8 +1,11 @@
+---
+ai_summary: The sum method sums a numeric column for all records matching the query. Must pass a numeric column (integer or decimal). Can be chained with query building methods like where.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # sum
 
-The `sum` method will sum a numeric column for all found records in the query.
+The `sum` method will sum a numeric column for all found records in the query:
 
 ```ts
 const sumOfAllScoresForAllGames = await Game.sum('score')
@@ -20,7 +23,7 @@ select sum("score") from "games"
 
 ## Chaining
 
-You can leverage chainable methods to filter out records at the sql level before calling min.
+You can leverage chainable methods to filter out records at the SQL level before calling `sum`:
 
 ```ts
 const sportsballScoresSum = await Game.where({ type: 'sportsball' }).sum('score')

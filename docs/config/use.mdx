@@ -1,18 +1,21 @@
 ---
 sidebar_position: 3
 title: hooks
+ai_summary: The use method enables tapping into Express middleware directly. Acts similarly to Express use API. Supports optional first argument to inject at specific points: before-middleware, after-middleware, after-routes.
 ---
 
 
 ## use
 
-In addition to the [hooks](/docs/config/hooks) provided by psychic, you can tap into express middleware directly by leveraging the `use` method. This method acts similarly to the express `use` api for most use cases.
+In addition to the [hooks](/docs/config/hooks) provided by Psychic, you can tap into Express middleware directly by leveraging the `use` method. This method acts similarly to the Express `use` API for most use cases:
 
 ```ts
 psy.use((req, res, next) => {
   res.json({ hello: 'world' })
 })
 ```
+
+## Injection points
 
 If you need to inject at a specific point during the build cycle, you can provide an optional first argument, which will cause your middleware to run at the specified point:
 

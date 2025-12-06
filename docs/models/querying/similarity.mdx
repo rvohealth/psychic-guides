@@ -1,3 +1,6 @@
+---
+ai_summary: Similarity operations enable fuzzy text searching using PostgreSQL's pg_trgm extension. Three operators: similarity (default 0.3 threshold), wordSimilarity (default 0.5), strictWordSimilarity (default 0.6). Requires pg_trgm extension and optional GIN indexes for performance. Configurable score thresholds.
+---
 # similarity
 
 Similarity operations enable fuzzy text searching using PostgreSQL's `pg_trgm` extension. Dream provides three similarity operators with configurable scoring thresholds for different matching strategies.
@@ -33,7 +36,7 @@ PostgreSQL's `pg_trgm` extension provides three distinct similarity functions: `
 
 ### ops.similarity()
 
-The `similarity()` operator uses trigram similarity with a default score threshold of **0.3**. It's the most flexible similarity operator and works well for general fuzzy matching.
+The `similarity()` operator uses trigram similarity with a default score threshold of **0.3**. It's the most flexible similarity operator and works well for general fuzzy matching:
 
 ```ts
 import { ops } from '@rvoh/dream'
@@ -49,7 +52,7 @@ const titleSearchedRecipes = await Recipe.passthrough({ locale: 'en-US' })
 
 ### ops.wordSimilarity()
 
-The `wordSimilarity()` operator uses word-based similarity with a default score threshold of **0.5**. It's better at matching individual words within longer text.
+The `wordSimilarity()` operator uses word-based similarity with a default score threshold of **0.5**. It's better at matching individual words within longer text:
 
 ```ts
 import { ops } from '@rvoh/dream'
@@ -65,7 +68,7 @@ const fullTextSearchedRecipes = await Recipe.passthrough({ locale: 'en-US' })
 
 ### ops.strictWordSimilarity()
 
-The `strictWordSimilarity()` operator uses strict word-based similarity with a default score threshold of **0.6**. It provides the most precise matching.
+The `strictWordSimilarity()` operator uses strict word-based similarity with a default score threshold of **0.6**. It provides the most precise matching:
 
 ```ts
 import { ops } from '@rvoh/dream'
@@ -79,7 +82,7 @@ const fullTextSearchedRecipes = await Recipe.passthrough({ locale: 'en-US' })
   .scrollPaginate({ cursor })
 ```
 
-## Score Thresholds
+## Score thresholds
 
 All similarity operators accept an optional `score` parameter that controls the matching threshold:
 
@@ -101,7 +104,7 @@ const preciseResults = await User.where({
 }).all()
 ```
 
-### GIN Indexes
+### GIN indexes
 
 For optimal performance on large datasets, create GIN indexes on columns you'll search frequently:
 

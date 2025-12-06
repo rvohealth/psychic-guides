@@ -1,6 +1,7 @@
 ---
 sidebar_position: 2
 title: sti-child
+ai_summary: The generate:sti-child command creates STI (Single Table Inheritance) child models that extend a parent model. Requires parent model to be created first with --sti-base-serializer flag. Supports same column types as model generator.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -21,6 +22,8 @@ Before generating STI children, you must first create the parent model, and it i
 
 **Why `--sti-base-serializer`?** This flag creates the base serializer in a format that child serializers can properly extend, ensuring the inheritance hierarchy works correctly.
 
+## Usage
+
 You can also create an STI parent using the model generator:
 
 <PackageManagerTabs
@@ -29,13 +32,11 @@ You can also create an STI parent using the model generator:
   Place:belongs_to position:integer:optional deleted_at:datetime:optional`}
 />
 
-## Usage
-
 <PackageManagerTabs
   code={`{{PM}} psy g:sti-child <childModelName> extends <parentModelName> [columnsWithTypes...]`}
 />
 
-**Arguments:**
+### Arguments
 
 - `<childModelName>`: The name of the model to create, e.g. `Post` or `Settings/CommunicationPreferences`.
 - `extends`: Just the word "extends".

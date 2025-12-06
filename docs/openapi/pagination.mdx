@@ -1,11 +1,12 @@
 ---
 sidebar_position: 3
 title: pagination
+ai_summary: OpenAPI decorator supports paginate: true to automatically generate pagination response structure (recordCount, pageCount, currentPage, results). Also supports scrollPaginate: true for cursor-based pagination with cursor and nextCursor fields.
 ---
 
 # OpenAPI - Pagination
 
-Psychic provides a nice wrapper around Dream's `paginate` method within the OpenAPI decorator, to enable you to explicitly render the results of a `paginate` call within Dream. When passing `paginate: true`, to your OpenAPI decorator, Psychic will automatically provide the necessary outer structure to reflect the call to Dream, and will correctly serialize the `results` field on the incoming payload, same as it would in an ordinary `many: true` scenario.
+Psychic provides a nice wrapper around Dream's `paginate` method within the OpenAPI decorator, to enable you to explicitly render the results of a `paginate` call within Dream. When passing `paginate: true` to your OpenAPI decorator, Psychic will automatically provide the necessary outer structure to reflect the call to Dream, and will correctly serialize the `results` field on the incoming payload, same as it would in an ordinary `many: true` scenario:
 
 ```ts
 class PlacesController {
@@ -23,7 +24,7 @@ class PlacesController {
 }
 ```
 
-which will produce an openapi shape like this for the response body:
+which will produce an OpenAPI shape like this for the response body:
 
 ```json
 {

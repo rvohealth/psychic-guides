@@ -1,28 +1,29 @@
 ---
 sidebar_position: 6
 pagination_next: null
+ai_summary: Database migration commands include db:migrate (runs outstanding migrations), db:rollback (rolls back migrations with --steps option), db:create (creates database), db:drop (drops database), db:reset (drops, creates, migrates, and seeds), and db:seed (seeds database). All support --skip-sync option.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # migrate/rollback
 
-## db\:migrate
+## db:migrate
 
-Runs any outstanding database migrations.
+Runs any outstanding database migrations:
 
 <PackageManagerTabs
   code={`NODE_ENV=development {{PM}} psy db:migrate
 NODE_ENV=test {{PM}} psy db:migrate`}
 />
 
-**Options:**
+### Options
 - `--skip-sync`: Skips syncing local schema after running migrations.
 - `-h, --help`: Display help for command.
 
-## db\:rollback
+## db:rollback
 
-Rolls back the specified number of migration steps (defaults to 1).
+Rolls back the specified number of migration steps (defaults to 1):
 
 <PackageManagerTabs
     code={`NODE_ENV=test {{PM}} psy db:rollback`}
@@ -34,26 +35,26 @@ Roll back multiple migrations at once:
     code={`NODE_ENV=test {{PM}} psy db:rollback --steps 3`}
 />
 
-**Options:**
+### Options
 - `--steps <number>`: Number of steps back to travel (default: 1).
 - `--skip-sync`: Skips syncing local schema after running migrations.
 - `-h, --help`: Display help for command.
 
-## db\:create
+## db:create
 
-Creates a new database.
+Creates a new database:
 
 <PackageManagerTabs
   code={`NODE_ENV=development {{PM}} psy db:create
 NODE_ENV=test {{PM}} psy db:create`}
 />
 
-**Options:**
+### Options
 - `-h, --help`: Display help for command.
 
-## db\:drop
+## db:drop
 
-Drops the database.
+Drops the database:
 
 <PackageManagerTabs
   code={`NODE_ENV=development {{PM}} psy db:drop

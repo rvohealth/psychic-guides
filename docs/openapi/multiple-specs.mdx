@@ -1,11 +1,12 @@
 ---
 sidebar_position: 4
 title: multiple specs
+ai_summary: Multiple OpenAPI specs can be configured for different audiences (admin, mobile, web). Each spec has its own outputFilename. Supports suppressResponseEnums option for mobile clients. Update ApplicationController#openapiNames getter to include all spec names.
 ---
 
 # Multiple specs
 
-For some applications, it may be desirable to split your openapi definitions into multiple, separate files. to do this, you can specify in `conf/app.ts` a second openapi configuration under a different name (e.g. `admin`), like so:
+For some applications, it may be desirable to split your OpenAPI definitions into multiple, separate files. To do this, you can specify in `conf/app.ts` a second OpenAPI configuration under a different name (e.g. `admin`), like so:
 
 ```ts
 export default (psy: Psyconf) => {
@@ -21,9 +22,9 @@ export default (psy: Psyconf) => {
 }
 ```
 
-This can also be useful, if, say, you have an api which services both a mobile team, and a web team, and you need each of them to be configured differently. This could be critical for you, since if a response payload contains a string enum, that string enum is treated strictly as a string, and the description will contain all the possible values. This is important, since currently many mobile environments will raise exceptions when encountering unexpected enums (which can happen if your database enums shift over time), forcing you to have to version your backend to serve different enums to different versions of a mobile app, which would be absolutely horrible for you.
+This can also be useful, if, say, you have an API which services both a mobile team, and a web team, and you need each of them to be configured differently. This could be critical for you, since if a response payload contains a string enum, that string enum is treated strictly as a string, and the description will contain all the possible values. This is important, since currently many mobile environments will raise exceptions when encountering unexpected enums (which can happen if your database enums shift over time), forcing you to have to version your backend to serve different enums to different versions of a mobile app, which would be absolutely horrible for you.
 
-The following approach does away with these concerns, since you can suppress response enums with a single config line. This enables you to deliver two identical openapi files, except that one will suppress response enums, while the other will not.
+The following approach does away with these concerns, since you can suppress response enums with a single config line. This enables you to deliver two identical OpenAPI files, except that one will suppress response enums, while the other will not:
 
 ```ts
 export default (psy: Psyconf) => {

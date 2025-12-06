@@ -1,12 +1,13 @@
 ---
 sidebar_position: 4
+ai_summary: Methods for updating records include save (after setting attributes) and update (single call with attributes object). Supports bulk updates via query builder. Triggers lifecycle hooks (BeforeUpdate, BeforeSave, AfterUpdate, AfterSave, etc.).
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # updating
 
-To update a record that already exists, you can use a combination of attribute setters and the `#save` method on your models to trigger updates.
+To update a record that already exists, you can use a combination of attribute setters and the `save` method on your models to trigger updates:
 
 ```ts
 import User from 'app/models/user'
@@ -16,11 +17,15 @@ user.email = 'how@yadoin.biz'
 await user.save()
 ```
 
-To achieve this in one line, you can call the `#update` method.
+## update
+
+To achieve this in one line, you can call the `update` method:
 
 ```ts
 await user.update({ email: 'how@yadoin.biz' })
 ```
+
+## Bulk updates
 
 Additionally, you can perform bulk updates like so:
 

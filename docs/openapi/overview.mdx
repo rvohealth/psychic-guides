@@ -2,6 +2,7 @@
 sidebar_position: 1
 title: overview
 pagination_prev: null
+ai_summary: Psychic automatically generates OpenAPI 3.0.2 specs using routes, serializers, and @OpenAPI decorator. Supports automatic response generation, request/response validation, and hand-written specs. Types stay in sync with database schema changes.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -16,7 +17,7 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 The [resource generator](/docs/cli/generators/resource) automatically adds `@OpenAPI` decorator declarations corresponding to each endpoint, and since serializer attributes are typed back to the database schema, these types will stay in sync as you add migrations. (For example, if you add a migration to change a column from not allowing `null` to allowing `null`, the OpenAPI spec will change to include `nullable: true` for the corresponding property.)
 
-Serializers and the @OpenAPI decorator also support hand-written specs to provide added flexibility when needed. As with everything in Dream and Psychic, these hand-written specs are strongly typed.
+Serializers and the `@OpenAPI` decorator also support hand-written specs to provide added flexibility when needed. As with everything in Dream and Psychic, these hand-written specs are strongly typed.
 
 OpenAPI validation is enabled on all requests (when a request doesn't match, it returns 400) and on all responses when running specs (to ensure that any hand-written OpenAPI specifications match the data being returned).
 
@@ -26,8 +27,7 @@ To generate the OpenAPI spec, simply run:
   code={`{{PM}} psy sync:openapi`}
 />
 
-Psychic provides built-in support for generating openapi schema to define your response payloads. Using the definitions you provide, Psychic will regenerate an `openapi.json` file at the root of your project whenever a sync occurs. Psychic will also use this to generate type files for your client app, facilitating easy synchronization of your api mechanisms to the current values provided by the backend.
-
+Psychic provides built-in support for generating OpenAPI schema to define your response payloads. Using the definitions you provide, Psychic will regenerate an `openapi.json` file at the root of your project whenever a sync occurs. Psychic will also use this to generate type files for your client app, facilitating easy synchronization of your API mechanisms to the current values provided by the backend.
 
 ## Automatic response generation
 

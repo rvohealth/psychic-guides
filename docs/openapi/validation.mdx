@@ -1,17 +1,18 @@
 ---
 sidebar_position: 4
 title: validation
+ai_summary: OpenAPI validation validates requests (headers, requestBody, query) and responses (responseBody). Can be configured globally in conf/app.ts or per-endpoint in @OpenAPI decorator. Returns 400 for invalid requests. Supports detailedErrors option for development/test environments.
 ---
 
 # OpenAPI - Validation
 
-In addition to automatically generating OpenAPI specs for your application, Psychic also provides built in request and response validation, leveraging the openapi specs to determine the appropriate shapes for your request body, query, headers, and response bodies.
+In addition to automatically generating OpenAPI specs for your application, Psychic also provides built-in request and response validation, leveraging the OpenAPI specs to determine the appropriate shapes for your request body, query, headers, and response bodies.
 
 ## Opting into validations
 
 To opt into this, you can take one of two configuration actions:
 
-### 1. define a global validation config
+### 1. Global validation config
 
 Defining a global validation config will apply to all endpoints belonging to OpenAPI-decorated controllers. To tap into the global config, open the `conf/app.ts` file and update your `openapi` configuration to include validation, like so:
 
@@ -33,13 +34,13 @@ export default async (psy: PsychicApp) => {
 }
 ```
 
-If you have multiple openapi configurations, you will need to apply validation to each one of them if you want to make sure it spreads to all the controllers leveraging it. In some cases, this is not necessary. For example, you may have one openapi spec for mobile, and one for web, but they may both cover the same endpoints. If this is the case, you don't need validation on both.
+If you have multiple OpenAPI configurations, you will need to apply validation to each one of them if you want to make sure it spreads to all the controllers leveraging it. In some cases, this is not necessary. For example, you may have one OpenAPI spec for mobile, and one for web, but they may both cover the same endpoints. If this is the case, you don't need validation on both.
 
-However, if you decided to have one openapi spec for your admin endpoints and one for your app endpoints, then you would probably want to apply validation rules to both. To understand more about how psychic leverages multiple openapi specs, see our [multiple specs guides](/docs/openapi/multiple-specs).
+However, if you decided to have one OpenAPI spec for your admin endpoints and one for your app endpoints, then you would probably want to apply validation rules to both. To understand more about how Psychic leverages multiple OpenAPI specs, see our [multiple specs guides](/docs/openapi/multiple-specs).
 
-### 2. define validation on your OpenAPI decorator
+### 2. Per-endpoint validation
 
-Within the OpenAPI decorator, you can also provide the same validation options. If they are provided, psychic will merge the options with the global defaults provided, prioritizing the custom validation options over the global defaults.
+Within the OpenAPI decorator, you can also provide the same validation options. If they are provided, Psychic will merge the options with the global defaults provided, prioritizing the custom validation options over the global defaults:
 
 ```ts
 // controllers/PetsController

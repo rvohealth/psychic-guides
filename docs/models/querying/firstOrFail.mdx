@@ -1,8 +1,11 @@
+---
+ai_summary: The firstOrFail method returns the first record found in the table. Raises RecordNotFound exception (converted to 404 by Psychic) if no records exist. Can be chained with query building methods like order.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # firstOrFail
 
-The `firstOrFail` method returns the first record found in the given table. If no records exist, a `RecordNotFound` exception is raised.
+The `firstOrFail` method returns the first record found in the given table. If no records exist, a `RecordNotFound` exception is raised:
 
 ```ts
 const user = await User.firstOrFail()
@@ -38,5 +41,5 @@ limit 1
 </RoutesOutput>
 
 :::tip
-If firstOrFail is called within a request cycle and the `RecordNotFound` exception is not handled manually, Psychic will automatically throw a 404.
+If `firstOrFail` is called within a request cycle and the `RecordNotFound` exception is not handled manually, Psychic will automatically throw a 404.
 :::

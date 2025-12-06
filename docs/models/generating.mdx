@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+ai_summary: Model generation via CLI: g:model (model without API), g:resource (model with API endpoint), g:sti-child (STI child model). Supports enum types, enum arrays, snake_case naming, and various column types.
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -7,7 +8,7 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # generating
 
-The psy cli provides three commands for generating Dream models and their accompanying migrations and serializers:
+The `psy` CLI provides three commands for generating Dream models and their accompanying migrations and serializers:
 
 <PackageManagerTabs
   code={`{{PM}} psy g:model  --help
@@ -17,7 +18,7 @@ The psy cli provides three commands for generating Dream models and their accomp
 
 The resource generator is used when a model will be displayed and/or manipulated via an API endpoint. The model generator is used to generate a model without an API endpoint. And, as the name indicates, the STI child generator is used to generate STI children.
 
-Resource generator commands can be found in the [resource generator documentation](/docs/controllers/generating#resources), and the [sti-child has its own, dedicated documentation](/docs/cli/generators/sti-child), but here are some examples of the model and sti-child generator:
+Resource generator commands can be found in the [resource generator documentation](/docs/controllers/generating#resources), and the [sti-child has its own, dedicated documentation](/docs/cli/generators/sti-child), but here are some examples of the model and STI child generator:
 
 <PackageManagerTabs
   code={`{{PM}} psy g:model --no-serializer User email:citext first_name:citext last_name:citext
@@ -33,7 +34,7 @@ Run `psy g:model --help` or see [the g:model documentation](/docs/cli/generators
 
 <PackageManagerTabs code={`{{PM}} psy g:model --help`} />
 
-## enum types
+## Enum types
 
 As demonstrated above, you can use the `enum` type as a column type when specifying your column, provided you give a little bit more information about the enum you are designing. Looking closer at the `type` field generated for the `Room` model in the above example, we see some extra information being provided:
 
@@ -41,13 +42,13 @@ As demonstrated above, you can use the `enum` type as a column type when specify
 type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom
 ```
 
-the `room_types` segment signals to Dream to create a new enum called `room_types_enum` within your db. The segment following the `room_types` segment informs Dream of what values you want to allow for your enum column. In this case, it will produce the following values for your enum:
+The `room_types` segment signals to Dream to create a new enum called `room_types_enum` within your DB. The segment following the `room_types` segment informs Dream of what values you want to allow for your enum column. In this case, it will produce the following values for your enum:
 
 ```ts
 ;['Bathroom', 'Bedroom', 'Kitchen', 'Den', 'LivingRoom']
 ```
 
-### enum arrays
+### Enum arrays
 
 In some cases, you may need an array of enum values for your column. In this case, simply provide `enum[]` as the column type segment, instead of `enum`, like so:
 
@@ -55,7 +56,7 @@ In some cases, you may need an array of enum values for your column. In this cas
 type:enum[]:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom
 ```
 
-Doing this will produce the same enum type in postgres, but the column definition will expect an array of enum values instead of a single value. Dream will also set the default value for an enum[] column to be a blank array.
+Doing this will produce the same enum type in PostgreSQL, but the column definition will expect an array of enum values instead of a single value. Dream will also set the default value for an `enum[]` column to be a blank array.
 
 ## snake_casing column, table, and enum names
 

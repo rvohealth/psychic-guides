@@ -1,8 +1,11 @@
+---
+ai_summary: The findBy method finds a record by custom attributes. Returns the first matching record or null if none found. Use findOrFailBy to raise RecordNotFound exception instead of returning null.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # findBy
 
-The findBy method enables you to pass custom attributes to locate a record by. If multiple records exist matching the conditions, only the first one found will be returned. If no record is found matching the conditions, null is returned.
+The `findBy` method enables you to pass custom attributes to locate a record by. If multiple records exist matching the conditions, only the first one found will be returned. If no record is found matching the conditions, `null` is returned:
 
 ```ts
 const user = await User.findBy({ email: 'abc' })
@@ -21,5 +24,5 @@ limit 1
 </RoutesOutput>
 
 :::tip
-In some cases, [findOrFailBy](/docs/models/querying/findOrFailBy) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.
+In some cases, [`findOrFailBy`](/docs/models/querying/findOrFailBy) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.
 :::

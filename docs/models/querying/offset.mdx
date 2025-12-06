@@ -1,12 +1,17 @@
+---
+ai_summary: The offset method skips a specified number of records before returning results. Usually used with limit for pagination.
+---
 # offset
 
-The `offset` method enables you to offset the query by a certain number of records.
+The `offset` method enables you to offset the query by a certain number of records:
 
 ```ts
 const users = await User.offset(30).all()
 ```
 
-This is usually used in concert with `limit` to provide functional pagination.
+## Pagination
+
+This is usually used in concert with `limit` to provide functional pagination:
 
 ```ts
 const users = await User.limit(10).offset(30).all()

@@ -2,23 +2,24 @@
 sidebar_position: 0
 title: overview
 pagination_prev: null
+ai_summary: Workers plugin enables background job processing for faster web responses, automatic retry, and rate-limiting. Supports scheduled jobs (cron-like) and backgrounding work. Background methods can receive Job parameter for logging. Helps offload costly work from web servers.
 ---
 
 # Workers - overview
 
 :::info
-tl;dr: Genearlly, web requests should fetch data from the database and serialize that data in the response. Hard work should be sent to a background job—either by backgrounding it explicitly or setting up a scheduled job. Backgrounding work provides:
+tl;dr: Generally, web requests should fetch data from the database and serialize that data in the response. Hard work should be sent to a background job—either by backgrounding it explicitly or setting up a scheduled job. Backgrounding work provides:
 
 1. faster web responses
 2. automatic retry of work that fails
 3. rate-limiting certain types of work (when using named workstreams—requires a BullMQ Pro license)
    :::
 
-A web application is like an ecosystem, with many different players interacting and responding to eachother's behavior. Much of this is done in the form of api requests being triggered from clients to your backend application servers, but some things are not. For example, you may find yourself needing a piece of code that runs every hour of every day, or something that just runs on the first monday of each 3rd month.
+A web application is like an ecosystem, with many different players interacting and responding to each other's behavior. Much of this is done in the form of API requests being triggered from clients to your backend application servers, but some things are not. For example, you may find yourself needing a piece of code that runs every hour of every day, or something that just runs on the first Monday of each 3rd month.
 
-Additionally, it is important to keep your web servers fluid. You don't want to expose any endpoints that respond slowly, because, while node concurrency is helpful, you don't want to lean on it to save you from slow endpoint responses, since this makes you vulnerable to DDoS.
+Additionally, it is important to keep your web servers fluid. You don't want to expose any endpoints that respond slowly, because, while Node concurrency is helpful, you don't want to lean on it to save you from slow endpoint responses, since this makes you vulnerable to DDoS.
 
-to alleviate the pressure on your web application server, you can offload costly or process-intensive services to background processes, so that your web server can continue to be reliable and performant. Additionally, you can use cron-like features within Psychic to schedule your jobs to run at specific times, such as the third tuesday of the month at noon UTC.
+To alleviate the pressure on your web application server, you can offload costly or process-intensive services to background processes, so that your web server can continue to be reliable and performant. Additionally, you can use cron-like features within Psychic to schedule your jobs to run at specific times, such as the third Tuesday of the month at noon UTC.
 
 ## Logging in Background Jobs
 

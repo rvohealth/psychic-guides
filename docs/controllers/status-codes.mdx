@@ -1,12 +1,13 @@
 ---
 sidebar_position: 3
+ai_summary: Psychic provides status code methods (ok, created, noContent, badRequest, unauthorized, forbidden, notFound, unprocessableEntity, etc.) that automatically apply HTTP status codes and render JSON. Methods correspond to HTTP status codes for intuitive API responses.
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # status codes
 
-Psychic encourages developers to think in terms of http status codes names, rather than manually setting status codes and rendering json. We provide methods which will automatically apply the given statuses, and will render json automatically.
+Psychic encourages developers to think in terms of HTTP status code names, rather than manually setting status codes and rendering JSON. We provide methods which will automatically apply the given statuses, and will render JSON automatically:
 
 ```ts
 import { OpenAPI } from '@rvoh/psychic'

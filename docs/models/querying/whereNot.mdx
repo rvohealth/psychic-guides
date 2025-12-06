@@ -1,11 +1,12 @@
 ---
 pagination_next: null
+ai_summary: The whereNot method adds WHERE NOT conditions to exclude records matching specified criteria. Can be chained with other where calls for complex filtering with AND logic.
 ---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # whereNot
 
-The `whereNot` statement will find all records that do not match the provided clauses
+The `whereNot` method finds all records that do not match the provided clauses.
 
 ```ts
 await User.whereNot({
@@ -13,7 +14,9 @@ await User.whereNot({
 }).all()
 ```
 
-It is considered acceptable for you to chain multiple `whereNot` calls together, as well as to chain together with other calls to `where`. This can be useful for conditional query building
+## Chaining
+
+You can chain multiple `whereNot` calls together, as well as chain them with other calls to `where`. This is useful for conditional query building:
 
 ```ts
 let query = Post.whereNot({ name: null })

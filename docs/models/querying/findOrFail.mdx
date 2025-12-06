@@ -1,8 +1,11 @@
+---
+ai_summary: The findOrFail method finds a record by primary key. Raises RecordNotFound exception (converted to 404 by Psychic) if not found, instead of returning null. Can be chained with query building methods.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # findOrFail
 
-`findOrFail`, similar to `find`, will look up a record by it's primary key. However, if that record is not found, a `RecordNotFound` exception will be raised, rather than returning `null`.
+The `findOrFail` method, similar to `find`, will look up a record by its primary key. However, if that record is not found, a `RecordNotFound` exception will be raised, rather than returning `null`:
 
 ```ts
 const user = await User.findOrFail(123)
@@ -20,7 +23,7 @@ limit 1
   </pre>
 </RoutesOutput>
 
-If findOrFail is called within a request cycle and the `RecordNotFound` exception is not handled manually, Psychic will automatically throw a 404.
+If `findOrFail` is called within a request cycle and the `RecordNotFound` exception is not handled manually, Psychic will automatically throw a 404.
 
 ## Chaining
 

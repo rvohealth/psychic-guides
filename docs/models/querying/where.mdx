@@ -1,31 +1,41 @@
+---
+ai_summary: The where method adds WHERE conditions to queries, returning a Query instance that can be chained. Supports exact matches, array values (IN clause), query operators via ops, and chaining multiple conditions with AND logic.
+---
+
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # where
 
-The where statement will actually return back an instance of a Query (tethered by type generics back to the originating Dream class) which can then be chained with many statements before final execution.
+The `where` method returns an instance of a `Query` (tethered by type generics back to the originating Dream class) which can then be chained with many statements before final execution.
 
 ```ts
 await User.where({ email: null }).all()
 // [User{ email: null }, User{ email: null }, ...]
 ```
 
-Where statements will by default compare with strict equivilence. However, it is also possible to pass special expressions. The example below demonstrates the application of an `ilike` query being applied to your query.
+## Basic usage
+
+`where` statements will by default compare with strict equivalence. However, it is also possible to pass special expressions. The example below demonstrates the application of an `ops.ilike` query being applied to your query.
 
 ```ts
 await User.where({ email: ops.ilike('%burpcollaborator.net%') }).destroy()
 // 3
 ```
 
-> For more info on ops expressions, see the [ops guide](/docs/models/querying/ops).
+> For more info on `ops` expressions, see the [ops guide](/docs/models/querying/ops).
 
-If an array is passed as a value to a non-array field, the query will select any of the values provided in the array.
+## Array values (IN clause)
+
+If an array is passed as a value to a non-array field, the query will select any of the values provided in the array (SQL IN clause):
 
 ```ts
 await User.where({ email: ['hi@hi', 'bye@bye'] }).all()
 // [User{ email: 'hi@hi' }, User{ email: 'bye@bye' }]
 ```
 
-BelongsTo associations can also be provided as arguments. Polymorphic associations will also have their type fields extracted into the query.
+## Associations
+
+`BelongsTo` associations can also be provided as arguments. Polymorphic associations will also have their type fields extracted into the query.
 
 ```ts
 await Pet.where({ user }).count()

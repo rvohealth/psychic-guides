@@ -1,13 +1,14 @@
 ---
 sidebar_position: 4
 title: migration
+ai_summary: The generate:migration command creates timestamped migration files. Supports column types (citext, string, text, date, datetime, integer, decimal, enum, belongs_to), arrays, optional columns, and custom connection names. Ending migration name with -to-table-name auto-populates alterTable command.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # generate:migration
 
-Use the built-in cli command for generating migrations to easily get up and running. Psychic will automatically timestamp the filename for your migrations, keeping them in sequential order, and will generate boilerplate to get you started with writing a migration.
+Use the built-in CLI command for generating migrations to easily get up and running. Psychic will automatically timestamp the filename for your migrations, keeping them in sequential order, and will generate boilerplate to get you started with writing a migration.
 
 <PackageManagerTabs
   code={`{{PM}} psy g:migration --help
@@ -20,7 +21,7 @@ Use the built-in cli command for generating migrations to easily get up and runn
   code={`{{PM}} psy g:migration [options] <migrationName> [columnsWithTypes...]`}
 />
 
-**Arguments:**
+### Arguments
 
 - `<migrationName>`: End with `-to-table-name` or `-from-table-name` to prepopulate with an alterTable command.
 - `[columnsWithTypes...]`: Space separated snake-case (except for belongs_to model name) properties like this:
@@ -47,7 +48,7 @@ Use the built-in cli command for generating migrations to easily get up and runn
     - Include the fully qualified model name, e.g., if the Coach model is in `src/app/models/Health/Coach`:
       `Health/Coach:belongs_to`
 
-**Options:**
+### Options
 
 - `--connection-name <connectionName>`: The connection name you wish to use for your migration.
 - `-h, --help`: Display help for command.

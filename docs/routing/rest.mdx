@@ -1,12 +1,13 @@
 ---
 sidebar_position: 1
+ai_summary: REST verbs (GET, POST, PUT, PATCH, DELETE) can be used to define routes. Top-level routes require explicit controller and action. Supports Express middleware as second argument or in array for multiple middleware.
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # REST verbs
 
-You can add routes using the standard http methods, such as GET, POST, PUT, PATCH, and DELETE. In the below example, all the different http verbs will be pointing to the ping controller's ping method.
+You can add routes using the standard HTTP methods, such as `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`. In the below example, all the different HTTP verbs will be pointing to the ping controller's ping method:
 
 ```ts // conf/routes.ts
 import { PsychicRouter } from 'psychic'
@@ -33,11 +34,11 @@ DELETE  /ping  Ping#ping
   </pre>
 </RoutesOutput>
 
-Whenever providing a top-level route, Psychic will not attempt to infer the controller name for you. This means that you are forced to explicitly provide a controller and action in these cases. Once providing a controller, typescript autocomplete helpers will aid you in selecting an action (i.e. a public method on your controller) to call when that route is hit.
+Whenever providing a top-level route, Psychic will not attempt to infer the controller name for you. This means that you are forced to explicitly provide a controller and action in these cases. Once providing a controller, TypeScript autocomplete helpers will aid you in selecting an action (i.e. a public method on your controller) to call when that route is hit.
 
-## middleware
+## Middleware
 
-You can provide express middleware directly to a route by sending a callback function as the second argument to any method, i.e.
+You can provide Express middleware directly to a route by sending a callback function as the second argument to any method, i.e.:
 
 ```ts
 r.get('ping', (req, res, next) => {

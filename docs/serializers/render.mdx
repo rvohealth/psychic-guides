@@ -1,15 +1,16 @@
 ---
 sidebar_position: 4
 title: rendering
+ai_summary: Serializers can be used explicitly (call .render() directly) or implicitly (Psychic automatically infers and uses serializers from model's serializers getter). Implicit rendering requires model to define serializers getter with default/summary/detail keys. Can specify serializerKey option to use non-default serializer.
 ---
 
 # Rendering Data with Serializers
 
 Once you have defined your serializers, you'll use them in your Psychic controllers to shape the data for your API responses. Dream and Psychic offer both explicit and implicit ways to render data using these serializers.
 
-## Explicit Rendering
+## Explicit rendering
 
-You can explicitly use a serializer within your controller methods. This gives you direct control over which serializer is used and when its `.render()` method is called.
+You can explicitly use a serializer within your controller methods. This gives you direct control over which serializer is used and when its `.render()` method is called:
 
 ```ts
 import { StuffSerializer } from 'app/serializers/stuff_serializer' // Assuming StuffSerializer is your defined serializer function
@@ -28,15 +29,15 @@ export class StuffsController extends ApplicationController {
 }
 ```
 
-In this example, `StuffSerializer(stuff)` creates the serializer instance with the data, and `.render()` generates the final json object to be sent in the response.
+In this example, `StuffSerializer(stuff)` creates the serializer instance with the data, and `.render()` generates the final JSON object to be sent in the response.
 
-## Implicit Rendering
+## Implicit rendering
 
 Psychic controllers can automatically infer and use serializers when you pass Dream model instances (or arrays of them) to response methods like `this.ok()`.
 
 To enable implicit rendering, your Dream model needs to define a `serializers` getter that provides access to its available serializer functions.
 
-**1. Defining Serializers on Your Model:**
+### Defining serializers on your model
 
 Your Dream model should have a `serializers` getter that returns an object. The keys of this object are names (like `default`, `summary`, `detail`), and the values are the serializer functions themselves.
 

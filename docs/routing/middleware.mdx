@@ -1,10 +1,11 @@
 ---
 sidebar_position: 1
+ai_summary: Psychic middleware piggy-backs off Express, enabling middleware composition in routing layer. Can bypass controller layer with middleware callbacks. Supports single middleware or array of ordered middleware callbacks.
 ---
 
 ## Middleware
 
-Psychic has a concept of middleware which piggy-backs off of express, enabling you compose in the routing layer as though you were in an express app.
+Psychic has a concept of middleware which piggy-backs off of Express, enabling you compose in the routing layer as though you were in an Express app:
 
 ```ts
 // conf/routes.ts
@@ -14,7 +15,7 @@ Psychic has a concept of middleware which piggy-backs off of express, enabling y
   })
 ```
 
-This approach bypasses our controller layer, which we don't recommend since it provides such helpful utilities, but can be useful sometimes, say, when integrating with express middleware.
+This approach bypasses our controller layer, which we don't recommend since it provides such helpful utilities, but can be useful sometimes, say, when integrating with Express middleware.
 
 ## Multiple middleware callbacks
 

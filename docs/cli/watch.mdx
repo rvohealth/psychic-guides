@@ -1,18 +1,19 @@
 ---
 sidebar_position: 5
+ai_summary: The watch command automatically syncs types when files change. Watches src directory (or specified directory) and calls sync automatically. Swallows errors and continues watching until valid code is achieved.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # watch
 
-Dream, Psychic, and Kysely all use custom type compilation steps to supply their underlying apis with types specific to your application. This is important to understand, because it means that you will often times need to sync your application to get types working properly after code changes. To sync types, run the sync command, like so:
+Dream, Psychic, and Kysely all use custom type compilation steps to supply their underlying APIs with types specific to your application. This is important to understand, because it means that you will often times need to sync your application to get types working properly after code changes. To sync types, run the sync command, like so:
 
 <PackageManagerTabs
   code={`{{PM}} psy sync`}
 />
 
-This can get cumbersome, especially considering it is difficult to know what change necessetates a type sync. Considering this pain point, a simple utility was written to enable you to get automatic type syncing any time a file changes. To activate this, simply open a new tab in your terminal, cd into the api directory for your app (or the root directory if you did an api-only build), and run the `watch` command, like so:
+This can get cumbersome, especially considering it is difficult to know what change necessitates a type sync. Considering this pain point, a simple utility was written to enable you to get automatic type syncing any time a file changes. To activate this, simply open a new tab in your terminal, cd into the api directory for your app (or the root directory if you did an api-only build), and run the `watch` command, like so:
 
 <PackageManagerTabs
   code={`{{PM}} psy watch`}
@@ -26,8 +27,8 @@ This will watch all files in your `src` directory (or the specified directory), 
   code={`{{PM}} psy watch [dir]`}
 />
 
-**Arguments:**
+### Arguments
 - `[dir]`: The folder you want to watch, defaults to `./src`.
 
-**Options:**
+### Options
 - `-h, --help`: Display help for command.

@@ -1,12 +1,13 @@
 ---
 sidebar_position: 2
+ai_summary: Psychic automatically uses serializers when rendering Dream instances. Supports implicit serializer lookup (default), explicit serializerKey option, and direct serializer instances. SerializerKey must match keys in model's serializers getter.
 ---
 
 # serialization
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
-Whenever rendering a dream instance, Psychic will always be smart enough to leverage the provided serializer, making these two lines equivilent:
+Whenever rendering a Dream instance, Psychic will always be smart enough to leverage the provided serializer, making these two lines equivalent:
 
 ```ts
 export default class PlacesController extends PsychicController {
@@ -18,7 +19,7 @@ export default class PlacesController extends PsychicController {
 }
 ```
 
-Serialization is an essential step in rendering resourceful output from your application. This is, of course, fairly tricky, since there are many different ways that your application's models may need to be rendered. For example, you may want your `index` method to render a shortened version of your Place model, while the `show` method uses the default serializer, which includes nested rooms
+Serialization is an essential step in rendering resourceful output from your application. This is, of course, fairly tricky, since there are many different ways that your application's models may need to be rendered. For example, you may want your `index` method to render a shortened version of your `Place` model, while the `show` method uses the default serializer, which includes nested rooms:
 
 ```ts
 export default class PlacesController extends PsychicController {
@@ -37,7 +38,7 @@ export default class PlacesController extends PsychicController {
 }
 ```
 
-Note that when specifying a `serializerKey`, it must match one of the keys in that model's `serializers` getter.
+Note that when specifying a `serializerKey`, it must match one of the keys in that model's `serializers` getter:
 
 ```ts
 class Place extends ApplicationModel {
@@ -50,7 +51,7 @@ class Place extends ApplicationModel {
 }
 ```
 
-In addition to being able to do implicit and explicit serilaizer lookups, psychic can also simply be handed a serializer (or an array of serializers), in which case it will simply call render on that serializer.
+In addition to being able to do implicit and explicit serializer lookups, Psychic can also simply be handed a serializer (or an array of serializers), in which case it will simply call render on that serializer:
 
 ```ts
 export default class PlacesController extends PsychicController {

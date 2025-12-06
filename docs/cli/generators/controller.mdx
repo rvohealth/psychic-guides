@@ -1,6 +1,7 @@
 ---
 sidebar_position: 5
 title: controller
+ai_summary: The generate:controller command creates a controller skeleton and its inheritance chain. Takes controller name (with namespaces) and optional action names. For resourceful CRUD controllers, use generate:resource instead.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -9,7 +10,7 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 If you are looking to generate a resourceful (CRUD) controller with a model, see the [resource generator documentation](/docs/controllers/generating#resources).
 
-`generate:controller` is for generating a simple controller skeleton (and the inheritance chain to that controller). The CLI documentation follows, below, but [the controller generator documentation](/docs/controllers/generating#simple-controller) explains controller generation in greater detail.
+The `generate:controller` command is for generating a simple controller skeleton (and the inheritance chain to that controller). The CLI documentation follows, below, but [the controller generator documentation](/docs/controllers/generating#simple-controller) explains controller generation in greater detail.
 
 ## Usage
 
@@ -17,11 +18,11 @@ If you are looking to generate a resourceful (CRUD) controller with a model, see
   code={`{{PM}} psy g:controller [options] <controllerName> [actions...]`}
 />
 
-**Arguments:**
+### Arguments
 
 - `<controllerName>`: The name of the controller to create, including namespaces, e.g. `Posts` or `Api/V1/Posts`.
 - `[actions...]`: The names of controller actions to create.
 
-**Options:**
+### Options
 
 - `-h, --help`: Display help for command.

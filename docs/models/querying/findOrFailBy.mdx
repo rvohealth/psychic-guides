@@ -1,8 +1,11 @@
+---
+ai_summary: The findOrFailBy method finds a record by custom attributes. Returns first matching record or raises RecordNotFound exception (converted to 404 by Psychic) if none found. Can be chained with query building methods.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # findOrFailBy
 
-The findOrFailBy method enables you to pass custom attributes to locate a record by. If multiple records exist matching the conditions, only the first one found will be returned. If no record is found matching the conditions, a `RecordNotFound` exception is raised.
+The `findOrFailBy` method enables you to pass custom attributes to locate a record by. If multiple records exist matching the conditions, only the first one found will be returned. If no record is found matching the conditions, a `RecordNotFound` exception is raised:
 
 ```ts
 const user = await User.findOrFailBy({ email: 'abc' })
@@ -20,7 +23,7 @@ limit 1
   </pre>
 </RoutesOutput>
 
-If findOrFailBy is called within a request cycle and the `RecordNotFound` exception is not handled manually, Psychic will automatically throw a 404.
+If `findOrFailBy` is called within a request cycle and the `RecordNotFound` exception is not handled manually, Psychic will automatically throw a 404.
 
 ## Chaining
 

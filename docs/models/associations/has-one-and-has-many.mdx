@@ -1,5 +1,6 @@
 ---
 sidebar_position: 3
+ai_summary: HasOne and HasMany associations link a model to associated models where the foreign key is on the associated model. HasMany represents one-to-many relationships. HasOne represents one-to-one relationships. Options include foreignKey (on option), dependent (for cascading deletes), and through (for many-to-many via join table).
 ---
 
 # has associations
@@ -8,8 +9,8 @@ sidebar_position: 3
 
 "Has" associations are associations in which the foreign key is located on the associated model, and are usually met on the other side with a `@BelongsTo` association. There are two types of "Has" associations supported by Dream:
 
-- `HasMany`
-- `HasOne`
+- `HasMany` - one-to-many relationships
+- `HasOne` - one-to-one relationships
 
 ## HasMany
 
@@ -34,7 +35,7 @@ In the above example, we see that `Pet` has a `@BelongsTo` association pointing 
 
 ## HasOne
 
-Complementary to `@HasMany`, we have the `@HasOne` association, which is almost identical to the `@HasMany`, except it should only be used in cases where you only plan on having one record attached, i.e.:
+Complementary to `@HasMany`, we have the `@HasOne` association, which is almost identical to the `@HasMany`, except it should only be used in cases where you only plan on having one record attached:
 
 ```ts
 class User extends ApplicationModel {
@@ -51,13 +52,13 @@ class UserSettings extends ApplicationModel {
 }
 ```
 
-In this case, we have an identical pattern established, except that we are using `@HasOne` in place of `@HasMany`, establishing that their will only be one `UserSettings` record for each `User` record.
+In this case, we have an identical pattern established, except that we are using `@HasOne` in place of `@HasMany`, establishing that there will only be one `UserSettings` record for each `User` record.
 
 ## Options
 
-### ForeignKey
+### Foreign key (on option)
 
-When defining a HasOne/HasMany association, the foreign key is automatically assumed to be the singularized (depluralized) version of the base model's table name. This means that for the following model, `userId` will be the expected foreign key on both `UserSettings` and `Pet` models.
+When defining a `HasOne`/`HasMany` association, the foreign key is automatically assumed to be the singularized (depluralized) version of the base model's table name. This means that for the following model, `userId` will be the expected foreign key on both `UserSettings` and `Pet` models:
 
 ```ts
 class User extends ApplicationModel {

@@ -1,8 +1,11 @@
+---
+ai_summary: The preload method side-loads associations while executing a query. Executes queries in stages (separate SQL queries) rather than all at once. Supports arrays for multiple associations and chaining multiple preload calls. Cannot be mixed with leftJoinPreload in the same query.
+---
 # preload
 
-Simlar to [leftJoinPreload](/docs/models/querying/leftJoinPreload), the preload method enables you to side-load other associations while executing a query. The difference is that preload executes its queries in stages, rather than all at once. The query below will produce 3 sql queries, one to load the users, one to load all of the users' posts, and one to load all of the posts' comments.
+Similar to [`leftJoinPreload`](/docs/models/querying/leftJoinPreload), the `preload` method enables you to side-load other associations while executing a query. The difference is that `preload` executes its queries in stages, rather than all at once. The query below will produce 3 SQL queries, one to load the users, one to load all of the users' posts, and one to load all of the posts' comments.
 
-For loading associations on an already existing model instance, see [`Dream#load`](./load.mdx).
+For loading associations on an already existing model instance, see [`load`](./load.mdx):
 
 ```ts
 const users = await User.preload('posts', 'comments').all()
@@ -11,7 +14,7 @@ const firstComments = users[0].posts[0].comments
 
 ## Arrays
 
-If one needs to gain access to multiple resources, the last argument can always be an array, like so:
+If one needs to gain access to multiple resources, the last argument can always be an array:
 
 ```ts
 const users = await User.preload('posts', [
@@ -23,7 +26,7 @@ const users = await User.preload('posts', [
 
 ## Chaining
 
-Multiple preload statements can be chained together to successfully sideload all of your associations:
+Multiple `preload` statements can be chained together to successfully sideload all of your associations:
 
 ```ts
 const users = await User.preload('posts', ['comments', 'ratings'])
@@ -33,7 +36,7 @@ const users = await User.preload('posts', ['comments', 'ratings'])
 
 ## Incompatibilities
 
-Due to the complex nature of query building, we do not permit you to build a query that combines both `preload` _and_ `leftJoinPreload` together in one call. Type guards are in place within Dream to prevent you from making this mistake, but it is still worth mentioning, since it can be quite confusing.
+Due to the complex nature of query building, we do not permit you to build a query that combines both `preload` _and_ `leftJoinPreload` together in one call. Type guards are in place within Dream to prevent you from making this mistake, but it is still worth mentioning, since it can be quite confusing:
 
 ```ts
 // INVALID to mix leftJoinPreload and preload in a single query:

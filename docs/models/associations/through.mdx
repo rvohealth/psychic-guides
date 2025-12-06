@@ -1,10 +1,11 @@
 ---
 sidebar_position: 4
+ai_summary: Through associations enable many-to-many relationships by traveling through intermediate associations. Supports nested through associations and source option to specify which association to travel through on the associated model.
 ---
 
 # through associations
 
-Both HasOne and HasMany associations have recursively-nested `through` support built-in, enabling you to bring nested associations out of their nested context and into the parent model's domain:
+Both `HasOne` and `HasMany` associations have recursively-nested `through` support built-in, enabling you to bring nested associations out of their nested context and into the parent model's domain:
 
 ```ts
 export default class CommentReply extends Dream {
@@ -16,7 +17,7 @@ export default class CommentReply extends Dream {
 }
 ```
 
-## Traveling through other "through" associations
+## Nested through associations
 
 Dream permits you to travel through other "through" associations, which can simplify modeling:
 
@@ -37,7 +38,7 @@ user.nameTags
 // [NameTag{}, NameTag{}, ...]
 ```
 
-## Source
+## source option
 
 In some cases, the association name on the base model may be different than the association name on the child model. In these cases, you can specify which association name to travel through on the associated model by specifying the `source` option:
 

@@ -1,13 +1,14 @@
 ---
 sidebar_position: 3
 title: resource
+ai_summary: The generate:resource command creates a complete resource with model, migration, serializer, controller, and specs. Supports nested paths, column types, optional columns, belongs_to associations, and options like --only, --singular, --owning-model, and --sti-base-serializer.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # generate:resource
 
-Psychic considers a resource to be something that is both a database model and an entity that is accessible via an endpoint. Not all of the models you generate may need to have api endpoints for accessing them, so you will not need resource generators for these, and can instead lean on the [model generators](/docs/models/generating).
+Psychic considers a resource to be something that is both a database model and an entity that is accessible via an endpoint. Not all of the models you generate may need to have API endpoints for accessing them, so you will not need resource generators for these, and can instead lean on the [model generators](/docs/models/generating).
 
 See the [resource generator documentation](/docs/controllers/generating) for details. The CLI documentation follows:
 
@@ -17,7 +18,7 @@ See the [resource generator documentation](/docs/controllers/generating) for det
   code={`{{PM}} psy g:resource [options] <path> <modelName> [columnsWithTypes...]`}
 />
 
-**Arguments:**
+### Arguments
 
 - `<path>`: URL path from root domain. Specify nesting resource with `{}`, e.g. `tickets/{}/comments`.
 - `<modelName>`: The name of the model to create, e.g. `Post` or `Settings/CommunicationPreferences`.
@@ -45,7 +46,7 @@ See the [resource generator documentation](/docs/controllers/generating) for det
     - Include the fully qualified model name, e.g., if the Coach model is in `src/app/models/Health/Coach`:
       `Health/Coach:belongs_to`
 
-**Options:**
+### Options
 
 - `--singular`: Generates a "resource" route instead of "resources", along with the necessary controller and spec changes.
 - `--only <onlyActions>`: Comma separated list of resourceful endpoints (e.g. `--only=create,show`); any of:

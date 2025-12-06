@@ -1,6 +1,9 @@
+---
+ai_summary: The ops object provides query operators for building complex WHERE conditions. Includes pattern matching (like, ilike), membership (in), comparison operators (expression, gte, lte, gt, lt, eq, neq), and similarity operators for fuzzy text searching.
+---
 # ops
 
-ops is a special set of helper methods which can tie back to lower-level kysely queries, enabling you to pass more complex statements without leaving an ideal statement flow, like so:
+The `ops` object is a special set of helper methods which can tie back to lower-level Kysely queries, enabling you to pass more complex statements without leaving an ideal statement flow:
 
 ```ts
 await User.where({

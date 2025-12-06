@@ -1,6 +1,9 @@
+---
+ai_summary: The @deco.Sortable decorator enables automatic sorting on a particular field. Typically used with a scope to apply sorting only to records matching the scope. Requires deferrable unique constraint (not unique index) for the sortable column.
+---
 # @deco.Sortable
 
-The `@deco.Sortable` decorator enables your model to automatically sort on a particular field withiin your model. Typically, when doing this, you will also want to apply a `scope`, which enables the sorting to apply only to those records matching the scope.
+The `@deco.Sortable` decorator enables your model to automatically sort on a particular field within your model. Typically, when doing this, you will also want to apply a `scope`, which enables the sorting to apply only to those records matching the scope:
 
 ```ts
 export default class TodoItem extends ApplicationModel {
@@ -16,9 +19,7 @@ Once this is applied, any time any records matching a scope receive changes to t
 
 ## Unique constraint
 
-It's a good idea to apply a unique constraint to the sortable column; however,
-`Sortable` is incompatible with unique indexes, so you need to add a deferrable
-unique constraint, instead.
+It's a good idea to apply a unique constraint to the sortable column; however, `Sortable` is incompatible with unique indexes, so you need to add a deferrable unique constraint, instead:
 
 ```ts
 import { Kysely } from 'kysely'

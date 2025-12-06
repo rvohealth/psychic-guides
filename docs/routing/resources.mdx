@@ -1,12 +1,13 @@
 ---
 sidebar_position: 2
+ai_summary: Resourceful routing provides CRUD routes (index, create, show, update, destroy) for resources. Supports nested resources, only/except options to limit routes, singular resources, and custom member/collection routes. Routes automatically map to controller actions.
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # resources
 
-Psychic provides resourceful routing to encourage devs to think about their app in terms of resources. While the needs of an application will by highly diverse from app to app, they can all be boiled down to a collection of resources which will ultimately fill their databases and represent their user's state within the context of their application.
+Psychic provides resourceful routing to encourage developers to think about their app in terms of resources. While the needs of an application will be highly diverse from app to app, they can all be boiled down to a collection of resources which will ultimately fill their databases and represent their user's state within the context of their application.
 
 It is fundamentally essential to think this way, since you are already being forced to do it when you separate out your application's needs into a collection of tables. The idea here is to extend these resourceful representations of your data up into the routing layer as well.
 
@@ -44,6 +45,8 @@ DELETE  /v1/host/places/:placeId/rooms/:id        V1/Host/Places/Rooms#destroy
 `}
   </pre>
 </RoutesOutput>
+
+## Limiting routes
 
 You can use resourceful routes, but restrict the routes to only a collection. This is dead-useful, since often you are building an application which does express _some_ resourceful routing, but does not need certain routes. For example, you may have no need for the destroy or update methods. Below is an example of resourceful route limiting:
 

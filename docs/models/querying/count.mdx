@@ -1,8 +1,11 @@
+---
+ai_summary: The count method returns a count of records in the table. Can be chained with where, limit, and other query building methods to count filtered results. Consider using exists instead for performance if you only need to check existence.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # count
 
-The `count` method returns a count of the table
+The `count` method returns a count of the table:
 
 ```ts
 await User.count() // 900
@@ -18,7 +21,7 @@ select count("users"."id") as "tablecount" from "users"
 
 ## Chaining
 
-If desired, one can first provide conditions prior to counting, enabling one to limit the scope of the query before applying count at the sql layer.
+If desired, one can first provide conditions prior to counting, enabling one to limit the scope of the query before applying count at the SQL layer:
 
 ```ts
 await User.limit(10).count() // 10
@@ -39,5 +42,5 @@ await User.where({ active: true }).whereNot({ email: null }).count() // 5
 ```
 
 :::info
-Did you know that count can be pretty expensive to execute if you have a lot of data in your table? Consider using [exists](/docs/models/querying/exists) instead, if it can fit your use case.
+Did you know that `count` can be pretty expensive to execute if you have a lot of data in your table? Consider using [`exists`](/docs/models/querying/exists) instead, if it can fit your use case.
 :::

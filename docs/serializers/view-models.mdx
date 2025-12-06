@@ -2,6 +2,7 @@
 sidebar_position: 5
 title: view models
 pagination_next: null
+ai_summary: ViewModels are intermediate structures for shaping data before serialization. Use when combining multiple models, complex transformations, or needing async operations. Serialize with ObjectSerializer (requires explicit OpenAPI shapes). Keeps data preparation logic separate from serialization.
 ---
 
 # ViewModels in Serialization
@@ -10,7 +11,7 @@ While Dream serializers are powerful for transforming Dream models or plain obje
 
 A ViewModel is essentially a class or interface designed specifically to shape data for a particular view or API response. It's not a Dream model (it doesn't directly map to a database table) but rather an intermediate structure that you populate with data, often from one or more Dream models or other sources.
 
-## When to Use a ViewModel
+## When to use a ViewModel
 
 Consider using a ViewModel in the following situations:
 
@@ -74,6 +75,6 @@ Consider using a ViewModel in the following situations:
 
 ## Serializing ViewModels
 
-ViewModels are typically serialized using `ObjectSerializer` because they are plain objects or class instances, not Dream models. You'll need to explicitly define the `openapi` shape for each attribute when using `ObjectSerializer`.
+ViewModels are typically serialized using `ObjectSerializer` because they are plain objects or class instances, not Dream models. You'll need to explicitly define the `openapi` shape for each attribute when using `ObjectSerializer`:
 
 By using ViewModels, you can keep your data preparation logic clean, testable, and separate from the direct concerns of serialization, leading to more maintainable and robust applications.

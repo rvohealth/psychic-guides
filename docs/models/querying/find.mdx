@@ -1,8 +1,11 @@
+---
+ai_summary: The find method retrieves a record by its model's primary key. Returns the record if found, or null if not found. Can be chained with other query building methods. Use findOrFail to raise RecordNotFound exception instead of returning null.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # find
 
-Find is a simple static method used to find records by its model's primary key. It will either return the record if found, or else null
+The `find` method is a simple static method used to find records by its model's primary key. It will either return the record if found, or else `null`:
 
 ```ts
 const user = await User.find(123)
@@ -21,7 +24,7 @@ limit 1
 
 ## Chaining
 
-Similar to other execution methods, `find` can be chained with other query building methods to filter at the sql level.
+Similar to other execution methods, `find` can be chained with other query building methods to filter at the SQL level:
 
 ```ts
 const user = await User.find(123)
@@ -39,5 +42,5 @@ limit 1
 </RoutesOutput>
 
 :::tip
-In some cases, [findOrFail](/docs/models/querying/findOrFail) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.
+In some cases, [`findOrFail`](/docs/models/querying/findOrFail) may be more ideal, since it will raise a `RecordNotFound` exception, causing the request to fail with a 404 error automatically.
 :::

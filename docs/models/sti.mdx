@@ -1,5 +1,6 @@
 ---
 sidebar_position: 12
+ai_summary: Single Table Inheritance (STI) enables multiple models to share a single table using a type field. Requires type column in database (can use enum). Child models use @STI decorator. Type field automatically populated with class name. Supports scoped queries and associations.
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -49,7 +50,7 @@ class Cat extends Pet {}
 class Dog extends Pet {}
 ```
 
-Whenever an STI model is persisted to the database, the `type` field will automaticlly be populated with the class name of the STI model:
+Whenever an STI model is persisted to the database, the `type` field will automatically be populated with the class name of the STI model:
 
 ```ts
 const cat = await Cat.create()

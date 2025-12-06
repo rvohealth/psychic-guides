@@ -1,8 +1,11 @@
+---
+ai_summary: The exists method returns true if at least one record matches the query, false otherwise. More efficient than count for checking existence. Can be chained with query building methods.
+---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # exists
 
-The `exists` method will return true if at least one record is found matching the query. Otherwise, it will return false.
+The `exists` method will return `true` if at least one record is found matching the query. Otherwise, it will return `false`:
 
 ```ts
 const exists = await User.exists()
