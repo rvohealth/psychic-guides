@@ -10,7 +10,7 @@ A polymorphic `BelongsTo` association links one model to several models. At the 
 ## Example: LocalizedTexts
 
 :::info
-This example is a modified version of the domain model used in the [BearBnB](/docs/tutorials/bearbnb/overview) tutorial.
+This example is a modified version of the domain model used in the [BearBnB tutorial](https://github.com/rvohealth/bearbnb).
 :::
 
 In an application where multiple models may have localized text (text in multiple languages), one can keep DRY by using a polymorphic LocalizedText model with a BelongsTo association that points to several models.
@@ -21,7 +21,7 @@ Consider the following example in which:
 - a Place has a “title” and a “description”
 - a Room also has a “title” and a “description”
 
-A single LocalizedText model can be used to represent LocalizedText for all of these different use cases (the names of the fields passed to the front end can be [customized during serialization](/docs/serializers/attributes#renaming-attributes-with-as)). The following entity relationship diagram (ERD) represents how each of these models is associated with LocalizedText:
+A single LocalizedText model can be used to represent LocalizedText for all of these different use cases (the names of the fields passed to the front end can be [customized during serialization](/docs/serializers/attributes#attributeas)). The following entity relationship diagram (ERD) represents how each of these models is associated with LocalizedText:
 
 ```mermaid
 

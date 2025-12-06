@@ -4,7 +4,7 @@ ai_summary: "The @deco.Virtual decorator enables setting fields as if they corre
 ---
 # @deco.Virtual
 
-The `@deco.Virtual` decorator enables setting of fields as if they corresponded to columns in the model's table so they can be passed to [`new`](../creating#dreamsave), [`create`](../creating#dreamcreate), and [`update`](../updating).
+The `@deco.Virtual` decorator enables setting of fields as if they corresponded to columns in the model's table so they can be passed to [`new`](../creating#new-and-save), [`create`](../creating#create), and [`update`](../updating).
 
 For example, in the first example, below, one could call `await bodyMeasurement.update({ lbs: 180.1 })`, and `180.1` will be passed into the `lbs` setter, which then translates lbs to grams to be stored in the `grams` column in the metrics table.
 
