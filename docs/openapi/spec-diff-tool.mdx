@@ -1,6 +1,6 @@
 ---
 sidebar_position: 7
-pagination_prev: null
+pagination_next: null
 ---
 
 ## OpenAPI Spec Diff Tool
@@ -38,7 +38,7 @@ Once `checkDiffs: true` is set in your OpenAPI config, there are two ways to run
 ### 1. **Automatic check**
 
 ```bash
-yarn psy sync
+pnpm psy sync
 ```
 
 * Automatically runs OpenAPI diff checks for all configs that have `checkDiffs: true`.
@@ -47,7 +47,7 @@ yarn psy sync
 ### 2. **Manual check**
 
 ```bash
-yarn psy diff:openapi
+pnpm psy diff:openapi
 ```
 
 * Manually triggers the diff comparison for enabled OpenAPI configs.
@@ -60,10 +60,10 @@ Use the `--fail-on-breaking`, or `-f` flag to **fail the command** if any breaki
 
 ```bash
 # when running sync
-yarn psy sync --fail-on-breaking
+pnpm psy sync --fail-on-breaking
 
 # when running directly
-yarn psy diff:openapi --fail-on-breaking
+pnpm psy diff:openapi --fail-on-breaking
 ```
 
 * This will throw an error and exit the process if breaking changes are found compared to the `HEAD` branch (usually `main`).

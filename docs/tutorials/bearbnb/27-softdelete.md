@@ -6,26 +6,27 @@ title: SoftDelete
 
 ## Commit Message
 
-```
+````
 SoftDelete
 
 ```console
-yarn psy sync
-yarn uspec spec/unit/models/Place.spec.ts
-yarn uspec
-```
+pnpm psy sync
+pnpm uspec spec/unit/models/Place.spec.ts
+pnpm uspec
+````
 
 SoftDelete works with `deletedAt`, which we included in the
 original generator commands. If adding after the fact, generate
 a migration with an optional `deletedAt` datetime:
 
 ```console
-yarn psy g:migration add-deleted-at-to-rooms deleted_at:datetime:optional
+pnpm psy g:migration add-deleted-at-to-rooms deleted_at:datetime:optional
 ```
 
 To cascade deletion (regular or soft), add `dependent: destroy`
 to the relevant association declarations.
-```
+
+````
 
 ## Changes
 
@@ -44,11 +45,11 @@ index c4f54f5..2ed6c14 100644
  import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
  import createPlace from '@spec/factories/PlaceFactory.js'
 +import createRoomKitchen from '@spec/factories/Room/KitchenFactory.js'
- 
+
  describe('Place', () => {
    it('has many Hosts (through hostPlaces)', async () => {
 @@ -38,4 +43,42 @@ describe('Place', () => {
- 
+
      expect(place.currentLocalizedText).toMatchDreamModel(esLocalizedText)
    })
 +
@@ -102,9 +103,9 @@ index baf74e2..eab07df 100644
  import Place from '@models/Place.js'
 +import { Decorators, SoftDelete } from '@rvoh/dream'
 +import { DreamColumn } from '@rvoh/dream/types'
- 
+
  const deco = new Decorators<typeof HostPlace>()
- 
+
 +@SoftDelete()
  export default class HostPlace extends ApplicationModel {
    public override get table() {
@@ -121,9 +122,9 @@ index aecf7ca..5b689b4 100644
  import Host from './Host.js'
  import Place from './Place.js'
 @@ -7,6 +7,7 @@ import Room from './Room.js'
- 
+
  const deco = new Decorators<typeof LocalizedText>()
- 
+
 +@SoftDelete()
  export default class LocalizedText extends ApplicationModel {
    public override get table() {
@@ -140,9 +141,9 @@ index 152f6b5..bb10df8 100644
  import Host from './Host.js'
  import HostPlace from './HostPlace.js'
 @@ -8,6 +8,7 @@ import Room from './Room.js'
- 
+
  const deco = new Decorators<typeof Place>()
- 
+
 +@SoftDelete()
  export default class Place extends ApplicationModel {
    public override get table() {
@@ -150,7 +151,7 @@ index 152f6b5..bb10df8 100644
 @@ -36,7 +37,7 @@ export default class Place extends ApplicationModel {
    @deco.HasMany('Host', { through: 'hostPlaces' })
    public hosts: Host[]
- 
+
 -  @deco.HasMany('Room', { order: 'createdAt' })
 +  @deco.HasMany('Room', { order: 'createdAt', dependent: 'destroy' })
    // make sure this imports from `import Room from '@models/Room.js'`
@@ -167,9 +168,9 @@ index 3343514..eb177b3 100644
 +import { Decorators, DreamConst, SoftDelete } from '@rvoh/dream'
  import { DreamColumn } from '@rvoh/dream/types'
  import LocalizedText from './LocalizedText.js'
- 
+
  const deco = new Decorators<typeof Room>()
- 
+
 +@SoftDelete()
  export default class Room extends ApplicationModel {
    public override get table() {
@@ -215,7 +216,7 @@ index ad88126..acdb672 100644
      },
      nonJsonColumnNames: ['appliances', 'bathOrShowerStyle', 'bedTypes', 'createdAt', 'deletedAt', 'id', 'placeId', 'position', 'type', 'updatedAt'],
 @@ -738,7 +738,7 @@ export const schema = {
- 
+
  export const connectionTypeConfig = {
    passthroughColumns: ['locale'],
 -  allDefaultScopeNames: ['dream:STI'],
@@ -223,4 +224,4 @@ index ad88126..acdb672 100644
    globalNames: {
      models: {
        'Guest': 'guests',
-```
+````

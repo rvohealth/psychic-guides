@@ -9,7 +9,7 @@ Psychic workers leverages [BullMQ](https://bullmq.io) under the hood to drive ou
 
 ## Types
 
-Psychic scans your worker config whenever you run `yarn psy sync`, capturing the workstream names you have configured for use when configuring your app. In order for these types to flow throughout your system, we recommend you add a few files to your file system.
+Psychic scans your worker config whenever you run `pnpm psy sync`, capturing the workstream names you have configured for use when configuring your app. In order for these types to flow throughout your system, we recommend you add a few files to your file system.
 
 > If you selected "yes" to background workers during the cli prompt, these files will already exist in your system.
 
@@ -195,7 +195,7 @@ If your app demands multiple queues, you will want to leverage multiple workstre
     ]
 ```
 
-With a named workstream added to your config, re-run `yarn psy sync` to compile the latest psychic types. Once done, you will want to also adjust the background configuration for the services you wish to tap into this queue:
+With a named workstream added to your config, re-run `pnpm psy sync` to compile the latest psychic types. Once done, you will want to also adjust the background configuration for the services you wish to tap into this queue:
 
 ```ts
 export default class FileImporter extends ApplicationBackgroundedService {

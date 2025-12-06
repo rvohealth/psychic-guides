@@ -6,7 +6,7 @@ title: Places controller for Guests, including localization
 
 ## Commit Message
 
-```
+````
 Places controller for Guests, including localization
 
 If the i18n text is coming through in English when it should
@@ -18,19 +18,20 @@ the ESLint server in your editor, and if that doesn't work,
 quit and re-open your editor
 
 ```console
-yarn psy g:controller V1/Guest/Places index show
+pnpm psy g:controller V1/Guest/Places index show
 
-yarn psy sync --ignore-errors
-yarn psy sync
+pnpm psy sync --ignore-errors
+pnpm psy sync
 
-yarn build
-yarn build:spec
+pnpm build
+pnpm build:spec
 
-yarn uspec spec/unit/controllers/V1/Guest/PlacesController.spec.ts
-NODE_DEBUG=psychic yarn uspec spec/unit/controllers/V1/Guest/PlacesController.spec.ts
-yarn uspec
-```
-```
+pnpm uspec spec/unit/controllers/V1/Guest/PlacesController.spec.ts
+NODE_DEBUG=psychic pnpm uspec spec/unit/controllers/V1/Guest/PlacesController.spec.ts
+pnpm uspec
+````
+
+````
 
 ## Changes
 
@@ -202,13 +203,13 @@ index 3f576e4..c8e9e95 100644
  import { Encrypt } from '@rvoh/dream/utils'
  import { BeforeAction } from '@rvoh/psychic'
 +import { supportedLocales } from '@src/utils/i18n.js'
- 
+
  export default class AuthedController extends ApplicationController {
    protected currentUser: User
 @@ -18,6 +19,19 @@ export default class AuthedController extends ApplicationController {
      this.currentUser = user
    }
- 
+
 +  @BeforeAction()
 +  public configureSerializers() {
 +    this.serializerPassthrough({
@@ -301,11 +302,11 @@ index 2631c38..152f6b5 100644
 +      forGuests: 'PlaceForGuestsSerializer',
      }
    }
- 
+
 @@ -34,7 +36,7 @@ export default class Place extends ApplicationModel {
    @deco.HasMany('Host', { through: 'hostPlaces' })
    public hosts: Host[]
- 
+
 -  @deco.HasMany('Room')
 +  @deco.HasMany('Room', { order: 'createdAt' })
    // make sure this imports from `import Room from '@models/Room.js'`
@@ -322,7 +323,7 @@ index 9d57fc5..833fc2f 100644
 +      forGuests: 'Room/BathroomForGuestsSerializer',
      }
    }
- 
+
 diff --git a/api/src/app/models/Room/Bedroom.ts b/api/src/app/models/Room/Bedroom.ts
 index 203a911..5d9856f 100644
 --- a/api/src/app/models/Room/Bedroom.ts
@@ -334,7 +335,7 @@ index 203a911..5d9856f 100644
 +      forGuests: 'Room/BedroomForGuestsSerializer',
      }
    }
- 
+
 diff --git a/api/src/app/models/Room/Den.ts b/api/src/app/models/Room/Den.ts
 index f80981a..7c7d64c 100644
 --- a/api/src/app/models/Room/Den.ts
@@ -358,7 +359,7 @@ index bcf3068..4622f8b 100644
 +      forGuests: 'Room/KitchenForGuestsSerializer',
      }
    }
- 
+
 diff --git a/api/src/app/models/Room/LivingRoom.ts b/api/src/app/models/Room/LivingRoom.ts
 index 64c5cd7..7187e89 100644
 --- a/api/src/app/models/Room/LivingRoom.ts
@@ -380,7 +381,7 @@ index ba698d3..8dde4c9 100644
  import { DreamSerializer } from '@rvoh/dream'
 +import { LocalesEnum } from '@src/types/db.js'
 +import i18n from '@src/utils/i18n.js'
- 
+
  // prettier-ignore
  export const PlaceSummarySerializer = (place: Place) =>
 @@ -13,3 +15,17 @@ export const PlaceSerializer = (place: Place) =>
@@ -416,10 +417,10 @@ index 0f6953e..976c0e9 100644
 +} from '@serializers/RoomSerializer.js'
 +import { BathOrShowerStylesEnum, BathOrShowerStylesEnumValues, LocalesEnum } from '@src/types/db.js'
 +import i18n from '@src/utils/i18n.js'
- 
+
  export const RoomBathroomSummarySerializer = (roomBathroom: Bathroom) =>
    RoomSummarySerializer(Bathroom, roomBathroom)
- 
+
  export const RoomBathroomSerializer = (roomBathroom: Bathroom) =>
    RoomSerializer(Bathroom, roomBathroom).attribute('bathOrShowerStyle')
 +
@@ -462,10 +463,10 @@ index 09b4589..ea93889 100644
 +} from '@serializers/RoomSerializer.js'
 +import { BedTypesEnum, BedTypesEnumValues, LocalesEnum } from '@src/types/db.js'
 +import i18n from '@src/utils/i18n.js'
- 
+
  export const RoomBedroomSummarySerializer = (roomBedroom: Bedroom) =>
    RoomSummarySerializer(Bedroom, roomBedroom)
- 
+
  export const RoomBedroomSerializer = (roomBedroom: Bedroom) =>
    RoomSerializer(Bedroom, roomBedroom).attribute('bedTypes')
 +
@@ -493,9 +494,9 @@ index 86500fa..d1668e1 100644
 +  RoomSummarySerializer,
 +} from '@serializers/RoomSerializer.js'
 +import { LocalesEnum } from '@src/types/db.js'
- 
+
  export const RoomDenSummarySerializer = (roomDen: Den) => RoomSummarySerializer(Den, roomDen)
- 
+
  export const RoomDenSerializer = (roomDen: Den) => RoomSerializer(Den, roomDen)
 +
 +export const RoomDenForGuestsSerializer = (roomDen: Den, passthrough: { locale: LocalesEnum }) =>
@@ -515,10 +516,10 @@ index 618c25a..e48aa59 100644
 +} from '@serializers/RoomSerializer.js'
 +import { ApplianceTypesEnum, ApplianceTypesEnumValues, LocalesEnum } from '@src/types/db.js'
 +import i18n from '@src/utils/i18n.js'
- 
+
  export const RoomKitchenSummarySerializer = (roomKitchen: Kitchen) =>
    RoomSummarySerializer(Kitchen, roomKitchen)
- 
+
  export const RoomKitchenSerializer = (roomKitchen: Kitchen) =>
    RoomSerializer(Kitchen, roomKitchen).attribute('appliances')
 +
@@ -546,10 +547,10 @@ index 5a1ea3a..1d99426 100644
 +  RoomSummarySerializer,
 +} from '@serializers/RoomSerializer.js'
 +import { LocalesEnum } from '@src/types/db.js'
- 
+
  export const RoomLivingRoomSummarySerializer = (roomLivingRoom: LivingRoom) =>
    RoomSummarySerializer(LivingRoom, roomLivingRoom)
- 
+
  export const RoomLivingRoomSerializer = (roomLivingRoom: LivingRoom) =>
    RoomSerializer(LivingRoom, roomLivingRoom)
 +
@@ -566,7 +567,7 @@ index e1aa6a5..d39f192 100644
  import { DreamSerializer } from '@rvoh/dream'
 +import { LocalesEnum } from '@src/types/db.js'
 +import i18n from '@src/utils/i18n.js'
- 
+
  export const RoomSummarySerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
    DreamSerializer(StiChildClass ?? Room, room)
 @@ -11,3 +13,16 @@ export const RoomSummarySerializer = <T extends Room>(StiChildClass: typeof Room
@@ -709,7 +710,7 @@ index b798cf2..89d4f25 100644
 @@ -1,5 +1,7 @@
  import en from '@conf/locales/en.js'
 +import es from './es.js'
- 
+
  export default {
    en,
 +  es,
@@ -719,7 +720,7 @@ index e0981a7..c99ddc9 100644
 --- a/api/src/conf/routes.ts
 +++ b/api/src/conf/routes.ts
 @@ -3,14 +3,19 @@ import { PsychicRouter } from '@rvoh/psychic'
- 
+
  export default function routes(r: PsychicRouter) {
    r.namespace('v1', r => {
 +    r.namespace('guest', r => {
@@ -731,7 +732,7 @@ index e0981a7..c99ddc9 100644
 +
      r.namespace('host', r => {
        r.resources('localized-texts', { only: ['update', 'destroy'] })
- 
+
        r.resources('places', r => {
          r.resources('rooms')
 -
@@ -739,7 +740,7 @@ index e0981a7..c99ddc9 100644
 -
      })
    })
- 
+
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
 index edc0b39..e97bd9f 100644
 --- a/api/src/openapi/mobile.openapi.json
@@ -2473,12 +2474,12 @@ index c99a20e..b5ec778 100644
  import locales from '@conf/locales/index.js'
  import { I18nProvider } from '@rvoh/psychic/system'
 +import { LocalesEnumValues } from '@src/types/db.js'
- 
+
 -const SUPPORTED_LOCALES = ['en-US']
  export function supportedLocales() {
 -  return SUPPORTED_LOCALES
 +  return LocalesEnumValues
  }
- 
+
  export default I18nProvider.provide(locales, 'en')
-```
+````

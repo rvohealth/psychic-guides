@@ -5,7 +5,7 @@ pagination_next: null
 
 # repl
 
-the `conf/repl.ts` file is used for bootstrapping the repl (which happens when you run the `yarn console` script).
+the `conf/repl.ts` file is used for bootstrapping the repl (which happens when you run the `pnpm console` script).
 
 ```ts
 // conf/repl.ts
@@ -37,7 +37,7 @@ export default (async function () {
 This will enable access once in the repl, like so:
 
 ```sh
-NODE_ENV=development yarn console
+NODE_ENV=development pnpm console
 > console.log(MyCustomClass)
 ```
 

@@ -6,14 +6,15 @@ title: Generate Room/Den and Room/LivingRoom STI models
 
 ## Commit Message
 
-```
+````
 Generate Room/Den and Room/LivingRoom STI models
 
 ```console
-yarn psy g:sti-child Room/Den extends Room
-yarn psy g:sti-child Room/LivingRoom extends Room
-```
-```
+pnpm psy g:sti-child Room/Den extends Room
+pnpm psy g:sti-child Room/LivingRoom extends Room
+````
+
+````
 
 ## Changes
 
@@ -136,4 +137,4 @@ index 0000000..e44755e
 +
 +export const RoomLivingRoomSerializer = (roomLivingRoom: RoomLivingRoom) =>
 +  RoomSerializer(RoomLivingRoom, roomLivingRoom)
-```
+````

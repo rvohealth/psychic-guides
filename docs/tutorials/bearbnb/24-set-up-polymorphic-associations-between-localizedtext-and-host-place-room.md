@@ -6,29 +6,30 @@ title: Set up polymorphic associations between LocalizedText and Host/Place/Room
 
 ## Commit Message
 
-```
+````
 Set up polymorphic associations between LocalizedText and Host/Place/Room
 Create a default LocalizedText for each Host/Place/Room
 
 ```console
-yarn psy db:migrate
-yarn uspec spec/unit/models
-```
+pnpm psy db:migrate
+pnpm uspec spec/unit/models
+````
 
 Also flesh out the LocalizedText controller. Since LocalizedText belongs to different types (Host/Place/Room), restricting the controller to only allow access to owned LocalizedText requires a different strategy. The switch statement used is future proofed so that if LocalizedText is added to another model in the future, access will automatically be restricted until it is explicitly added to the controller. Note that not-found (404), is preferred over forbidden (403), so as to avoid giving away information about the presence or lack thereof of the target. This also aligns with the not-found response returned when `user.associationQuery('<some-association').findOrFail(this.castParam('id', 'bigint'))` is used to limit access to owned resources.
 
 Change the controller from `scrollPaginate` to `many` since we won't ever, practically speaking, have so many different translations as to require pagination.
 
 ```console
-yarn uspec spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
+pnpm uspec spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
 ```
 
 Before committing, ensure all specs pass:
 
 ```console
-yarn uspec
+pnpm uspec
 ```
-```
+
+````
 
 ## Changes
 
@@ -42,9 +43,9 @@ index 0df341b..638e4f4 100644
  import LocalizedText from '@models/LocalizedText.js'
 +import { UpdateableProperties } from '@rvoh/dream/types'
 +import createPlace from './PlaceFactory.js'
- 
+
  let counter = 0
- 
+
  export default async function createLocalizedText(attrs: UpdateableProperties<LocalizedText> = {}) {
    return await LocalizedText.create({
 +    localizable: attrs.localizable ? null : await createPlace(),
@@ -65,11 +66,11 @@ index 9cfebae..7306040 100644
 +import createRoomDen from '@spec/factories/Room/DenFactory.js'
  import createUser from '@spec/factories/UserFactory.js'
  import { RequestBody, session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
- 
+
 @@ -13,76 +16,283 @@ describe('V1/Host/LocalizedTextsController', () => {
      request = await session(user)
    })
- 
+
 -  describe('PATCH update', () => {
 -    const updateLocalizedText = async <StatusCode extends 204 | 400 | 404>(
 -      localizedText: LocalizedText,
@@ -158,21 +159,21 @@ index 9cfebae..7306040 100644
 +        expect(await LocalizedText.find(localizedText.id)).toBeNull()
        })
 -    }
- 
+
 -    it('updates the LocalizedText', async () => {
 -      const localizedText = await createLocalizedText({ user })
 +      context('a LocalizedText created by another Host', () => {
 +        it('is not deleted', async () => {
 +          const otherHost = await createHost()
 +          localizedText = await otherHost.associationQuery('localizedTexts').firstOrFail()
- 
+
 -      await updateLocalizedText(localizedText, {
 -        locale: 'es-ES',
 -        title: 'Updated LocalizedText title',
 -        markdown: 'Updated LocalizedText markdown',
 -      }, 204)
 +          await destroyLocalizedText(localizedText, 404)
- 
+
 -      await localizedText.reload()
 -      expect(localizedText.locale).toEqual('es-ES')
 -      expect(localizedText.title).toEqual('Updated LocalizedText title')
@@ -182,7 +183,7 @@ index 9cfebae..7306040 100644
 +      })
      })
 +  })
- 
+
 -    context('a LocalizedText created by another User', () => {
 -      it('is not updated', async () => {
 -        const localizedText = await createLocalizedText()
@@ -191,7 +192,7 @@ index 9cfebae..7306040 100644
 -        const originalMarkdown = localizedText.markdown
 +  context('belonging to a Place', () => {
 +    let localizedText: LocalizedText
- 
+
 -        await updateLocalizedText(localizedText, {
 -          locale: 'es-ES',
 -          title: 'Updated LocalizedText title',
@@ -226,7 +227,7 @@ index 9cfebae..7306040 100644
 +          },
 +          204,
 +        )
- 
+
          await localizedText.reload()
 -        expect(localizedText.locale).toEqual(originalLocale)
 -        expect(localizedText.title).toEqual(originalTitle)
@@ -290,7 +291,7 @@ index 9cfebae..7306040 100644
        })
      })
    })
- 
+
 -  describe('DELETE destroy', () => {
 -    const destroyLocalizedText = async <StatusCode extends 204 | 400 | 404>(localizedText: LocalizedText, expectedStatus: StatusCode) => {
 -      return request.delete('/v1/host/localized-texts/{id}', expectedStatus, {
@@ -335,7 +336,7 @@ index 9cfebae..7306040 100644
 +        expect(localizedText.markdown).toEqual('Updated LocalizedText markdown')
        })
 -    }
- 
+
 -    it('deletes the LocalizedText', async () => {
 -      const localizedText = await createLocalizedText({ user })
 +      context('a LocalizedText associated with a Room belonging to a different Host', () => {
@@ -345,7 +346,7 @@ index 9cfebae..7306040 100644
 +          const originalLocale = localizedText.locale
 +          const originalTitle = localizedText.title
 +          const originalMarkdown = localizedText.markdown
- 
+
 -      await destroyLocalizedText(localizedText, 204)
 +          await updateLocalizedText(
 +            localizedText,
@@ -356,7 +357,7 @@ index 9cfebae..7306040 100644
 +            },
 +            404,
 +          )
- 
+
 -      expect(await LocalizedText.find(localizedText.id)).toBeNull()
 +          await localizedText.reload()
 +          expect(localizedText.locale).toEqual(originalLocale)
@@ -365,7 +366,7 @@ index 9cfebae..7306040 100644
 +        })
 +      })
      })
- 
+
 -    context('a LocalizedText created by another User', () => {
 -      it('is not deleted', async () => {
 -        const localizedText = await createLocalizedText()
@@ -389,10 +390,10 @@ index 9cfebae..7306040 100644
 +        it('is not deleted', async () => {
 +          const otherRoom = await createRoomDen()
 +          localizedText = await otherRoom.associationQuery('localizedTexts').firstOrFail()
- 
+
 -        await destroyLocalizedText(localizedText, 404)
 +          await destroyLocalizedText(localizedText, 404)
- 
+
 -        expect(await LocalizedText.find(localizedText.id)).toMatchDreamModel(localizedText)
 +          expect(await LocalizedText.find(localizedText.id)).toMatchDreamModel(localizedText)
 +        })
@@ -408,10 +409,10 @@ index ef54e54..cdcb8d6 100644
  import createHostPlace from '@spec/factories/HostPlaceFactory.js'
 +import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
  import createPlace from '@spec/factories/PlaceFactory.js'
- 
+
  describe('Host', () => {
 @@ -10,4 +11,21 @@ describe('Host', () => {
- 
+
      expect(await host.associationQuery('places').all()).toMatchDreamModels([place])
    })
 +
@@ -441,10 +442,10 @@ index 6315065..7399652 100644
  import createHostPlace from '@spec/factories/HostPlaceFactory.js'
 +import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
  import createPlace from '@spec/factories/PlaceFactory.js'
- 
+
  describe('Place', () => {
 @@ -10,4 +11,22 @@ describe('Place', () => {
- 
+
      expect(await place.associationQuery('hosts').all()).toMatchDreamModels([host])
    })
 +
@@ -511,9 +512,9 @@ index 38fd532..cd82d48 100644
  import { OpenAPI } from '@rvoh/psychic'
  import V1HostBaseController from './BaseController.js'
 -import LocalizedText from '@models/LocalizedText.js'
- 
+
  const openApiTags = ['localized-texts']
- 
+
 @@ -11,9 +13,9 @@ export default class V1HostLocalizedTextsController extends V1HostBaseController
      description: 'Update a LocalizedText',
    })
@@ -525,7 +526,7 @@ index 38fd532..cd82d48 100644
 +    await localizedText.update(this.paramsFor(LocalizedText))
 +    this.noContent()
    }
- 
+
    @OpenAPI({
 @@ -22,14 +24,51 @@ export default class V1HostLocalizedTextsController extends V1HostBaseController
      description: 'Destroy a LocalizedText',
@@ -538,7 +539,7 @@ index 38fd532..cd82d48 100644
 +    await localizedText.destroy()
 +    this.noContent()
    }
- 
+
    private async localizedText() {
 -    // return await this.currentUser.associationQuery('localizedTexts')
 -    //   .preloadFor('default')
@@ -595,10 +596,10 @@ index b7d7420..f0bb141 100644
  import HostPlace from './HostPlace.js'
 +import LocalizedText from './LocalizedText.js'
  import Place from './Place.js'
- 
+
  const deco = new Decorators<typeof Host>()
 @@ -32,4 +33,12 @@ export default class Host extends ApplicationModel {
- 
+
    @deco.HasMany('Place', { through: 'hostPlaces' })
    public places: Place[]
 +
@@ -622,9 +623,9 @@ index d73684f..aecf7ca 100644
 +import Host from './Host.js'
 +import Place from './Place.js'
 +import Room from './Room.js'
- 
+
  const deco = new Decorators<typeof LocalizedText>()
- 
+
 @@ -25,4 +28,9 @@ export default class LocalizedText extends ApplicationModel {
    public deletedAt: DreamColumn<LocalizedText, 'deletedAt'>
    public createdAt: DreamColumn<LocalizedText, 'createdAt'>
@@ -645,7 +646,7 @@ index 399d7a9..114e2cc 100644
  import HostPlace from './HostPlace.js'
 +import LocalizedText from './LocalizedText.js'
  import Room from './Room.js'
- 
+
  const deco = new Decorators<typeof Place>()
 @@ -37,4 +38,12 @@ export default class Place extends ApplicationModel {
    // make sure this imports from `import Room from '@models/Room.js'`
@@ -669,9 +670,9 @@ index 7b34e52..289e533 100644
  import { Decorators } from '@rvoh/dream'
  import { DreamColumn } from '@rvoh/dream/types'
 +import LocalizedText from './LocalizedText.js'
- 
+
  const deco = new Decorators<typeof Room>()
- 
+
 @@ -20,4 +21,12 @@ export default class Room extends ApplicationModel {
    @deco.BelongsTo('Place', { on: 'placeId' })
    public place: Place
@@ -690,7 +691,7 @@ index 13f64b4..d29f3a7 100644
 --- a/api/src/db/migrations/1764187753122-create-localized-text.ts
 +++ b/api/src/db/migrations/1764187753122-create-localized-text.ts
 @@ -2,39 +2,29 @@ import { Kysely, sql } from 'kysely'
- 
+
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  export async function up(db: Kysely<any>): Promise<void> {
 -  await db.schema
@@ -702,7 +703,7 @@ index 13f64b4..d29f3a7 100644
 -    ])
 -    .execute()
 +  await db.schema.createType('localized_types_enum').asEnum(['Host', 'Place', 'Room']).execute()
- 
+
 -  await db.schema
 -    .createType('locales_enum')
 -    .asEnum([
@@ -711,7 +712,7 @@ index 13f64b4..d29f3a7 100644
 -    ])
 -    .execute()
 +  await db.schema.createType('locales_enum').asEnum(['en-US', 'es-ES']).execute()
- 
+
    await db.schema
      .createTable('localized_texts')
 -    .addColumn('id', 'uuid', col =>
@@ -739,10 +740,10 @@ index 13f64b4..d29f3a7 100644
 +    .unique()
 +    .execute()
  }
- 
+
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 @@ -43,4 +33,4 @@ export async function down(db: Kysely<any>): Promise<void> {
- 
+
    await db.schema.dropType('localized_types_enum').execute()
    await db.schema.dropType('locales_enum').execute()
 -}
@@ -1112,7 +1113,7 @@ index 4ec7262..03b23ae 100644
 @@ -105,6 +105,21 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
    ? ColumnType<S, I | undefined, U>
    : ColumnType<T, T | undefined, T>;
- 
+
 +export type LocalesEnum = "en-US" | "es-ES";
 +export const LocalesEnumValues = [
 +  "en-US",
@@ -1134,7 +1135,7 @@ index 4ec7262..03b23ae 100644
 @@ -151,6 +166,18 @@ export interface Hosts {
    userId: string;
  }
- 
+
 +export interface LocalizedTexts {
 +  createdAt: Timestamp;
 +  deletedAt: Timestamp | null;
@@ -1440,4 +1441,4 @@ index 4f0c02f..b577429 100644
      "/v1/host/places": {
          parameters: {
              query?: {
-```
+````

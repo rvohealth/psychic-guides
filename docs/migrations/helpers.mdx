@@ -144,8 +144,8 @@ export async function down(db: Kysely<any>): Promise<void> {
 New enum values cannot be both added and used as a replacement in a single transaction, and new migration files are generally run in a single transaction. To both add a new enum and replace existing values with that new value, use two migration files, and include both `newTransaction` and the `dropEnumValue` in the second file, e.g.:
 
 ```console
-yarn psy g:migration add-bathroom-to-room-types
-yarn psy g:migration replace-watercloset-with-bathroom
+pnpm psy g:migration add-bathroom-to-room-types
+pnpm psy g:migration replace-watercloset-with-bathroom
 ```
 
 ```ts

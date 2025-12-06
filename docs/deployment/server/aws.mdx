@@ -29,7 +29,7 @@ ENV PSYCHIC_LOG_PATH=/dev/shm
 ENV PSYCHIC_SSL_CERT_PATH=/home/node/app/cert/psychic-selfsigned.crt
 ENV PSYCHIC_SSL_KEY_PATH=/home/node/app/cert/psychic-selfsigned.key
 ENV COREPACK_HOME=/home/node/bin
-ENV YARN_VERSION=4.4.1
+ENV PNPM_VERSION=10.24.0
 ENV APP_NAME=myapp
 RUN apk -U upgrade
 RUN apk add dumb-init
@@ -37,31 +37,31 @@ ARG INSTALL_PG_DUMP_RESTORE
 RUN if [ "$INSTALL_PG_DUMP_RESTORE" = '1' ] ; then apk add postgresql15 ; fi
 RUN mkdir -p /home/node/app && chown node:node /home/node/app
 RUN mkdir -p /home/node/.npm && chown node:node /home/node/.npm
-RUN mkdir -p /home/node/.yarn && chown node:node /home/node/.yarn
+RUN mkdir -p /home/node/.pnpm && chown node:node /home/node/.pnpm
 WORKDIR /home/node/app
 RUN mkdir tmp
 
 FROM base AS dependencies
 COPY --chown=node:node ./package.json .
-COPY --chown=node:node ./yarn.lock .
+COPY --chown=node:node ./pnpm.lock .
 USER root
 RUN apk add git
-COPY --chown=node:node .yarnrc.yml .
+COPY --chown=node:node .npmrc .
 COPY --chown=node:node . .
 RUN mkdir ${COREPACK_HOME}
-RUN corepack enable --install-directory ${COREPACK_HOME} && corepack prepare yarn@${YARN_VERSION}
-# RUN corepack enable && corepack prepare yarn@${YARN_VERSION}
+RUN corepack enable --install-directory ${COREPACK_HOME} && corepack prepare pnpm@${PNPM_VERSION}
+# RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION}
 
 # need types to build, so install dev dependencies
-RUN yarn workspaces focus --production
-RUN NODE_ENV=production yarn install --immutable
-RUN NODE_ENV=production yarn build
+RUN pnpm workspaces focus --production
+RUN NODE_ENV=production pnpm install --frozen-lockfile
+RUN NODE_ENV=production pnpm build
 # # now that we've built, we can install without dev dependencies
 RUN rm -rf node_modules
-RUN yarn workspaces focus --production
+RUN pnpm workspaces focus --production
 
-RUN rm .yarnrc.yml
-RUN echo "nodeLinker: node-modules" > .yarnrc.yml
+RUN rm .npmrc
+RUN echo "nodeLinker: node-modules" > .npmrc
 
 FROM base AS sslsetup
 USER root
@@ -78,10 +78,10 @@ USER root
 COPY --chown=node:node --from=dependencies /home/node/app/ .
 COPY --chown=node:node --from=sslsetup /home/node/cert ./cert
 RUN mkdir ${COREPACK_HOME}
-RUN corepack enable --install-directory ${COREPACK_HOME} && corepack prepare yarn@${YARN_VERSION}
+RUN corepack enable --install-directory ${COREPACK_HOME} && corepack prepare pnpm@${PNPM_VERSION}
 
 USER node
-RUN echo 'alias yarn="corepack yarn"' >> /home/node/.profile
+RUN echo 'alias pnpm="corepack pnpm"' >> /home/node/.profile
 
 EXPOSE 8443
 ENV PATH="${PATH}:/home/node/npm_global/bin"
@@ -98,7 +98,7 @@ ENV NPM_CONFIG_PREFIX=/home/node/npm_global
 RUN mkdir -p /dev/shm
 RUN ln -sf /dev/shm ../.npm
 RUN ln -sf /dev/shm ../.npm/_cacache
-RUN ln -sf /dev/shm ../.yarn
+RUN ln -sf /dev/shm ../.pnpm
 RUN ln -sf /dev/shm ../app_tmp
 
 # pm2 needs to be able to write to disk (for logs and pid files), so set up a writeable directory for it
@@ -132,11 +132,11 @@ With the Dockerfile in place, we will need the corresponding `migrate_and_serve.
 #!/bin/sh
 
 source /home/node/.profile
-echo $(type yarn)
+echo $(type pnpm)
 
 if [ $WEB_SERVICE ]; then
-  YARN_CACHE_FOLDER=/dev/shm TMP=/dev/shm NODE_ENV=production yarn psyjs db:migrate --skip-sync \
-  && YARN_CACHE_FOLDER=/dev/shm TMP=/dev/shm NODE_ENV=production yarn psyjs db:seed \
+  PNPM_CACHE_FOLDER=/dev/shm TMP=/dev/shm NODE_ENV=production pnpm psyjs db:migrate --skip-sync \
+  && PNPM_CACHE_FOLDER=/dev/shm TMP=/dev/shm NODE_ENV=production pnpm psyjs db:seed \
   && pm2-runtime start ./server.ecosystem.config.js --env production \
   && pm2 save
 elif [ $WORKER_SERVICE ]; then

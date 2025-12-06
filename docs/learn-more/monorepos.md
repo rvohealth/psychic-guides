@@ -16,7 +16,7 @@ Psychic makes no adjustments to the client application that is built, and does n
 - creates either a `client` directory, `admin` directory, or both, depending on your selection, and provisions the requested frameworks into those folders
 - adds helper scripts for launching your client and admin apps to the `api/package.json` file
 - provides back end feature test bindings to launch your front end applications in `spec/features/setup/globalSetup.ts`
-- provides bindings in `src/conf/app.ts` to start your front end application servers whenever you run `CLIENT=1 yarn dev`
+- provides bindings in `src/conf/app.ts` to start your front end application servers whenever you run `CLIENT=1 pnpm dev`
 
 ## Customization
 

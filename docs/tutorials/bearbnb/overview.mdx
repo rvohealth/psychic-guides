@@ -2,6 +2,7 @@
 sidebar_position: 0
 title: BearBnB
 pagination_prev: null
+pagination_next: null
 ---
 
 # BearBnB
@@ -95,21 +96,21 @@ erDiagram
 ## Generator commands used to create BearBnB
 
 ```sh
-yarn psy g:model --no-serializer User email:citext
-yarn psy g:model Guest User:belongs_to
-yarn psy g:model Host User:belongs_to
-yarn psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,
-yarn psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to deleted_at:datetime:optional
+pnpm psy g:model --no-serializer User email:citext
+pnpm psy g:model Guest User:belongs_to
+pnpm psy g:model Host User:belongs_to
+pnpm psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,
+pnpm psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to deleted_at:datetime:optional
 
-yarn psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\{\}/rooms Room type:enum:room_types:Bathroom,
-yarn psy g:sti-child Room/Bathroom extends Room bath_or_shower_style:enum:bath_or_shower_styles:bath,shower,bath_and_shower,
-yarn psy g:sti-child --help
-yarn psy g:sti-child Room/Bedroom extends Room bed_types:enum\[\]:bed_types:twin,bunk,queen,king,cot,sofabed
-yarn psy g:sti-child Room/Kitchen extends Room appliances:enum\[\]:appliance_types:stove,oven,microwave,dishwasher
-yarn psy g:sti-child Room/Den extends Room
-yarn psy g:sti-child Room/LivingRoom extends Room
+pnpm psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\{\}/rooms Room type:enum:room_types:Bathroom,
+pnpm psy g:sti-child Room/Bathroom extends Room bath_or_shower_style:enum:bath_or_shower_styles:bath,shower,bath_and_shower,
+pnpm psy g:sti-child --help
+pnpm psy g:sti-child Room/Bedroom extends Room bed_types:enum\[\]:bed_types:twin,bunk,queen,king,cot,sofabed
+pnpm psy g:sti-child Room/Kitchen extends Room appliances:enum\[\]:appliance_types:stove,oven,microwave,dishwasher
+pnpm psy g:sti-child Room/Den extends Room
+pnpm psy g:sti-child Room/LivingRoom extends Room
 
-yarn psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText localizable_type:enum:localized_types:Host,
-yarn psy g:controller V1/Guest/Places index show
-yarn psy g:migration add-deferrable-unique-constraint-to-rooms
+pnpm psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText localizable_type:enum:localized_types:Host,
+pnpm psy g:controller V1/Guest/Places index show
+pnpm psy g:migration add-deferrable-unique-constraint-to-rooms
 ```

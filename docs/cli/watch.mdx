@@ -7,13 +7,13 @@ sidebar_position: 5
 Dream, Psychic, and Kysely all use custom type compilation steps to supply their underlying apis with types specific to your application. This is important to understand, because it means that you will often times need to sync your application to get types working properly after code changes. To sync types, run the sync command, like so:
 
 ```sh
-yarn psy sync
+pnpm psy sync
 ```
 
 This can get cumbersome, especially considering it is difficult to know what change necessetates a type sync. Considering this pain point, a simple utility was written to enable you to get automatic type syncing any time a file changes. To activate this, simply open a new tab in your terminal, cd into the api directory for your app (or the root directory if you did an api-only build), and run the `watch` command, like so:
 
 ```sh
-yarn psy watch
+pnpm psy watch
 ```
 
 This will watch all files in your `src` directory (or the specified directory), and will automatically call `sync` for you without any intervention on your part. This promises to always keep your types in sync. In some cases, you may leave your code in an invalid state. No matter for the watcher, it will swallow errors and carry on watching. Once a valid iteration of your code is achieved, the sync will succeed.
@@ -21,7 +21,7 @@ This will watch all files in your `src` directory (or the specified directory), 
 ## Usage
 
 ```sh
-yarn psy watch [dir]
+pnpm psy watch [dir]
 ```
 
 **Arguments:**

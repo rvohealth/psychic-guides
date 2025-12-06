@@ -6,13 +6,14 @@ title: Generate Place resource
 
 ## Commit Message
 
-```
+````
 Generate Place resource
 
 ```console
-yarn psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional
-```
-```
+pnpm psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional
+````
+
+````
 
 ## Changes
 
@@ -392,7 +393,7 @@ index 67975fc..198aa15 100644
 +++ b/api/src/conf/routes.ts
 @@ -2,6 +2,12 @@ import adminRoutes from '@conf/routes.admin.js'
  import { PsychicRouter } from '@rvoh/psychic'
- 
+
  export default function routes(r: PsychicRouter) {
 +  r.namespace('v1', r => {
 +    r.namespace('host', r => {
@@ -401,7 +402,7 @@ index 67975fc..198aa15 100644
 +  })
 +
    adminRoutes(r)
-   // add routes here, perhaps by running `yarn psy g:resource v1/pets Pet name:citext birthdate:date species:enum:pet_species:dog,cat,fish`
+   // add routes here, perhaps by running `pnpm psy g:resource v1/pets Pet name:citext birthdate:date species:enum:pet_species:dog,cat,fish`
  }
 diff --git a/api/src/db/migrations/1764176714209-create-place.ts b/api/src/db/migrations/1764176714209-create-place.ts
 new file mode 100644
@@ -452,4 +453,4 @@ index 0000000..e1e0e23
 +  await db.schema.dropType('place_styles_enum').execute()
 +}
 \ No newline at end of file
-```
+````

@@ -88,7 +88,7 @@ By using preloadFor, we manage to both clean up code, and ensure that we never h
 A CLI command can be run which will spell out the serialization needs of a provided model. This is useful if you are trying to get a quick window into the dense layer of nested associations you may be trying to render.
 
 ```sh
-yarn psy inspect:serialization Post
+pnpm psy inspect:serialization Post
 ```
 
 A helpful printout will be displayed, indicating which serializers are requiring which, in a tree-like structure.
@@ -96,5 +96,5 @@ A helpful printout will be displayed, indicating which serializers are requiring
 If you would like to specify a specific serializer key (other than the default), you can provide an optional second argument to the command, like so:
 
 ```sh
-yarn psy inspect:serialization Post summary
+pnpm psy inspect:serialization Post summary
 ```

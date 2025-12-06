@@ -2,10 +2,10 @@
 
 /**
  * Simple pagination control management for Docusaurus
- * 
+ *
  * This script processes each directory independently to add pagination controls
  * that prevent navigation from flowing between unrelated sections.
- * 
+ *
  * Algorithm:
  * 1. Traverse directory hierarchy starting with `docs`
  * 2. For each directory, filter to `.mdx` files only
@@ -135,14 +135,14 @@ function sortFiles(files: DocFile[]): DocFile[] {
  */
 function processDirectory(dirPath: string): void {
   const files = getMdxFilesInDirectory(dirPath)
-  
+
   if (files.length === 0) {
     return
   }
 
   const sortedFiles = sortFiles(files)
   const dirName = path.basename(dirPath)
-  
+
   console.log(`\nProcessing directory: ${dirName}`)
   console.log(`Files in order:`)
   sortedFiles.forEach((file, index) => {
@@ -155,7 +155,7 @@ function processDirectory(dirPath: string): void {
   sortedFiles.forEach((file, index) => {
     const isFirst = index === 0
     const isLast = index === sortedFiles.length - 1
-    
+
     let changed = false
     const originalPrev = file.frontMatter.pagination_prev
     const originalNext = file.frontMatter.pagination_next
@@ -217,7 +217,7 @@ function traverseDirectories(dirPath: string): void {
   }
 
   const entries = fs.readdirSync(dirPath, { withFileTypes: true })
-  
+
   for (const entry of entries) {
     if (entry.isDirectory() && !entry.name.startsWith('.') && !entry.name.startsWith('_')) {
       const subDirPath = path.join(dirPath, entry.name)
@@ -236,7 +236,7 @@ function main(): void {
   traverseDirectories(docsDir)
 
   console.log('\n✅ Pagination controls have been fixed!')
-  console.log('\nRun `yarn build` to verify the changes.')
+  console.log('\nRun `pnpm build` to verify the changes.')
 }
 
 // Run if called directly

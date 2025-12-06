@@ -21,7 +21,7 @@ OpenAPI validation is enabled on all requests (when a request doesn't match, it 
 To generate the OpenAPI spec, simply run:
 
 ```sh
-yarn psy sync:openapi
+pnpm psy sync:openapi
 ```
 
 Psychic provides built-in support for generating openapi schema to define your response payloads. Using the definitions you provide, Psychic will regenerate an `openapi.json` file at the root of your project whenever a sync occurs. Psychic will also use this to generate type files for your client app, facilitating easy synchronization of your api mechanisms to the current values provided by the backend.

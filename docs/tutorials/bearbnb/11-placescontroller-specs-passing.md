@@ -6,7 +6,7 @@ title: PlacesController specs passing
 
 ## Commit Message
 
-```
+````
 PlacesController specs passing
 
 NOTE: if your editor starts complaining about an `error` type,
@@ -14,12 +14,13 @@ restart the ESLint server (the `ESLint: Restart ESLint Server`
 command in VSCode / Cursor)
 
 ```console
-yarn uspec spec/unit/controllers/V1/Host/PlacesController.spec.ts
+pnpm uspec spec/unit/controllers/V1/Host/PlacesController.spec.ts
 // if it hangs, it's likely that you haven't implemented the controller
 // changes; simply adding `this.ok()` or `this.noContent()` to each action
 // in the controller will get the spec run to complete
-```
-```
+````
+
+````
 
 ## Changes
 
@@ -39,21 +40,21 @@ index 10c5a6a..25e59a6 100644
  import createUser from '@spec/factories/UserFactory.js'
 -import createHost from '@spec/factories/HostFactory.js'
  import { RequestBody, session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
- 
+
  describe('V1/Host/PlacesController', () => {
 @@ -23,7 +24,8 @@ describe('V1/Host/PlacesController', () => {
      }
- 
+
      it('returns the index of Places', async () => {
 -      const place = await createPlace({ host })
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
- 
+
        const { body } = await indexPlaces(200)
- 
+
 @@ -46,14 +48,18 @@ describe('V1/Host/PlacesController', () => {
    })
- 
+
    describe('GET show', () => {
 -    const showPlace = async <StatusCode extends 200 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
 +    const showPlace = async <StatusCode extends 200 | 400 | 404>(
@@ -64,14 +65,14 @@ index 10c5a6a..25e59a6 100644
          id: place.id,
        })
      }
- 
+
      it('returns the specified Place', async () => {
 -      const place = await createPlace({ host })
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
- 
+
        const { body } = await showPlace(place, 200)
- 
+
 @@ -79,19 +85,22 @@ describe('V1/Host/PlacesController', () => {
    describe('POST create', () => {
      const createPlace = async <StatusCode extends 201 | 400 | 404>(
@@ -84,7 +85,7 @@ index 10c5a6a..25e59a6 100644
 +        data,
        })
      }
- 
+
      it('creates a Place for this Host', async () => {
 -      const { body } = await createPlace({
 -        name: 'The Place name',
@@ -99,7 +100,7 @@ index 10c5a6a..25e59a6 100644
 +        },
 +        201,
 +      )
- 
+
        const place = await host.associationQuery('places').firstOrFail()
        expect(place.name).toEqual('The Place name')
 @@ -113,7 +122,7 @@ describe('V1/Host/PlacesController', () => {
@@ -113,12 +114,12 @@ index 10c5a6a..25e59a6 100644
          id: place.id,
 @@ -122,13 +131,18 @@ describe('V1/Host/PlacesController', () => {
      }
- 
+
      it('updates the Place', async () => {
 -      const place = await createPlace({ host })
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
- 
+
 -      await updatePlace(place, {
 -        name: 'Updated Place name',
 -        style: 'dump',
@@ -133,13 +134,13 @@ index 10c5a6a..25e59a6 100644
 +        },
 +        204,
 +      )
- 
+
        await place.reload()
        expect(place.name).toEqual('Updated Place name')
 @@ -143,11 +157,15 @@ describe('V1/Host/PlacesController', () => {
          const originalStyle = place.style
          const originalSleeps = place.sleeps
- 
+
 -        await updatePlace(place, {
 -          name: 'Updated Place name',
 -          style: 'dump',
@@ -154,12 +155,12 @@ index 10c5a6a..25e59a6 100644
 +          },
 +          404,
 +        )
- 
+
          await place.reload()
          expect(place.name).toEqual(originalName)
 @@ -158,14 +176,18 @@ describe('V1/Host/PlacesController', () => {
    })
- 
+
    describe('DELETE destroy', () => {
 -    const destroyPlace = async <StatusCode extends 204 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
 +    const destroyPlace = async <StatusCode extends 204 | 400 | 404>(
@@ -170,14 +171,14 @@ index 10c5a6a..25e59a6 100644
          id: place.id,
        })
      }
- 
+
      it('deletes the Place', async () => {
 -      const place = await createPlace({ host })
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
- 
+
        await destroyPlace(place, 204)
- 
+
 diff --git a/api/src/app/controllers/AuthedController.ts b/api/src/app/controllers/AuthedController.ts
 index fc70d67..3f576e4 100644
 --- a/api/src/app/controllers/AuthedController.ts
@@ -190,12 +191,12 @@ index fc70d67..3f576e4 100644
  import { BeforeAction } from '@rvoh/psychic'
 -/** uncomment after creating User model */
 -// import User from '@models/User.js'
- 
+
  export default class AuthedController extends ApplicationController {
 -  /** uncomment after creating User model */
 -  // protected currentUser: User
 +  protected currentUser: User
- 
+
    @BeforeAction()
    protected async authenticate() {
 -    /** uncomment after creating User model */
@@ -214,14 +215,14 @@ index fc70d67..3f576e4 100644
 +
 +    this.currentUser = user
    }
- 
+
    protected authedUserId(): string | null {
      if (!AppEnv.isTest)
        throw new Error(
 -        'The current authentication scheme is only for early development. Replace with a production grade authentication scheme.'
 +        'The current authentication scheme is only for early development. Replace with a production grade authentication scheme.',
        )
- 
+
      const token = (this.req.header('Authorization') ?? '').split(' ').at(-1)!
 diff --git a/api/src/app/controllers/V1/Host/BaseController.ts b/api/src/app/controllers/V1/Host/BaseController.ts
 index 1a200d0..1f537e5 100644
@@ -231,10 +232,10 @@ index 1a200d0..1f537e5 100644
 +import Host from '@models/Host.js'
 +import { BeforeAction } from '@rvoh/psychic'
  import V1BaseController from '../BaseController.js'
- 
+
  export default class V1HostBaseController extends V1BaseController {
 +  protected currentHost: Host
- 
+
 +  @BeforeAction()
 +  protected async loadCurrentHost() {
 +    const host = await this.currentUser.associationQuery('host').first()
@@ -254,9 +255,9 @@ index fb2326a..df0a8f3 100644
  import { OpenAPI } from '@rvoh/psychic'
  import V1HostBaseController from './BaseController.js'
 -import Place from '@models/Place.js'
- 
+
  const openApiTags = ['places']
- 
+
 @@ -13,11 +15,12 @@ export default class V1HostPlacesController extends V1HostBaseController {
      serializerKey: 'summary',
    })
@@ -273,7 +274,7 @@ index fb2326a..df0a8f3 100644
 +      .scrollPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
 +    this.ok(places)
    }
- 
+
    @OpenAPI(Place, {
 @@ -26,8 +29,8 @@ export default class V1HostPlacesController extends V1HostBaseController {
      description: 'Fetch a Place',
@@ -284,7 +285,7 @@ index fb2326a..df0a8f3 100644
 +    const place = await this.place()
 +    this.ok(place)
    }
- 
+
    @OpenAPI(Place, {
 @@ -36,9 +39,14 @@ export default class V1HostPlacesController extends V1HostBaseController {
      description: 'Create a Place',
@@ -302,7 +303,7 @@ index fb2326a..df0a8f3 100644
 +    if (place.isPersisted) place = await place.loadFor('default').execute()
 +    this.created(place)
    }
- 
+
    @OpenAPI(Place, {
 @@ -47,9 +55,9 @@ export default class V1HostPlacesController extends V1HostBaseController {
      description: 'Update a Place',
@@ -315,7 +316,7 @@ index fb2326a..df0a8f3 100644
 +    await place.update(this.paramsFor(Place))
 +    this.noContent()
    }
- 
+
    @OpenAPI({
 @@ -58,14 +66,15 @@ export default class V1HostPlacesController extends V1HostBaseController {
      description: 'Destroy a Place',
@@ -328,7 +329,7 @@ index fb2326a..df0a8f3 100644
 +    await place.destroy()
 +    this.noContent()
    }
- 
+
    private async place() {
 -    // return await this.currentHost.associationQuery('places')
 -    //   .preloadFor('default')
@@ -339,4 +340,4 @@ index fb2326a..df0a8f3 100644
 +      .findOrFail(this.castParam('id', 'string'))
    }
  }
-```
+````

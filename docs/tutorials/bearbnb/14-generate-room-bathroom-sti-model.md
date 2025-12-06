@@ -6,14 +6,15 @@ title: Generate Room/Bathroom STI model
 
 ## Commit Message
 
-```
+````
 Generate Room/Bathroom STI model
 
 ```console
-yarn psy g:sti-child --help
-yarn psy g:sti-child Room/Bathroom extends Room bath_or_shower_style:enum:bath_or_shower_styles:bath,shower,bath_and_shower,none
-```
-```
+pnpm psy g:sti-child --help
+pnpm psy g:sti-child Room/Bathroom extends Room bath_or_shower_style:enum:bath_or_shower_styles:bath,shower,bath_and_shower,none
+````
+
+````
 
 ## Changes
 
@@ -124,4 +125,4 @@ index 0000000..8896e86
 +  await db.schema.dropType('bath_or_shower_styles_enum').execute()
 +}
 \ No newline at end of file
-```
+````

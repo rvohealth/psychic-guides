@@ -6,13 +6,14 @@ title: Generate Guest model
 
 ## Commit Message
 
-```
+````
 Generate Guest model
 
 ```console
-yarn psy g:model Guest User:belongs_to
-```
-```
+pnpm psy g:model Guest User:belongs_to
+````
+
+````
 
 ## Changes
 
@@ -125,4 +126,4 @@ index 0000000..acc776a
 +  await db.schema.dropTable('guests').execute()
 +}
 \ No newline at end of file
-```
+````

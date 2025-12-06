@@ -6,20 +6,21 @@ title: Leverage a passthrough `and` condition
 
 ## Commit Message
 
-```
+````
 Leverage a passthrough `and` condition
 to create a HasOne currentLocalizedText
 association for displaying localized
 text to Guests
 
 ```console
-yarn psy sync
-yarn uspec spec/unit/models/Host.spec.ts
-yarn uspec spec/unit/models/Place.spec.ts
-yarn uspec spec/unit/models/Room.spec.ts
-yarn uspec
-```
-```
+pnpm psy sync
+pnpm uspec spec/unit/models/Host.spec.ts
+pnpm uspec spec/unit/models/Place.spec.ts
+pnpm uspec spec/unit/models/Room.spec.ts
+pnpm uspec
+````
+
+````
 
 ## Changes
 
@@ -139,7 +140,7 @@ index 289e533..3343514 100644
 +import { Decorators, DreamConst } from '@rvoh/dream'
  import { DreamColumn } from '@rvoh/dream/types'
  import LocalizedText from './LocalizedText.js'
- 
+
 @@ -29,4 +29,11 @@ export default class Room extends ApplicationModel {
    public async createDefaultLocalizedText(this: Room) {
      await this.createAssociation('localizedTexts', { locale: 'en-US', title: this.type })
@@ -206,11 +207,11 @@ index 3b6c1a0..b7231fb 100644
          foreignKey: 'localizableId',
 @@ -710,7 +737,7 @@ export const schema = {
  } as const
- 
+
  export const connectionTypeConfig = {
 -  passthroughColumns: [],
 +  passthroughColumns: ['locale'],
    allDefaultScopeNames: ['dream:STI'],
    globalNames: {
      models: {
-```
+````

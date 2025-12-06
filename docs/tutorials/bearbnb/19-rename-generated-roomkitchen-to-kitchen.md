@@ -6,7 +6,7 @@ title: Rename generated RoomKitchen to Kitchen.
 
 ## Commit Message
 
-```
+````
 Rename generated RoomKitchen to Kitchen.
 
 No check constraint to update in the migration because, for
@@ -15,9 +15,10 @@ types (`{}` is the Postgres representation of an empty array),
 so even non-Kitchen Rooms will have non-null, empty-array `appliances`
 
 ```console
-yarn psy db:migrate
-```
-```
+pnpm psy db:migrate
+````
+
+````
 
 ## Changes
 
@@ -30,7 +31,7 @@ index 8aa2e13..2e89aa9 100644
 +import Kitchen from '@models/Room/Kitchen.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 -import RoomKitchen from '@models/Room/Kitchen.js'
- 
+
 -export default async function createRoomKitchen(attrs: UpdateableProperties<RoomKitchen> = {}) {
 -  return await RoomKitchen.create({
 +export default async function createRoomKitchen(attrs: UpdateableProperties<Kitchen> = {}) {
@@ -47,10 +48,10 @@ index c213b1d..0a7b3f1 100644
  import { Decorators, STI } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 -import Room from '@models/Room.js'
- 
+
 -const deco = new Decorators<typeof RoomKitchen>()
 +const deco = new Decorators<typeof Kitchen>()
- 
+
  @STI(Room)
 -export default class RoomKitchen extends Room {
 -  public override get serializers(): DreamSerializers<RoomKitchen> {
@@ -61,7 +62,7 @@ index c213b1d..0a7b3f1 100644
        summary: 'Room/KitchenSummarySerializer',
      }
    }
- 
+
 -  public appliances: DreamColumn<RoomKitchen, 'appliances'>
 +  public appliances: DreamColumn<Kitchen, 'appliances'>
  }
@@ -73,12 +74,12 @@ index f5a38d7..618c25a 100644
 +import Kitchen from '@models/Room/Kitchen.js'
  import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 -import RoomKitchen from '@models/Room/Kitchen.js'
- 
+
 -export const RoomKitchenSummarySerializer = (roomKitchen: RoomKitchen) =>
 -  RoomSummarySerializer(RoomKitchen, roomKitchen)
 +export const RoomKitchenSummarySerializer = (roomKitchen: Kitchen) =>
 +  RoomSummarySerializer(Kitchen, roomKitchen)
- 
+
 -export const RoomKitchenSerializer = (roomKitchen: RoomKitchen) =>
 -  RoomSerializer(RoomKitchen, roomKitchen)
 -    .attribute('appliances')
@@ -490,9 +491,9 @@ index 3fd51e7..4ec7262 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
 @@ -64,6 +64,15 @@ import { type CalendarDate, type DateTime } from '@rvoh/dream'
- 
+
  import type { ColumnType } from "kysely";
- 
+
 +export type ApplianceTypesEnum = "dishwasher" | "microwave" | "oven" | "stove";
 +export const ApplianceTypesEnumValues = [
 +  "dishwasher",
@@ -507,7 +508,7 @@ index 3fd51e7..4ec7262 100644
    : ArrayTypeImpl<T>;
 @@ -153,6 +162,7 @@ export interface Places {
  }
- 
+
  export interface Rooms {
 +  appliances: Generated<ArrayType<ApplianceTypesEnum>>;
    bathOrShowerStyle: BathOrShowerStylesEnum | null;
@@ -531,7 +532,7 @@ index 9cde824..7f41eb1 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
 @@ -59,6 +59,8 @@ us humans, he says:
- 
+
  import { type CalendarDate, type DateTime } from '@rvoh/dream'
  import {
 +  ApplianceTypesEnum,
@@ -632,4 +633,4 @@ index 7a1fc89..f346e96 100644
          ValidationErrors: {
              /** @enum {string} */
              type: "validation";
-```
+````

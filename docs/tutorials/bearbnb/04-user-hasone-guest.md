@@ -6,7 +6,7 @@ title: User HasOne Guest
 
 ## Commit Message
 
-```
+````
 User HasOne Guest
 Every User automatically creates a Guest
 Each User can have at most one Guest (unique index on user_id foreign key)
@@ -14,14 +14,15 @@ Sync association types
 
 Run migration:
 ```console
-yarn psy db:migrate
-```
+pnpm psy db:migrate
+````
 
 Run model specs:
-```console
-yarn uspec spec/unit/models/user.spec.ts
 
-yarn uspec spec/unit/models
+```console
+pnpm uspec spec/unit/models/user.spec.ts
+
+pnpm uspec spec/unit/models
 ```
 
 If migrations had already been run, after adding
@@ -29,9 +30,10 @@ a new association, one could run `sync` instead
 (`db:migrate` runs `sync` implicitly):
 
 ```console
-yarn psy sync
+pnpm psy sync
 ```
-```
+
+````
 
 ## Changes
 
@@ -66,9 +68,9 @@ index 0c415a7..09fd61c 100644
  import { DreamColumn } from '@rvoh/dream/types'
 -import ApplicationModel from '@models/ApplicationModel.js'
 +import Guest from './Guest.js'
- 
+
  const deco = new Decorators<typeof User>()
- 
+
 @@ -13,4 +14,12 @@ export default class User extends ApplicationModel {
    public email: DreamColumn<User, 'email'>
    public createdAt: DreamColumn<User, 'createdAt'>
@@ -101,7 +103,7 @@ index acc776a..69a7d51 100644
      .addColumn('created_at', 'timestamp', col => col.notNull())
      .addColumn('updated_at', 'timestamp', col => col.notNull())
      .execute()
- 
+
 -  await db.schema
 -    .createIndex('guests_user_id')
 -    .on('guests')
@@ -109,7 +111,7 @@ index acc776a..69a7d51 100644
 -    .execute()
 +  await db.schema.createIndex('guests_user_id').on('guests').column('user_id').execute()
  }
- 
+
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  export async function down(db: Kysely<any>): Promise<void> {
    await db.schema.dropIndex('guests_user_id').execute()
@@ -124,7 +126,7 @@ index 89152ae..75755cd 100644
 @@ -69,6 +69,13 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
    : ColumnType<T, T | undefined, T>;
  export type Timestamp = ColumnType<DateTime | CalendarDate>
- 
+
 +export interface Guests {
 +  createdAt: Timestamp;
 +  id: Generated<string>;
@@ -137,13 +139,13 @@ index 89152ae..75755cd 100644
    email: string;
 @@ -77,10 +84,12 @@ export interface Users {
  }
- 
+
  export interface DB {
 +  guests: Guests;
    users: Users;
  }
- 
- 
+
+
  export class DBClass {
 +  guests: Guests
    users: Users
@@ -162,8 +164,8 @@ index 0dee4b2..95c1d07 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
 @@ -61,6 +61,64 @@ import { type CalendarDate, type DateTime } from '@rvoh/dream'
- 
- 
+
+
  export const schema = {
 +  guests: {
 +    serializerKeys: ['default', 'summary'],
@@ -230,7 +232,7 @@ index 0dee4b2..95c1d07 100644
      },
      virtualColumns: [],
      associations: {
--      
+-
 +      guest: {
 +        type: 'HasOne',
 +        foreignKey: 'userId',
@@ -251,4 +253,4 @@ index 0dee4b2..95c1d07 100644
        'User': 'users'
      },
    },
-```
+````

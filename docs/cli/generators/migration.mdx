@@ -8,14 +8,14 @@ title: migration
 Use the built-in cli command for generating migrations to easily get up and running. Psychic will automatically timestamp the filename for your migrations, keeping them in sequential order, and will generate boilerplate to get you started with writing a migration.
 
 ```bash
-yarn psy g:migration --help
-yarn psy g:migration add-deleted-at-to-posts deleted_at:datetime
+pnpm psy g:migration --help
+pnpm psy g:migration add-deleted-at-to-posts deleted_at:datetime
 ```
 
 ## Usage
 
 ```sh
-yarn psy g:migration [options] <migrationName> [columnsWithTypes...]
+pnpm psy g:migration [options] <migrationName> [columnsWithTypes...]
 ```
 
 **Arguments:**

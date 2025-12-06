@@ -6,7 +6,7 @@ title: Rename generated RoomBedroom to Bedroom.
 
 ## Commit Message
 
-```
+````
 Rename generated RoomBedroom to Bedroom.
 
 No check constraint to update in the migration because, for
@@ -15,9 +15,10 @@ types (`{}` is the Postgres representation of an empty array),
 so even non-Bedroom Rooms will have non-null, empty-array `bed_types`
 
 ```console
-yarn psy db:migrate
-```
-```
+pnpm psy db:migrate
+````
+
+````
 
 ## Changes
 
@@ -30,7 +31,7 @@ index 0f25e2e..67bb8ec 100644
 +import Bedroom from '@models/Room/Bedroom.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 -import RoomBedroom from '@models/Room/Bedroom.js'
- 
+
 -export default async function createRoomBedroom(attrs: UpdateableProperties<RoomBedroom> = {}) {
 -  return await RoomBedroom.create({
 +export default async function createRoomBedroom(attrs: UpdateableProperties<Bedroom> = {}) {
@@ -47,10 +48,10 @@ index b01cab6..451c883 100644
  import { Decorators, STI } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 -import Room from '@models/Room.js'
- 
+
 -const deco = new Decorators<typeof RoomBedroom>()
 +const deco = new Decorators<typeof Bedroom>()
- 
+
  @STI(Room)
 -export default class RoomBedroom extends Room {
 -  public override get serializers(): DreamSerializers<RoomBedroom> {
@@ -61,7 +62,7 @@ index b01cab6..451c883 100644
        summary: 'Room/BedroomSummarySerializer',
      }
    }
- 
+
 -  public bedTypes: DreamColumn<RoomBedroom, 'bedTypes'>
 +  public bedTypes: DreamColumn<Bedroom, 'bedTypes'>
  }
@@ -73,12 +74,12 @@ index e705036..09b4589 100644
 +import Bedroom from '@models/Room/Bedroom.js'
  import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 -import RoomBedroom from '@models/Room/Bedroom.js'
- 
+
 -export const RoomBedroomSummarySerializer = (roomBedroom: RoomBedroom) =>
 -  RoomSummarySerializer(RoomBedroom, roomBedroom)
 +export const RoomBedroomSummarySerializer = (roomBedroom: Bedroom) =>
 +  RoomSummarySerializer(Bedroom, roomBedroom)
- 
+
 -export const RoomBedroomSerializer = (roomBedroom: RoomBedroom) =>
 -  RoomSerializer(RoomBedroom, roomBedroom)
 -    .attribute('bedTypes')
@@ -560,9 +561,9 @@ index 12da87b..3fd51e7 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
 @@ -64,6 +64,14 @@ import { type CalendarDate, type DateTime } from '@rvoh/dream'
- 
+
  import type { ColumnType } from "kysely";
- 
+
 +export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[]
 +  ? U[]
 +  : ArrayTypeImpl<T>;
@@ -576,8 +577,8 @@ index 12da87b..3fd51e7 100644
    "bath",
 @@ -73,6 +81,17 @@ export const BathOrShowerStylesEnumValues = [
  ] as const
- 
- 
+
+
 +export type BedTypesEnum = "bunk" | "cot" | "king" | "queen" | "sofabed" | "twin";
 +export const BedTypesEnumValues = [
 +  "bunk",
@@ -593,7 +594,7 @@ index 12da87b..3fd51e7 100644
    ? ColumnType<S, I | undefined, U>
    : ColumnType<T, T | undefined, T>;
 @@ -135,6 +154,7 @@ export interface Places {
- 
+
  export interface Rooms {
    bathOrShowerStyle: BathOrShowerStylesEnum | null;
 +  bedTypes: Generated<ArrayType<BedTypesEnum>>;
@@ -725,4 +726,4 @@ index 5b355af..7a1fc89 100644
          ValidationErrors: {
              /** @enum {string} */
              type: "validation";
-```
+````

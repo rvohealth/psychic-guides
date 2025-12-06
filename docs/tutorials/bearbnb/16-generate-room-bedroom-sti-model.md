@@ -6,13 +6,14 @@ title: Generate Room/Bedroom STI model
 
 ## Commit Message
 
-```
+````
 Generate Room/Bedroom STI model
 
 ```console
-yarn psy g:sti-child Room/Bedroom extends Room bed_types:enum\[\]:bed_types:twin,bunk,queen,king,cot,sofabed
-```
-```
+pnpm psy g:sti-child Room/Bedroom extends Room bed_types:enum\[\]:bed_types:twin,bunk,queen,king,cot,sofabed
+````
+
+````
 
 ## Changes
 
@@ -117,4 +118,4 @@ index 0000000..55d5d4c
 +  await db.schema.dropType('bed_types_enum').execute()
 +}
 \ No newline at end of file
-```
+````
