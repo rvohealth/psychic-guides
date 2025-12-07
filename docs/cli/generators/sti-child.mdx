@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: sti-child
-ai_summary: "The generate:sti-child command creates STI (Single Table Inheritance) child models that extend a parent model. Requires parent model to be created first with --sti-base-serializer flag. Supports same column types as model generator."
+ai_summary: 'The generate:sti-child command creates STI (Single Table Inheritance) child models that extend a parent model. Requires parent model to be created first with --sti-base-serializer flag. Supports same column types as model generator.'
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -16,7 +16,7 @@ Before generating STI children, you must first create the parent model, and it i
 
 <PackageManagerTabs
   code={`{{PM}} psy g:resource --sti-base-serializer --owning-model=Place \
-  v1/host/places/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
+  v1/host/places/\\{\\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
   Place:belongs_to position:integer:optional deleted_at:datetime:optional`}
 />
 
@@ -45,11 +45,12 @@ You can also create an STI parent using the model generator:
   - To extend the Coach model in `src/app/models/Health/Coach`: `Health/Coach`
 - `[columnsWithTypes...]`: Space separated snake-case (except for belongs_to model name) properties like this:
   `title:citext subtitle:string body_markdown:text style:enum:post_styles:formal,informal User:belongs_to`
-  
+
   All properties default to not nullable; null can be allowed by appending `:optional`:
   `subtitle:string:optional`
-  
+
   **Supported types:**
+
   - `citext`, `citext[]`: case insensitive text (indexes and queries are automatically case insensitive)
   - `string`, `string[]`: varchar; allowed length defaults to 255, but may be customized, e.g.: `subtitle:string:128` or `subtitle:string:128:optional`
   - `text`, `text[]`
@@ -83,7 +84,7 @@ Create the base `Room` model using the resource generator with the `--sti-base-s
 
 <PackageManagerTabs
   code={`{{PM}} psy g:resource --sti-base-serializer --owning-model=Place \
-  v1/host/places/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
+  v1/host/places/\\{\\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
   Place:belongs_to position:integer:optional deleted_at:datetime:optional`}
 />
 

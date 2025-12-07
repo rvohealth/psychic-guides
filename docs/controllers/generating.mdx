@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-ai_summary: "Controller generators create inheritance chains with base controllers. Resource generator creates model, migration, serializer, controller with CRUD routes, routes, and specs. Supports nested resources and --only option to customize endpoints. All generated actions are commented out by default."
+ai_summary: 'Controller generators create inheritance chains with base controllers. Resource generator creates model, migration, serializer, controller with CRUD routes, routes, and specs. Supports nested resources and --only option to customize endpoints. All generated actions are commented out by default.'
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -57,7 +57,7 @@ r.namespace('v1', r => {
 The resource generator doesn't know about nested resources, so when generating a nested resource, the nesting namespace will need to be changed into a resource. For example generating a nested Rooms resource within Places:
 
 <PackageManagerTabs
-  code={`{{PM}} psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom Place:belongs_to position:integer:optional deleted_at:datetime:optional`}
+  code={`{{PM}} psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\\{\\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom Place:belongs_to position:integer:optional deleted_at:datetime:optional`}
 />
 
 would update the above routes like so:
@@ -88,9 +88,7 @@ r.namespace('v1', r => {
 
 At this point, displaying routes:
 
-<PackageManagerTabs
-  code={`{{PM}} psy routes`}
-/>
+<PackageManagerTabs code={`{{PM}} psy routes`} />
 
 will nest the `rooms` routes within `places`. Notice that in this case, the Place id param is named `placeId`:
 
@@ -113,9 +111,7 @@ will nest the `rooms` routes within `places`. Notice that in this case, the Plac
 
 To generate a controller, use the provided cli tool as demonstrated below:
 
-<PackageManagerTabs
-  code={`{{PM}} psy g:controller V1/Guest/Places index show`}
-/>
+<PackageManagerTabs code={`{{PM}} psy g:controller V1/Guest/Places index show`} />
 
 The controller produced will automatically have the methods specified provided for you, with `OpenAPI` decorators automatically registered on your methods, but no implementation.
 
