@@ -48,14 +48,7 @@ await User.all()
 
 ## Generators
 
-Use generators to quickly prop up the scaffolding for your application. Using the provided CLI utils, you can customize the shape of your models without writing a line of code:
-
-<PackageManagerTabs
-  code={`{{PM}} psy g:model User name:string email:string birthdate:date
-{{PM}} psy g:model Post user:belongs_to body:string`}
-/>
-
-To learn more about generators, see the [generating guide](/docs/models/generating).
+Generators are the recommended way to add a new Dream model to your application. The CLI generators provide sophisticated customization to generate code that is actually useful in a maintainable, production application. To learn more about generators, see the [generating guide](/docs/models/generating).
 
 ## Querying records
 

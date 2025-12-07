@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-ai_summary: "Model generation via CLI: g:model (model without API), g:resource (model with API endpoint), g:sti-child (STI child model). Supports enum types, enum arrays, snake_case naming, and various column types."
+ai_summary: 'Model generation via CLI: g:model (model without API), g:resource (model with API endpoint), g:sti-child (STI child model). Supports enum types, enum arrays, snake_case naming, and various column types.'
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -11,9 +11,10 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 The `psy` CLI provides three commands for generating Dream models and their accompanying migrations and serializers:
 
 <PackageManagerTabs
-  code={`{{PM}} psy g:model  --help
+  code={`{{PM}} psy g:resource  --help
+{{PM}} psy g:model  --help
 {{PM}} psy g:sti-child  --help
-{{PM}} psy g:resource  --help`}
+`}
 />
 
 The resource generator is used when a model will be displayed and/or manipulated via an API endpoint. The model generator is used to generate a model without an API endpoint. And, as the name indicates, the STI child generator is used to generate STI children.
@@ -26,8 +27,8 @@ Resource generator commands can be found in the [resource generator documentatio
 {{PM}} psy g:model Guest User:belongs_to
 
 {{PM}} psy g:model --sti-base-serializer Room \
-  type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
-  Place:belongs_to position:integer:optional deleted_at:datetime:optional`}
+ type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
+ Place:belongs_to position:integer:optional deleted_at:datetime:optional`}
 />
 
 Run `psy g:model --help` or see [the g:model documentation](/docs/cli/generators/model) for details of the generator API.
@@ -45,7 +46,7 @@ type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom
 The `room_types` segment signals to Dream to create a new enum called `room_types_enum` within your DB. The segment following the `room_types` segment informs Dream of what values you want to allow for your enum column. In this case, it will produce the following values for your enum:
 
 ```ts
-;['Bathroom', 'Bedroom', 'Kitchen', 'Den', 'LivingRoom']
+'Bathroom', 'Bedroom', 'Kitchen', 'Den', 'LivingRoom'
 ```
 
 ### Enum arrays
