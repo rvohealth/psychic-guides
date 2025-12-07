@@ -9,7 +9,7 @@ ai_summary: "Tutorial for integrating Passport.js with Psychic using local strat
 
 In this tutorial, we will use Psychic to provision a new application that can integrate with [passportjs](https://www.passportjs.org/packages/passport-local/). We will be using the local strategy, since that is the simplest use case for a tutorial, but feel free to deploy alternate strategies based on your application's needs.
 
-We are going to skip over provisioning steps for our app, since that can be found in our [blog tutorial](/docs/tutorials/blog). Instead, we will focus on the passport integration, which is the only part that matters to us.
+We are going to skip over provisioning steps for the app, since that can be found in our [blog tutorial](/docs/tutorials/blog). Instead, we will focus on the passport integration, which is the only part that matters to us.
 
 ## Middleware
 
@@ -24,7 +24,7 @@ Psychic has a concept of middleware which piggy-backs off of express, enabling y
   })
 ```
 
-For more information, see our [Middleware guides](/docs/routing/middleware).
+For more information, see the [Middleware guides](/docs/routing/middleware).
 
 Let's begin with a spec to cover our new endpoint. For this test, we will just post to an endpoint that passport authenticates with, and then expect that endpoint to render the user's id when successful.
 ```ts
@@ -124,7 +124,7 @@ passport requires us to provide serialize and deserialize callback functions. th
   })
 ```
 
-Additionally, we need to set up a local auth strategy, which will allow us to define a custom strategy for determining if the credentials provided match a user in our system. In passport, you define a local auth strategy by calling the `done` function. If you provide `false` to the done function, it will raise a 401, since the done function practices the error-first approach to callback handling. The second argument provided to `done` will represent the `user` argument we end up collection in our call to `passport.serializeUser`.
+Additionally, we need to set up a local auth strategy, which will allow us to define a custom strategy for determining if the credentials provided match a user in the system. In passport, you define a local auth strategy by calling the `done` function. If you provide `false` to the done function, it will raise a 401, since the done function practices the error-first approach to callback handling. The second argument provided to `done` will represent the `user` argument we end up collection in our call to `passport.serializeUser`.
 
 ```ts
   // establish a local strategy, which will be accessible by calling
@@ -140,7 +140,7 @@ Additionally, we need to set up a local auth strategy, which will allow us to de
   )
 ```
 
-Next, let's provide our new passport middleware in our routing layer, which will enable our specs to pass.
+Next, let's provide the new passport middleware in the routing layer, which will enable the specs to pass.
 
 ```ts
 // conf/routes.ts

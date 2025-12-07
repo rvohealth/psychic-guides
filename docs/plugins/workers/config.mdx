@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: config
-ai_summary: "Workers configuration uses BullMQ. Psychic scans config on sync to capture workstream names for types. Extend ApplicationBackgroundedService and ApplicationScheduledService. Workstreams are groups containing a queue and workers. Multiple workstreams useful for rate-limited APIs. Supports BullMQ Pro for rate limiting."
+ai_summary: 'Workers configuration uses BullMQ. Psychic scans config on sync to capture workstream names for types. Extend ApplicationBackgroundedService and ApplicationScheduledService. Workstreams are groups containing a queue and workers. Multiple workstreams useful for rate-limited APIs. Supports BullMQ Pro for rate limiting.'
 ---
 
 # Workers - config
 
-Psychic workers leverages [BullMQ](https://bullmq.io) under the hood to drive our background job systems. Our configuration largely circulates around arguments which would be directly provided to bullmq, but with some nuance, which is both due to the nature of the system being wrapped, as well as the fact that we desired a simpler configuration path for those not looking to leverage every possible bell and whistle, and really just looking to set up something simple.
+Psychic workers leverages [BullMQ](https://bullmq.io) under the hood to drive the background job systems. The configuration largely revolves around arguments which would be directly provided to bullmq, but with some nuance, which is both due to the nature of the system being wrapped, as well as the fact that we desired a simpler configuration path for those not looking to leverage every possible bell and whistle, and really just looking to set up something simple.
 
 ## Types
 
@@ -218,4 +218,4 @@ To enable this behavior, you must set the `testInvocation` to `manual`, like so:
 workersApp.set('testInvocation', 'manual')
 ```
 
-Now you will be able to manually work off your queues using the `WorkerTestUtils`, exported from this package. For more information on testing with workers, see our [testing guides](/docs/plugins/workers/testing).
+Now you will be able to manually work off your queues using the `WorkerTestUtils`, exported from this package. For more information on testing with workers, see the [testing guides](/docs/plugins/workers/testing).

@@ -180,7 +180,7 @@ export default class Post extends Dream {
 
 ## after commit hooks
 
-In contrast to ordinary after hooks (like AfterCreate, AfterUpdate, etc...), we have commit variants. Our implementation is similar to the approach taken by Ruby on Rails, whereby our commit hooks are bound to an existing transaction if it exists, and will wait until after the commit has been made at the transaction level to run your callback.
+In contrast to ordinary after hooks (like AfterCreate, AfterUpdate, etc...), we have commit variants. the implementation is similar to the approach taken by Ruby on Rails, whereby our commit hooks are bound to an existing transaction if it exists, and will wait until after the commit has been made at the transaction level to run your callback.
 
 IMPORTANT: when sending a model to a background job, _always_ use an after commit hook to ensure that the model exists (when it was just created) and the latest data are present (when the model already existed) by the time the background job loads the model. Otherwise, a race condition exists between the model being persisted to the database and the background job picking loading the model.
 

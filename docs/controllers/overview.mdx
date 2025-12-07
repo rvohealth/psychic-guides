@@ -31,7 +31,7 @@ export default class WelcomeController extends ApplicationController {
 }
 ```
 
-Ordinarily, controllers will be driven by resourceful patterns tied to underlying models. In these cases, we highly recommend you see our [generating resources guides](/docs/controllers/generating), since this will automatically compose sensible default functionality and testing for your controller, as well as the underlying model.
+Ordinarily, controllers will be driven by resourceful patterns tied to underlying models. In these cases, we highly recommend you see the [generating resources guides](/docs/controllers/generating), since this will automatically compose sensible default functionality and testing for your controller, as well as the underlying model.
 
 <PackageManagerTabs
   code={`{{PM}} psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional`}
@@ -62,7 +62,7 @@ export default class V1HostPlacesController extends V1HostBaseController {
 }
 ```
 
-Learn more about how status codes work in Psychic controllers by visiting our [status code guides](/docs/controllers/status-codes).
+Learn more about how status codes work in Psychic controllers by visiting the [status code guides](/docs/controllers/status-codes).
 
 ## OpenAPI
 
@@ -90,7 +90,7 @@ export default class V1HostPlacesController extends V1HostBaseController {
 }
 ```
 
-The OpenAPI decorator is incredibly robust in terms of capabilities, and we recommend diving deep on how to leverage it to empower yourself to write less. See our [Openapi guides](/docs/openapi/controllers) to learn more.
+The OpenAPI decorator is incredibly robust in terms of capabilities, and we recommend diving deep on how to leverage it to empower yourself to write less. see the [Openapi guides](/docs/openapi/controllers) to learn more.
 
 :::tip
 

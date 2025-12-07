@@ -10,7 +10,7 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 Migrations are generated implicitly by the [model](/docs/cli/generators/model) and [controller](/docs/cli/generators/controller) generators or explicitly using the [migration](/docs/cli/generators/migration) generator.
 
-Under the hood, Psychic leverages [Kysely](https://kysely.dev) to run our migrations. Whenever a new model is generated, a migration is automatically generated to pair with the model, as we have seen for the `User` model generated in the authentication example:
+Under the hood, Psychic leverages [Kysely](https://kysely.dev) to run migrations. Whenever a new model is generated, a migration is automatically generated to pair with the model, as we have seen for the `User` model generated in the authentication example:
 
 ```ts
 import { Kysely, sql } from 'kysely'

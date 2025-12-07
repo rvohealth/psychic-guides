@@ -179,7 +179,7 @@ GET     /v1/host/places/:id                    V1/Host/Places#show
 DELETE  /v1/host/places/:id                    V1/Host/Places#destroy
 ```
 
-> See our [Routing guide](/docs/routing/rest) for more information on routing
+> see the [Routing guide](/docs/routing/rest) for more information on routing
 
 ### Controllers
 
@@ -221,7 +221,7 @@ export default class V1HostPlacesController extends AuthedController {
 
 As you can already see above, our Dream ORM is clearly at work to keep our code so tidy. Psychic will automatically respond with a `404` for any failures caused by `findOrFail`, and `castParam` will fail with a `400` if the incoming param does not match the described schema. These design patterns enable you to get out of your own way, enabling the composition of extremely simple design patterns with powerful intuitions about your needs.
 
-> See our [Controller guides](/docs/controllers/generating) for more information on implementing controllers
+> see the [Controller guides](/docs/controllers/generating) for more information on implementing controllers
 
 ### Openapi
 
@@ -322,7 +322,7 @@ const date = CalendarDate.today()
 const parsed = CalendarDate.fromISO('2024-01-15')
 ```
 
-Dream automatically converts database `timestamp` fields to `DateTime` objects and `date` fields to `CalendarDate` objects, providing built-in math, formatting, and timezone handling. See our [DateTime](/docs/utils/date-time) and [CalendarDate](/docs/utils/calendar-date) guides for full documentation.
+Dream automatically converts database `timestamp` fields to `DateTime` objects and `date` fields to `CalendarDate` objects, providing built-in math, formatting, and timezone handling. see the [DateTime](/docs/utils/date-time) and [CalendarDate](/docs/utils/calendar-date) guides for full documentation.
 :::
 
 - powerful decorators like `@SoftDelete`, `@Sortable`, and `@ReplicaSafe` that automatically and universally handle common use cases which would otherwise introduce complexity into your application
@@ -347,7 +347,7 @@ Dream and Psychic are built on trusted open source pacakges, which not only prov
 
 ### Convention over configuration
 
-Since Psychic and Dream are meant to be used together, Psychic is well-fit to automatically absorb implicit configurations at the Dream layer, enabling you to define things once, rather than many times. These sensible expectations by our app enable you to compose with ease, and make changes that can flow through to the top level of your app without even needing to make changes.
+Since Psychic and Dream are meant to be used together, Psychic is well-fit to automatically absorb implicit configurations at the Dream layer, enabling you to define things once, rather than many times. These sensible expectations by the app enable you to compose with ease, and make changes that can flow through to the top level of your app without even needing to make changes.
 
 ### Leverage openapi to simplify front end integration
 
@@ -385,7 +385,7 @@ In addition, because of the flexibility provided, you are able to side-launch co
 
 ## Testing
 
-Psychic can easily act as a standalone json web delivery system, but it also encourages certain paradigms which enable the developer to still write end-to-end tests, as well as a rich tooling system for composing unit tests. Psychic was designed with a `BDD` philosophy in mind, which means that our system _must_ provide adequate tooling for spec'ing out our entire app.
+Psychic can easily act as a standalone json web delivery system, but it also encourages certain paradigms which enable the developer to still write end-to-end tests, as well as a rich tooling system for composing unit tests. Psychic was designed with a `BDD` philosophy in mind, which means that the system _must_ provide adequate tooling for spec'ing out the entire app.
 
 As most in the javascript world are comfortable with [vitest](http://vitest.dev), we have built our tooling to rest comfortably on top of it, facilitating the integration of custom vitest or jest plugins of your choice without any trouble from the framework. We do, however, provide some useful extensions to make your life easier when spec'ing in Dream and Psychic.
 

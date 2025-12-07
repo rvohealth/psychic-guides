@@ -23,7 +23,7 @@ By leveraging `associationQuery`, for example, we don't have to worry about manu
 
 ## Preloading to serialize
 
-Serializing, in short, is the act of representing your backend models to some kind of client. In most systems, there will be many different serializers in place all to represent a single model. For example, you might have a `PostSerializer`, and then an `AdminPostSerializer`. You may find that you need to sync these posts to an RSS feed, so you build another `RSSPostSerializer`. You may want to partition your serializers out based on if you are rendering them for an index endpoint, vs a show. In Dream, we will automatically encourage this pattern in our generators by auto-generating both a summary and detail variant for each serializer we generate. We encourage you to lean into this practice, withholding from rendering deeply-nested model chains onto your summary serializers, since this can force you to eager-load a mind-bending number of associations beforehand to make it happen.
+Serializing, in short, is the act of representing your backend models to some kind of client. In most systems, there will be many different serializers in place all to represent a single model. For example, you might have a `PostSerializer`, and then an `AdminPostSerializer`. You may find that you need to sync these posts to an RSS feed, so you build another `RSSPostSerializer`. You may want to partition your serializers out based on if you are rendering them for an index endpoint, vs a show. In Dream, we will automatically encourage this pattern in generators by auto-generating both a summary and detail variant for each serializer we generate. We encourage you to lean into this practice, withholding from rendering deeply-nested model chains onto your summary serializers, since this can force you to eager-load a mind-bending number of associations beforehand to make it happen.
 
 Since each serializer in your system will have different eager loading needs, you will need to determine the needs of your association chain, and make sure that all the eager loading requirements are met before serialization. Unlike many other ORMs and frameworks you may have previously used, Dream and Psychic do not permit any async calls within the serialization layer, since this can lead to famous N+1 chaos for the systems who don't work to discourage it. Additionally, any association in your serialization chain that you attempt to access without first eager loading will raise a hard exception in your system, alerting you to fix the problem.
 
@@ -52,7 +52,7 @@ class User extends ApplicationModel {
 }
 ```
 
-To manually load all of these associations, you can take use one of our eager loading methods, like `preload`, `leftJoinPreload`, `load`, or `leftJoinLoad`, depending on the situation. Here is an example of us leveraging `preload` to eager load all of the associations specified.
+To manually load all of these associations, you can use one of the eager loading methods, like `preload`, `leftJoinPreload`, `load`, or `leftJoinLoad`, depending on the situation. Here is an example of leveraging `preload` to eager load all of the associations specified.
 
 ```ts
   public async show() {

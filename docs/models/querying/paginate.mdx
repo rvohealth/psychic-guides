@@ -63,5 +63,5 @@ await User.order('createdAt').scrollPaginate({
 Unlike `paginate`, `scrollPaginate` uses cursor-based navigation for better performance with large datasets and returns `{ cursor, results }` instead of page metadata. The `cursor` parameter should be `null` for the first page, then use the returned `cursor` for subsequent pages. Like `paginate`, you must apply an order before using `scrollPaginate`.
 
 :::tip
-Psychic provides helpful openapi controller bindings to simplify rendering paginated results from a Dream query. To learn more, see our [psychic openapi pagination guides](/docs/openapi/pagination)
+Psychic provides helpful openapi controller bindings to simplify rendering paginated results from a Dream query. To learn more, see the [psychic openapi pagination guides](/docs/openapi/pagination)
 :::

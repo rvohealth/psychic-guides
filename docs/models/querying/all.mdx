@@ -12,7 +12,7 @@ await User.all()
 
 ## Filtering with query methods
 
-It can be tempting to reach for `all`, and then use plain TypeScript to further filter down your records, but if you have a very large users table, this approach can be very problematic for you. By leveraging our query building mechanisms, we can inject conditions into the query before executing. Below, we use the `where` method to inject a WHERE clause into our SQL, enabling us to filter down our records at the SQL level before bringing them into memory:
+It can be tempting to reach for `all`, and then use plain TypeScript to further filter down your records, but if you have a very large users table, this approach can be very problematic for you. By leveraging query building mechanisms, we can inject conditions into the query before executing. Below, we use the `where` method to inject a WHERE clause into SQL, enabling us to filter down records at the SQL level before bringing them into memory:
 
 ```ts
 await User.where({ id: [1, 2, 3] }).all()

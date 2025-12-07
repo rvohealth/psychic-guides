@@ -26,7 +26,7 @@ class IntercomSync extends ApplicationBackgroundedService {
 
 ## Debounce
 
-`backgroundWithDelay` supports debounce behavior to reduce the number of times a background job is run. For example, if our application syncs user data to Intercom every time the user changes, and we know that users may make multiple changes in quick succession, we might debounce to reduce the number of times we hit the Intercom API.
+`backgroundWithDelay` supports debounce behavior to reduce the number of times a background job is run. For example, if the application syncs user data to Intercom every time the user changes, and we know that users may make multiple changes in quick succession, we might debounce to reduce the number of times we hit the Intercom API.
 
 Debounce works by specifying a `jobId`. If a job with that `jobId` has already been backgrounded with a delay, then backgrounding with that same `jobId` will overwrite the previous job information, but with the a delay from the current time.
 

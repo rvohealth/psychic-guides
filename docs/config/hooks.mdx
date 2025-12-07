@@ -136,7 +136,7 @@ Dream exposes additional hooks that you can tap into, since Dream can technicall
 
 ### db:log
 
-The underlying [kysely](https://kysely.dev) engine we use to provide our database driver exposes a log lifecycle event that we can tap into during configuration. We expose that to you via the `db:log` event, enabling you to add custom logging for sql queries, like so:
+The underlying [kysely](https://kysely.dev) engine we use to provide the database driver exposes a log lifecycle event that we can tap into during configuration. We expose that to you via the `db:log` event, enabling you to add custom logging for sql queries, like so:
 
 ```ts
 export default async function (app: DreamApp) {

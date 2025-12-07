@@ -48,7 +48,7 @@ export default async (psy: PsychicApp) => {
 })
 ```
 
-For this to work, of course, you would need that token you are capturing to have been generated during an authentication flow and provided to your front end, so that when it uses the `socket.io-client` library to establish a connection, it is able to hand that token back. To learn more about this flow, see our [Registering guides](./registering).
+For this to work, of course, you would need that token you are capturing to have been generated during an authentication flow and provided to your front end, so that when it uses the `socket.io-client` library to establish a connection, it is able to hand that token back. To learn more about this flow, see the [Registering guides](./registering).
 
 Once this is done, you are able to emit from anywhere in your application to this user using the `emit` method.
 
@@ -57,4 +57,4 @@ ws = new Ws(['/users/ping', 'users/alert', 'users/info'] as const)
 await ws.emit(user.id, '/users/ping', { hello: 'world' })
 ```
 
-To learn more about emitting to your users, see our [Emitting guides](./emitting)
+To learn more about emitting to your users, see the [Emitting guides](./emitting)

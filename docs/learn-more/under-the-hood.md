@@ -2,7 +2,7 @@
 sidebar_position: 2
 title: Under the hood
 pagination_next: null
-ai_summary: "Dream uses Kysely for database queries, generates types from database introspection. Psychic wraps Express with MVC patterns, automatic OpenAPI generation. Decorators require syncing for types. Circular dependencies handled with lookup method. Node.js >= 22 recommended for decorator support."
+ai_summary: 'Dream uses Kysely for database queries, generates types from database introspection. Psychic wraps Express with MVC patterns, automatic OpenAPI generation. Decorators require syncing for types. Circular dependencies handled with lookup method. Node.js >= 22 recommended for decorator support.'
 ---
 
 ## Dream
@@ -37,7 +37,7 @@ Psychic provides powerful integration with Dream models and serializers to autom
 
 ## decorators
 
-Since the typescript community prefers decorators for class composition, we have leaned into them for architecting our apis. The composition element of it is quite friendly, but from a typing perspective, it is a bit of a nightmare. First of all, the decorator api has shifted radically in the accepted proposal for TypeScript >= 5, and the new api makes metaprogramming quite a hurdle. In addition to a myriad of odd hoops that must be jumped through to achieve the same level of class composition as in earlier decorator proposals, there were never _any_ decorator proposals in the TypeScript ecosystem that ever could capture types during composition and associate them with their decorated properties. Whenever a decorator is called, there is no way to implicitly bind the type system from the arguments being passed to the decorator to the property or method it is decorating, leaving us in a strange bind when we want to provide type protections to the underlying properties or methods.
+Since the typescript community prefers decorators for class composition, we have leaned into them for architecting APIs. The composition element of it is quite friendly, but from a typing perspective, it is a bit of a nightmare. First of all, the decorator api has shifted radically in the accepted proposal for TypeScript >= 5, and the new api makes metaprogramming quite a hurdle. In addition to a myriad of odd hoops that must be jumped through to achieve the same level of class composition as in earlier decorator proposals, there were never _any_ decorator proposals in the TypeScript ecosystem that ever could capture types during composition and associate them with their decorated properties. Whenever a decorator is called, there is no way to implicitly bind the type system from the arguments being passed to the decorator to the property or method it is decorating, leaving us in a strange bind when we want to provide type protections to the underlying properties or methods.
 
 As such, we have leaned into using syncing functions provided by both Dream and Psychic to read your models, controllers, services, serializers, and configuration, and use all of it to generate type files that they can then consume to provide your application's types. These syncing operations can correctly read the decorated classes and cache the relevant type data for consumption, and syncing must happen anyways to correctly generate the updated types for Kysely, so we are simply tapping into an existing, essential tool and just having it do a little more to make up for the pains of decorators.
 
@@ -45,7 +45,7 @@ As such, we have leaned into using syncing functions provided by both Dream and 
 
 Circular dependencies are one of the most frustrating bugs that can endlessly plague you in the Node.js world. It happens when a file imports from another file, which then, either eventually or immediately, imports back from the original file and uses that for anything other than typing. If this happens, Node.js will at some point in the import cycle have undefined for one or more of the classes involved, leaving your application to error out in bizarre and unexpected ways. This usually only happens when your application grows to a certain scale.
 
-For example, this code demonstrates a pattern encouraged by our ORM. It will break on a version of Nodejs < 22, because the usage of User in the call to `DreamSerializer` creates a circular reference for the User class, since User is used as a real argument, instead of just being used for typing.
+For example, this code demonstrates a pattern encouraged by Dream. It will break on a version of Nodejs < 22, because the usage of User in the call to `DreamSerializer` creates a circular reference for the User class, since User is used as a real argument, instead of just being used for typing.
 
 ```ts
 // serializers/UserSerializer.ts
@@ -64,7 +64,7 @@ class User extends ApplicationModel {
 }
 ```
 
-In the original Dream architecture (well before the project was made public or open sourced), we discovered many of these circular reference headaches in the import cycles between our models and serializers, as well as between models and other models, since they would often both need to import from and reference each other. We solved this problem before hitting v1 by refactoring the serializer layer of dream to use top-level callback functions, since these are safe from circular reference issues. Additionally, we provided an internal global name system for associating models with each other to avoid any circular references there, since all model associations are driven by string refs instead of actual model classes.
+In the original Dream architecture (well before the project was made public or open sourced), we discovered many of these circular reference headaches in the import cycles between models and serializers, as well as between models and other models, since they would often both need to import from and reference each other. We solved this problem before hitting v1 by refactoring the serializer layer of dream to use top-level callback functions, since these are safe from circular reference issues. Additionally, we provided an internal global name system for associating models with each other to avoid any circular references there, since all model associations are driven by string refs instead of actual model classes.
 
 To support this, Dream has a built in `ioc` (inversion of control) system to enable Dream to capture all of your models and serializers, namespace them (based on their file path, or file path _and_ export name for serializers), and then build association mappings between your classes safely, without tripping up any circular import issues that can plague node orms. Consequentially, and to your benefit, the [lookup](/docs/models/lookup) method provided by Dream offers devs an escape hatch in scenarios where they insist on commiting this nodejs crime.
 
@@ -116,7 +116,7 @@ As mentioned previously, syncing will happen automatically for you whenever you 
 - changing an openapi configuration for psychic (using `psy.set('openapi', ...)`)
 - adding new queues or workstreams to your workers initializer (only if you are using @rvoh/psychic-workers)
 
-For example, say you just generated a new `Post` model. If you open up the `Post` model, you will also be assaulted with a barrage of type errors. Fear not, this is all normal. Our type system is incredibly strict, and it does not yet know about the Post model you just generated. To fix this, you can simply run `pnpm psy db:migrate` to run migrations for your new model and regenerate the types. Once this is done, your editor should no longer be showing any type errors. If it is, it can sometimes be necessary to force TypeScript to reload, or to get your editor to reload the file, so that it can pick up on the changes that were written to those files outside your editor, but it should just automatically clear all the type errors in those files.
+For example, say you just generated a new `Post` model. If you open up the `Post` model, you will also be assaulted with a barrage of type errors. Fear not, this is all normal. The type system is incredibly strict, and it does not yet know about the Post model you just generated. To fix this, you can simply run `pnpm psy db:migrate` to run migrations for your new model and regenerate the types. Once this is done, your editor should no longer be showing any type errors. If it is, it can sometimes be necessary to force TypeScript to reload, or to get your editor to reload the file, so that it can pick up on the changes that were written to those files outside your editor, but it should just automatically clear all the type errors in those files.
 
 Be sure to commit your changes to files in the `src/types` folder, since these will enable other developers to automatically pick up on the shifts to schema as well without having to sync.
 

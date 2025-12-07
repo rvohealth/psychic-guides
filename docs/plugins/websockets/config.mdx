@@ -130,7 +130,7 @@ In addition to configuration, psychic-websockets also exposes hooks to tap into 
 
 #### ws:start
 
-The `ws:start` event is called whenever the psychic server is started. This enables you to establish socket bindings. Under the hood we are using [socket.io](https://socket.io) to power our websocket bindings, which means you can visit their documentation to understand more about setting up a websockets app within your application.
+The `ws:start` event is called whenever the psychic server is started. This enables you to establish socket bindings. Under the hood we are using [socket.io](https://socket.io) to power websocket bindings, which means you can visit their documentation to understand more about setting up a websockets app within your application.
 
 ```ts
 export default (wsApp: PsychicAppWebsockets) => {

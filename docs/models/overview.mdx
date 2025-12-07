@@ -9,7 +9,7 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # overview
 
-Dream, which can be found at [https://github.com/rvohealth/dream](https://github.com/rvohealth/dream), is a custom ORM that provides the heartbeat of our framework. Psychic was built around and alongside this ORM, with the intention of providing powerful web bindings to couple with the ORM and make developing backend or fullstack applications absolutely seamless.
+Dream, which can be found at [https://github.com/rvohealth/dream](https://github.com/rvohealth/dream), is a custom ORM that provides the heartbeat of the framework. Psychic was built around and alongside this ORM, with the intention of providing powerful web bindings to couple with the ORM and make developing backend or fullstack applications absolutely seamless.
 
 Since most web applications will require a database, Dream is the tool for abstracting the interaction with the database. Using conventional Active Record patterns, Dream leverages models to hold the individual values stored within the database, creating a powerful bridge between the types held in the database and the properties designated to the model.
 
@@ -53,7 +53,7 @@ Use generators to quickly prop up the scaffolding for your application. Using th
 {{PM}} psy g:model Post user:belongs_to body:string`}
 />
 
-To learn more about generators, see our [generating guide](/docs/models/generating).
+To learn more about generators, see the [generating guide](/docs/models/generating).
 
 ## Querying records
 
@@ -71,7 +71,7 @@ const user = await User.order('createdAt').first()
 const user = await User.order('createdAt').firstOrFail()
 ```
 
-To learn how to query records, see our [creating guide](/docs/models/querying/overview)
+To learn how to query records, see the [creating guide](/docs/models/querying/overview)
 
 ## Creating new records
 
@@ -101,7 +101,7 @@ await User.createOrFindBy(
 )
 ```
 
-To learn how to create new records, see our [creating guide](/docs/models/creating)
+To learn how to create new records, see the [creating guide](/docs/models/creating)
 
 ## Updating existing records
 
@@ -118,7 +118,7 @@ if (something) {
 await user.save()
 ```
 
-To learn how to update records, see our [updating guide](/docs/models/updating).
+To learn how to update records, see the [updating guide](/docs/models/updating).
 
 ## Destroying records
 
@@ -132,7 +132,7 @@ await user.destroy()
 await User.where({ email: ops.ilike('%burpcollaborator%') }).destroy()
 ```
 
-To learn how to delete records, see our [destroying guide](/docs/models/destroying).
+To learn how to delete records, see the [destroying guide](/docs/models/destroying).
 
 ## Associations
 
@@ -151,7 +151,7 @@ class Post extends ApplicationModel {
 }
 ```
 
-To learn how to build associations, see our [associations guide](/docs/models/associations/overview)
+To learn how to build associations, see the [associations guide](/docs/models/associations/overview)
 
 ## Validations
 
@@ -168,7 +168,7 @@ class User extends ApplicationModel {
 }
 ```
 
-To learn how to leverage validations, see our [validations guide](/docs/models/validations/overview)
+To learn how to leverage validations, see the [validations guide](/docs/models/validations/overview)
 
 :::tip
 Dream provides a rich set of features for interacting with your database. We have only begun to get into it here, so we encourage you to explore the model guides to learn more.

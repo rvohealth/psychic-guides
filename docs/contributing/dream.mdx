@@ -81,7 +81,7 @@ The guts of Dream are primarily driven by two main classes: `Dream` and `Query`.
 
 ### DreamSerializer
 
-While it is true that the dream library's primary asset is the `Dream` class itself, the `DreamSerializer` is a second class that enables you to represent you models in a variety of ways. Dreams and serializers are usually connected together through the `serializers` getter defined on any models you generate using the dream cli. The serializers getter returns an object, with key value pairs, where the keys are recognized as `serializerKeys` throughout our app, and their values point to actual serializers in our system.
+While it is true that the dream library's primary asset is the `Dream` class itself, the `DreamSerializer` is a second class that enables you to represent you models in a variety of ways. Dreams and serializers are usually connected together through the `serializers` getter defined on any models you generate using the dream cli. The serializers getter returns an object, with key value pairs, where the keys are recognized as `serializerKeys` throughout the app, and their values point to actual serializers in the system.
 
 ### DreamApp
 
@@ -97,7 +97,7 @@ The cli and bin folders provide integration into commanderjs, a nodejs cli runne
 
 Dream, unlike psychic, contains only one spec suite. This is because Dream is not designed to be tied to a web framework, and can be used in any kind of application. As such, we don't have any test suites covering the behavior of dream within a web application, and thus do not have any request or feature specs to run.
 
-for classes like `Dream` and `Query`, the method list and functionality is incredibly expansive. As such, our spec suite is designed to give you a nice high-level overview of the functionality by browsing the file tree. To see what I mean, examine the `spec/unit/dream` directory. You will see a long list of files, each one named after a method that you can call on the `Dream` class. Both static and instance methods are tested in these files, and if a static and instance method share the same file name, they are both tested in the same file.
+for classes like `Dream` and `Query`, the method list and functionality is incredibly expansive. As such, the spec suite is designed to give you a nice high-level overview of the functionality by browsing the file tree. To see what I mean, examine the `spec/unit/dream` directory. You will see a long list of files, each one named after a method that you can call on the `Dream` class. Both static and instance methods are tested in these files, and if a static and instance method share the same file name, they are both tested in the same file.
 
 ```
 ├── spec
@@ -123,7 +123,7 @@ Running in tandem with the dream folder is a `query` folder, which will contain 
 
 ### Test App
 
-the `test-app` folder at the root of the project contains an example app that is built in dream. This app contains a dummy project with some models scaffolded in to drive our tests with. Doing this is the best way to simulate a real app using dream. Some of the models have childishly crazy associations, since we were forced declare so many of them to carefully test so many features of our app with.
+the `test-app` folder at the root of the project contains an example app that is built in dream. This app contains a dummy project with some models scaffolded in to drive tests with. Doing this is the best way to simulate a real app using dream. Some of the models have childishly crazy associations, since we were forced declare so many of them to carefully test so many features of the app with.
 
 ### dream
 
