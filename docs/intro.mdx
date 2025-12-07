@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 pagination_prev: null
-ai_summary: "Dream is an Active Record ORM for TypeScript with powerful decorators, associations, validations, and lifecycle hooks. Psychic is a web framework built on Dream. Both are ESM-forward with stage 3 decorators. Stable v2 API released November 2025."
+ai_summary: 'Dream is an Active Record ORM for TypeScript with powerful decorators, associations, validations, and lifecycle hooks. Psychic is a web framework built on Dream. Both are ESM-forward with stage 3 decorators. Stable v2 API released November 2025.'
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -151,9 +151,7 @@ export default function routes(r: PsychicRouter) {
 
 Use `psy routes` to see what these resolve to:
 
-<PackageManagerTabs
-  code={`{{PM}} psy routes`}
-/>
+<PackageManagerTabs code={`{{PM}} psy routes`} />
 
 Example output:
 
@@ -370,11 +368,11 @@ export default async (psy: PsychicApp) => {
     }
   })
 
-  psy.on('server:shutdown', () => {
-    if (AppEnv.isDevelopment && AppEnv.boolean('CLIENT')) {
-      PsychicDevtools.stopDevServer('client')
-    }
-  })
+psy.on('server:shutdown', () => {
+if (AppEnv.isDevelopment && AppEnv.boolean('CLIENT')) {
+PsychicDevtools.stopDevServer('client')
+}
+})
 }
 `}
 />

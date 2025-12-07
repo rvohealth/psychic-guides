@@ -1,7 +1,7 @@
 ---
 sidebar_position: 0
 pagination_prev: null
-ai_summary: "Dream is a TypeScript ORM using Active Record patterns. Models extend ApplicationModel and bridge database schema to TypeScript properties. Supports querying (where, find, first, all), creating (create, new/save, createOrFindBy), updating (update, save), destroying (destroy), associations (BelongsTo, HasOne, HasMany, through), and validations."
+ai_summary: 'Dream is a TypeScript ORM using Active Record patterns. Models extend ApplicationModel and bridge database schema to TypeScript properties. Supports querying (where, find, first, all), creating (create, new/save, createOrFindBy), updating (update, save), destroying (destroy), associations (BelongsTo, HasOne, HasMany, through), and validations.'
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -11,7 +11,9 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 Dream, which can be found at [https://github.com/rvohealth/dream](https://github.com/rvohealth/dream), is a custom ORM that provides the heartbeat of the framework. Psychic was built around and alongside this ORM, with the intention of providing powerful web bindings to couple with the ORM and make developing backend or fullstack applications absolutely seamless.
 
-Since most web applications will require a database, Dream is the tool for abstracting the interaction with the database. Using conventional Active Record patterns, Dream leverages models to hold the individual values stored within the database, creating a powerful bridge between the types held in the database and the properties designated to the model.
+Dream implements the [Active Record](https://www.martinfowler.com/eaaCatalog/activeRecord.html) pattern to tie database rows to Typescript models and provides abstractions by which a model represents relationships to other models. Dream is a key part of the model layer in a Model View Controller (MVC) architecture.
+
+Dream is deeply indebted to Ruby on Rails’ ActiveRecord. If you are familiar with Rails, you will feel right at home with the philosophy and developer ergonomics provided by Dream—you’ll even recognize many of the method names—but you’ll be pleasantly surprised by the power of the types to both inform development and provide build-time protection against regressions.
 
 ## Model Definition
 
@@ -71,7 +73,7 @@ const user = await User.order('createdAt').first()
 const user = await User.order('createdAt').firstOrFail()
 ```
 
-To learn how to query records, see the [creating guide](/docs/models/querying/overview)
+To learn how to query records, see the [querying guide](/docs/models/querying/overview)
 
 ## Creating new records
 
