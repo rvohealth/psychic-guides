@@ -1,14 +1,14 @@
 ---
 sidebar_position: 6
 pagination_next: null
-ai_summary: "Database migration commands include db:migrate (runs outstanding migrations), db:rollback (rolls back migrations with --steps option), db:create (creates database), db:drop (drops database), db:reset (drops, creates, migrates, and seeds), and db:seed (seeds database). All support --skip-sync option."
+ai_summary: 'Database migration commands include db:migrate (runs outstanding migrations), db:rollback (rolls back migrations with --steps option), db:create (creates database), db:drop (drops database), db:reset (drops, creates, migrates, and seeds), and db:seed (seeds database). All support --skip-sync option.'
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # migrate/rollback
 
-## db:migrate
+## db\:migrate
 
 Runs any outstanding database migrations:
 
@@ -18,29 +18,27 @@ NODE_ENV=test {{PM}} psy db:migrate`}
 />
 
 ### Options
+
 - `--skip-sync`: Skips syncing local schema after running migrations.
 - `-h, --help`: Display help for command.
 
-## db:rollback
+## db\:rollback
 
 Rolls back the specified number of migration steps (defaults to 1):
 
-<PackageManagerTabs
-    code={`NODE_ENV=test {{PM}} psy db:rollback`}
-/>
+<PackageManagerTabs code={`NODE_ENV=test {{PM}} psy db:rollback`} />
 
 Roll back multiple migrations at once:
 
-<PackageManagerTabs
-    code={`NODE_ENV=test {{PM}} psy db:rollback --steps 3`}
-/>
+<PackageManagerTabs code={`NODE_ENV=test {{PM}} psy db:rollback --steps 3`} />
 
 ### Options
+
 - `--steps <number>`: Number of steps back to travel (default: 1).
 - `--skip-sync`: Skips syncing local schema after running migrations.
 - `-h, --help`: Display help for command.
 
-## db:create
+## db\:create
 
 Creates a new database:
 
@@ -50,9 +48,10 @@ NODE_ENV=test {{PM}} psy db:create`}
 />
 
 ### Options
+
 - `-h, --help`: Display help for command.
 
-## db:drop
+## db\:drop
 
 Drops the database:
 
@@ -62,6 +61,7 @@ NODE_ENV=test {{PM}} psy db:drop`}
 />
 
 **Options:**
+
 - `-h, --help`: Display help for command.
 
 ## db\:reset
@@ -74,6 +74,7 @@ NODE_ENV=test {{PM}} psy db:reset`}
 />
 
 **Options:**
+
 - `-h, --help`: Display help for command.
 
 ## db\:seed
@@ -86,17 +87,17 @@ NODE_ENV=test {{PM}} psy db:seed`}
 />
 
 **Options:**
+
 - `-h, --help`: Display help for command.
 
 ## db\:integrity-check
 
 Fails if migrations need to be run.
 
-<PackageManagerTabs
-    code={`NODE_ENV=test {{PM}} psy db:integrity-check`}
-/>
+<PackageManagerTabs code={`NODE_ENV=test {{PM}} psy db:integrity-check`} />
 
 **Options:**
+
 - `-h, --help`: Display help for command.
 
 For full details, see the [migration documentation](/docs/migrations/overview)

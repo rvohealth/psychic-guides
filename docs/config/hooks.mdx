@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: hooks
-ai_summary: "Psychic and Dream expose lifecycle hooks. Psychic hooks (cli:sync, server:init:before-middleware, server:init:after-middleware, etc.) are configured in conf/app.ts or initializers. Dream hooks (model lifecycle hooks) are configured in conf/dream.ts. Hooks enable tapping into core internal events."
+ai_summary: 'Psychic and Dream expose lifecycle hooks. Psychic hooks (cli:sync, server:init:before-middleware, server:init:after-middleware, etc.) are configured in conf/app.ts or initializers. Dream hooks (model lifecycle hooks) are configured in conf/dream.ts. Hooks enable tapping into core internal events.'
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -134,7 +134,7 @@ export default async (app: PsychicApp) => {
 
 Dream exposes additional hooks that you can tap into, since Dream can technically be isolated from Psychic and brought into other projects.
 
-### db:log
+### db\:log
 
 The underlying [kysely](https://kysely.dev) engine we use to provide the database driver exposes a log lifecycle event that we can tap into during configuration. We expose that to you via the `db:log` event, enabling you to add custom logging for sql queries, like so:
 
@@ -182,9 +182,7 @@ export default async function (app: DreamApp) {
 }
 ```
 
-<PackageManagerTabs
-  code={`{{PM}} console`}
-/>
+<PackageManagerTabs code={`{{PM}} console`} />
 
 ```ts
 > chalupas
