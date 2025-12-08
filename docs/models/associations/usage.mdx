@@ -1,7 +1,7 @@
 ---
 sidebar_position: 7
 pagination_next: null
-ai_summary: "Association usage includes loading (preload, load), associationQuery (construct queries targeting associations), association/associationOrFail (find single associated record), createAssociation (create associated record), and other association manipulation methods."
+ai_summary: 'Association usage includes loading (preload, load), associationQuery (construct queries targeting associations), association/associationOrFail (find single associated record - warning: can cause N+1 queries, use preload/load to avoid), createAssociation (create associated record), and other association manipulation methods.'
 ---
 
 # usage
@@ -68,6 +68,10 @@ Dream provides convenient methods for accessing single associations (HasOne and 
 
 The `association` method returns the associated record if already loaded, or queries for it if not loaded. It accepts `required` and `passthrough` options for dynamic loading.
 
+:::warning N+1 Query Problem
+Using `association` in loops or when processing multiple records can lead to the [N+1 query problem](https://guides.rubyonrails.org/active_record_querying.html#eager-loading-associations). Each call to `association` on an unloaded association will trigger a separate database query. To avoid this, use [`preload`](/docs/models/querying/preload) or [`load`](/docs/models/querying/load) to eager load associations before accessing them.
+:::
+
 ```ts
 // Simple usage - returns loaded association or queries for it
 const userSettings = await user.association('userSettings')
@@ -87,6 +91,10 @@ const profile = await user.association('profile', {
 ### associationOrFail
 
 Similar to `association`, but throws a `RecordNotFound` exception if the association is not found.
+
+:::warning N+1 Query Problem
+Using `associationOrFail` in loops or when processing multiple records can lead to the [N+1 query problem](https://guides.rubyonrails.org/active_record_querying.html#eager-loading-associations). Each call to `associationOrFail` on an unloaded association will trigger a separate database query. To avoid this, use [`preload`](/docs/models/querying/preload) or [`load`](/docs/models/querying/load) to eager load associations before accessing them.
+:::
 
 ```ts
 // Will throw if userSettings doesn't exist
