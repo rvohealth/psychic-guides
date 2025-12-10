@@ -263,21 +263,20 @@ export default class V1HostPlacesController extends AuthedController {
     this.ok(place)
   }
 
-  // Passing `scrollPaginate: true` will specify an openapi document
+  // Passing `cursorPaginate: true` will specify an openapi document
   // that renders an array of placesand the scroll "cursor". Using the
   // "summary" `serializerKey` will tell openapi to use the "summary"
   // serializer, declared in the Place model's `serializers` getter.
   @OpenAPI(Place, {
     status: 200,
-    scrollPaginate: true,
+    cursorPaginate: true,
     serializerKey: 'summary',
   })
   public async index() {
     const places = await this.currentHost
       .associationQuery('places')
       .preloadFor('summary')
-      .order({ createdAt: 'desc' })
-      .scrollPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
+      .cursorPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
     this.ok(places)
   }
 }
@@ -287,7 +286,7 @@ In the above example, the `create` method will automatically generate an OpenAPI
 
 The OpenAPI spec for the `show` method is automatically defined by the "default" serializer declared on the Place model.
 
-Since the the OpenAPI decorator for the `index` method includes `scrollPaginate true`, the OpenAPI shape will reflect the `scrollPaginate` shape, with an array of results rendered using the "summary" serializer declared in the Place model's `serializers` getter. Alternatives to [scrollPaginate](/docs/openapi/pagination.mdx#scroll-pagination-cursor-based) for index endpoints are [paginate](/docs/openapi/pagination.mdx), for traditional pagination with page numbers (slower than `scrollPaginate` when results may include many records) and [many](/docs/openapi/controllers#many), for when pagination is unnecessary and you simply want to return an array of results.
+Since the the OpenAPI decorator for the `index` method includes `cursorPaginate true`, the OpenAPI shape will reflect the `cursorPaginate` shape, with an array of results rendered using the "summary" serializer declared in the Place model's `serializers` getter. Alternatives to [cursorPaginate](/docs/openapi/pagination.mdx#scroll-pagination-cursor-based) for index endpoints are [paginate](/docs/openapi/pagination.mdx), for traditional pagination with page numbers (slower than `cursorPaginate` when results may include many records) and [many](/docs/openapi/controllers#many), for when pagination is unnecessary and you simply want to return an array of results.
 
 You can do quite a lot with the OpenAPI decorator, so it is worth reading up on the [Openapi guides](/docs/openapi/overview) to unlock the full potential of our powerful openapi integration.
 

@@ -257,14 +257,13 @@ index 0000000..b64c592
 +    status: 200,
 +    tags: openApiTags,
 +    description: 'Paginated index of Rooms',
-+    scrollPaginate: true,
++    cursorPaginate: true,
 +    serializerKey: 'summary',
 +  })
 +  public async index() {
 +    // const rooms = await this.currentPlace.associationQuery('rooms')
 +    //   .preloadFor('summary')
-+    //   .order({ createdAt: 'desc' })
-+    //   .scrollPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
++    //   .cursorPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
 +    // this.ok(rooms)
 +  }
 +

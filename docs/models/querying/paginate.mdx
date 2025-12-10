@@ -1,6 +1,7 @@
 ---
-ai_summary: "The paginate method applies limit and offset based on page and pageSize arguments, returning results with pagination metadata (recordCount, pageCount, currentPage). Requires order to be set before paginating. Default pageSize is 25 (configurable in conf/dream.ts). scrollPaginate provides cursor-based pagination for high-performance scenarios."
+ai_summary: 'The paginate method applies limit and offset based on page and pageSize arguments, returning results with pagination metadata (recordCount, pageCount, currentPage). Requires order to be set before paginating. Default pageSize is 25 (configurable in conf/dream.ts). cursorPaginate provides cursor-based pagination for high-performance scenarios.'
 ---
+
 # paginate
 
 The `paginate` method is similar to the [`all`](/docs/models/querying/all) method, except that it will automatically apply `limit` and `offset` based on the `page` and `pageSize` arguments that are provided. Additionally, unlike the `all` method, `paginate` will return extra metadata about the requests, which is useful for driving front-end pagination tools:
@@ -45,14 +46,14 @@ export default (app: DreamApp) => {
 }
 ```
 
-## scrollPaginate (Cursor-Based Pagination)
+## cursorPaginate (Cursor-Based Pagination)
 
-For high-performance scenarios with large datasets, use `scrollPaginate` instead of `paginate`. This method uses cursor-based pagination, which is more efficient than offset-based pagination and ideal for infinite scroll UX patterns:
+For high-performance scenarios with large datasets, use `cursorPaginate` instead of `paginate`. This method uses cursor-based pagination, which is more efficient than offset-based pagination and ideal for infinite scroll UX patterns:
 
 ```ts
-await User.order('createdAt').scrollPaginate({
+await User.order('createdAt').cursorPaginate({
   pageSize: 20,
-  cursor: 'eyJjcmVhdGVkQXQiOiIyMDI0LTAxLTE1VDEwOjAwOjAwWiJ9'
+  cursor: 'eyJjcmVhdGVkQXQiOiIyMDI0LTAxLTE1VDEwOjAwOjAwWiJ9',
 })
 // {
 //   cursor: 'eyJjcmVhdGVkQXQiOiIyMDI0LTAxLTE1VDEwOjAwOjAwWiJ9' | null,
@@ -60,7 +61,7 @@ await User.order('createdAt').scrollPaginate({
 // }
 ```
 
-Unlike `paginate`, `scrollPaginate` uses cursor-based navigation for better performance with large datasets and returns `{ cursor, results }` instead of page metadata. The `cursor` parameter should be `null` for the first page, then use the returned `cursor` for subsequent pages. Like `paginate`, you must apply an order before using `scrollPaginate`.
+Unlike `paginate`, `cursorPaginate` uses cursor-based navigation for better performance with large datasets and returns `{ cursor, results }` instead of page metadata. The `cursor` parameter should be `null` for the first page, then use the returned `cursor` for subsequent pages. Like `paginate`, you must apply an order before using `cursorPaginate`.
 
 :::tip
 Psychic provides helpful openapi controller bindings to simplify rendering paginated results from a Dream query. To learn more, see the [psychic openapi pagination guides](/docs/openapi/pagination)

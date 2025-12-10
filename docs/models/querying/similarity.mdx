@@ -1,6 +1,7 @@
 ---
 ai_summary: "Similarity operations enable fuzzy text searching using PostgreSQL's pg_trgm extension. Three operators: similarity (default 0.3 threshold), wordSimilarity (default 0.5), strictWordSimilarity (default 0.6). Requires pg_trgm extension and optional GIN indexes for performance. Configurable score thresholds."
 ---
+
 # similarity
 
 Similarity operations enable fuzzy text searching using PostgreSQL's `pg_trgm` extension. Dream provides three similarity operators with configurable scoring thresholds for different matching strategies.
@@ -47,7 +48,7 @@ const titleSearchedRecipes = await Recipe.passthrough({ locale: 'en-US' })
       title: ops.strictWordSimilarity(this.query),
     },
   })
-  .scrollPaginate({ cursor })
+  .cursorPaginate({ cursor })
 ```
 
 ### ops.wordSimilarity()
@@ -63,7 +64,7 @@ const fullTextSearchedRecipes = await Recipe.passthrough({ locale: 'en-US' })
       aggregate: ops.wordSimilarity(this.query),
     },
   })
-  .scrollPaginate({ cursor })
+  .cursorPaginate({ cursor })
 ```
 
 ### ops.strictWordSimilarity()
@@ -79,7 +80,7 @@ const fullTextSearchedRecipes = await Recipe.passthrough({ locale: 'en-US' })
       aggregate: ops.strictWordSimilarity(this.query),
     },
   })
-  .scrollPaginate({ cursor })
+  .cursorPaginate({ cursor })
 ```
 
 ## Score thresholds

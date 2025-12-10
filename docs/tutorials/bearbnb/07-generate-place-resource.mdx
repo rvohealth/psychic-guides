@@ -7,13 +7,14 @@ id: bearbnb-07-generate-place-resource
 
 ## Commit Message
 
-```
+````
 Generate Place resource
 
 ```console
 pnpm psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional
-```
-```
+````
+
+````
 
 ## Changes
 
@@ -276,14 +277,13 @@ index 0000000..fb2326a
 +    status: 200,
 +    tags: openApiTags,
 +    description: 'Paginated index of Places',
-+    scrollPaginate: true,
++    cursorPaginate: true,
 +    serializerKey: 'summary',
 +  })
 +  public async index() {
 +    // const places = await this.currentHost.associationQuery('places')
 +    //   .preloadFor('summary')
-+    //   .order({ createdAt: 'desc' })
-+    //   .scrollPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
++    //   .cursorPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
 +    // this.ok(places)
 +  }
 +
@@ -393,7 +393,7 @@ index 67975fc..198aa15 100644
 +++ b/api/src/conf/routes.ts
 @@ -2,6 +2,12 @@ import adminRoutes from '@conf/routes.admin.js'
  import { PsychicRouter } from '@rvoh/psychic'
- 
+
  export default function routes(r: PsychicRouter) {
 +  r.namespace('v1', r => {
 +    r.namespace('host', r => {
@@ -453,4 +453,4 @@ index 0000000..e1e0e23
 +  await db.schema.dropType('place_styles_enum').execute()
 +}
 \ No newline at end of file
-```
+````

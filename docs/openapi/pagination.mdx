@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: pagination
-ai_summary: "OpenAPI decorator supports paginate: true to automatically generate pagination response structure (recordCount, pageCount, currentPage, results). Also supports scrollPaginate: true for cursor-based pagination with cursor and nextCursor fields."
+ai_summary: 'OpenAPI decorator supports paginate: true to automatically generate pagination response structure (recordCount, pageCount, currentPage, results). Also supports cursorPaginate: true for cursor-based pagination with cursor and nextCursor fields.'
 ---
 
 # OpenAPI - Pagination
@@ -52,16 +52,16 @@ which will produce an OpenAPI shape like this for the response body:
 
 ## Scroll Pagination (Cursor-Based)
 
-For high-performance scenarios with large datasets, use `scrollPaginate: true` instead of `paginate: true` to enable cursor-based pagination:
+For high-performance scenarios with large datasets, use `cursorPaginate: true` instead of `paginate: true` to enable cursor-based pagination:
 
 ```ts
 class PlacesController {
   @OpenAPI(Place, {
-    scrollPaginate: true,
+    cursorPaginate: true,
     serializerKey: 'summary',
   })
   public async index() {
-    const paginated = await this.currentHost.associationQuery('places').scrollPaginate({
+    const paginated = await this.currentHost.associationQuery('places').cursorPaginate({
       pageSize: this.castParam('pageSize', 'integer', { allowNull: true }),
       cursor: this.castParam('cursor', 'string', { allowNull: true }),
     })

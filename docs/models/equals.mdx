@@ -1,13 +1,14 @@
 ---
-ai_summary: "The equals method returns true if two models are the same Dream class with the same primary key value and both are persisted. Compares identity, not attribute values. Models from same record are equal even if attributes differ. Use getAttributes to compare attribute values."
+ai_summary: 'The equals method returns true if two models are the same Dream class with the same primary key value and both are persisted. Compares identity, not attribute values. Models from same record are equal even if attributes differ. Use getAttributes to compare attribute values.'
 ---
+
 # equals
 
 Returns `true` if the argument is the same Dream class with the same primary key value, and both models are persisted.
 
 Models derived from the same database record are equal even when they are different instances and **even when the data has been changed in one instance but not the other**. If you want to compare the attribute values of two models, [see getAttributes](/docs/models/attributes#getattributes):
 
-````ts
+```ts
 const node = await GraphNode.create({ name: 'Hello' })
 const reloadedNode = await GraphNode.find(node.id)
 node.equals(reloadedNode)
@@ -25,7 +26,7 @@ const node1 = await GraphNode.create({ name: 'Hello' })
 const node2 = await GraphNode.create({ name: 'Hello' })
 node1.equals(node2)
 // false
-````
+```
 
 Instances that have not yet been persisted are NOT equal:
 
