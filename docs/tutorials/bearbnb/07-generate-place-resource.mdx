@@ -7,14 +7,13 @@ id: bearbnb-07-generate-place-resource
 
 ## Commit Message
 
-````
+```
 Generate Place resource
 
 ```console
 pnpm psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional
-````
-
-````
+```
+```
 
 ## Changes
 
@@ -262,10 +261,10 @@ index 0000000..1a200d0
 +}
 diff --git a/api/src/app/controllers/V1/Host/PlacesController.ts b/api/src/app/controllers/V1/Host/PlacesController.ts
 new file mode 100644
-index 0000000..fb2326a
+index 0000000..8265af5
 --- /dev/null
 +++ b/api/src/app/controllers/V1/Host/PlacesController.ts
-@@ -0,0 +1,71 @@
+@@ -0,0 +1,70 @@
 +import { OpenAPI } from '@rvoh/psychic'
 +import V1HostBaseController from './BaseController.js'
 +import Place from '@models/Place.js'
@@ -393,7 +392,7 @@ index 67975fc..198aa15 100644
 +++ b/api/src/conf/routes.ts
 @@ -2,6 +2,12 @@ import adminRoutes from '@conf/routes.admin.js'
  import { PsychicRouter } from '@rvoh/psychic'
-
+ 
  export default function routes(r: PsychicRouter) {
 +  r.namespace('v1', r => {
 +    r.namespace('host', r => {
@@ -404,11 +403,11 @@ index 67975fc..198aa15 100644
    adminRoutes(r)
    // add routes here, perhaps by running `yarn psy g:resource v1/pets Pet name:citext birthdate:date species:enum:pet_species:dog,cat,fish`
  }
-diff --git a/api/src/db/migrations/1765051223626-create-place.ts b/api/src/db/migrations/1765051223626-create-place.ts
+diff --git a/api/src/db/migrations/1765411129394-create-place.ts b/api/src/db/migrations/1765411129394-create-place.ts
 new file mode 100644
-index 0000000..e1e0e23
+index 0000000..c18822a
 --- /dev/null
-+++ b/api/src/db/migrations/1765051223626-create-place.ts
++++ b/api/src/db/migrations/1765411129394-create-place.ts
 @@ -0,0 +1,42 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely, sql } from 'kysely'
@@ -435,7 +434,7 @@ index 0000000..e1e0e23
 +    .addColumn('id', 'uuid', col =>
 +      col
 +        .primaryKey()
-+        .defaultTo(sql`uuid_generate_v4()`),
++        .defaultTo(sql`uuidv7()`),
 +    )
 +    .addColumn('name', sql`citext`, col => col.notNull())
 +    .addColumn('style', sql`place_styles_enum`, col => col.notNull())
@@ -453,4 +452,4 @@ index 0000000..e1e0e23
 +  await db.schema.dropType('place_styles_enum').execute()
 +}
 \ No newline at end of file
-````
+```

@@ -70,15 +70,15 @@ index 06dac32..3bdfe80 100644
 +  })
  })
 diff --git a/api/src/app/models/User.ts b/api/src/app/models/User.ts
-index 0c415a7..7de8b28 100644
+index 0c415a7..09fd61c 100644
 --- a/api/src/app/models/User.ts
 +++ b/api/src/app/models/User.ts
 @@ -1,6 +1,7 @@
 +import ApplicationModel from '@models/ApplicationModel.js'
-+import Guest from '@models/Guest.js'
  import { Decorators } from '@rvoh/dream'
  import { DreamColumn } from '@rvoh/dream/types'
 -import ApplicationModel from '@models/ApplicationModel.js'
++import Guest from './Guest.js'
  
  const deco = new Decorators<typeof User>()
  
@@ -95,13 +95,13 @@ index 0c415a7..7de8b28 100644
 +  @deco.HasOne('Guest')
 +  public guest: Guest
  }
-diff --git a/api/src/db/migrations/1765049123929-create-guest.ts b/api/src/db/migrations/1765049123929-create-guest.ts
-index acc776a..b1706d1 100644
---- a/api/src/db/migrations/1765049123929-create-guest.ts
-+++ b/api/src/db/migrations/1765049123929-create-guest.ts
+diff --git a/api/src/db/migrations/1765410597252-create-guest.ts b/api/src/db/migrations/1765410597252-create-guest.ts
+index 5e39ada..4293a81 100644
+--- a/api/src/db/migrations/1765410597252-create-guest.ts
++++ b/api/src/db/migrations/1765410597252-create-guest.ts
 @@ -9,7 +9,8 @@ export async function up(db: Kysely<any>): Promise<void> {
          .primaryKey()
-         .defaultTo(sql`uuid_generate_v4()`),
+         .defaultTo(sql`uuidv7()`),
      )
 -    .addColumn('user_id', 'uuid', col => col.references('users.id').onDelete('restrict').notNull())
 +    // added .unique() to `user_id`
@@ -109,13 +109,6 @@ index acc776a..b1706d1 100644
      .addColumn('created_at', 'timestamp', col => col.notNull())
      .addColumn('updated_at', 'timestamp', col => col.notNull())
      .execute()
-@@ -25,4 +26,4 @@ export async function up(db: Kysely<any>): Promise<void> {
- export async function down(db: Kysely<any>): Promise<void> {
-   await db.schema.dropIndex('guests_user_id').execute()
-   await db.schema.dropTable('guests').execute()
--}
-\ No newline at end of file
-+}
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
 index 9d90506..e236e7c 100644
 --- a/api/src/types/db.ts

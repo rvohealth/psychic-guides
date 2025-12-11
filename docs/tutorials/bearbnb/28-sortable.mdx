@@ -1,6 +1,6 @@
 ---
 title: Sortable
-id: bearbnb-29-sortable
+id: bearbnb-28-sortable
 ---
 
 # Sortable
@@ -58,20 +58,20 @@ index e6c7481..f34ea18 100644
 +  })
  })
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index 0dee71a..675c7c5 100644
+index 596e4c3..23f0515 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
 @@ -37,7 +37,7 @@ export default class Place extends ApplicationModel {
    @deco.HasMany('Host', { through: 'hostPlaces' })
    public hosts: Host[]
  
--  @deco.HasMany('Room', { order: 'createdAt', dependent: 'destroy' })
+-  @deco.HasMany('Room', { dependent: 'destroy' })
 +  @deco.HasMany('Room', { order: 'position', dependent: 'destroy' })
    // make sure this imports from `import Room from '@models/Room.js'`
    // not from `import { Room } from 'socket.io-adapter'`
    public rooms: Room[]
 diff --git a/api/src/app/models/Room.ts b/api/src/app/models/Room.ts
-index ffd5409..a0c638a 100644
+index eb177b3..0eb640b 100644
 --- a/api/src/app/models/Room.ts
 +++ b/api/src/app/models/Room.ts
 @@ -14,7 +14,10 @@ export default class Room extends ApplicationModel {
@@ -85,11 +85,11 @@ index ffd5409..a0c638a 100644
    public deletedAt: DreamColumn<Room, 'deletedAt'>
    public createdAt: DreamColumn<Room, 'createdAt'>
    public updatedAt: DreamColumn<Room, 'updatedAt'>
-diff --git a/api/src/db/migrations/1765059065953-add-deferrable-unique-constraint-to-rooms.ts b/api/src/db/migrations/1765059065953-add-deferrable-unique-constraint-to-rooms.ts
+diff --git a/api/src/db/migrations/1765422215354-add-deferrable-unique-constraint-to-rooms.ts b/api/src/db/migrations/1765422215354-add-deferrable-unique-constraint-to-rooms.ts
 new file mode 100644
 index 0000000..acf0882
 --- /dev/null
-+++ b/api/src/db/migrations/1765059065953-add-deferrable-unique-constraint-to-rooms.ts
++++ b/api/src/db/migrations/1765422215354-add-deferrable-unique-constraint-to-rooms.ts
 @@ -0,0 +1,19 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely } from 'kysely'

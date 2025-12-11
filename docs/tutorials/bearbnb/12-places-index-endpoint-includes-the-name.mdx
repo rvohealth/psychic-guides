@@ -11,7 +11,7 @@ id: bearbnb-12-places-index-endpoint-includes-the-name
 Places index endpoint includes the name
 
 ```cosole
-pnpm psy sync
+pnpm psy sync # after updating the serializer to update OpenAPI
 pnpm uspec spec/unit/controllers/V1/Host/PlacesController.spec.ts
 ```
 ```
@@ -52,7 +52,7 @@ index 83fab47..ff993f0 100644
      .attribute('sleeps')
      .attribute('deletedAt')
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index bd1d554..ca4581e 100644
+index a34b3c5..f376703 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -387,11 +387,15 @@
@@ -73,7 +73,7 @@ index bd1d554..ca4581e 100644
          }
        },
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 8189cf5..5cc00fb 100644
+index 1d154e6..0462482 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -395,11 +395,15 @@
@@ -94,7 +94,7 @@ index 8189cf5..5cc00fb 100644
          }
        },
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index 2cf0c83..6270a4e 100644
+index 0ea3271..692a565 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -395,11 +395,15 @@
@@ -115,7 +115,7 @@ index 2cf0c83..6270a4e 100644
          }
        },
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index 9d9b2a8..4c6f75e 100644
+index ee7fc12..9818b61 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
 @@ -218,6 +218,7 @@ export interface components {

@@ -10,7 +10,7 @@ id: bearbnb-01-generate-user-model
 ```
 Generate User model
 
-The User model is primaryily used for authentication
+The User model is primarily used for authentication
 and associating the authenticated user with resources.
 Since we haven't selected an authentication strategy
 yet, we'll simply start with an email address.
@@ -21,6 +21,7 @@ unique, and that all queries are automatically case-
 insensitve.
 
 ```console
+cd api
 pnpm psy db:create
 pnpm psy g:model --no-serializer User email:citext
 ```
@@ -77,11 +78,11 @@ index 0000000..0c415a7
 +  public createdAt: DreamColumn<User, 'createdAt'>
 +  public updatedAt: DreamColumn<User, 'updatedAt'>
 +}
-diff --git a/api/src/db/migrations/1765049053419-create-user.ts b/api/src/db/migrations/1765049053419-create-user.ts
+diff --git a/api/src/db/migrations/1765325303509-create-user.ts b/api/src/db/migrations/1765325303509-create-user.ts
 new file mode 100644
-index 0000000..7e99b85
+index 0000000..92fd418
 --- /dev/null
-+++ b/api/src/db/migrations/1765049053419-create-user.ts
++++ b/api/src/db/migrations/1765325303509-create-user.ts
 @@ -0,0 +1,24 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely, sql } from 'kysely'
@@ -95,7 +96,7 @@ index 0000000..7e99b85
 +    .addColumn('id', 'uuid', col =>
 +      col
 +        .primaryKey()
-+        .defaultTo(sql`uuid_generate_v4()`),
++        .defaultTo(sql`uuidv7()`),
 +    )
 +    .addColumn('email', sql`citext`, col => col.notNull().unique())
 +    .addColumn('created_at', 'timestamp', col => col.notNull())

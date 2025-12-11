@@ -1,6 +1,6 @@
 ---
 title: Rename generated RoomBathroom to Bathroom,
-id: bearbnb-16-rename-generated-roombathroom-to-bathroom
+id: bearbnb-15-rename-generated-roombathroom-to-bathroom
 ---
 
 # Rename generated RoomBathroom to Bathroom,
@@ -10,6 +10,9 @@ id: bearbnb-16-rename-generated-roombathroom-to-bathroom
 ```
 Rename generated RoomBathroom to Bathroom,
 including in the check constraint in the migration
+
+Tip: the F2 key in VSCode (and derivative editors) renames
+a class or variable everywhere
 
 ```console
 pnpm psy db:migrate
@@ -81,10 +84,10 @@ index 1e713c1..ca0a72b 100644
 +export const RoomBathroomSerializer = (roomBathroom: Bathroom) =>
 +  RoomSerializer(Bathroom, roomBathroom)
      .attribute('bathOrShowerStyle')
-diff --git a/api/src/db/migrations/1765052199946-create-room-bathroom.ts b/api/src/db/migrations/1765052199946-create-room-bathroom.ts
+diff --git a/api/src/db/migrations/1765414112831-create-room-bathroom.ts b/api/src/db/migrations/1765414112831-create-room-bathroom.ts
 index 8896e86..3c845b2 100644
---- a/api/src/db/migrations/1765052199946-create-room-bathroom.ts
-+++ b/api/src/db/migrations/1765052199946-create-room-bathroom.ts
+--- a/api/src/db/migrations/1765414112831-create-room-bathroom.ts
++++ b/api/src/db/migrations/1765414112831-create-room-bathroom.ts
 @@ -21,7 +21,7 @@ export async function up(db: Kysely<any>): Promise<void> {
      .alterTable('rooms')
      .addCheckConstraint(
@@ -95,7 +98,7 @@ index 8896e86..3c845b2 100644
      .execute()
  }
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index acdbc6c..630747e 100644
+index 1230573..9f98408 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -343,7 +343,7 @@
@@ -233,7 +236,7 @@ index acdbc6c..630747e 100644
          "required": [
            "id"
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 1aeb9c7..8f9901a 100644
+index 0464845..4e4a21c 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -343,7 +343,7 @@
@@ -378,7 +381,7 @@ index 1aeb9c7..8f9901a 100644
          "required": [
            "id"
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index f7c864c..67ef78a 100644
+index ec35862..45c3b98 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -343,7 +343,7 @@
@@ -629,7 +632,7 @@ index a613c27..73660b8 100644
      },
    },
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index be42128..5b355af 100644
+index 2208354..603ae3d 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
 @@ -225,7 +225,7 @@ export interface paths {
