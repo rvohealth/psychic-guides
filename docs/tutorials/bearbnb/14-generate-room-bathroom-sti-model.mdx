@@ -1,6 +1,6 @@
 ---
 title: Generate Room/Bathroom STI model
-id: bearbnb-15-generate-room-bathroom-sti-model
+id: bearbnb-14-generate-room-bathroom-sti-model
 ---
 
 # Generate Room/Bathroom STI model
@@ -81,11 +81,11 @@ index 0000000..1e713c1
 +export const RoomBathroomSerializer = (roomBathroom: RoomBathroom) =>
 +  RoomSerializer(RoomBathroom, roomBathroom)
 +    .attribute('bathOrShowerStyle')
-diff --git a/api/src/db/migrations/1765052199946-create-room-bathroom.ts b/api/src/db/migrations/1765052199946-create-room-bathroom.ts
+diff --git a/api/src/db/migrations/1765414112831-create-room-bathroom.ts b/api/src/db/migrations/1765414112831-create-room-bathroom.ts
 new file mode 100644
 index 0000000..8896e86
 --- /dev/null
-+++ b/api/src/db/migrations/1765052199946-create-room-bathroom.ts
++++ b/api/src/db/migrations/1765414112831-create-room-bathroom.ts
 @@ -0,0 +1,37 @@
 +import { Kysely, sql } from 'kysely'
 +

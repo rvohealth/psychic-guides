@@ -19,7 +19,7 @@ pnpm psy db:migrate
 
 ```diff
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 725471e..bd1d554 100644
+index 725471e..a34b3c5 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -5,7 +5,296 @@
@@ -34,7 +34,7 @@ index 725471e..bd1d554 100644
 +          "in": "query",
 +          "required": false,
 +          "name": "cursor",
-+          "description": "Scroll pagination cursor",
++          "description": "Pagination cursor",
 +          "allowReserved": true,
 +          "schema": {
 +            "type": [
@@ -371,7 +371,7 @@ index 725471e..bd1d554 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 934ac80..8189cf5 100644
+index 934ac80..1d154e6 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -5,7 +5,296 @@
@@ -386,7 +386,7 @@ index 934ac80..8189cf5 100644
 +          "in": "query",
 +          "required": false,
 +          "name": "cursor",
-+          "description": "Scroll pagination cursor",
++          "description": "Pagination cursor",
 +          "allowReserved": true,
 +          "schema": {
 +            "type": [
@@ -731,7 +731,7 @@ index 934ac80..8189cf5 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index e6354ae..2cf0c83 100644
+index e6354ae..0ea3271 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -5,7 +5,296 @@
@@ -746,7 +746,7 @@ index e6354ae..2cf0c83 100644
 +          "in": "query",
 +          "required": false,
 +          "name": "cursor",
-+          "description": "Scroll pagination cursor",
++          "description": "Pagination cursor",
 +          "allowReserved": true,
 +          "schema": {
 +            "type": [
@@ -1275,7 +1275,7 @@ index c3578c8..6bdb2a0 100644
      },
    },
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index 36895e1..9d9b2a8 100644
+index 36895e1..ee7fc12 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
 @@ -1,4 +1,196 @@
@@ -1284,7 +1284,7 @@ index 36895e1..9d9b2a8 100644
 +    "/v1/host/places": {
 +        parameters: {
 +            query?: {
-+                /** @description Scroll pagination cursor */
++                /** @description Pagination cursor */
 +                cursor?: string | null;
 +            };
 +            header?: never;
@@ -1295,7 +1295,7 @@ index 36895e1..9d9b2a8 100644
 +        get: {
 +            parameters: {
 +                query?: {
-+                    /** @description Scroll pagination cursor */
++                    /** @description Pagination cursor */
 +                    cursor?: string | null;
 +                };
 +                header?: never;
@@ -1330,7 +1330,7 @@ index 36895e1..9d9b2a8 100644
 +        post: {
 +            parameters: {
 +                query?: {
-+                    /** @description Scroll pagination cursor */
++                    /** @description Pagination cursor */
 +                    cursor?: string | null;
 +                };
 +                header?: never;

@@ -91,11 +91,11 @@ index 0000000..9ccbada
 +
 +export const HostSerializer = (host: Host) =>
 +  HostSummarySerializer(host)
-diff --git a/api/src/db/migrations/1765051056504-create-host.ts b/api/src/db/migrations/1765051056504-create-host.ts
+diff --git a/api/src/db/migrations/1765411028183-create-host.ts b/api/src/db/migrations/1765411028183-create-host.ts
 new file mode 100644
-index 0000000..9157b9b
+index 0000000..fc937ae
 --- /dev/null
-+++ b/api/src/db/migrations/1765051056504-create-host.ts
++++ b/api/src/db/migrations/1765411028183-create-host.ts
 @@ -0,0 +1,28 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -106,7 +106,7 @@ index 0000000..9157b9b
 +    .addColumn('id', 'uuid', col =>
 +      col
 +        .primaryKey()
-+        .defaultTo(sql`uuid_generate_v4()`),
++        .defaultTo(sql`uuidv7()`),
 +    )
 +    .addColumn('user_id', 'uuid', col => col.references('users.id').onDelete('restrict').notNull())
 +    .addColumn('created_at', 'timestamp', col => col.notNull())

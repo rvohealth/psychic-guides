@@ -1,6 +1,6 @@
 ---
 title: Generate Room/Kitchen STI model
-id: bearbnb-19-generate-room-kitchen-sti-model
+id: bearbnb-18-generate-room-kitchen-sti-model
 ---
 
 # Generate Room/Kitchen STI model
@@ -80,11 +80,11 @@ index 0000000..f5a38d7
 +export const RoomKitchenSerializer = (roomKitchen: RoomKitchen) =>
 +  RoomSerializer(RoomKitchen, roomKitchen)
 +    .attribute('appliances')
-diff --git a/api/src/db/migrations/1765052418307-create-room-kitchen.ts b/api/src/db/migrations/1765052418307-create-room-kitchen.ts
+diff --git a/api/src/db/migrations/1765414422577-create-room-kitchen.ts b/api/src/db/migrations/1765414422577-create-room-kitchen.ts
 new file mode 100644
 index 0000000..d798b22
 --- /dev/null
-+++ b/api/src/db/migrations/1765052418307-create-room-kitchen.ts
++++ b/api/src/db/migrations/1765414422577-create-room-kitchen.ts
 @@ -0,0 +1,29 @@
 +import { Kysely, sql } from 'kysely'
 +

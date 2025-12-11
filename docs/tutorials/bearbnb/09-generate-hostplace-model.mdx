@@ -77,11 +77,11 @@ index 0000000..baf74e2
 +  public place: Place
 +  public placeId: DreamColumn<HostPlace, 'placeId'>
 +}
-diff --git a/api/src/db/migrations/1765051358136-create-host-place.ts b/api/src/db/migrations/1765051358136-create-host-place.ts
+diff --git a/api/src/db/migrations/1765411215763-create-host-place.ts b/api/src/db/migrations/1765411215763-create-host-place.ts
 new file mode 100644
-index 0000000..7d47d55
+index 0000000..833a587
 --- /dev/null
-+++ b/api/src/db/migrations/1765051358136-create-host-place.ts
++++ b/api/src/db/migrations/1765411215763-create-host-place.ts
 @@ -0,0 +1,37 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -92,7 +92,7 @@ index 0000000..7d47d55
 +    .addColumn('id', 'uuid', col =>
 +      col
 +        .primaryKey()
-+        .defaultTo(sql`uuid_generate_v4()`),
++        .defaultTo(sql`uuidv7()`),
 +    )
 +    .addColumn('host_id', 'uuid', col => col.references('hosts.id').onDelete('restrict').notNull())
 +    .addColumn('place_id', 'uuid', col => col.references('places.id').onDelete('restrict').notNull())

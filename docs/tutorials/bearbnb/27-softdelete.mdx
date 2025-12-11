@@ -1,6 +1,6 @@
 ---
 title: SoftDelete
-id: bearbnb-28-softdelete
+id: bearbnb-27-softdelete
 ---
 
 # SoftDelete
@@ -111,16 +111,17 @@ index baf74e2..eab07df 100644
    public override get table() {
      return 'host_places' as const
 diff --git a/api/src/app/models/LocalizedText.ts b/api/src/app/models/LocalizedText.ts
-index b44ef83..a09bf9a 100644
+index aecf7ca..5b689b4 100644
 --- a/api/src/app/models/LocalizedText.ts
 +++ b/api/src/app/models/LocalizedText.ts
-@@ -2,11 +2,12 @@ import ApplicationModel from '@models/ApplicationModel.js'
- import Host from '@models/Host.js'
- import Place from '@models/Place.js'
- import Room from '@models/Room.js'
+@@ -1,5 +1,5 @@
+ import ApplicationModel from '@models/ApplicationModel.js'
 -import { Decorators } from '@rvoh/dream'
 +import { Decorators, SoftDelete } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import Host from './Host.js'
+ import Place from './Place.js'
+@@ -7,6 +7,7 @@ import Room from './Room.js'
  
  const deco = new Decorators<typeof LocalizedText>()
  
@@ -129,16 +130,17 @@ index b44ef83..a09bf9a 100644
    public override get table() {
      return 'localized_texts' as const
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index ab21061..0dee71a 100644
+index ec18675..596e4c3 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
-@@ -3,11 +3,12 @@ import Host from '@models/Host.js'
- import HostPlace from '@models/HostPlace.js'
- import LocalizedText from '@models/LocalizedText.js'
- import Room from '@models/Room.js'
+@@ -1,5 +1,5 @@
+ import ApplicationModel from '@models/ApplicationModel.js'
 -import { Decorators, DreamConst } from '@rvoh/dream'
 +import { Decorators, DreamConst, SoftDelete } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import Host from './Host.js'
+ import HostPlace from './HostPlace.js'
+@@ -8,6 +8,7 @@ import Room from './Room.js'
  
  const deco = new Decorators<typeof Place>()
  
@@ -150,22 +152,22 @@ index ab21061..0dee71a 100644
    @deco.HasMany('Host', { through: 'hostPlaces' })
    public hosts: Host[]
  
--  @deco.HasMany('Room', { order: 'createdAt' })
-+  @deco.HasMany('Room', { order: 'createdAt', dependent: 'destroy' })
+-  @deco.HasMany('Room')
++  @deco.HasMany('Room', { dependent: 'destroy' })
    // make sure this imports from `import Room from '@models/Room.js'`
    // not from `import { Room } from 'socket.io-adapter'`
    public rooms: Room[]
 diff --git a/api/src/app/models/Room.ts b/api/src/app/models/Room.ts
-index d5f6182..ffd5409 100644
+index 3343514..eb177b3 100644
 --- a/api/src/app/models/Room.ts
 +++ b/api/src/app/models/Room.ts
 @@ -1,11 +1,12 @@
  import ApplicationModel from '@models/ApplicationModel.js'
- import LocalizedText from '@models/LocalizedText.js'
  import Place from '@models/Place.js'
 -import { Decorators, DreamConst } from '@rvoh/dream'
 +import { Decorators, DreamConst, SoftDelete } from '@rvoh/dream'
  import { DreamColumn } from '@rvoh/dream/types'
+ import LocalizedText from './LocalizedText.js'
  
  const deco = new Decorators<typeof Room>()
  

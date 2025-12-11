@@ -1,6 +1,6 @@
 ---
 title: Set up polymorphic associations between LocalizedText and Host/Place/Room
-id: bearbnb-25-set-up-polymorphic-associations-between-localizedtext-and-host-place-room
+id: bearbnb-24-set-up-polymorphic-associations-between-localizedtext-and-host-place-room
 ---
 
 # Set up polymorphic associations between LocalizedText and Host/Place/Room
@@ -33,14 +33,14 @@ pnpm uspec
 
 ```diff
 diff --git a/api/spec/factories/LocalizedTextFactory.ts b/api/spec/factories/LocalizedTextFactory.ts
-index 0df341b..66beb3d 100644
+index 0df341b..638e4f4 100644
 --- a/api/spec/factories/LocalizedTextFactory.ts
 +++ b/api/spec/factories/LocalizedTextFactory.ts
 @@ -1,10 +1,12 @@
 -import { UpdateableProperties } from '@rvoh/dream/types'
  import LocalizedText from '@models/LocalizedText.js'
 +import { UpdateableProperties } from '@rvoh/dream/types'
-+import createPlace from '@spec/factories/PlaceFactory.js'
++import createPlace from './PlaceFactory.js'
  
  let counter = 0
  
@@ -587,16 +587,17 @@ index 38fd532..f85450b 100644
    }
  }
 diff --git a/api/src/app/models/Host.ts b/api/src/app/models/Host.ts
-index b5e8782..4fae757 100644
+index b7d7420..f0bb141 100644
 --- a/api/src/app/models/Host.ts
 +++ b/api/src/app/models/Host.ts
-@@ -1,5 +1,6 @@
- import ApplicationModel from '@models/ApplicationModel.js'
- import HostPlace from '@models/HostPlace.js'
-+import LocalizedText from '@models/LocalizedText.js'
- import Place from '@models/Place.js'
- import User from '@models/User.js'
+@@ -3,6 +3,7 @@ import User from '@models/User.js'
  import { Decorators } from '@rvoh/dream'
+ import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import HostPlace from './HostPlace.js'
++import LocalizedText from './LocalizedText.js'
+ import Place from './Place.js'
+ 
+ const deco = new Decorators<typeof Host>()
 @@ -32,4 +33,12 @@ export default class Host extends ApplicationModel {
  
    @deco.HasMany('Place', { through: 'hostPlaces' })
@@ -611,17 +612,17 @@ index b5e8782..4fae757 100644
 +  }
  }
 diff --git a/api/src/app/models/LocalizedText.ts b/api/src/app/models/LocalizedText.ts
-index d73684f..b44ef83 100644
+index d73684f..aecf7ca 100644
 --- a/api/src/app/models/LocalizedText.ts
 +++ b/api/src/app/models/LocalizedText.ts
 @@ -1,6 +1,9 @@
 +import ApplicationModel from '@models/ApplicationModel.js'
-+import Host from '@models/Host.js'
-+import Place from '@models/Place.js'
-+import Room from '@models/Room.js'
  import { Decorators } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 -import ApplicationModel from '@models/ApplicationModel.js'
++import Host from './Host.js'
++import Place from './Place.js'
++import Room from './Room.js'
  
  const deco = new Decorators<typeof LocalizedText>()
  
@@ -636,17 +637,17 @@ index d73684f..b44ef83 100644
 +  public localizable: Host | Place | Room
  }
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index 9243aa1..717990e 100644
+index 399d7a9..114e2cc 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
-@@ -1,6 +1,7 @@
- import ApplicationModel from '@models/ApplicationModel.js'
- import Host from '@models/Host.js'
- import HostPlace from '@models/HostPlace.js'
-+import LocalizedText from '@models/LocalizedText.js'
- import Room from '@models/Room.js'
- import { Decorators } from '@rvoh/dream'
+@@ -3,6 +3,7 @@ import { Decorators } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import Host from './Host.js'
+ import HostPlace from './HostPlace.js'
++import LocalizedText from './LocalizedText.js'
+ import Room from './Room.js'
+ 
+ const deco = new Decorators<typeof Place>()
 @@ -37,4 +38,12 @@ export default class Place extends ApplicationModel {
    // make sure this imports from `import Room from '@models/Room.js'`
    // not from `import { Room } from 'socket.io-adapter'`
@@ -661,15 +662,17 @@ index 9243aa1..717990e 100644
 +  }
  }
 diff --git a/api/src/app/models/Room.ts b/api/src/app/models/Room.ts
-index 7b34e52..fc0ed30 100644
+index 7b34e52..289e533 100644
 --- a/api/src/app/models/Room.ts
 +++ b/api/src/app/models/Room.ts
-@@ -1,4 +1,5 @@
- import ApplicationModel from '@models/ApplicationModel.js'
-+import LocalizedText from '@models/LocalizedText.js'
+@@ -2,6 +2,7 @@ import ApplicationModel from '@models/ApplicationModel.js'
  import Place from '@models/Place.js'
  import { Decorators } from '@rvoh/dream'
  import { DreamColumn } from '@rvoh/dream/types'
++import LocalizedText from './LocalizedText.js'
+ 
+ const deco = new Decorators<typeof Room>()
+ 
 @@ -20,4 +21,12 @@ export default class Room extends ApplicationModel {
    @deco.BelongsTo('Place', { on: 'placeId' })
    public place: Place
@@ -683,10 +686,10 @@ index 7b34e52..fc0ed30 100644
 +    await this.createAssociation('localizedTexts', { locale: 'en-US', title: this.type })
 +  }
  }
-diff --git a/api/src/db/migrations/1765053573348-create-localized-text.ts b/api/src/db/migrations/1765053573348-create-localized-text.ts
-index 13f64b4..c96350d 100644
---- a/api/src/db/migrations/1765053573348-create-localized-text.ts
-+++ b/api/src/db/migrations/1765053573348-create-localized-text.ts
+diff --git a/api/src/db/migrations/1765416239882-create-localized-text.ts b/api/src/db/migrations/1765416239882-create-localized-text.ts
+index 58549f0..5819bd4 100644
+--- a/api/src/db/migrations/1765416239882-create-localized-text.ts
++++ b/api/src/db/migrations/1765416239882-create-localized-text.ts
 @@ -29,12 +29,19 @@ export async function up(db: Kysely<any>): Promise<void> {
      .addColumn('localizable_type', sql`localized_types_enum`, col => col.notNull())
      .addColumn('localizable_id', 'uuid', col => col.notNull())
@@ -710,7 +713,7 @@ index 13f64b4..c96350d 100644
  
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 469a4ef..4843e07 100644
+index 6c6f824..d8b0e55 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -6,6 +6,114 @@
@@ -829,7 +832,7 @@ index 469a4ef..4843e07 100644
        "parameters": [
          {
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index ee97a68..ed99ff1 100644
+index f12780b..8670685 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -6,6 +6,114 @@
@@ -948,7 +951,7 @@ index ee97a68..ed99ff1 100644
        "parameters": [
          {
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index 875bee0..413c405 100644
+index aed4399..32c7710 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -6,6 +6,114 @@
@@ -1330,7 +1333,7 @@ index a26460e..3e9c44b 100644
        Room: 'rooms',
        'Room/Bathroom': 'rooms',
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index 4f0c02f..b577429 100644
+index 8135272..b2bfc20 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
 @@ -1,4 +1,75 @@

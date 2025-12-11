@@ -32,15 +32,16 @@ pnpm psy sync
 
 ```diff
 diff --git a/api/src/app/models/User.ts b/api/src/app/models/User.ts
-index 7de8b28..af66468 100644
+index 09fd61c..93297cb 100644
 --- a/api/src/app/models/User.ts
 +++ b/api/src/app/models/User.ts
-@@ -1,5 +1,6 @@
- import ApplicationModel from '@models/ApplicationModel.js'
- import Guest from '@models/Guest.js'
-+import Host from '@models/Host.js'
+@@ -2,6 +2,7 @@ import ApplicationModel from '@models/ApplicationModel.js'
  import { Decorators } from '@rvoh/dream'
  import { DreamColumn } from '@rvoh/dream/types'
+ import Guest from './Guest.js'
++import Host from './Host.js'
+ 
+ const deco = new Decorators<typeof User>()
  
 @@ -22,4 +23,7 @@ export default class User extends ApplicationModel {
  
@@ -50,13 +51,13 @@ index 7de8b28..af66468 100644
 +  @deco.HasOne('Host')
 +  public host: Host
  }
-diff --git a/api/src/db/migrations/1765051056504-create-host.ts b/api/src/db/migrations/1765051056504-create-host.ts
-index 9157b9b..6127577 100644
---- a/api/src/db/migrations/1765051056504-create-host.ts
-+++ b/api/src/db/migrations/1765051056504-create-host.ts
+diff --git a/api/src/db/migrations/1765411028183-create-host.ts b/api/src/db/migrations/1765411028183-create-host.ts
+index fc937ae..4c9bc1f 100644
+--- a/api/src/db/migrations/1765411028183-create-host.ts
++++ b/api/src/db/migrations/1765411028183-create-host.ts
 @@ -9,7 +9,8 @@ export async function up(db: Kysely<any>): Promise<void> {
          .primaryKey()
-         .defaultTo(sql`uuid_generate_v4()`),
+         .defaultTo(sql`uuidv7()`),
      )
 -    .addColumn('user_id', 'uuid', col => col.references('users.id').onDelete('restrict').notNull())
 +    // added .unique() to `user_id`
