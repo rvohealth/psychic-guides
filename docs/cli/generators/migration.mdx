@@ -30,7 +30,8 @@ Use the built-in CLI command for generating migrations to easily get up and runn
   All properties default to not nullable; null can be allowed by appending `:optional`:
   `subtitle:string:optional`
   
-  **Supported types:**
+  #### Supported types
+
   - `citext`, `citext[]`: case insensitive text (indexes and queries are automatically case insensitive)
   - `string`, `string[]`: varchar; allowed length defaults to 255, but may be customized, e.g.: `subtitle:string:128` or `subtitle:string:128:optional`
   - `text`, `text[]`

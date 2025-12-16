@@ -30,7 +30,8 @@ The `generate:model` CLI documentation follows below, but more details about gen
   All properties default to not nullable; null can be allowed by appending `:optional`:
   `subtitle:string:optional`
   
-  **Supported types:**
+  #### Supported types
+
   - `citext`, `citext[]`: case insensitive text (indexes and queries are automatically case insensitive)
   - `string`, `string[]`: varchar; allowed length defaults to 255, but may be customized, e.g.: `subtitle:string:128` or `subtitle:string:128:optional`
   - `text`, `text[]`
