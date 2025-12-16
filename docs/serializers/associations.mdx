@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: associations
-ai_summary: "Serializer association methods include rendersOne (single association) and rendersMany (array of associations). Options include serializerKey (specify which serializer to use), as (rename in output), and flatten (for rendersOne only, flattens nested attributes into parent)."
+ai_summary: "Serializer association methods include rendersOne (single association) and rendersMany (array of associations). Options include serializerKey (specify which serializer to use by name), serializer (pass serializer function directly, useful for ObjectSerializer), as (rename in output), and flatten (for rendersOne only, flattens nested attributes into parent)."
 ---
 
 # Serializing Associations
@@ -41,6 +41,76 @@ export const PlaceDetailSerializer = (place: Place) =>
     .rendersMany('rooms', { serializerKey: 'forGuests' })
     .rendersMany('bookings') // renders using the default serializer
 ```
+
+### rendersOne.serializer / rendersMany.serializer
+
+Instead of using `serializerKey` to reference a serializer by name, you can pass a serializer function directly using the `serializer` option. This is particularly useful when serializing nested data structures that aren't Dream models, such as arrays of enum values that need to be transformed into objects.
+
+When using the `serializer` option, passthrough data from the parent serializer is automatically passed to the nested serializer:
+
+```ts
+import { ObjectSerializer } from '@rvoh/dream'
+import { LocalesEnum, BedTypesEnum, BedTypesEnumValues } from '@src/types/db.js'
+import i18n from '@src/utils/i18n.js'
+
+// Serializer for a single bed type enum value
+export const BedTypeSerializer = (bedType: BedTypesEnum, passthrough: { locale: LocalesEnum }) =>
+  ObjectSerializer({ bedType }, passthrough)
+    .attribute('bedType', { as: 'value', openapi: { type: 'string', enum: BedTypesEnumValues } })
+    .customAttribute('label', () => i18n(passthrough.locale, `rooms.Bedroom.bedTypes.${bedType}`), {
+      openapi: 'string',
+    })
+
+// Serializer for a bedroom with localized bed types
+export const RoomBedroomForGuestsSerializer = (
+  roomBedroom: Bedroom,
+  passthrough: { locale: LocalesEnum },
+) =>
+  DreamSerializer(Bedroom, roomBedroom, passthrough)
+    .attribute('id')
+    .attribute('type')
+    .rendersMany('bedTypes', { serializer: BedTypeSerializer })
+```
+
+In this example, `bedTypes` is an array of enum values (e.g., `['cot', 'bunk']`). The `BedTypeSerializer` uses `ObjectSerializer` to transform each enum value into an object with both the `value` (the enum) and a `label` (the localized string). The `passthrough` data containing the locale is automatically passed from the parent serializer to each `BedTypeSerializer` invocation.
+
+Similarly, you can use `rendersOne` with a serializer function for single values:
+
+```ts
+import { ObjectSerializer } from '@rvoh/dream'
+import { LocalesEnum, BathOrShowerStylesEnum, BathOrShowerStylesEnumValues } from '@src/types/db.js'
+import i18n from '@src/utils/i18n.js'
+
+export const BathOrShowerStyleSerializer = (
+  bathOrShowerStyle: BathOrShowerStylesEnum,
+  passthrough: { locale: LocalesEnum },
+) =>
+  ObjectSerializer({ bathOrShowerStyle }, passthrough)
+    .attribute('bathOrShowerStyle', {
+      as: 'value',
+      openapi: { type: 'string', enum: BathOrShowerStylesEnumValues },
+    })
+    .customAttribute(
+      'label',
+      () => i18n(passthrough.locale, `rooms.Bathroom.bathOrShowerStyles.${bathOrShowerStyle}`),
+      {
+        openapi: 'string',
+      },
+    )
+
+export const RoomBathroomForGuestsSerializer = (
+  roomBathroom: Bathroom,
+  passthrough: { locale: LocalesEnum },
+) =>
+  DreamSerializer(Bathroom, roomBathroom, passthrough)
+    .attribute('id')
+    .attribute('type')
+    .rendersOne('bathOrShowerStyle', { serializer: BathOrShowerStyleSerializer })
+```
+
+:::info
+When using `ObjectSerializer` for nested serializers, you must explicitly provide the OpenAPI shape for each attribute since `ObjectSerializer` doesn't have access to database schema information like `DreamSerializer` does.
+:::
 
 ### rendersOne.as / rendersMany.as
 

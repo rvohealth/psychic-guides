@@ -6,6 +6,7 @@ ai_summary: "Psychic automatically uses serializers when rendering Dream instanc
 # serialization
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 Whenever rendering a Dream instance, Psychic will always be smart enough to leverage the provided serializer, making these two lines equivalent:
 
@@ -48,6 +49,61 @@ class Place extends ApplicationModel {
       summary: 'PlaceSummarySerializer',
     }
   }
+}
+```
+
+## Adding New Serializers
+
+When you need to add a new serializer for a model, follow these steps:
+
+1. Create the serializer function in your serializer file (e.g., `app/serializers/PlaceSerializer.ts`):
+
+```ts
+export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
+  DreamSerializer(Place, place)
+    .attribute('id')
+    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
+    .customAttribute('displayStyle', () => i18n(passthrough.locale, `places.style.${place.style}`), {
+      openapi: 'string',
+    })
+```
+
+2. Sync:
+
+<PackageManagerTabs code={`{{PM}} psy sync`} />
+
+3. Add the serializer key to the model's `serializers` getter:
+
+```ts
+export default class Place extends ApplicationModel {
+  public get serializers(): DreamSerializers<Place> {
+    return {
+      default: 'PlaceSerializer',
+      summary: 'PlaceSummarySerializer',
+      forGuests: 'PlaceForGuestsSerializer', // Add your new serializer key here
+    }
+  }
+}
+```
+
+4. Use the serializer in your controller by specifying the `serializerKey` in the `@OpenAPI` decorator:
+
+```ts
+@OpenAPI(Place, {
+  status: 200,
+  serializerKey: 'forGuests', // This must match a key in the model's serializers getter
+})
+public async show() {
+  this.ok(await Place.findOrFail(this.castParam('id')))
+}
+```
+
+Alternatively, you can specify the `serializerKey` when calling `this.ok()`:
+
+```ts
+public async index() {
+  const places = await Place.all()
+  this.ok(places, { serializerKey: 'forGuests' })
 }
 ```
 
