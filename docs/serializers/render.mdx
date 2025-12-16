@@ -147,4 +147,25 @@ export const MyDataSerializer = (data: MyData, options?: SerializerOptions) =>
 // the passthrough data (e.g., { locale: 'es' }) will be available in `opts`.
 ```
 
+**Passthrough Data in Nested Serializers:**
+
+When using the `serializer` option with `rendersOne` or `rendersMany`, passthrough data from the parent serializer is automatically passed to the nested serializer function:
+
+```ts
+// Nested serializer receives passthrough automatically
+export const BedTypeSerializer = (bedType: BedTypesEnum, passthrough: { locale: LocalesEnum }) =>
+  ObjectSerializer({ bedType }, passthrough)
+    .attribute('bedType', { as: 'value' })
+    .customAttribute('label', () => i18n(passthrough.locale, `rooms.Bedroom.bedTypes.${bedType}`), {
+      openapi: 'string',
+    })
+
+// Parent serializer passes passthrough to nested serializers
+export const RoomBedroomSerializer = (room: Bedroom, passthrough: { locale: LocalesEnum }) =>
+  DreamSerializer(Bedroom, room, passthrough)
+    .attribute('id')
+    .rendersMany('bedTypes', { serializer: BedTypeSerializer })
+// passthrough is automatically passed to BedTypeSerializer for each bedType
+```
+
 This mechanism allows for clean separation of concerns, keeping your serializers focused on data transformation while allowing contextual data to be injected from the controller layer.
