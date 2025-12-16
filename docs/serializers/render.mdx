@@ -60,7 +60,7 @@ export default class Stuff extends ApplicationModel {
 }
 ```
 
-**2. Using Implicit Rendering in Controllers:**
+### Using Implicit Rendering in Controllers
 
 Once the `serializers` getter is set up on the model:
 
@@ -112,7 +112,7 @@ export default class ApplicationController extends PsychicController {
 }
 ```
 
-**Accessing Passthrough Data in Serializers:**
+### Accessing Passthrough Data in Serializers
 
 The data provided via `serializerPassthrough()` is typically passed as an `options` argument to your main serializer function. You can then access this data within your serializer logic, such as in `customAttribute` callbacks.
 
@@ -147,7 +147,7 @@ export const MyDataSerializer = (data: MyData, options?: SerializerOptions) =>
 // the passthrough data (e.g., { locale: 'es' }) will be available in `opts`.
 ```
 
-**Passthrough Data in Nested Serializers:**
+### Passthrough Data in Nested Serializers
 
 When using the `serializer` option with `rendersOne` or `rendersMany`, passthrough data from the parent serializer is automatically passed to the nested serializer function:
 

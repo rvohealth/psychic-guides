@@ -49,7 +49,7 @@ You can also create an STI parent using the model generator:
   All properties default to not nullable; null can be allowed by appending `:optional`:
   `subtitle:string:optional`
 
-  **Supported types:**
+  #### Supported types
 
   - `citext`, `citext[]`: case insensitive text (indexes and queries are automatically case insensitive)
   - `string`, `string[]`: varchar; allowed length defaults to 255, but may be customized, e.g.: `subtitle:string:128` or `subtitle:string:128:optional`
@@ -68,7 +68,7 @@ You can also create an STI parent using the model generator:
     - Include the fully qualified model name, e.g., if the Coach model is in `src/app/models/Health/Coach`:
       `Health/Coach:belongs_to`
 
-**Options:**
+### Options
 
 - `--no-serializer`: Skip generating a serializer for the child model.
 - `--connection-name <connectionName>`: The db connection you want this model attached to (defaults to the default connection).
