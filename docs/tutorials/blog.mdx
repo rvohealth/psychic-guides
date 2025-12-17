@@ -325,6 +325,7 @@ Let's run the spec to get a failure:
   code={`{{PM}} uspec spec/unit/models/User.spec.ts`}
 />
 
+```sh
 ❯ spec/unit/models/User.spec.ts (3 tests | 2 failed) 613ms
   ✓ User > upon save > password is saved > hashes the user password 189ms
   × User > #checkPassword > returns true with a valid password 64ms
@@ -582,7 +583,7 @@ This will generate both a controller and spec for us. Let's start by editing the
 // api/spec/unit/controllers/AuthSessionController.spec.ts
 
 import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
-import { paths } from '../../../src/types/openapi/validation.openapi.js'
+import { paths } from '../../../src/types/openapi/tests.openapi.js'
 import { PsychicServer } from '@rvoh/psychic'
 import createUser from '../../factories/UserFactory.js'
 
@@ -1105,6 +1106,7 @@ import { visit } from '@rvoh/psychic-spec-helpers'
 
 describe('Signin', () => {
   it('allows user to sign in', async () => {
+    await createUser({ email: 'my@email', password: 'password123' })
     await visit('/')
     await clickLink('Sign in')
     await fillIn('#email', 'my@email')
@@ -1378,7 +1380,9 @@ export default function SigninPage() {
               password,
             },
           })
-          navigate('/')
+
+          // brute navigation to help specs along, otherwise would use navigate('/')
+          window.location.href = '/'
         }}
       >
         Submit
@@ -1787,7 +1791,7 @@ Examining this controller, all of the methods we need are here, but the implemen
 
 import { OpenAPI } from '@rvoh/psychic'
 import ApiV1BaseController from './BaseController.js'
-import Post from '../../../models/Post.js'
+import Post from '@models/Post.js'
 
 const openApiTags = ['posts']
 
@@ -1795,12 +1799,15 @@ export default class ApiV1PostsController extends ApiV1BaseController {
   @OpenAPI(Post, {
     status: 200,
     tags: openApiTags,
-    description: 'Fetch multiple Posts',
-    many: true,
+    description: 'Paginated index of Posts',
+    cursorPaginate: true,
     serializerKey: 'summary',
   })
   public async index() {
-    const posts = await this.currentUser.associationQuery('posts').preloadFor('summary').all()
+    const posts = await this.currentUser.associationQuery('posts')
+      .preloadFor('summary')
+      .cursorPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
+
     this.ok(posts)
   }
 
@@ -1848,8 +1855,7 @@ export default class ApiV1PostsController extends ApiV1BaseController {
   }
 
   private async post() {
-    return await this.currentUser
-      .associationQuery('posts')
+    return await this.currentUser.associationQuery('posts')
       .preloadFor('default')
       .findOrFail(this.castParam('id', 'string'))
   }
@@ -1900,12 +1906,24 @@ Now, we can revisit the PostsController and find that, oh lovely, no more type e
 Let's update the session function to be more relevant to the app. In the end, we will arrive at something much simpler.
 
 ```ts
+import User from '@models/User.js'
 import { PsychicServer } from '@rvoh/psychic'
-import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
-import User from '../../../src/app/models/User.js'
-import { paths as OpenapiPaths } from '../../../src/types/openapi/validation.openapi.js'
+import { OpenapiRequestBody, OpenapiRequestQuery, OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
+import { paths as OpenapiPaths } from '@src/types/openapi/tests.openapi.js'
 
 export type SpecRequestType = Awaited<ReturnType<typeof session>>
+
+export type RequestBody<HttpMethod extends 'get' | 'post' | 'patch' | 'delete', Uri> = OpenapiRequestBody<
+  OpenapiPaths,
+  HttpMethod,
+  Uri
+>
+
+export type RequestQuery<HttpMethod extends 'get' | 'post' | 'patch' | 'delete', Uri> = OpenapiRequestQuery<
+  OpenapiPaths,
+  HttpMethod,
+  Uri
+>
 
 export async function session(user: User, password: string = 'abc123') {
   const request = new OpenapiSpecRequest<OpenapiPaths>()
@@ -1913,7 +1931,7 @@ export async function session(user: User, password: string = 'abc123') {
   return await request.session('post', '/sign-in', 204, {
     data: {
       email: user.email,
-      password: 'abc123',
+      password,
     },
   })
 }
@@ -2043,11 +2061,12 @@ Next, let's add a PostsIndexPage at `client/src/pages/authed/posts/PostsIndexPag
 ```ts
 // client/src/pages/authed/posts/PostsIndexPage.tsx
 
-import { Link } from 'react-router'
 import { useGetApiV1PostsQuery } from '../../../api/myblogApi'
 
 export default function PostsIndexPage() {
-  const { data: posts } = useGetApiV1PostsQuery()
+  const { data } = useGetApiV1PostsQuery({ cursor: undefined })
+
+  const posts = data?.results
   if (!posts) return <div>loading...</div>
 
   return (
@@ -2158,6 +2177,8 @@ git commit -m 'add Posts index'
 Next, let's add a show page for one of our blog entries. We'll start with a feature spec:
 
 ```ts
+// spec/features/posts/show.spec.ts
+
 import createPost from '../../factories/PostFactory.js'
 import createUser from '../../factories/UserFactory.js'
 import signIn from '../helpers/signIn.js'
@@ -2410,8 +2431,8 @@ export default function PostNewPage() {
 
   return (
     <div>
-      <input type="text" value={title} onChange={e => setTitle(e.target.value)} />
-      <textarea value={body} onChange={e => setBody(e.target.value)}></textarea>
+      <input id="title" type="text" value={title} onChange={e => setTitle(e.target.value)} />
+      <textarea id="body" value={body} onChange={e => setBody(e.target.value)}></textarea>
       <button
         onClick={async () => {
           const res = await createPost({ body: { title, body } })
@@ -2610,6 +2631,8 @@ After this abstraction, let's double back on our create spec to make sure we did
 Next, let's add the update page, leveraging the new form component we just built:
 
 ```ts
+// client/src/pages/authed/posts/PostEditPage.tsx
+
 import { useParams } from 'react-router'
 import { useGetApiV1PostsByIdQuery } from '../../../api/myblogApi'
 import PostForm from '../../../components/forms/PostForm'
