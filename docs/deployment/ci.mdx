@@ -69,15 +69,16 @@ jobs:
           - 6379:6379
     defaults:
       run:
+        # if you have a monorepo
         working-directory: ./api
     env:
       # we recommend you set this to the number of cores on your CI runner
       DREAM_PARALLEL_TESTS: 4
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version-file: api/.node-version
 
       - run: corepack enable
 
@@ -96,8 +97,8 @@ jobs:
       postgres:
         image: postgres:13
         env:
-          POSTGRES_USER: welloscentral
-          POSTGRES_DB: wellos_central_test
+          POSTGRES_USER: myapp
+          POSTGRES_DB: myapp
           POSTGRES_PASSWORD: 'postgres'
         options: >-
           --health-cmd pg_isready
@@ -125,6 +126,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: api/.node-version
       - run: corepack enable
 
       - run: pnpm install --frozen-lockfile
@@ -151,9 +155,9 @@ jobs:
         working-directory: ./api
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version-file: api/.node-version
 
       - run: corepack enable
 
@@ -168,9 +172,9 @@ jobs:
         working-directory: ./api
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version-file: api/.node-version
 
       - run: corepack enable
 
@@ -185,9 +189,9 @@ jobs:
         working-directory: ./client
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version-file: api/.node-version
 
       - run: corepack enable
 
