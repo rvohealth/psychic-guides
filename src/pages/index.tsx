@@ -33,11 +33,11 @@ export default function Home(): JSX.Element {
   return (
     <Layout
       title={`Hello from ${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />"
+      description="A TypeScript-driven web framework that reads your mind."
     >
       <div
         id="home-scroll-container"
-        onScroll={(e) => {
+        onScroll={e => {
           const currentScrollTop = (e.target as HTMLDivElement).scrollTop
 
           if (currentScrollTop <= window.innerHeight) {
@@ -50,9 +50,7 @@ export default function Home(): JSX.Element {
           banners.forEach((el, i) => {
             const elAsDiv = el as HTMLDivElement
             const elDistanceFromTop =
-              currentScrollTop +
-              elAsDiv.getBoundingClientRect().top -
-              window.innerHeight * 0.5
+              currentScrollTop + elAsDiv.getBoundingClientRect().top - window.innerHeight * 0.5
 
             if (i === 0)
               console.log({
@@ -61,10 +59,7 @@ export default function Home(): JSX.Element {
                 currentScrollTop,
               })
 
-            if (
-              currentScrollTop > elDistanceFromTop &&
-              !elAsDiv.classList.contains('active')
-            ) {
+            if (currentScrollTop > elDistanceFromTop && !elAsDiv.classList.contains('active')) {
               elAsDiv.classList.add('active')
               return
             }
