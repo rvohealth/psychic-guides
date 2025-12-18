@@ -24,7 +24,7 @@ In the future, I may write a guide on provisioning this with the cdk, but for no
 At the root of your api application, add a Dockerfile with the following:
 
 ```sh
-ARG NODE_IMAGE=node:22-alpine
+ARG NODE_IMAGE=node:24-alpine
 
 FROM $NODE_IMAGE AS dev
 USER node
@@ -36,7 +36,7 @@ ENV PSYCHIC_LOG_PATH=/dev/shm
 ENV PSYCHIC_SSL_CERT_PATH=/home/node/app/cert/psychic-selfsigned.crt
 ENV PSYCHIC_SSL_KEY_PATH=/home/node/app/cert/psychic-selfsigned.key
 ENV COREPACK_HOME=/home/node/bin
-ENV PNPM_VERSION=10.24.0
+ENV PNPM_VERSION=10.26.0
 ENV APP_NAME=myapp
 RUN apk -U upgrade
 RUN apk add dumb-init
@@ -55,20 +55,18 @@ USER root
 RUN apk add git
 COPY --chown=node:node .npmrc .
 COPY --chown=node:node . .
-RUN mkdir ${COREPACK_HOME}
-RUN corepack enable --install-directory ${COREPACK_HOME} && corepack prepare pnpm@${PNPM_VERSION}
-# RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION}
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+ENV PATH="${COREPACK_HOME}:${PATH}"
+RUN corepack enable --install-directory ${COREPACK_HOME} && corepack enable pnpm && corepack prepare pnpm@${PNPM_VERSION} --activate && corepack use pnpm@${PNPM_VERSION}
 
 # need types to build, so install dev dependencies
-RUN pnpm workspaces focus --production
 RUN NODE_ENV=production pnpm install --frozen-lockfile
 RUN NODE_ENV=production pnpm build
-# # now that we've built, we can install without dev dependencies
-RUN rm -rf node_modules
-RUN pnpm workspaces focus --production
 
-RUN rm .npmrc
-RUN echo "nodeLinker: node-modules" > .npmrc
+# now that we've built, we can install without dev dependencies
+RUN rm -rf $(pnpm store path)
+RUN rm -rf node_modules
+RUN pnpm install --frozen-lockfile --prod
 
 FROM base AS sslsetup
 USER root
@@ -88,7 +86,6 @@ RUN mkdir ${COREPACK_HOME}
 RUN corepack enable --install-directory ${COREPACK_HOME} && corepack prepare pnpm@${PNPM_VERSION}
 
 USER node
-RUN echo 'alias pnpm="corepack pnpm"' >> /home/node/.profile
 
 EXPOSE 8443
 ENV PATH="${PATH}:/home/node/npm_global/bin"
@@ -116,9 +113,6 @@ RUN mkdir ${PM2_HOME}
 # end: non-readonly carveout
 #########################
 
-# you can use regular pm2 if you do not need websockets
-RUN npm install -g @socket.io/pm2
-
 COPY --chown=node:node ./migrate_and_serve.sh ./
 
 # Uncomment when want to get onto the repl and be able to import:
@@ -135,19 +129,12 @@ With the Dockerfile in place, we will need the corresponding `migrate_and_serve.
 
 <PackageManagerTabs
   code={`# migrate_and_serve.sh
-
 #!/bin/sh
 
-source /home/node/.profile
-echo $(type pnpm)
-
 if [ $WEB_SERVICE ]; then
-  PNPM_CACHE_FOLDER=/dev/shm TMP=/dev/shm NODE_ENV=production pnpm psyjs db:migrate --skip-sync \
-  && PNPM_CACHE_FOLDER=/dev/shm TMP=/dev/shm NODE_ENV=production pnpm psyjs db:seed \
-  && pm2-runtime start ./server.ecosystem.config.js --env production \
-  && pm2 save
+  TMP=/dev/shm NODE_ENV=production pnpm psy:js db:migrate --skip-sync && TMP=/dev/shm NODE_ENV=production pnpm psy:js db:seed && ./node_modules/.bin/pm2-runtime start ./server.ecosystem.config.cjs --env production && ./node_modules/.bin/pm2 save
 elif [ $WORKER_SERVICE ]; then
-  pm2-runtime start ./worker.ecosystem.config.js --env production && pm2 save
+  ./node_modules/.bin/pm2-runtime start ./worker.ecosystem.config.cjs --env production && ./node_modules/.bin/pm2 save
 elif [ $CONSOLE_SERVICE ]; then
   sleep infinity
 fi`}

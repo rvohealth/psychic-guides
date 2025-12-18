@@ -2,11 +2,12 @@
 sidebar_position: 1
 pagination_prev: null
 ai_summary: 'Dream is an Active Record ORM for TypeScript with powerful decorators, associations, validations, and lifecycle hooks. Psychic is a web framework built on Dream. Both are ESM-forward with stage 3 decorators. Stable v2 API released November 2025.'
+title: Welcome
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
-# Welcome
+# Welcome to Psychic
 
 In your grand search to find the perfect, modern (ESM-forward, stage 3 decorators) Typescript web framework, we are humbled that you have stumbled upon us. We are new to the game, having just officially released the stable, v2 API in November of 2025, but we believe our offering to you was worth the wait.
 
@@ -14,7 +15,9 @@ Dream and Psychic have been in development since early 2023 and in production us
 
 ## What is Dream?
 
-At the heart of most web applications is a database, with, at least generally speaking, a tightly-defined set of table schemas to guard the integrity of its data. Dream follows the conventional [Active Record](https://en.wikipedia.org/wiki/Active_record_pattern) practices for modeling data, but provides a very powerful TypeScript-driven set of features to unleash powerful autocomplete mechanisms that make even the most dense applications possible to navigate.
+Dream is an in-house ORM designed to make interacting with your database a breeze. It follows the conventional [Active Record](https://en.wikipedia.org/wiki/Active_record_pattern) practices for modeling data, but provides a very powerful TypeScript-driven set of features to unleash powerful autocomplete mechanisms that make even the most dense applications possible to navigate, as well as robust association mechanisms to help clarify even the densest of domains.
+
+Using decorators, you can expressively unleash powerful guards to restrain your data, or add hooks to modify data prior to saving.
 
 ```ts
 const deco = new Decorators<typeof User>()
