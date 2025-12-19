@@ -160,8 +160,24 @@ const config: Config = {
       copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
     },
     prism: {
-      theme: prismThemes.oneLight,
-      darkTheme: prismThemes.dracula,
+      // good light themes:
+      // nightOwlLight
+      // github
+      // jettwaveLight
+      // oneLight
+      // oneDark
+      // ultramin
+      // vsLight
+      theme: prismThemes.nightOwlLight,
+
+      // good dark themes:
+      // dracula
+      // duotoneDark
+      // nightOwl
+      // okaidia
+      // oneDark
+      // palenight
+      darkTheme: prismThemes.nightOwl,
     },
   } satisfies Preset.ThemeConfig,
 }
