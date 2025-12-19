@@ -161,14 +161,14 @@ const config: Config = {
     },
     prism: {
       // good light themes:
+      // oneLight
       // nightOwlLight
       // github
       // jettwaveLight
-      // oneLight
       // oneDark
       // ultramin
       // vsLight
-      theme: prismThemes.nightOwlLight,
+      theme: prismThemes.ultramin,
 
       // good dark themes:
       // dracula
@@ -177,7 +177,7 @@ const config: Config = {
       // okaidia
       // oneDark
       // palenight
-      darkTheme: prismThemes.nightOwl,
+      darkTheme: prismThemes.dracula,
     },
   } satisfies Preset.ThemeConfig,
 }
