@@ -272,7 +272,6 @@ html[data-theme='light'] {
   color: var(--ifm-background-color);
 }
 
-
 .logo h1,
 .logo h2 {
   display: inline-block;
@@ -298,10 +297,17 @@ html[data-theme='light'] {
   -webkit-text-stroke-color: none !important;
 }
 
+.routes-output::before {
+  content: '';
+  height: 38px;
+  border: solid 1px var(--ifm-code-color);
+  position: absolute;
+  top: -42px;
+}
+
 .routes-output {
-  border: solid 2px black;
-  /* background: #0e0928; */
-  color: #d91aea;
+  background: #222;
+  color: white;
   padding: 20px;
   border-radius: 8px;
   margin-bottom: 57px;
@@ -309,17 +315,9 @@ html[data-theme='light'] {
   text-align: center;
 }
 
-.routes-output::before {
-  content: '';
-  height: 38px;
-  border: solid 1px var(--ifm-color-primary);
-  position: absolute;
-  top: -42px;
-}
-
 [data-theme='dark'] .routes-output {
-  border-color: white;
-  color: #c796fb;
+  background: #74748a;
+  color: #ded8ff;
 }
 
 .routes-output pre {
