@@ -161,14 +161,13 @@ const config: Config = {
     },
     prism: {
       // good light themes:
-      // oneLight
       // nightOwlLight
-      // github
-      // jettwaveLight
-      // oneDark
       // ultramin
+      // jettwaveLight
+      // github
       // vsLight
-      theme: prismThemes.ultramin,
+      // oneLight
+      theme: prismThemes.nightOwlLight,
 
       // good dark themes:
       // dracula
