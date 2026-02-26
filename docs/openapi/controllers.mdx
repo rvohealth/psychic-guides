@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: controllers
-ai_summary: "The @OpenAPI decorator generates OpenAPI specifications for controller endpoints. It supports response configuration (serializerKey, many, nullable, status), request body configuration (for, only, including, combining), query parameters, path parameters, headers, security, and default behavior control."
+ai_summary: 'The @OpenAPI decorator generates OpenAPI specifications for controller endpoints. It supports response configuration (serializerKey, many, nullable, status), request body configuration (for, only, including, combining), query parameters, path parameters, headers, security, and default behavior control.'
 ---
 
 # OpenAPI - Controllers
@@ -56,6 +56,22 @@ export default class PlacesController extends PsychicController {
 ```
 
 In addition to providing a model class as the first argument, you can also specify a serializer directly, which takes away the implicit decision making that Psychic does to decide on a serializer for you.
+
+## Fast serialization
+
+The OpenAPI spec can be leveraged to automatically stringify using [fast-json-stringify](https://www.npmjs.com/package/fast-json-stringify), speeding up JSON stringification from 2-5× (once the endpoint is hit for the first time and the compiled stringification function generated—which takes a few milliseconds on the first call—and cached). Just set `fastJsonStringify: true` in the OpenAPI decorator options.
+
+```ts
+export default class PlacesController extends PsychicController {
+  @OpenAPI(Place, {
+    status: 200,
+    fastJsonStringify: true,
+  })
+  public async show() {
+    this.ok(await this.currentHost.associationQuery('places').findOrFail(this.castParam('id', 'bigint')))
+  }
+}
+```
 
 ## Direct serializer specification
 
