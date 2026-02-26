@@ -1,21 +1,25 @@
 ---
 sidebar_position: 1
-ai_summary: "Psychic middleware piggy-backs off Express, enabling middleware composition in routing layer. Can bypass controller layer with middleware callbacks. Supports single middleware or array of ordered middleware callbacks."
+ai_summary: "Psychic middleware piggy-backs off Koa, enabling middleware composition in routing layer. Can bypass controller layer with middleware callbacks. Supports single middleware or array of ordered middleware callbacks."
 ---
 
 ## Middleware
 
-Psychic has a concept of middleware which piggy-backs off of Express, enabling you compose in the routing layer as though you were in an Express app:
+Psychic has a concept of middleware which piggy-backs off of Koa, enabling you compose in the routing layer as though you were in a Koa app:
 
 ```ts
 // conf/routes.ts
 ...
-  r.post('/sign-in', (req, res) => {
-    res.json({ hello: 'world' })
+  r.post('/sign-in', async (ctx, next) => {
+    ctx.body = { hello: 'world' }
   })
 ```
 
-This approach bypasses the controller layer, which we don't recommend since it provides such helpful utilities, but can be useful sometimes, say, when integrating with Express middleware.
+This approach bypasses the controller layer, which we don't recommend since it provides such helpful utilities, but can be useful sometimes, say, when integrating with Koa middleware.
+
+:::info Psychic 2.0 (Express-based)
+If you're using Psychic 2.0 with Express middleware, see the [Psychic 2.0 documentation](/docs/psychic-v2/routing/middleware).
+:::
 
 ## Multiple middleware callbacks
 
@@ -23,17 +27,17 @@ In addition to a single middleware callback, Psychic enables you to provide seve
 
 ```ts
   r.post('/sign-in', [
-    (req, res, next) => {
+    async (ctx, next) => {
       console.log('A')
-      next()
+      await next()
     },
-    (req, res, next) => {
+    async (ctx, next) => {
       console.log('B')
-      next()
+      await next()
     },
-    (req, res, next) => {
+    async (ctx, next) => {
       console.log('C')
-      res.json({ nowIKnowMy: ['a', 'b', 'c']})
+      ctx.body = { nowIKnowMy: ['a', 'b', 'c']}
     },
   )
 ```

@@ -59,16 +59,16 @@ Once this is done, you should be able to reset the test database and run specs:
 
 ## Architecture
 
-Psychic is a light-weight wrapper around Koa, and largely revolves around the ecosystem provided by the web server. There are a few primary constructs worth paying attention to within the psychic ecosystem:
+Psychic is a light-weight wrapper around express, and largely revolves around the ecosystem provided by the web server. There are a few primary constructs worth paying attention to within the psychic ecosystem:
 
-- `PsychicServer` - this is the server which wraps Koa to produce your web server
+- `PsychicServer` - this is the server which wraps express to produce your web server
 - `PsychicRouter` - the routing mechanism responsible for interpreting your `conf/routes.ts` file, as well as processing requests
 - `PsychicApp` - The configuration class which understands and configures your application
 - `cli/bin` - provides the cli utils for your application
 
 ### PsychicServer
 
-The `PsychicServer` is the wrapper around Koa. It is responsible for managing the Koa instance, as well as orchestrating the lifecycle events around its starting and stopping.
+The `PsychicServer` is the wrapper around express. It is responsible for managing the express instance, as well is orchestrating the lifecycle events around its starting and stopping.
 
 ### PsychicRouter
 

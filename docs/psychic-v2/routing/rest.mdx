@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-ai_summary: "REST verbs (GET, POST, PUT, PATCH, DELETE) can be used to define routes. Top-level routes require explicit controller and action. Supports Koa middleware as second argument or in array for multiple middleware."
+ai_summary: "REST verbs (GET, POST, PUT, PATCH, DELETE) can be used to define routes. Top-level routes require explicit controller and action. Supports Express middleware as second argument or in array for multiple middleware."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -38,10 +38,10 @@ Whenever providing a top-level route, Psychic will not attempt to infer the cont
 
 ## Middleware
 
-You can provide Koa middleware directly to a route by sending a callback function as the second argument to any method, i.e.:
+You can provide Express middleware directly to a route by sending a callback function as the second argument to any method, i.e.:
 
 ```ts
-r.get('ping', async (ctx, next) => {
-  ctx.body = { hello: 'world' }
+r.get('ping', (req, res, next) => {
+  res.json({ hello: 'world' })
 })
 ```

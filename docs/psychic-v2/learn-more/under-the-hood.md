@@ -2,7 +2,7 @@
 sidebar_position: 2
 title: Under the hood
 pagination_next: null
-ai_summary: 'Dream uses Kysely for database queries, generates types from database introspection. Psychic wraps Koa with MVC patterns, automatic OpenAPI generation. Decorators require syncing for types. Circular dependencies handled with lookup method. Node.js >= 22 recommended for decorator support.'
+ai_summary: 'Dream uses Kysely for database queries, generates types from database introspection. Psychic wraps Express with MVC patterns, automatic OpenAPI generation. Decorators require syncing for types. Circular dependencies handled with lookup method. Node.js >= 22 recommended for decorator support.'
 ---
 
 ## Dream
@@ -23,15 +23,11 @@ The types generated for kysely are located in `src/types/db.ts`. They take sligh
 
 ## Psychic
 
-Psychic provides the web server bindings for a Psychic application. You can essentially think of it as a light wrapper around [koa](https://koajs.com). However, Psychic uses conventional MVC (Model-View-Controller) patterns, so it provides a custom routing system to point routes to controllers within your application, further enhancing these controllers with powerful utilities to bind with Dream models and Serializers and automatically generate powerful openapi documents for your application.
+Psychic provides the web server bindings for a Psychic application. You can essentially think of it as a light wrapper around [express](https://expressjs.com). However, Psychic uses conventional MVC (Model-View-Controller) patterns, so it provides a custom routing system to point routes to controllers within your application, further enhancing these controllers with powerful utilities to bind with Dream models and Serializers and automatically generate powerful openapi documents for your application.
 
-### koa
+### express
 
-Koa is a modern, minimalistic web framework for Node.js designed by the team behind Express. We have selected it for its elegant middleware composition using async/await and its flexibility for building robust web applications. By default, we configure Koa to leverage the `@koa/cors` and `koa-bodyparser` libraries, but expose the configuration to you in `conf/app.ts`, enabling you to easily make adjustments. In addition, we provide lifecycle hooks for startup, enabling you to patch in Koa middleware to your heart's desire!
-
-:::tip HTTP Headers in Koa
-Koa automatically lowercases all HTTP header names. When accessing request headers via `ctx.get()` or setting response headers via `ctx.set()`, always use lowercase header names (e.g., `ctx.get('content-type')` instead of `ctx.get('Content-Type')`).
-:::
+Express.js is a very popular, minimalistic web framework for Node.js. We have selected it so that those interested in tapping into the bountiful dev tools built around the Express.js ecosystem, they would still have a way to do that when using Psychic. By default, we configure Express to leverage the `cors`, `cookie`, and `body-parser` libraries, but exposes the configuration to you in `conf/app.ts`, enabling you to easily make adjustments. In addition, we provide lifecycle hooks for startup, enabling you to patch in Express middleware to your heart's desire!
 
 ### openapi
 

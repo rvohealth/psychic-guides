@@ -45,7 +45,7 @@ Doing this will splat the returned object into the end of the `types/psychic.ts`
 
 ### server:init:before-middleware
 
-When the Psychic web server is starting, this is the first hook to run. At this stage, Psychic has not processed any Koa middleware, nor has it processed your routes. It is the perfect spot to establish logging, or any other monitoring tools:
+When the Psychic web server is starting, this is the first hook to run. At this stage, Psychic has not processed any Express middleware, nor has it processed your routes. It is the perfect spot to establish logging, or any other monitoring tools:
 
 ```ts
 // conf/app.ts, or any initializer
@@ -53,7 +53,7 @@ When the Psychic web server is starting, this is the first hook to run. At this 
 export default async (app: PsychicApp) => {
   app.on('server:init:before-middleware', (psychicServer: PsychicServer) => {
     // set up logging, or whatever else you need.
-    psychicServer.koaApp.use(...)
+    psychicServer.expressApp.use(...)
   })
 }
 ```
@@ -67,23 +67,23 @@ This hook is run while the web server is starting. It specifically runs after th
 
 export default async (app: PsychicApp) => {
   app.on('server:init:after-middleware', (psychicServer: PsychicServer) => {
-    // set up additional koa middleware
-    psychicServer.koaApp.use(...)
+    // set up additional express middleware
+    psychicServer.expressApp.use(...)
   })
 }
 ```
 
 ### server:init:after-routes
 
-This hook is run while the web server is starting. It specifically runs after the `server:init:after-middleware` hooks have run, and after the `conf/routes.ts` file has been processed. At this stage, both psychic and koa will know about your application's routes.
+This hook is run while the web server is starting. It specifically runs after the `server:init:after-middleware` hooks have run, and after the `conf/routes.ts` file has been processed. At this stage, both psychic and express will know about your application's routes.
 
 ```ts
 // conf/app.ts, or any initializer
 
 export default async (app: PsychicApp) => {
   app.on('server:init:after-routes', (psychicServer: PsychicServer) => {
-    // set up additional koa middleware, or do something else
-    psychicServer.koaApp.use(...)
+    // set up additional express middleware, or do something else
+    psychicServer.expressApp.use(...)
   })
 }
 ```
@@ -124,7 +124,7 @@ This hook is run when the web server has errored.
 // conf/app.ts, or any initializer
 
 export default async (app: PsychicApp) => {
-  app.on('server:error', (error, ctx) => {
+  app.on('server:error', (error, req, res) => {
     // handle that error!
   })
 }

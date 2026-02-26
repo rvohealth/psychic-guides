@@ -1,0 +1,10 @@
+{
+  "label": "Psychic 2.0 (Express)",
+  "position": 999,
+  "collapsible": true,
+  "collapsed": true,
+  "link": {
+    "type": "doc",
+    "id": "psychic-v2/README"
+  }
+}

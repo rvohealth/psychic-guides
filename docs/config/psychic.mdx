@@ -173,7 +173,7 @@ export default (psy: Psyconf) => {
 
 ### cookie
 
-Use the `PsychicApp#set` method to apply cookie options. Cookie options are driven through the express-cookie package.
+Use the `PsychicApp#set` method to apply cookie options. Cookie options are driven through the koa cookie handling.
 
 ```ts
 export default (psy: Psyconf) => {
@@ -229,7 +229,7 @@ export default (psy: Psyconf) => {
 
 ### cors
 
-Use the `PsychicApp#set` method to apply cors options. Cors options are driven through the express-cors package.
+Use the `PsychicApp#set` method to apply cors options. Cors options are driven through the `@koa/cors` package.
 
 ```ts
 export default (psy: Psyconf) => {
