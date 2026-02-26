@@ -244,6 +244,8 @@ Psychic uses information from the routes, models, serializers, and an @OpenAPI d
 
 This facilitates agile development and, when using a monorepo with a client web application or applications, a full behavior driven development (BDD) workflow. The resulting OpenAPI specs can then be used by mobile teams to develop the corresponding mobile features.
 
+The OpenAPI spec can also be leveraged to automatically stringify using [fast-json-stringify](https://www.npmjs.com/package/fast-json-stringify), speeding up JSON stringification from 2-5× (once the endpoint is hit for the first time and the compiled stringification function generated—which takes a few milliseconds on the first call—and cached). Just set `fastJsonStringify: true` in the OpenAPI decorator options.
+
 ```ts
 // controllers/V1/Host/PlacesController.ts
 
@@ -252,6 +254,7 @@ export default class V1HostPlacesController extends AuthedController {
   // containing all of the "safeParams" fields from the model.
   @OpenAPI(Place, {
     status: 201,
+    fastJsonStringify: true,
     responses: {
       201: {
         type: 'string',
@@ -352,6 +355,7 @@ Dream and Psychic are built on trusted open source pacakges, which not only prov
 - [kysely](https://kysely.dev) (used for driving the Dream ORM)
 - [koa](https://koajs.com) (drives the underlying web server)
 - [openapi](https://www.openapis.org) (drives integration with front end clients)
+- [fast-json-stringify](https://www.npmjs.com/package/fast-json-stringify) (automatic fast JSON stringification based on OpenAPI derived schema compilation)
 - [luxon](https://moment.github.io/luxon/#/?id=luxon) (Dream’s [DateTime](/docs/utils/date-time/date-time), [CalendarDate](/docs/utils/date-time/calendar-date), [ClockTime](/docs/utils/date-time/clock-time), and [ClockTimeTz](/docs/utils/date-time/clock-time-tz) leverage Luxon for date/time math)
 - [node-pg](https://node-postgres.com) (used for driving the ORM)
 - [ioredis](https://github.com/redis/ioredis) (adds node bindings to redis, enabling us to support both distributed websocket systems, as well as background job systems)
