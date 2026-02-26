@@ -2,7 +2,7 @@
 sidebar_position: 3
 title: passport
 pagination_next: null
-ai_summary: "Tutorial for integrating Passport.js with Psychic using local strategy. Covers middleware setup, authentication endpoints, spec coverage. Uses Koa middleware for passport integration with koa-passport and koa-session. Provides example with valid/invalid credential handling."
+ai_summary: "Tutorial for integrating Passport.js with Psychic using local strategy. Covers middleware setup, authentication endpoints, spec coverage. Uses Express middleware for passport integration. Provides example with valid/invalid credential handling."
 ---
 
 # Integrating with passport
@@ -13,20 +13,16 @@ We are going to skip over provisioning steps for the app, since that can be foun
 
 ## Middleware
 
-Psychic has a concept of middleware which piggy-backs off of Koa, enabling you compose in the routing layer as though you were in a Koa app.
+Psychic has a concept of middleware which piggy-backs off of express, enabling you compose in the routing layer as though you were in an express app.
 
 ```ts
 // conf/routes.ts
 
 ...
-  r.post('/sign-in', async (ctx, next) => {
-    ctx.body = { hello: 'world' }
+  r.post('/sign-in', (req, res) => {
+    res.json({ hello: 'world' })
   })
 ```
-
-:::info Psychic 2.0 (Express-based)
-If you're using Psychic 2.0 with Express-based Passport integration, see the [Psychic 2.0 Passport tutorial](/docs/psychic-v2/tutorials/passport).
-:::
 
 For more information, see the [Middleware guides](/docs/routing/middleware).
 
@@ -79,41 +75,37 @@ We will need a User model to be able to sign in with, so let's go ahead and conf
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
-With our User model created, lets install the necessary dependencies for the local authentication strategy. For Psychic 3.0 (Koa-based), we'll use `koa-passport` and `koa-session`:
+With our User model created, lets install the necessary dependencies for the local authentication strategy. We will also bring in the session package so that we can add http-only cookies to our requests.
 
 <PackageManagerTabs
-  code={`{{PM}} add koa-passport passport-local koa-session @types/koa-passport @types/passport-local @types/koa-session`}
+  code={`{{PM}} add passport passport-local @types/passport @types/passport-local express-session @types/express-session`}
 />
 
-First, let's configure passport in the `server:init:before-middleware` hook, along with koa-session (which is required by koa-passport):
+First, let's configure passport, as well as express-session, which is required by passport:
 
 ```ts
 // conf/app.ts
-import koaSession from 'koa-session'
-import passport from 'koa-passport'
+import session from 'express-session'
+import passport from 'passport'
 import { Strategy as LocalStrategy } from 'passport-local'
 
-export default async (psy: PsychicApp) => {
-  // ... other configuration
-
-  psy.on('server:init:before-middleware', server => {
-    // Set up session keys (required by koa-session)
-    server.koaApp.keys = [AppEnv.string('APP_ENCRYPTION_KEY')]
-    
-    // Integrate koa with koa-session
-    server.koaApp.use(koaSession({
-      maxAge: 86400000, // 1 day in milliseconds
+...
+  // integrate express with express-session
+  psy.use(session({
+    secret: AppEnv.string('APP_ENCRYPTION_KEY'),
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: true,
       httpOnly: true,
-      secure: AppEnv.isProduction,
-    }, server.koaApp))
+    },
+  }))
 
-    // Integrate koa-session with passport
-    server.koaApp.use(passport.session())
+  // integrate passport with express-session
+  psy.use(passport.session())
 
-    // Integrate koa with passport
-    server.koaApp.use(passport.initialize())
-  })
-}
+  // integrate express with passport
+  psy.use(passport.initialize())
 ```
 
 passport requires us to provide serialize and deserialize callback functions. these are used to prep your user for storage in a cookie, and then to pull that same data out of a cookie and use it to pull a user from your db.
@@ -152,7 +144,7 @@ Next, let's provide the new passport middleware in the routing layer, which will
 
 ```ts
 // conf/routes.ts
-import passport from 'koa-passport'
+import passport from 'passport'
 import User from '../app/models/User.js'
 
 ...
@@ -161,17 +153,15 @@ import User from '../app/models/User.js'
 
     // this is the success callback, given that
     // the authentication strategy passed.
-    async (ctx, next) => {
-      ctx.body = { id: (ctx.state.user as User)?.id }
+    (req, res) => {
+      res.json({ id: (req.user as User)?.id })
     },
   ])
 ```
 
-Note that in Koa, the authenticated user is available at `ctx.state.user` instead of `req.user`.
-
 ## Integrating into your AuthedController
 
-In order to make use of the passport session that was established, let's tap into it using the `AuthedController`. Note that in Koa, the user is available at `ctx.state.user`:
+In order to make use of the passport session that was established, let's tap into it using the `AuthedController`, like so:
 
 ```ts
 // test-app/src/app/controllers/AuthedController.ts
@@ -184,7 +174,7 @@ export default class AuthedController extends PsychicController {
 
   @BeforeAction()
   public async authenticate() {
-    const user = this.ctx.state.user
+    const user = this.req.user
     if (!user) return this.unauthorized()
     this.currentUser = user!
   }
@@ -193,6 +183,6 @@ export default class AuthedController extends PsychicController {
 
 ## Final thoughts
 
-Psychic is meant to integrate with Koa flexibly, so you can choose how to provide authentication to your application. I would definitely recommend pushing beyond basic password authentication - that was only done for the sake of simplicity in demonstrating, since it doesn't involve me grabbing any API keys for any third party auth services.
+Psychic is meant to integrate with express flexibly, so how you choose to provide the authentication to your application. I would definitely recommend pushing beyond basic password authentication, that was only done for the sake of simplicity in demonstrating, since it doesn't involve me grabbing any api keys for any third party auth services.
 
 I hope you enjoyed this tutorial, and good luck in your future journeys with Dream and Psychic!
