@@ -1,0 +1,417 @@
+---
+sidebar_position: 3
+ai_summary: "CalendarDate handles database date columns (year-month-day). Automatically converted when loading models. Provides date operations without timezone math. Never use JavaScript's Date class. Create via today(), fromISO(), fromObject(), fromDateTime(). New API: diff() returns objects like { days: 5 }."
+---
+
+# CalendarDate
+
+:::danger Avoid JavaScript's Date Class
+**Never use JavaScript's native `Date` class in Psychic applications.** For dates (year-month-day), always use Dream's `CalendarDate`. For timestamps, use `DateTime`. Dream's classes provide built-in math, formatting, and reliable date operations.
+
+```ts
+// ❌ DON'T DO THIS
+const badDate = new Date('2024-01-15')
+const badToday = new Date()
+
+// ✅ DO THIS INSTEAD
+import { CalendarDate, DateTime } from '@rvoh/dream'
+const goodDate = CalendarDate.fromISO('2024-01-15')
+const goodToday = CalendarDate.today()
+const nextWeek = goodToday.plus({ weeks: 1 })
+const formatted = goodDate.toLocaleString({ month: 'long', day: 'numeric', year: 'numeric' })
+```
+
+:::
+
+## Overview
+
+`CalendarDate` represents a date without time or timezone information. It provides a clean way to deal with dates without worrying about timezone math, making it ideal for:
+
+- Birthdays and anniversaries
+- Event dates
+- Scheduling (when only the date matters)
+- Date ranges and calendars
+
+The fundamental unit is the **day** - there are no hours, minutes, or seconds.
+
+### Postgres Mapping
+
+Database `date` columns are automatically converted to `CalendarDate` objects when Dream models are loaded from the database.
+
+### Import
+
+```ts
+import { CalendarDate } from '@rvoh/dream'
+```
+
+## Creating CalendarDate Instances
+
+### Current Date
+
+```ts
+// Today in UTC (default)
+CalendarDate.today()
+
+// Today in a specific timezone
+CalendarDate.today({ zone: 'America/Chicago' })
+CalendarDate.today({ zone: 'Europe/London' })
+
+// Tomorrow and yesterday
+CalendarDate.tomorrow()
+CalendarDate.tomorrow({ zone: 'America/New_York' })
+CalendarDate.yesterday()
+CalendarDate.yesterday({ zone: 'America/New_York' })
+```
+
+### From Strings
+
+```ts
+// From ISO 8601 date string
+CalendarDate.fromISO('2024-01-15')
+CalendarDate.fromISO('2024-01-15T14:30:45Z') // time portion ignored
+CalendarDate.fromISO('2024-01-15', { zone: 'America/Chicago' })
+
+// From SQL date string
+CalendarDate.fromSQL('2024-01-15')
+
+// From custom format
+CalendarDate.fromFormat('01/15/2024', 'MM/dd/yyyy')
+CalendarDate.fromFormat('15-01-2024', 'dd-MM-yyyy')
+CalendarDate.fromFormat('May 25, 1982', 'MMMM dd, yyyy')
+CalendarDate.fromFormat('mai 25, 1982', 'MMMM dd, yyyy', { locale: 'fr' })
+```
+
+### From Components
+
+```ts
+// From object
+CalendarDate.fromObject({ year: 2024, month: 1, day: 15 })
+CalendarDate.fromObject({ year: 2024, month: 1 }) // day defaults to 1
+```
+
+### From DateTime
+
+```ts
+import { DateTime } from '@rvoh/dream'
+
+const dateTime = DateTime.fromISO('2024-01-15T14:30:45Z')
+CalendarDate.fromDateTime(dateTime) // extracts date portion
+```
+
+### From JavaScript Date
+
+```ts
+CalendarDate.fromJSDate(new Date())
+CalendarDate.fromJSDate(new Date(), { zone: 'America/New_York' })
+```
+
+## Formatting and Output
+
+### ISO Format
+
+```ts
+const date = CalendarDate.fromObject({ year: 2024, month: 1, day: 15 })
+
+// ISO date string
+date.toISO() // '2024-01-15'
+date.toISODate() // '2024-01-15' (alias)
+date.toString() // '2024-01-15'
+```
+
+### SQL Format
+
+```ts
+const date = CalendarDate.fromISO('2024-01-15')
+
+date.toSQL() // '2024-01-15'
+```
+
+### Localized Format
+
+```ts
+const date = CalendarDate.fromISO('2024-01-15')
+
+// Default locale format
+date.toLocaleString() // '1/15/2024' (in US locale)
+
+// Custom format options
+date.toLocaleString({
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+}) // 'January 15, 2024'
+
+date.toLocaleString({
+  month: 'short',
+  day: 'numeric',
+}) // 'Jan 15'
+
+date.toLocaleString({ weekday: 'long' }) // 'Monday'
+```
+
+### For Serialization
+
+```ts
+const date = CalendarDate.today()
+
+// JSON serialization
+date.toJSON() // '2024-01-15'
+JSON.stringify({ date }) // '{"date":"2024-01-15"}'
+
+// valueOf
+date.valueOf() // '2024-01-15'
+```
+
+## Getters and Properties
+
+```ts
+const date = CalendarDate.fromISO('2024-01-15')
+
+date.year // 2024
+date.month // 1 (January)
+date.day // 15
+date.weekdayName // 'monday', 'tuesday', etc.
+```
+
+## Conversions
+
+```ts
+const date = CalendarDate.fromISO('2024-01-15')
+
+// To DateTime (at midnight UTC)
+const dt = date.toDateTime()
+
+// To JavaScript Date (at midnight UTC)
+const jsDate = date.toJSDate()
+```
+
+## Math Operations
+
+### Adding and Subtracting
+
+```ts
+const date = CalendarDate.fromISO('2024-01-15')
+
+// Add duration
+date.plus({ days: 5 }) // 2024-01-20
+date.plus({ weeks: 2 }) // 2024-01-29
+date.plus({ months: 3 }) // 2024-04-15
+date.plus({ years: 1 }) // 2025-01-15
+
+// Combine units
+date.plus({ months: 2, days: 10 }) // 2024-03-25
+
+// Subtract duration
+date.minus({ days: 5 }) // 2024-01-10
+date.minus({ weeks: 2 }) // 2024-01-01
+date.minus({ months: 1 }) // 2023-12-15
+```
+
+### Setting Components
+
+```ts
+const date = CalendarDate.fromISO('2024-01-15')
+
+// Set specific components
+date.set({ year: 2025 }) // 2025-01-15
+date.set({ month: 6 }) // 2024-06-15
+date.set({ day: 1 }) // 2024-01-01
+date.set({ year: 2025, day: 20 }) // 2025-01-20
+```
+
+### Difference
+
+The `diff()` method returns an object with the requested units, making it easy to work with multiple time components.
+
+```ts
+const d1 = CalendarDate.fromISO('2024-01-20')
+const d2 = CalendarDate.fromISO('2024-01-15')
+
+// Single unit
+d1.diff(d2, 'days') // { days: 5 }
+d1.diff(d2, 'weeks') // { weeks: 0.714... }
+d1.diff(d2, 'months') // { months: 0.161... }
+
+// Multiple units
+d1.diff(d2, ['days']) // { days: 5 }
+d1.diff(d2, ['months', 'days']) // { months: 0, days: 5 }
+
+// All units (default: years, months, days)
+d1.diff(d2) // { years: 0, months: 0, days: 5 }
+
+// Larger differences
+const future = CalendarDate.fromISO('2025-03-20')
+const past = CalendarDate.fromISO('2024-01-15')
+future.diff(past, ['years', 'months', 'days'])
+// { years: 1, months: 2, days: 5 }
+
+// Diff from today
+d1.diffNow('days') // { days: -X } (negative if in past)
+d1.diffNow(['months', 'days'])
+```
+
+### Boundaries
+
+```ts
+const date = CalendarDate.fromISO('2024-01-15')
+
+// Start of period
+date.startOf('year') // 2024-01-01
+date.startOf('quarter') // 2024-01-01 (Q1)
+date.startOf('month') // 2024-01-01
+date.startOf('week') // 2024-01-08 (Monday)
+
+// End of period
+date.endOf('year') // 2024-12-31
+date.endOf('quarter') // 2024-03-31 (Q1)
+date.endOf('month') // 2024-01-31
+date.endOf('week') // 2024-01-14 (Sunday)
+```
+
+## Comparisons
+
+### Equality
+
+```ts
+const d1 = CalendarDate.fromISO('2024-01-15')
+const d2 = CalendarDate.fromISO('2024-01-15')
+const d3 = CalendarDate.fromISO('2024-01-16')
+
+d1.equals(d2) // true
+d1.equals(d3) // false
+
+// Can also use comparison operators
+d1 > d3 // false
+d1 < d3 // true
+d1 >= d2 // true
+```
+
+### Same Period
+
+```ts
+const d1 = CalendarDate.fromISO('2024-01-15')
+const d2 = CalendarDate.fromISO('2024-01-20')
+
+d1.hasSame(d2, 'year') // true
+d1.hasSame(d2, 'month') // true
+d1.hasSame(d2, 'week') // false
+d1.hasSame(d2, 'day') // false
+```
+
+### Min and Max
+
+```ts
+const d1 = CalendarDate.fromISO('2024-01-15')
+const d2 = CalendarDate.fromISO('2024-01-20')
+const d3 = CalendarDate.fromISO('2024-01-10')
+
+CalendarDate.min(d1, d2, d3) // d3 (2024-01-10)
+CalendarDate.max(d1, d2, d3) // d2 (2024-01-20)
+```
+
+## Usage with Models
+
+CalendarDate instances are automatically created when loading date columns from the database:
+
+```ts
+import { Model } from '@rvoh/psychic'
+import { CalendarDate } from '@rvoh/dream'
+
+class Person extends Model {
+  id!: number
+  name!: string
+  birthDate!: CalendarDate // date column
+  hireDate!: CalendarDate // date column
+}
+
+// Load from database
+const person = await Person.find(1)
+
+// All date fields are CalendarDate instances
+console.log(person.birthDate.toISO())
+console.log(person.hireDate.plus({ years: 1 }))
+
+// Calculate age
+const age = CalendarDate.today().diff(person.birthDate, 'years').years
+console.log(`Age: ${Math.floor(age)}`)
+
+// Modify and save
+person.hireDate = CalendarDate.fromISO('2024-06-15')
+await person.save()
+```
+
+## Common Patterns
+
+### Date Ranges
+
+```ts
+const start = CalendarDate.fromISO('2024-01-01')
+const end = CalendarDate.fromISO('2024-01-31')
+
+// Check if date is in range
+const date = CalendarDate.fromISO('2024-01-15')
+const inRange = date >= start && date <= end // true
+
+// Generate array of dates
+const dates: CalendarDate[] = []
+let current = start
+while (current <= end) {
+  dates.push(current)
+  current = current.plus({ days: 1 })
+}
+```
+
+### Age Calculation
+
+```ts
+const birthDate = CalendarDate.fromISO('1990-05-15')
+const today = CalendarDate.today()
+const age = Math.floor(today.diff(birthDate, 'years').years)
+```
+
+### Business Days
+
+```ts
+const date = CalendarDate.today()
+
+// Skip weekends
+let nextBusinessDay = date.plus({ days: 1 })
+while (['saturday', 'sunday'].includes(nextBusinessDay.weekdayName)) {
+  nextBusinessDay = nextBusinessDay.plus({ days: 1 })
+}
+```
+
+### Month Boundaries
+
+```ts
+const date = CalendarDate.fromISO('2024-01-15')
+
+const firstDayOfMonth = date.startOf('month') // 2024-01-01
+const lastDayOfMonth = date.endOf('month') // 2024-01-31
+
+// Days in month
+const daysInMonth = lastDayOfMonth.diff(firstDayOfMonth, 'days').days + 1
+```
+
+## Error Handling
+
+CalendarDate throws `InvalidCalendarDate` errors for invalid operations:
+
+```ts
+import { CalendarDate, InvalidCalendarDate } from '@rvoh/dream'
+
+try {
+  const date = CalendarDate.fromISO('invalid-date')
+} catch (e) {
+  if (e instanceof InvalidCalendarDate) {
+    console.error(e.message)
+  }
+}
+
+// Invalid dates
+try {
+  CalendarDate.fromISO('2023-02-29') // not a leap year
+} catch (e) {
+  // InvalidCalendarDate
+}
+```

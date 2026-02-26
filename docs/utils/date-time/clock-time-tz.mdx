@@ -1,0 +1,504 @@
+---
+sidebar_position: 5
+ai_summary: 'ClockTimeTz represents time with timezone (TIME WITH TIME ZONE in Postgres). Supports microsecond precision. Converts to UTC before saving to database. All output methods include timezone offset. Create via now(), fromISO(), fromSQL(), fromObject(), fromFormat(). Additional methods: setZone(), zoneName, offset.'
+---
+
+# ClockTimeTz
+
+:::danger Avoid JavaScript's Date Class
+**Never use JavaScript's native `Date` class in Psychic applications.** For time-only values with timezone, use Dream's `ClockTimeTz`. JavaScript's `Date` always includes date information, causing confusion. Dream's classes provide precise control over what you're representing.
+
+```ts
+// ❌ DON'T DO THIS
+const badTime = new Date('1970-01-01T14:30:45-05:00')
+
+// ✅ DO THIS INSTEAD
+import { ClockTimeTz } from '@rvoh/dream'
+const goodTime = ClockTimeTz.fromISO('14:30:45-05:00')
+const inNewYork = goodTime.setZone('America/New_York')
+```
+
+:::
+
+## Overview
+
+`ClockTimeTz` represents a time of day with timezone information. It's useful for:
+
+- Meeting times across timezones (e.g., "2:30 PM EST")
+- Scheduled events with timezone context
+- Time comparisons that need timezone awareness
+- Representing Postgres `TIME WITH TIME ZONE` fields
+
+**Key characteristics:**
+
+- Includes timezone offset information
+- Microsecond precision (6 decimal places)
+- No date component
+- **Converts to UTC prior to saving in database**
+- All output methods include timezone offset
+
+### Postgres Mapping
+
+Database `time with time zone` columns are automatically converted to `ClockTimeTz` objects when Dream models are loaded from the database.
+
+**Important:** Like `DateTime`, `ClockTimeTz` converts to UTC prior to saving in the database, ensuring consistent timezone representation.
+
+### Import
+
+```ts
+import { ClockTimeTz } from '@rvoh/dream'
+```
+
+## Creating ClockTimeTz Instances
+
+### Current Time
+
+```ts
+// Current time in UTC (default)
+ClockTimeTz.now()
+
+// Current time in a specific timezone
+ClockTimeTz.now({ zone: 'America/New_York' })
+ClockTimeTz.now({ zone: 'Europe/London' })
+ClockTimeTz.now({ zone: 'Asia/Tokyo' })
+```
+
+### From Components
+
+```ts
+// From object (defaults to UTC if no zone specified)
+ClockTimeTz.fromObject({ hour: 14, minute: 30 })
+ClockTimeTz.fromObject({ hour: 14, minute: 30, second: 45 })
+ClockTimeTz.fromObject({
+  hour: 14,
+  minute: 30,
+  second: 45,
+  millisecond: 123,
+  microsecond: 456,
+})
+
+// With timezone
+ClockTimeTz.fromObject({ hour: 14, minute: 30 }, { zone: 'America/New_York' })
+```
+
+:::warning Named Timezone Zones and DST
+When using `fromObject()` with named timezones like `'America/New_York'`, the resulting `ClockTimeTz` will have a different time and offset depending on whether it's created during daylight saving time or not. This is because ClockTimeTz uses the current date internally to determine the correct offset for named zones.
+
+```ts
+// Created in summer (DST active in America/New_York)
+ClockTimeTz.fromObject({ hour: 14, minute: 30 }, { zone: 'America/New_York' })
+// Will have offset -04:00 (EDT)
+
+// Created in winter (DST inactive in America/New_York)
+ClockTimeTz.fromObject({ hour: 14, minute: 30 }, { zone: 'America/New_York' })
+// Will have offset -05:00 (EST)
+```
+
+For consistent behavior, prefer using UTC or fixed offsets.
+:::
+
+### From Strings
+
+```ts
+// From ISO 8601 time string
+ClockTimeTz.fromISO('14:30:45-05:00')
+ClockTimeTz.fromISO('14:30:45.123456-05:00')
+ClockTimeTz.fromISO('14:30:45Z') // UTC
+ClockTimeTz.fromISO('14:30:45+02:00')
+
+// Interpreted as UTC if no timezone in string
+ClockTimeTz.fromISO('14:30:45') // treated as UTC
+
+// Override timezone
+ClockTimeTz.fromISO('14:30:45', { zone: 'America/Chicago' })
+
+// From SQL time string
+ClockTimeTz.fromSQL('14:30:45-05:00')
+ClockTimeTz.fromSQL('14:30:45.123456+05:30')
+ClockTimeTz.fromSQL('14:30:45', { zone: 'America/Chicago' })
+
+// From custom format
+ClockTimeTz.fromFormat('14:30:45 -05:00', 'HH:mm:ss ZZ')
+ClockTimeTz.fromFormat('2:30 PM', 'h:mm a')
+ClockTimeTz.fromFormat('14:30:45', 'HH:mm:ss', { zone: 'America/New_York' })
+```
+
+### From DateTime
+
+```ts
+import { DateTime } from '@rvoh/dream'
+
+const dt = DateTime.now({ zone: 'America/New_York' })
+ClockTimeTz.fromDateTime(dt) // extracts time portion with timezone
+```
+
+### From JavaScript Date
+
+```ts
+ClockTimeTz.fromJSDate(new Date())
+ClockTimeTz.fromJSDate(new Date(), { zone: 'America/New_York' })
+```
+
+## Formatting and Output
+
+All output methods **include timezone offset** by default.
+
+### ISO Format
+
+```ts
+const time = ClockTimeTz.fromISO('14:30:45.123456-05:00')
+
+// ISO time with timezone offset
+time.toISO() // '14:30:45.123456-05:00'
+time.toISOTime() // '14:30:45.123456-05:00' (alias)
+
+// With options
+time.toISO({ suppressMilliseconds: true }) // '14:30:45-05:00'
+time.toISO({ suppressSeconds: true }) // '14:30-05:00'
+time.toISO({ format: 'basic' }) // '143045.123456-0500'
+```
+
+### SQL Format
+
+```ts
+const time = ClockTimeTz.fromISO('14:30:45.123456-05:00')
+
+// SQL time with timezone offset (space before offset)
+time.toSQL() // '14:30:45.123456 -05:00'
+time.toSQLTime() // '14:30:45.123456 -05:00' (alias)
+```
+
+### Localized Format
+
+```ts
+const time = ClockTimeTz.fromISO('14:30:45-05:00')
+
+// Default locale
+time.toLocaleString() // '2:30 PM' (format varies by locale)
+
+// Custom format options
+time.toLocaleString({
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZoneName: 'short',
+}) // '02:30 PM EST'
+
+time.toLocaleString({
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+}) // '14:30'
+
+time.toLocaleString({
+  hour: 'numeric',
+  minute: '2-digit',
+  second: '2-digit',
+  timeZoneName: 'long',
+}) // '2:30:00 PM Eastern Standard Time'
+```
+
+### For Serialization
+
+```ts
+const time = ClockTimeTz.now()
+
+// JSON serialization (ISO format with timezone)
+time.toJSON() // '14:30:45.123456-05:00'
+JSON.stringify({ time }) // '{"time":"14:30:45.123456-05:00"}'
+
+// String conversion
+time.toString() // '14:30:45.123456-05:00'
+String(time)
+
+// valueOf
+time.valueOf() // '14:30:45.123456-05:00'
+```
+
+## Getters and Properties
+
+### Time Components
+
+```ts
+const time = ClockTimeTz.fromISO('14:30:45.123456-05:00')
+
+time.hour // 14
+time.minute // 30
+time.second // 45
+time.millisecond // 123
+time.microsecond // 456
+```
+
+### Timezone Information
+
+```ts
+const time = ClockTimeTz.fromISO('14:30:45-05:00')
+
+time.zoneName // 'UTC-5' (or IANA name if set with setZone)
+time.offset // -300 (offset in minutes from UTC)
+```
+
+## Timezone Operations
+
+```ts
+const time = ClockTimeTz.fromISO('14:30:45-05:00')
+
+// Convert to different timezone (time value changes to same instant)
+const utc = time.setZone('UTC') // 19:30:45+00:00
+const tokyo = time.setZone('Asia/Tokyo') // 04:30:45+09:00 (next day)
+const ny = time.setZone('America/New_York')
+
+// Get timezone info
+console.log(ny.zoneName) // 'America/New_York'
+console.log(ny.offset) // -300 (minutes from UTC, varies with DST)
+```
+
+## Conversions
+
+```ts
+const time = ClockTimeTz.fromISO('14:30:45-05:00')
+
+// To DateTime (with base date and timezone)
+const dt = time.toDateTime()
+```
+
+## Math Operations
+
+### Adding and Subtracting
+
+```ts
+const time = ClockTimeTz.fromISO('14:30:00-05:00')
+
+// Add duration (preserves timezone)
+time.plus({ hours: 2 }) // 16:30:00-05:00
+time.plus({ hours: 2, minutes: 15 }) // 16:45:00-05:00
+time.plus({ minutes: 30 }) // 15:00:00-05:00
+time.plus({ milliseconds: 500, microseconds: 250 })
+
+// Wraps around midnight (timezone preserved)
+time.plus({ hours: 10 }) // 00:30:00-05:00 (next day)
+
+// Subtract duration
+time.minus({ hours: 2 }) // 12:30:00-05:00
+time.minus({ minutes: 45 }) // 13:45:00-05:00
+
+// Wraps around midnight
+time.minus({ hours: 15 }) // 23:30:00-05:00 (previous day)
+```
+
+### Setting Components
+
+```ts
+const time = ClockTimeTz.fromISO('14:30:45-05:00')
+
+// Set specific components (timezone preserved)
+time.set({ hour: 9 }) // 09:30:45-05:00
+time.set({ minute: 0 }) // 14:00:45-05:00
+time.set({ hour: 16, minute: 45 }) // 16:45:45-05:00
+time.set({ microsecond: 500 }) // 14:30:45.000500-05:00
+```
+
+### Difference
+
+The `diff()` method returns an object with the requested time units.
+
+```ts
+const t1 = ClockTimeTz.fromISO('16:45:00-05:00')
+const t2 = ClockTimeTz.fromISO('14:30:00-05:00')
+
+// Single unit
+t1.diff(t2, 'hours') // { hours: 2.25 }
+t1.diff(t2, 'minutes') // { minutes: 135 }
+t1.diff(t2, 'seconds') // { seconds: 8100 }
+
+// Multiple units
+t1.diff(t2, ['hours', 'minutes'])
+// { hours: 2, minutes: 15 }
+
+// With microsecond precision
+const t3 = ClockTimeTz.fromISO('16:45:30.123456-05:00')
+const t4 = ClockTimeTz.fromISO('14:30:15.100200-05:00')
+t3.diff(t4, ['hours', 'minutes', 'seconds', 'milliseconds', 'microseconds'])
+// { hours: 2, minutes: 15, seconds: 15, milliseconds: 23, microseconds: 256 }
+
+// Different timezones (automatically accounts for offset)
+const estTime = ClockTimeTz.fromISO('14:30:00-05:00')
+const pstTime = ClockTimeTz.fromISO('11:30:00-08:00')
+estTime.diff(pstTime, 'hours') // { hours: 0 } (same instant)
+
+// All units (default)
+t1.diff(t2)
+// { hours: 2, minutes: 15, seconds: 0, milliseconds: 0, microseconds: 0 }
+```
+
+### Boundaries
+
+```ts
+const time = ClockTimeTz.fromISO('14:30:45-05:00')
+
+// Start of period (timezone preserved)
+time.startOf('hour') // 14:00:00.000000-05:00
+time.startOf('minute') // 14:30:00.000000-05:00
+time.startOf('second') // 14:30:45.000000-05:00
+
+// End of period (timezone preserved)
+time.endOf('hour') // 14:59:59.999999-05:00
+time.endOf('minute') // 14:30:59.999999-05:00
+time.endOf('second') // 14:30:45.999999-05:00
+```
+
+## Comparisons
+
+### Equality
+
+```ts
+const t1 = ClockTimeTz.fromISO('14:30:00-05:00')
+const t2 = ClockTimeTz.fromISO('14:30:00-05:00')
+const t3 = ClockTimeTz.fromISO('14:30:00-08:00')
+
+t1.equals(t2) // true
+t1.equals(t3) // false (different timezone offset)
+
+// Same instant, different timezones
+const estTime = ClockTimeTz.fromISO('14:30:00-05:00')
+const utcTime = ClockTimeTz.fromISO('19:30:00+00:00')
+estTime.equals(utcTime) // true (same instant in time)
+```
+
+### Same Period
+
+```ts
+const t1 = ClockTimeTz.fromISO('14:30:45-05:00')
+const t2 = ClockTimeTz.fromISO('14:45:30-05:00')
+
+t1.hasSame(t2, 'hour') // true
+t1.hasSame(t2, 'minute') // false
+t1.hasSame(t2, 'second') // false
+```
+
+### Min and Max
+
+```ts
+const t1 = ClockTimeTz.fromISO('14:30:00-05:00')
+const t2 = ClockTimeTz.fromISO('16:45:00-05:00')
+const t3 = ClockTimeTz.fromISO('09:15:00-05:00')
+
+ClockTimeTz.min(t1, t2, t3) // t3 (09:15:00-05:00)
+ClockTimeTz.max(t1, t2, t3) // t2 (16:45:00-05:00)
+
+// Across timezones (compares actual instants)
+const estTime = ClockTimeTz.fromISO('14:30:00-05:00')
+const pstTime = ClockTimeTz.fromISO('11:30:00-08:00')
+ClockTimeTz.min(estTime, pstTime) // same instant, returns first
+```
+
+## Usage with Models
+
+ClockTimeTz instances are automatically created when loading `time with time zone` columns from the database:
+
+```ts
+import { Model } from '@rvoh/psychic'
+import { ClockTimeTz } from '@rvoh/dream'
+
+class Meeting extends Model {
+  id!: number
+  title!: string
+  startTime!: ClockTimeTz // time with time zone
+  endTime!: ClockTimeTz // time with time zone
+}
+
+// Load from database
+const meeting = await Meeting.find(1)
+
+// All time fields are ClockTimeTz instances
+console.log(meeting.startTime.toISO()) // '14:30:00.000000-05:00'
+console.log(meeting.startTime.zoneName) // 'America/New_York'
+
+// Convert to user's timezone
+const userTimezone = 'America/Los_Angeles'
+const localStart = meeting.startTime.setZone(userTimezone)
+console.log(localStart.toISO()) // '11:30:00.000000-08:00'
+
+// Modify and save (converts to UTC automatically)
+meeting.startTime = ClockTimeTz.fromISO('15:00:00-05:00')
+await meeting.save() // stored as UTC in database
+```
+
+## Common Patterns
+
+### Cross-Timezone Meeting Times
+
+```ts
+// Store meeting time with timezone
+const meetingTime = ClockTimeTz.fromISO('14:30:00-05:00') // 2:30 PM EST
+
+// Display in different timezones
+const forPST = meetingTime.setZone('America/Los_Angeles')
+console.log(forPST.toISO()) // '11:30:00-08:00' (11:30 AM PST)
+
+const forUTC = meetingTime.setZone('UTC')
+console.log(forUTC.toISO()) // '19:30:00+00:00'
+```
+
+### Duration Between Times Across Timezones
+
+```ts
+const start = ClockTimeTz.fromISO('14:30:00-05:00') // EST
+const end = ClockTimeTz.fromISO('16:45:00-08:00') // PST
+
+// Automatically accounts for timezone difference
+const duration = end.diff(start, ['hours', 'minutes'])
+// Calculates based on actual instant in time
+```
+
+### Recurring Events with Timezone
+
+```ts
+// Weekly meeting at 2:30 PM Eastern Time
+const meetingTime = ClockTimeTz.fromObject({ hour: 14, minute: 30 }, { zone: 'America/New_York' })
+
+// For attendees in other timezones
+const forLondon = meetingTime.setZone('Europe/London')
+const forTokyo = meetingTime.setZone('Asia/Tokyo')
+```
+
+### Business Hours Across Timezones
+
+```ts
+// Support hours: 9 AM - 5 PM Eastern
+const supportStart = ClockTimeTz.fromObject({ hour: 9, minute: 0 }, { zone: 'America/New_York' })
+const supportEnd = ClockTimeTz.fromObject({ hour: 17, minute: 0 }, { zone: 'America/New_York' })
+
+// What time is that in user's timezone?
+const userZone = 'America/Los_Angeles'
+console.log(supportStart.setZone(userZone).toISO()) // '06:00:00-08:00'
+console.log(supportEnd.setZone(userZone).toISO()) // '14:00:00-08:00'
+```
+
+## Error Handling
+
+ClockTimeTz throws `InvalidClockTimeTz` errors for invalid operations:
+
+```ts
+import { ClockTimeTz, InvalidClockTimeTz } from '@rvoh/dream'
+
+try {
+  const time = ClockTimeTz.fromISO('25:00:00') // invalid hour
+} catch (e) {
+  if (e instanceof InvalidClockTimeTz) {
+    console.error(e.message)
+  }
+}
+
+// Invalid time values
+try {
+  ClockTimeTz.fromObject({ hour: 25, minute: 0 }) // hour out of range
+} catch (e) {
+  // InvalidClockTimeTz
+}
+
+try {
+  ClockTimeTz.fromISO('invalid-time')
+} catch (e) {
+  // InvalidClockTimeTz
+}
+```
