@@ -289,7 +289,7 @@ In the above example, the `create` method will automatically generate an OpenAPI
 
 The OpenAPI spec for the `show` method is automatically defined by the "default" serializer declared on the Place model.
 
-Since the the OpenAPI decorator for the `index` method includes `cursorPaginate true`, the OpenAPI shape will reflect the `cursorPaginate` shape, with an array of results rendered using the "summary" serializer declared in the Place model's `serializers` getter. Alternatives to [cursorPaginate](/docs/openapi/pagination.mdx#scroll-pagination-cursor-based) for index endpoints are [paginate](/docs/openapi/pagination.mdx), for traditional pagination with page numbers (slower than `cursorPaginate` when results may include many records) and [many](/docs/openapi/controllers#many), for when pagination is unnecessary and you simply want to return an array of results.
+Since the the OpenAPI decorator for the `index` method includes `cursorPaginate true`, the OpenAPI shape will reflect the `cursorPaginate` shape, with an array of results rendered using the "summary" serializer declared in the Place model's `serializers` getter. Alternatives to [cursorPaginate](/docs/openapi/pagination#cursor-pagination) for index endpoints are [paginate](/docs/openapi/pagination.mdx), for traditional pagination with page numbers (slower than `cursorPaginate` when results may include many records) and [many](/docs/openapi/controllers#many), for when pagination is unnecessary and you simply want to return an array of results.
 
 You can do quite a lot with the OpenAPI decorator, so it is worth reading up on the [Openapi guides](/docs/openapi/overview) to unlock the full potential of our powerful openapi integration.
 
@@ -340,7 +340,7 @@ Dream and Psychic are built on trusted open source pacakges, which not only prov
 - [kysely](https://kysely.dev) (used for driving the Dream ORM)
 - [expressjs](https://expressjs.com) (drives the underlying web server)
 - [openapi](https://www.openapis.org) (drives integration with front end clients)
-- [luxon](https://moment.github.io/luxon/#/?id=luxon) (Dream’s [DateTime](/docs/utils/date-time/date-time), [CalendarDate](/docs/utils/date-time/calendar-date), [ClockTime](/docs/utils/date-time/clock-time), and [ClockTimeTz](/docs/utils/date-time/clock-time-tz) leverage Luxon for date/time math)
+- [luxon](https://moment.github.io/luxon/#/?id=luxon) (Dream's DateTime, CalendarDate, ClockTime, and ClockTimeTz leverage Luxon for date/time math)
 - [node-pg](https://node-postgres.com) (used for driving the ORM)
 - [ioredis](https://github.com/redis/ioredis) (adds node bindings to redis, enabling us to support both distributed websocket systems, as well as background job systems)
 - [bullmq](https://bullmq.io) (used for driving background jobs)
