@@ -1,0 +1,80 @@
+---
+sidebar_position: 1
+pagination_prev: null
+ai_summary: "Dream provides four date/time classes for Postgres fields: DateTime (timestamps with microseconds, stored as UTC), CalendarDate (dates without time), ClockTime (time without timezone), and ClockTimeTz (time with timezone, stored as UTC). Never use JavaScript's Date class."
+---
+
+# Date & Time Overview
+
+:::danger Avoid JavaScript's Date Class
+**Never use JavaScript's native `Date` class in Psychic applications.** Always use Dream's date and time classes. Dream's classes provide:
+
+- Built-in math operations (add/subtract durations)
+- Robust timezone handling
+- Microsecond precision (matching Postgres capabilities)
+- Reliable formatting and parsing
+- Type safety
+- Dream-native timestamp/date/time database column mapping
+
+```ts
+// ❌ DON'T DO THIS
+const badDate = new Date('2024-01-15')
+
+// ✅ DO THIS INSTEAD
+import { DateTime, CalendarDate, ClockTime, ClockTimeTz } from '@rvoh/dream'
+const datetime = DateTime.fromISO('2024-01-15T13:17:44.123456Z')
+const date = CalendarDate.fromISO('2024-01-15')
+const time = ClockTime.fromISO('13:17:44.123456')
+const timeTz = ClockTimeTz.fromISO('13:17:44.123456Z')
+```
+
+:::
+
+## Postgres Field Type Mapping
+
+Dream automatically converts Postgres date/time columns to the appropriate Dream class when loading models from the database:
+
+| Postgres Type                 | Dream Class                           | Description                                                    |
+| ----------------------------- | ------------------------------------- | -------------------------------------------------------------- |
+| `timestamp with time zone`    | [`DateTime`](./date-time.mdx)         | Full datetime with microsecond precision (stored as UTC in DB) |
+| `timestamp without time zone` | [`DateTime`](./date-time.mdx)         | Full datetime with microsecond precision (stored as UTC in DB) |
+| `date`                        | [`CalendarDate`](./calendar-date.mdx) | Calendar date (year-month-day only)                            |
+| `time without time zone`      | [`ClockTime`](./clock-time.mdx)       | Time of day without timezone                                   |
+| `time with time zone`         | [`ClockTimeTz`](./clock-time-tz.mdx)  | Time of day with timezone (stored as UTC in DB)                |
+
+## UTC Storage Convention
+
+:::info Database Storage
+Dream **always converts to UTC** before storing `DateTime` and `ClockTimeTz` values in the database. This ensures the database consistently represents timezones in UTC, preventing timezone-related bugs and making queries more reliable.
+
+When you load these values back from the database, you can convert them to any timezone you need using methods like `setZone()`.
+:::
+
+## Microsecond Precision
+
+All Dream date/time classes support **microsecond precision** (6 decimal places) to match Postgres's full datetime capabilities:
+
+- **Milliseconds**: First 3 digits (0-999)
+- **Microseconds**: Next 3 digits (0-999)
+
+```ts
+DateTime.fromISO('2024-01-15T10:30:45.123456Z')
+//                                    ^^^^^^
+//                                    123 ms + 456 µs
+```
+
+## Choosing the Right Class
+
+- **[`DateTime`](./date-time.mdx)** - Use for timestamps (both date and time). Handles timezones, provides full datetime operations.
+
+- **[`CalendarDate`](./calendar-date.mdx)** - Use for dates without time (birthdays, event dates, etc.). No timezone math.
+
+- **[`ClockTime`](./clock-time.mdx)** - Use for time of day without timezone (business hours, schedules). Timezone info is stripped.
+
+- **[`ClockTimeTz`](./clock-time-tz.mdx)** - Use for time of day with timezone (meeting times across timezones). Preserves timezone offset.
+
+## Import Path
+
+```ts
+import { DateTime, CalendarDate, ClockTime, ClockTimeTz } from '@rvoh/dream'
+```

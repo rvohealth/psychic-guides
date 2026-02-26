@@ -1,0 +1,563 @@
+---
+sidebar_position: 2
+pagination_prev: null
+ai_summary: 'DateTime handles database timestamp columns with microsecond precision. Automatically converted when loading models. Always stored as UTC in database. Provides timezone manipulation, formatting, math operations, and comparisons. Import from @rvoh/dream (not Luxon).'
+---
+
+# DateTime
+
+:::danger Avoid JavaScript's Date Class
+**Never use JavaScript's native `Date` class in Psychic applications.** Always use Dream's `DateTime` for timestamps and `CalendarDate` for dates. Dream's classes provide built-in math, formatting, and robust timezone handling.
+
+```ts
+// ❌ DON'T DO THIS
+const badDate = new Date()
+const badParsed = new Date('2024-01-15')
+
+// ✅ DO THIS INSTEAD
+import { DateTime, CalendarDate } from '@rvoh/dream'
+const goodDateTime = DateTime.now()
+const goodDate = CalendarDate.today()
+const formatted = goodDateTime.toFormat('yyyy-MM-dd HH:mm:ss.SSSSSS')
+const tomorrow = goodDate.plus({ days: 1 })
+```
+
+:::
+
+## Overview
+
+`DateTime` is Dream's primary class for handling timestamps with full date and time information. It provides:
+
+- **Microsecond precision** (6 decimal places) matching Postgres capabilities
+- **Automatic timezone conversion to UTC** when saving to database
+- Robust timezone manipulation and formatting
+- Math operations (add, subtract, compare)
+- Wraps Luxon DateTime internally for reliability
+
+### Postgres Mapping
+
+Database `timestamp with time zone` and `timestamp without time zone` columns are automatically converted to `DateTime` objects when Dream models are loaded from the database.
+
+**Important:** DateTime always converts to UTC before storing in the database, ensuring consistent timezone representation.
+
+### Import
+
+```ts
+import { DateTime } from '@rvoh/dream'
+```
+
+## Creating DateTime Instances
+
+### Current Time
+
+```ts
+// Current time in UTC (default)
+DateTime.now()
+
+// Current time in a specific timezone
+DateTime.now({ zone: 'America/New_York' })
+DateTime.now({ zone: 'Europe/London' })
+```
+
+### From Components
+
+```ts
+// Local time (in system's local zone)
+DateTime.local(2024, 1, 15) // 2024-01-15T00:00:00
+DateTime.local(2024, 1, 15, 14, 30) // 2024-01-15T14:30:00
+DateTime.local(2024, 1, 15, 14, 30, 45) // 2024-01-15T14:30:45
+DateTime.local(2024, 1, 15, 14, 30, 45, 123) // with 123 milliseconds
+DateTime.local(2024, 1, 15, 14, 30, 45, 123, 456) // with 123ms + 456µs
+DateTime.local(2024, 1, 15, { zone: 'America/New_York' })
+
+// UTC time
+DateTime.utc(2024, 1, 15) // 2024-01-15T00:00:00Z
+DateTime.utc(2024, 1, 15, 14, 30, 45, 123, 456) // with microseconds
+DateTime.utc(2024, 1, 15, { locale: 'fr' })
+
+// From object
+DateTime.fromObject({
+  year: 2024,
+  month: 1,
+  day: 15,
+  hour: 14,
+  minute: 30,
+  second: 45,
+  millisecond: 123,
+  microsecond: 456,
+})
+
+// Fractional milliseconds become microseconds
+DateTime.fromObject({
+  year: 2024,
+  month: 1,
+  day: 15,
+  millisecond: 1.5, // 1ms + 500µs
+})
+```
+
+### From Strings
+
+```ts
+// From ISO 8601 string (parses up to 6 fractional digits)
+DateTime.fromISO('2024-01-15T14:30:45.123456Z')
+DateTime.fromISO('2024-01-15T14:30:45.123456-05:00')
+DateTime.fromISO('2024-01-15T14:30:45Z', { zone: 'America/New_York' })
+
+// From SQL datetime string
+DateTime.fromSQL('2024-01-15 14:30:45.123456')
+DateTime.fromSQL('2024-01-15 14:30:45', { zone: 'America/New_York' })
+
+// From custom format (supports 'u' or 'SSSSSS' for microseconds)
+DateTime.fromFormat('01/15/2024', 'MM/dd/yyyy')
+DateTime.fromFormat('01/15/2024 14:30:45', 'MM/dd/yyyy HH:mm:ss')
+DateTime.fromFormat('01/15/2024 14:30:45.123456', 'MM/dd/yyyy HH:mm:ss.u')
+DateTime.fromFormat('01/15/2024 14:30:45.123456', 'MM/dd/yyyy HH:mm:ss.SSSSSS')
+DateTime.fromFormat('mai 25, 1982', 'MMMM dd, yyyy', { locale: 'fr' })
+```
+
+### From Unix Timestamps
+
+```ts
+// From milliseconds (fractional part becomes microseconds)
+DateTime.fromMillis(1707234567890)
+DateTime.fromMillis(1707234567890.123) // .123ms = 123µs
+
+// From microseconds
+DateTime.fromMicroseconds(1707234567890123)
+
+// From seconds (fractional becomes ms + µs)
+DateTime.fromSeconds(1707234567)
+DateTime.fromSeconds(1707234567.123456) // .123456s = 123ms + 456µs
+```
+
+### From JavaScript Date
+
+```ts
+DateTime.fromJSDate(new Date())
+DateTime.fromJSDate(new Date(), { zone: 'America/New_York' })
+```
+
+## Formatting and Output
+
+### ISO Format
+
+```ts
+const dt = DateTime.fromISO('2024-01-15T14:30:45.123456-05:00')
+
+// Full ISO datetime with 6 fractional digits (preserves timezone)
+dt.toISO() // '2024-01-15T14:30:45.123456-05:00'
+
+// ISO date only
+dt.toISODate() // '2024-01-15'
+
+// ISO time only (without timezone offset by default)
+dt.toISOTime() // '14:30:45.123456'
+dt.toISOTime({ includeOffset: true }) // '14:30:45.123456-05:00'
+
+// Options
+dt.toISO({ suppressMilliseconds: true }) // omit fractional when zero
+dt.toISO({ suppressSeconds: true }) // omit seconds when zero
+dt.toISO({ format: 'basic' }) // compact format without separators
+```
+
+### SQL Format
+
+```ts
+const dt = DateTime.local(2024, 1, 15, 14, 30, 45, 123, 456)
+
+// SQL datetime (converts to UTC first)
+dt.toSQL() // '2024-01-15 19:30:45.123456' (if local was EST)
+
+// SQL date only
+dt.toSQLDate() // '2024-01-15'
+
+// SQL time (without offset by default)
+dt.toSQLTime() // '14:30:45.123456'
+dt.toSQLTime({ includeOffset: true }) // '14:30:45.123456 -05:00'
+```
+
+### Custom Format
+
+```ts
+const dt = DateTime.local(2024, 1, 15, 14, 30, 45, 123, 456)
+
+// Uses Luxon format tokens
+dt.toFormat('yyyy-MM-dd') // '2024-01-15'
+dt.toFormat('yyyy-MM-dd HH:mm:ss') // '2024-01-15 14:30:45'
+dt.toFormat('yyyy-MM-dd HH:mm:ss.SSS') // '2024-01-15 14:30:45.123'
+dt.toFormat('yyyy-MM-dd HH:mm:ss.SSSSSS') // '2024-01-15 14:30:45.123456'
+dt.toFormat('MMM dd, yyyy') // 'Jan 15, 2024'
+dt.toFormat('MMMM dd, yyyy') // 'January 15, 2024'
+dt.toFormat('EEE MMM dd yyyy') // 'Mon Jan 15 2024'
+```
+
+### Localized Format
+
+```ts
+const dt = DateTime.now()
+
+// Using format presets
+dt.toLocaleString(DateTime.DATE_SHORT) // '1/15/2024'
+dt.toLocaleString(DateTime.DATE_MED) // 'Jan 15, 2024'
+dt.toLocaleString(DateTime.DATE_MED_WITH_WEEKDAY) // 'Mon, Jan 15, 2024'
+dt.toLocaleString(DateTime.DATE_FULL) // 'January 15, 2024'
+dt.toLocaleString(DateTime.DATE_HUGE) // 'Monday, January 15, 2024'
+
+dt.toLocaleString(DateTime.TIME_SIMPLE) // '2:30 PM'
+dt.toLocaleString(DateTime.TIME_WITH_SECONDS) // '2:30:45 PM'
+dt.toLocaleString(DateTime.TIME_24_SIMPLE) // '14:30'
+dt.toLocaleString(DateTime.TIME_24_WITH_SECONDS) // '14:30:45'
+
+dt.toLocaleString(DateTime.DATETIME_SHORT) // '1/15/2024, 2:30 PM'
+dt.toLocaleString(DateTime.DATETIME_MED) // 'Jan 15, 2024, 2:30 PM'
+dt.toLocaleString(DateTime.DATETIME_FULL) // 'January 15, 2024, 2:30 PM EST'
+dt.toLocaleString(DateTime.DATETIME_HUGE) // 'Monday, January 15, 2024, 2:30 PM Eastern Standard Time'
+
+// Custom format options
+dt.toLocaleString(
+  {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  },
+  { locale: 'fr-FR' }
+)
+```
+
+### For Serialization
+
+```ts
+const dt = DateTime.now()
+
+// JSON serialization (ISO format)
+dt.toJSON() // '2024-01-15T14:30:45.123456Z'
+JSON.stringify({ timestamp: dt })
+
+// String conversion
+dt.toString() // '2024-01-15T14:30:45.123456Z'
+String(dt)
+
+// valueOf (ISO format)
+dt.valueOf() // '2024-01-15T14:30:45.123456Z'
+```
+
+### To Unix Timestamps
+
+```ts
+const dt = DateTime.fromISO('2024-01-15T14:30:45.123456Z')
+
+// To milliseconds (includes fractional microseconds)
+dt.toMillis() // 1705330245123.456
+
+// To microseconds
+dt.toMicroseconds() // 1705330245123456
+
+// To seconds (includes fractional ms + µs)
+dt.toSeconds() // 1705330245.123456
+
+// Integer timestamps (truncated, not rounded)
+dt.unixIntegerSeconds // 1705330245
+dt.unixIntegerMilliseconds // 1705330245123
+dt.unixIntegerMicroseconds // 1705330245123456
+```
+
+### To JavaScript Date
+
+```ts
+const dt = DateTime.now()
+const jsDate = dt.toJSDate() // JavaScript Date object
+```
+
+### To Object
+
+```ts
+const dt = DateTime.local(2024, 1, 15, 14, 30, 45, 123, 456)
+
+dt.toObject()
+// {
+//   year: 2024,
+//   month: 1,
+//   day: 15,
+//   hour: 14,
+//   minute: 30,
+//   second: 45,
+//   millisecond: 123,
+//   microsecond: 456
+// }
+```
+
+## Getters and Properties
+
+### Date Components
+
+```ts
+const dt = DateTime.fromISO('2024-01-15T14:30:45.123456Z')
+
+dt.year // 2024
+dt.month // 1 (January)
+dt.day // 15
+dt.ordinal // 15 (day of year)
+dt.weekday // 1 (Monday) to 7 (Sunday)
+dt.weekdayName // 'monday', 'tuesday', etc.
+dt.weekNumber // ISO week number
+dt.weekYear // ISO week year
+dt.quarter // 1, 2, 3, or 4
+```
+
+### Time Components
+
+```ts
+const dt = DateTime.fromISO('2024-01-15T14:30:45.123456Z')
+
+dt.hour // 14
+dt.minute // 30
+dt.second // 45
+dt.millisecond // 123
+dt.microsecond // 456 (0-999, doesn't exceed to millisecond)
+```
+
+### Timezone Information
+
+```ts
+const dt = DateTime.now({ zone: 'America/New_York' })
+
+dt.zoneName // 'America/New_York'
+dt.offset // -300 (offset in minutes from UTC)
+dt.zone // Zone object
+```
+
+### Locale Information
+
+```ts
+const dt = DateTime.now({ locale: 'fr-FR' })
+
+dt.locale // 'fr-FR'
+```
+
+### Validity
+
+```ts
+const dt = DateTime.fromISO('invalid')
+
+dt.invalidReason // 'unparsable'
+dt.invalidExplanation // detailed error message
+```
+
+## Timezone Operations
+
+```ts
+const dt = DateTime.fromISO('2024-01-15T14:30:45.123456Z')
+
+// Convert to different timezone
+dt.setZone('America/New_York')
+dt.setZone('Europe/London')
+dt.setZone('Asia/Tokyo')
+
+// Convert to UTC
+dt.toUTC()
+
+// Convert to local timezone
+dt.toLocal()
+
+// Keep local time when changing zone
+dt.setZone('America/New_York', { keepLocalTime: true })
+```
+
+## Math Operations
+
+### Adding and Subtracting
+
+```ts
+const dt = DateTime.now()
+
+// Add duration
+dt.plus({ hours: 2 })
+dt.plus({ days: 5, hours: 3 })
+dt.plus({ years: 1, months: 2, days: 3 })
+dt.plus({ milliseconds: 500, microseconds: 250 })
+
+// Fractional milliseconds become microseconds
+dt.plus({ milliseconds: 1.5 }) // adds 1ms + 500µs
+
+// Subtract duration
+dt.minus({ hours: 2 })
+dt.minus({ days: 5 })
+dt.minus({ milliseconds: 1.5 })
+
+// Also accepts number (interpreted as milliseconds)
+dt.plus(1000) // add 1 second
+dt.minus(1000) // subtract 1 second
+```
+
+### Setting Components
+
+```ts
+const dt = DateTime.now()
+
+// Set specific components
+dt.set({ hour: 14, minute: 30 })
+dt.set({ year: 2025, month: 6, day: 15 })
+dt.set({ microsecond: 500 })
+```
+
+### Difference
+
+```ts
+const dt1 = DateTime.fromISO('2024-01-20T14:30:45.123456Z')
+const dt2 = DateTime.fromISO('2024-01-15T10:15:30.100200Z')
+
+// Single unit
+dt1.diff(dt2, 'days') // { days: 5.178... }
+dt1.diff(dt2, 'hours') // { hours: 124.254... }
+dt1.diff(dt2, 'minutes') // { minutes: 7455.25 }
+
+// Multiple units
+dt1.diff(dt2, ['days', 'hours'])
+// { days: 5, hours: 4 }
+
+dt1.diff(dt2, ['hours', 'minutes', 'seconds'])
+// { hours: 124, minutes: 15, seconds: 15 }
+
+// With microseconds
+dt1.diff(dt2, ['milliseconds', 'microseconds'])
+// { milliseconds: 123, microseconds: 256 }
+
+// All units (default)
+dt1.diff(dt2)
+// { years: 0, months: 0, days: 5, hours: 4, minutes: 15,
+//   seconds: 15, milliseconds: 23, microseconds: 256 }
+
+// Diff from now
+dt1.diffNow('days')
+dt1.diffNow(['days', 'hours'])
+```
+
+### Boundaries
+
+```ts
+const dt = DateTime.fromISO('2024-01-15T14:30:45.123456Z')
+
+// Start of period
+dt.startOf('year') // 2024-01-01T00:00:00.000000
+dt.startOf('month') // 2024-01-01T00:00:00.000000
+dt.startOf('day') // 2024-01-15T00:00:00.000000
+dt.startOf('hour') // 2024-01-15T14:00:00.000000
+dt.startOf('minute') // 2024-01-15T14:30:00.000000
+dt.startOf('second') // 2024-01-15T14:30:45.000000
+
+// End of period
+dt.endOf('year') // 2024-12-31T23:59:59.999999
+dt.endOf('month') // 2024-01-31T23:59:59.999999
+dt.endOf('day') // 2024-01-15T23:59:59.999999
+dt.endOf('hour') // 2024-01-15T14:59:59.999999
+```
+
+## Comparisons
+
+### Equality
+
+```ts
+const dt1 = DateTime.fromISO('2024-01-15T14:30:45.123456Z')
+const dt2 = DateTime.fromISO('2024-01-15T14:30:45.123456Z')
+const dt3 = DateTime.fromISO('2024-01-15T14:30:45.123457Z')
+
+dt1.equals(dt2) // true
+dt1.equals(dt3) // false
+```
+
+### Same Period
+
+```ts
+const dt1 = DateTime.fromISO('2024-01-15T14:30:45Z')
+const dt2 = DateTime.fromISO('2024-01-15T18:45:30Z')
+
+dt1.hasSame(dt2, 'year') // true
+dt1.hasSame(dt2, 'month') // true
+dt1.hasSame(dt2, 'day') // true
+dt1.hasSame(dt2, 'hour') // false
+```
+
+### Min and Max
+
+```ts
+const dt1 = DateTime.fromISO('2024-01-15T14:30:45Z')
+const dt2 = DateTime.fromISO('2024-01-20T10:15:30Z')
+const dt3 = DateTime.fromISO('2024-01-10T08:00:00Z')
+
+DateTime.min(dt1, dt2, dt3) // dt3
+DateTime.max(dt1, dt2, dt3) // dt2
+```
+
+## Configuration
+
+### Reconfigure
+
+```ts
+const dt = DateTime.now()
+
+// Change locale
+dt.reconfigure({ locale: 'fr-FR' })
+
+// Change locale with setLocale
+dt.setLocale('fr-FR')
+```
+
+### Global Settings
+
+```ts
+import { Settings } from '@rvoh/dream'
+
+// Set default zone
+Settings.defaultZone = 'America/New_York'
+
+// Set default locale
+Settings.defaultLocale = 'fr-FR'
+
+// Throw on invalid (enabled by default in Dream)
+Settings.throwOnInvalid = true
+```
+
+## Error Handling
+
+Dream's DateTime throws `InvalidDateTime` errors for invalid operations:
+
+```ts
+import { DateTime, InvalidDateTime } from '@rvoh/dream'
+
+try {
+  const dt = DateTime.fromISO('invalid-date')
+} catch (e) {
+  if (e instanceof InvalidDateTime) {
+    console.error(e.message)
+    console.error(e.cause) // original error
+  }
+}
+```
+
+## Usage with Models
+
+DateTime instances are automatically created when loading timestamp columns from the database:
+
+```ts
+import { Model } from '@rvoh/psychic'
+import { DateTime } from '@rvoh/dream'
+
+class Event extends Model {
+  id!: number
+  createdAt!: DateTime // timestamp with time zone
+  updatedAt!: DateTime // timestamp with time zone
+  scheduledAt!: DateTime // timestamp without time zone
+}
+
+// Load from database
+const event = await Event.find(1)
+
+// All timestamp fields are DateTime instances
+console.log(event.createdAt.toISO())
+console.log(event.scheduledAt.plus({ days: 1 }))
+
+// Modify and save (converts to UTC automatically)
+event.scheduledAt = DateTime.fromISO('2024-06-15T14:30:00-05:00')
+await event.save() // stored as UTC in database
+```

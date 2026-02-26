@@ -1,0 +1,435 @@
+---
+sidebar_position: 4
+ai_summary: 'ClockTime represents time without timezone (TIME WITHOUT TIME ZONE in Postgres). Supports microsecond precision. All output methods strip timezone info. Create via now(), fromISO(), fromSQL(), fromObject(), fromFormat(). Provides time math: plus(), minus(), diff().'
+---
+
+# ClockTime
+
+:::danger Avoid JavaScript's Date Class
+**Never use JavaScript's native `Date` class in Psychic applications.** For time-only values without timezone, use Dream's `ClockTime`. JavaScript's `Date` always includes date and timezone, causing confusion. Dream's classes provide precise control over what you're representing.
+
+```ts
+// ❌ DON'T DO THIS
+const badTime = new Date('1970-01-01T14:30:45')
+
+// ✅ DO THIS INSTEAD
+import { ClockTime } from '@rvoh/dream'
+const goodTime = ClockTime.fromObject({ hour: 14, minute: 30, second: 45 })
+const formatted = goodTime.toLocaleString({ hour: '2-digit', minute: '2-digit' })
+```
+
+:::
+
+## Overview
+
+`ClockTime` represents a time of day without timezone information. It's useful for:
+
+- Business hours (e.g., "Open 9:00 AM - 5:00 PM")
+- Schedules and recurring events (e.g., "Meeting every day at 2:30 PM")
+- Time comparisons independent of date or timezone
+- Representing Postgres `TIME WITHOUT TIME ZONE` fields
+
+**Key characteristics:**
+
+- No timezone information (all timezone data is stripped)
+- Microsecond precision (6 decimal places)
+- No date component
+- Suitable for abstract "time of day" concepts
+
+### Postgres Mapping
+
+Database `time without time zone` columns are automatically converted to `ClockTime` objects when Dream models are loaded from the database.
+
+### Import
+
+```ts
+import { ClockTime } from '@rvoh/dream'
+```
+
+## Creating ClockTime Instances
+
+### Current Time
+
+```ts
+// Current time (timezone info stripped)
+ClockTime.now()
+```
+
+### From Components
+
+```ts
+// From object
+ClockTime.fromObject({ hour: 14, minute: 30 })
+ClockTime.fromObject({ hour: 14, minute: 30, second: 45 })
+ClockTime.fromObject({
+  hour: 14,
+  minute: 30,
+  second: 45,
+  millisecond: 123,
+  microsecond: 456,
+})
+
+// With options
+ClockTime.fromObject({ hour: 14, minute: 30 }, { locale: 'fr-FR' })
+```
+
+### From Strings
+
+All parsing methods **strip timezone information** from the input string, preserving only the time values.
+
+```ts
+// From ISO 8601 time string (timezone ignored)
+ClockTime.fromISO('14:30:45')
+ClockTime.fromISO('14:30:45.123456')
+ClockTime.fromISO('14:30:45-05:00') // stores 14:30:45, ignores -05:00
+ClockTime.fromISO('14:30:45.123456+02:00') // stores 14:30:45.123456, ignores +02:00
+
+// From SQL time string (timezone ignored)
+ClockTime.fromSQL('14:30:45')
+ClockTime.fromSQL('14:30:45.123456')
+ClockTime.fromSQL('14:30:45+05:30') // stores 14:30:45, ignores +05:30
+
+// From custom format
+ClockTime.fromFormat('14:30:45', 'HH:mm:ss')
+ClockTime.fromFormat('2:30 PM', 'h:mm a')
+ClockTime.fromFormat('02:30:45', 'hh:mm:ss')
+```
+
+### From DateTime
+
+```ts
+import { DateTime } from '@rvoh/dream'
+
+const dt = DateTime.now()
+ClockTime.fromDateTime(dt) // extracts time portion, strips timezone
+```
+
+### From JavaScript Date
+
+```ts
+ClockTime.fromJSDate(new Date()) // extracts time, strips timezone
+```
+
+## Formatting and Output
+
+All output methods **omit timezone offset** by default.
+
+### ISO Format
+
+```ts
+const time = ClockTime.fromObject({ hour: 14, minute: 30, second: 45, millisecond: 123, microsecond: 456 })
+
+// ISO time without timezone offset
+time.toISO() // '14:30:45.123456'
+time.toISOTime() // '14:30:45.123456' (alias)
+
+// With options
+time.toISO({ suppressMilliseconds: true }) // '14:30:45' (if ms/µs are zero)
+time.toISO({ suppressSeconds: true }) // '14:30' (if seconds are zero)
+time.toISO({ format: 'basic' }) // '143045.123456' (compact)
+```
+
+### SQL Format
+
+```ts
+const time = ClockTime.fromISO('14:30:45.123456')
+
+// SQL time without timezone offset
+time.toSQL() // '14:30:45.123456'
+time.toSQLTime() // '14:30:45.123456' (alias)
+```
+
+### Localized Format
+
+```ts
+const time = ClockTime.fromObject({ hour: 14, minute: 30 })
+
+// Default locale
+time.toLocaleString() // '2:30 PM' (12-hour in US locale)
+
+// Custom format options
+time.toLocaleString({
+  hour: '2-digit',
+  minute: '2-digit',
+}) // '02:30 PM'
+
+time.toLocaleString({
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+}) // '14:30' (24-hour)
+
+time.toLocaleString({
+  hour: 'numeric',
+  minute: '2-digit',
+  second: '2-digit',
+}) // '2:30:00 PM'
+```
+
+### For Serialization
+
+```ts
+const time = ClockTime.now()
+
+// JSON serialization (ISO format without timezone)
+time.toJSON() // '14:30:45.123456'
+JSON.stringify({ time }) // '{"time":"14:30:45.123456"}'
+
+// String conversion
+time.toString() // '14:30:45.123456'
+String(time)
+
+// valueOf
+time.valueOf() // '14:30:45.123456'
+```
+
+## Getters and Properties
+
+```ts
+const time = ClockTime.fromISO('14:30:45.123456')
+
+time.hour // 14
+time.minute // 30
+time.second // 45
+time.millisecond // 123
+time.microsecond // 456
+```
+
+## Conversions
+
+```ts
+const time = ClockTime.fromISO('14:30:45')
+
+// To DateTime (with base date of 2000-01-01 in UTC)
+const dt = time.toDateTime()
+```
+
+## Math Operations
+
+### Adding and Subtracting
+
+```ts
+const time = ClockTime.fromObject({ hour: 14, minute: 30 })
+
+// Add duration
+time.plus({ hours: 2 }) // 16:30:00
+time.plus({ hours: 2, minutes: 15 }) // 16:45:00
+time.plus({ minutes: 30 }) // 15:00:00
+time.plus({ seconds: 45 }) // 14:30:45
+time.plus({ milliseconds: 500, microseconds: 250 })
+
+// Wraps around midnight
+time.plus({ hours: 10 }) // 00:30:00 (next day, but date ignored)
+
+// Subtract duration
+time.minus({ hours: 2 }) // 12:30:00
+time.minus({ minutes: 45 }) // 13:45:00
+
+// Wraps around midnight
+time.minus({ hours: 15 }) // 23:30:00 (previous day, but date ignored)
+```
+
+### Setting Components
+
+```ts
+const time = ClockTime.fromObject({ hour: 14, minute: 30, second: 45 })
+
+// Set specific components
+time.set({ hour: 9 }) // 09:30:45
+time.set({ minute: 0 }) // 14:00:45
+time.set({ hour: 16, minute: 45 }) // 16:45:45
+time.set({ microsecond: 500 }) // 14:30:45.000500
+```
+
+### Difference
+
+The `diff()` method returns an object with the requested time units.
+
+```ts
+const t1 = ClockTime.fromObject({ hour: 16, minute: 45 })
+const t2 = ClockTime.fromObject({ hour: 14, minute: 30 })
+
+// Single unit
+t1.diff(t2, 'hours') // { hours: 2.25 }
+t1.diff(t2, 'minutes') // { minutes: 135 }
+t1.diff(t2, 'seconds') // { seconds: 8100 }
+
+// Multiple units
+t1.diff(t2, ['hours', 'minutes'])
+// { hours: 2, minutes: 15 }
+
+t1.diff(t2, ['hours', 'minutes', 'seconds'])
+// { hours: 2, minutes: 15, seconds: 0 }
+
+// With microsecond precision
+const t3 = ClockTime.fromISO('16:45:30.123456')
+const t4 = ClockTime.fromISO('14:30:15.100200')
+t3.diff(t4, ['hours', 'minutes', 'seconds', 'milliseconds', 'microseconds'])
+// { hours: 2, minutes: 15, seconds: 15, milliseconds: 23, microseconds: 256 }
+
+// All units (default: hours, minutes, seconds, milliseconds, microseconds)
+t1.diff(t2)
+// { hours: 2, minutes: 15, seconds: 0, milliseconds: 0, microseconds: 0 }
+```
+
+### Boundaries
+
+```ts
+const time = ClockTime.fromObject({ hour: 14, minute: 30, second: 45 })
+
+// Start of period
+time.startOf('hour') // 14:00:00.000000
+time.startOf('minute') // 14:30:00.000000
+time.startOf('second') // 14:30:45.000000
+
+// End of period
+time.endOf('hour') // 14:59:59.999999
+time.endOf('minute') // 14:30:59.999999
+time.endOf('second') // 14:30:45.999999
+```
+
+## Comparisons
+
+### Equality
+
+```ts
+const t1 = ClockTime.fromObject({ hour: 14, minute: 30 })
+const t2 = ClockTime.fromObject({ hour: 14, minute: 30 })
+const t3 = ClockTime.fromObject({ hour: 14, minute: 31 })
+
+t1.equals(t2) // true
+t1.equals(t3) // false
+```
+
+### Same Period
+
+```ts
+const t1 = ClockTime.fromObject({ hour: 14, minute: 30, second: 45 })
+const t2 = ClockTime.fromObject({ hour: 14, minute: 45, second: 30 })
+
+t1.hasSame(t2, 'hour') // true
+t1.hasSame(t2, 'minute') // false
+t1.hasSame(t2, 'second') // false
+```
+
+### Min and Max
+
+```ts
+const t1 = ClockTime.fromObject({ hour: 14, minute: 30 })
+const t2 = ClockTime.fromObject({ hour: 16, minute: 45 })
+const t3 = ClockTime.fromObject({ hour: 9, minute: 15 })
+
+ClockTime.min(t1, t2, t3) // t3 (09:15:00)
+ClockTime.max(t1, t2, t3) // t2 (16:45:00)
+```
+
+## Usage with Models
+
+ClockTime instances are automatically created when loading `time without time zone` columns from the database:
+
+```ts
+import { Model } from '@rvoh/psychic'
+import { ClockTime } from '@rvoh/dream'
+
+class BusinessHours extends Model {
+  id!: number
+  dayOfWeek!: string
+  openTime!: ClockTime // time without time zone
+  closeTime!: ClockTime // time without time zone
+}
+
+// Load from database
+const hours = await BusinessHours.findBy({ dayOfWeek: 'Monday' })
+
+// All time fields are ClockTime instances
+console.log(hours.openTime.toISO()) // '09:00:00.000000'
+console.log(hours.closeTime.toISO()) // '17:00:00.000000'
+
+// Check if currently open
+const now = ClockTime.now()
+const isOpen = now >= hours.openTime && now <= hours.closeTime
+
+// Modify and save
+hours.openTime = ClockTime.fromObject({ hour: 8, minute: 30 })
+await hours.save()
+```
+
+## Common Patterns
+
+### Time Ranges
+
+```ts
+const openTime = ClockTime.fromObject({ hour: 9, minute: 0 })
+const closeTime = ClockTime.fromObject({ hour: 17, minute: 0 })
+const now = ClockTime.now()
+
+// Check if within range
+const isOpen = now >= openTime && now <= closeTime
+```
+
+### Duration Between Times
+
+```ts
+const start = ClockTime.fromObject({ hour: 9, minute: 0 })
+const end = ClockTime.fromObject({ hour: 17, minute: 30 })
+
+const duration = end.diff(start, ['hours', 'minutes'])
+// { hours: 8, minutes: 30 }
+
+const totalHours = end.diff(start, 'hours').hours
+// 8.5
+```
+
+### Recurring Events
+
+```ts
+// Store meeting time without timezone
+const meetingTime = ClockTime.fromObject({ hour: 14, minute: 30 })
+
+// Meeting happens at this time every day, regardless of timezone
+// Each timezone interprets it in their local time
+```
+
+### Business Hours Calculation
+
+```ts
+const businessStart = ClockTime.fromObject({ hour: 9, minute: 0 })
+const businessEnd = ClockTime.fromObject({ hour: 17, minute: 0 })
+const lunchStart = ClockTime.fromObject({ hour: 12, minute: 0 })
+const lunchEnd = ClockTime.fromObject({ hour: 13, minute: 0 })
+
+// Total business hours
+const totalHours = businessEnd.diff(businessStart, 'hours').hours // 8
+
+// Working hours (excluding lunch)
+const workingHours = totalHours - lunchEnd.diff(lunchStart, 'hours').hours // 7
+```
+
+## Error Handling
+
+ClockTime throws `InvalidClockTime` errors for invalid operations:
+
+```ts
+import { ClockTime, InvalidClockTime } from '@rvoh/dream'
+
+try {
+  const time = ClockTime.fromISO('25:00:00') // invalid hour
+} catch (e) {
+  if (e instanceof InvalidClockTime) {
+    console.error(e.message)
+  }
+}
+
+// Invalid time values
+try {
+  ClockTime.fromObject({ hour: 25, minute: 0 }) // hour out of range
+} catch (e) {
+  // InvalidClockTime
+}
+
+try {
+  ClockTime.fromISO('invalid-time')
+} catch (e) {
+  // InvalidClockTime
+}
+```
