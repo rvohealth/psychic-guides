@@ -31,30 +31,33 @@ USER node
 
 FROM $NODE_IMAGE AS base
 ENV NODE_ENV=production
+ENV NODE_DEBUG=bull
 ENV DB_USE_SSL=1
 ENV PSYCHIC_LOG_PATH=/dev/shm
 ENV PSYCHIC_SSL_CERT_PATH=/home/node/app/cert/psychic-selfsigned.crt
 ENV PSYCHIC_SSL_KEY_PATH=/home/node/app/cert/psychic-selfsigned.key
+ENV PNPM_VERSION=10.24.0
 ENV COREPACK_HOME=/home/node/bin
-ENV PNPM_VERSION=10.26.0
-ENV APP_NAME=myapp
+ENV APP_NAME=YOUR_APP_NAME_HERE
 RUN apk -U upgrade
 RUN apk add dumb-init
 ARG INSTALL_PG_DUMP_RESTORE
-RUN if [ "$INSTALL_PG_DUMP_RESTORE" = '1' ] ; then apk add postgresql15 ; fi
+RUN if [ "$INSTALL_PG_DUMP_RESTORE" = '1' ] ; then apk add postgresql ; fi
 RUN mkdir -p /home/node/app && chown node:node /home/node/app
 RUN mkdir -p /home/node/.npm && chown node:node /home/node/.npm
-RUN mkdir -p /home/node/.pnpm && chown node:node /home/node/.pnpm
 WORKDIR /home/node/app
 RUN mkdir tmp
 
 FROM base AS dependencies
+ARG GITHUB_OAUTH_TOKEN
+ARG BULLMQ_PRO_NPM_TOKEN
 COPY --chown=node:node ./package.json .
-COPY --chown=node:node ./pnpm.lock .
+COPY --chown=node:node ./pnpm-lock.yaml .
 USER root
 RUN apk add git
 COPY --chown=node:node .npmrc .
 COPY --chown=node:node . .
+RUN mkdir ${COREPACK_HOME}
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV PATH="${COREPACK_HOME}:${PATH}"
 RUN corepack enable --install-directory ${COREPACK_HOME} && corepack enable pnpm && corepack prepare pnpm@${PNPM_VERSION} --activate && corepack use pnpm@${PNPM_VERSION}
@@ -83,7 +86,9 @@ USER root
 COPY --chown=node:node --from=dependencies /home/node/app/ .
 COPY --chown=node:node --from=sslsetup /home/node/cert ./cert
 RUN mkdir ${COREPACK_HOME}
-RUN corepack enable --install-directory ${COREPACK_HOME} && corepack prepare pnpm@${PNPM_VERSION}
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+ENV PATH="${COREPACK_HOME}:${PATH}"
+RUN corepack enable --install-directory ${COREPACK_HOME} && corepack enable pnpm && corepack prepare pnpm@${PNPM_VERSION} --activate && corepack use pnpm@${PNPM_VERSION}
 
 USER node
 
@@ -102,7 +107,6 @@ ENV NPM_CONFIG_PREFIX=/home/node/npm_global
 RUN mkdir -p /dev/shm
 RUN ln -sf /dev/shm ../.npm
 RUN ln -sf /dev/shm ../.npm/_cacache
-RUN ln -sf /dev/shm ../.pnpm
 RUN ln -sf /dev/shm ../app_tmp
 
 # pm2 needs to be able to write to disk (for logs and pid files), so set up a writeable directory for it
@@ -119,6 +123,11 @@ COPY --chown=node:node ./migrate_and_serve.sh ./
 # COPY --chown=node:node --from=build /home/node/app ./development
 RUN ["chmod", "+x", "./migrate_and_serve.sh"]
 CMD [ "dumb-init", "--", "./migrate_and_serve.sh" ]
+
+# add setup here if you plan on deploying a console instance and want extra utils to be set up for it
+FROM production AS console
+USER root
+RUN apk add screen=5.0.1-r0 util-linux=2.41.2-r0 su-exec=0.3-r0
 ```
 
 This will provision whatever server pulls from this image to prepare it for use as a psychic application, be it a server, worker, or console instance. At the very end of the Dockerfile is a call to `migrate_and_serve.sh`, which is the next topic of discussion.
@@ -128,17 +137,122 @@ This will provision whatever server pulls from this image to prepare it for use 
 With the Dockerfile in place, we will need the corresponding `migrate_and_serve.sh` file, which is used to further initialize your instance. Add this next to your Dockerfile with the following contents:
 
 <PackageManagerTabs
-  code={`# migrate_and_serve.sh
-#!/bin/sh
+code={`#!/bin/sh
+# migrate_and_serve.sh
 
 if [ $WEB_SERVICE ]; then
-  TMP=/dev/shm NODE_ENV=production pnpm psy:js db:migrate --skip-sync && TMP=/dev/shm NODE_ENV=production pnpm psy:js db:seed && ./node_modules/.bin/pm2-runtime start ./server.ecosystem.config.cjs --env production && ./node_modules/.bin/pm2 save
+  TMP=/dev/shm NODE_ENV=production pnpm psy:js db:migrate --skip-sync && TMP=/dev/shm NODE_ENV=production pnpm psy:js db:seed && ./node_modules/.bin/pm2-runtime start ./api.ecosystem.config.cjs --env production
 elif [ $WORKER_SERVICE ]; then
-  ./node_modules/.bin/pm2-runtime start ./worker.ecosystem.config.cjs --env production && ./node_modules/.bin/pm2 save
+  ./node_modules/.bin/pm2-runtime start ./worker.ecosystem.config.cjs --env production
 elif [ $CONSOLE_SERVICE ]; then
+  if [ "$(whoami)" = "root" ]; then
+    chmod 1777 /dev/shm
+    exec su-exec node "$0"
+  fi
   sleep infinity
-fi`}
+fi
+`}
 />
+
+And the pm2 ecosystem files as well:
+
+```js
+// api.ecosystem.config.cjs
+
+module.exports = {
+  apps: [
+    {
+      name: 'webserver',
+      script: 'dist/src/main.js',
+      instances: 1,
+      exec_mode: 'cluster',
+
+      // Prevent infinite restart loops
+      max_restarts: 10, // Stop restarting after 10 failures
+      min_uptime: 10000, // Process must stay up 10 seconds to be considered stable
+      restart_delay: 4000, // Wait 4 seconds between restart attempts
+
+      // Graceful shutdown handling
+      kill_timeout: 5000, // Give process 5 seconds to shut down gracefully
+      listen_timeout: 10000, // Wait 10 seconds for app to start listening
+      wait_ready: true, // Wait for process.send('ready') before marking online
+      shutdown_with_message: true, // Send shutdown message before killing
+
+      // Memory monitoring (optional but recommended)
+      // max_memory_restart: '500M',  // Only uncomment if you want memory-based restarts
+
+      env: {
+        NODE_ENV: 'development',
+        APP_ROOT_PATH: process.cwd(),
+      },
+      env_production: {
+        NODE_ENV: 'production',
+        APP_ROOT_PATH: process.cwd(),
+        TMP: '/dev/shm',
+        PORT: 8443,
+      },
+    },
+
+    {
+      name: 'websocket server',
+      script: 'dist/src/ws.js',
+      instances: 1,
+      exec_mode: 'cluster',
+
+      // Prevent infinite restart loops
+      max_restarts: 10, // Stop restarting after 10 failures
+      min_uptime: 10000, // Process must stay up 10 seconds to be considered stable
+      restart_delay: 4000, // Wait 4 seconds between restart attempts
+
+      // Graceful shutdown handling
+      kill_timeout: 5000, // Give process 5 seconds to shut down gracefully
+      listen_timeout: 10000, // Wait 10 seconds for app to start listening
+      wait_ready: true, // Wait for process.send('ready') before marking online
+      shutdown_with_message: true, // Send shutdown message before killing
+
+      // Memory monitoring (optional but recommended)
+      // max_memory_restart: '500M',  // Only uncomment if you want memory-based restarts
+
+      env: {
+        NODE_ENV: 'development',
+        APP_ROOT_PATH: process.cwd(),
+        DEBUG: 'socket.io*',
+      },
+      env_production: {
+        NODE_ENV: 'production',
+        APP_ROOT_PATH: process.cwd(),
+        TMP: '/dev/shm',
+        WS_PORT: '8444',
+      },
+    },
+  ],
+}
+```
+
+and the worker ecosystem file (if using workers)
+
+```js
+// worker.ecosystem.config.cjs
+
+module.exports = {
+  apps: [
+    {
+      name: 'worker',
+      script: 'dist/src/worker.js',
+      instances: 1,
+      env: {
+        NODE_ENV: 'development',
+        APP_ROOT_PATH: process.cwd(),
+      },
+      env_production: {
+        NODE_ENV: 'production',
+        APP_ROOT_PATH: process.cwd(),
+        TMP: '/dev/shm',
+      },
+    },
+  ],
+}
+```
 
 Finally, we will use some github actions to automatically trigger continuous deployment. Depending on your needs, you may have many different environments, so we will just present an example for deploying to production, and let you reason about how to do the same for other environments, since the process should be very similar. To do so, add the following workflow file to your project root:
 
