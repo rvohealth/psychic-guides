@@ -29,10 +29,6 @@ Psychic provides the web server bindings for a Psychic application. You can esse
 
 Koa is a modern, minimalistic web framework for Node.js designed by the team behind Express. We have selected it for its elegant middleware composition using async/await and its flexibility for building robust web applications. By default, we configure Koa to leverage the `@koa/cors` and `koa-bodyparser` libraries, but expose the configuration to you in `conf/app.ts`, enabling you to easily make adjustments. In addition, we provide lifecycle hooks for startup, enabling you to patch in Koa middleware to your heart's desire!
 
-:::tip HTTP Headers in Koa
-Koa automatically lowercases all HTTP header names. When accessing request headers via `ctx.get()` or setting response headers via `ctx.set()`, always use lowercase header names (e.g., `ctx.get('content-type')` instead of `ctx.get('Content-Type')`).
-:::
-
 ### openapi
 
 OpenAPI is an essential tool both for communicating your API to other teams, as well as for using codegen tools to auto-build API mechanisms and other utilities to ease the burden of integrating with your backend services. That being said, it is cumbersome to maintain OpenAPI documents, and tricky to keep them up to date with changes in your application's code.
