@@ -9,12 +9,8 @@ ai_summary: "The numericality validator ensures a number is within a specified r
 Use the `numericality` validator to clamp a number between two values:
 
 ```ts
-export default class Rating extends Dream {
-  public get table() {
-    return 'users' as const
-  }
-
-  public id: DreamColumn<Rating, 'id'>
+export default class Rating extends ApplicationModel {
+  ...
 
   @deco.Validates('numericality', { min: 1, max: 5 })
   public rating: DreamColumn<Rating, 'rating'>

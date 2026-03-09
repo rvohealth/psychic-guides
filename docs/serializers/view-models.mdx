@@ -8,76 +8,57 @@ ai_summary: >-
   shapes). Keeps data preparation logic separate from serialization.
 ---
 
-# ViewModels in Serialization
+# view models
 
-While Dream serializers are powerful for transforming Dream models or plain objects directly, there are scenarios where introducing a **ViewModel** can significantly clarify your data preparation logic, especially before serialization.
+Sometimes you need to serialize something that isn't a Dream model — maybe you're combining data from multiple models, or you need to do some async work to compute a field before serializing. That's where view models come in.
 
-A ViewModel is essentially a class or interface designed specifically to shape data for a particular view or API response. It's not a Dream model (it doesn't directly map to a database table) but rather an intermediate structure that you populate with data, often from one or more Dream models or other sources.
+A view model is just a plain class or object that you build up with the data you need, then hand off to `ObjectSerializer` for rendering. Since Dream serializers are synchronous by design, any async work (like fetching from an external API) needs to happen before serialization — and a view model is a natural place to do that.
 
-## When to use a ViewModel
+## when to reach for a view model
 
-Consider using a ViewModel in the following situations:
+You'll want a view model when:
 
-1. **Composite Output from Multiple Models:**
-   When your API response needs to combine data from several different Dream models or data sources into a single, cohesive structure. A ViewModel can act as an aggregator, providing a clean interface for the serializer.
+- your response combines data from several models that don't have a direct association
+- you need to do async work (external API calls, complex calculations) to compute a field
+- the transformation logic is complex enough that cramming it into `customAttribute` callbacks would get ugly
 
-   _Example:_ An API endpoint for a dashboard might need to display a user's profile information, a summary of their recent activity, and some site-wide statistics. A `DashboardViewModel` could gather and structure this disparate data before it's passed to an `ObjectSerializer`.
+## example
 
-2. **Complex Data Transformations:**
-   If the logic to derive certain fields for your API response is complex, involving multiple steps, calculations, or conditional logic, embedding this directly into serializer `customAttribute` functions can become unwieldy and hard to test. A ViewModel can encapsulate this complex transformation logic within its constructor or methods. The serializer then simply reads pre-computed properties from the ViewModel.
+```ts
+class DashboardViewModel {
+  public userName: string
+  public recentActivityCount: number
+  public gravatarUrl: string | undefined
 
-   _Example:_ Generating a complex "status" field for an order that depends on its payment history, shipment status, and return requests. An `OrderViewModel` could have a method or constructor logic to determine this status, and the serializer would just render `viewModel.status`.
+  private constructor(user: User, activityCount: number, gravatarUrl?: string) {
+    this.userName = user.name
+    this.recentActivityCount = activityCount
+    this.gravatarUrl = gravatarUrl
+  }
 
-3. **Needing Asynchronous Operations for Data Preparation:**
-   Dream serializers are **intentionally synchronous** (see [Overview](./overview.mdx) for more details). This design choice helps prevent accidental N+1 query problems or other side effects during the serialization phase itself, which should be a straightforward data transformation step.
-   If you need to perform asynchronous operations (e.g., fetching additional data from an external API, performing an async calculation) to prepare data for an API response, this asynchronous work should happen _before_ serialization. A ViewModel is an excellent place to orchestrate these async operations. You can populate the ViewModel instance, performing any necessary async calls in its constructor or dedicated async factory method, and then pass the fully populated, synchronous ViewModel instance to an `ObjectSerializer`.
+  public static async build(user: User) {
+    const activityCount = await Activity.where({ userId: user.id }).count()
+    const gravatarUrl = await fetchGravatar(user.email).catch(() => undefined)
+    return new DashboardViewModel(user, activityCount, gravatarUrl)
+  }
+}
+```
 
-   _Example:_ An API response needs to include a user's Gravatar URL. Fetching this might involve an async HTTP request. A `UserProfileViewModel` could have an async `create` static method that fetches the user data and the Gravatar URL, then instantiates the ViewModel. This ViewModel is then passed to the serializer.
+Then in your controller:
 
-   ```ts
-   // Simplified Example
-   // Assume User is your Dream model
-   // import User from 'app/models/user';
+```ts
+public async show() {
+  const user = await User.findOrFail(this.castParam('id', 'bigint'))
+  const viewModel = await DashboardViewModel.build(user)
 
-   class UserProfileViewModel {
-     public id: string
-     public name: string
-     public gravatarUrl?: string
+  this.ok(
+    ObjectSerializer(viewModel)
+      .attribute('userName', { openapi: 'string' })
+      .attribute('recentActivityCount', { openapi: 'integer' })
+      .attribute('gravatarUrl', { openapi: ['string', 'null'] })
+      .render()
+  )
+}
+```
 
-     private constructor(user: /* User */ any, gravatarUrl?: string) {
-       this.id = user.id
-       this.name = user.name // Assuming 'name' is a property on your User model
-       this.gravatarUrl = gravatarUrl
-     }
-
-     public static async create(user: /* User */ any): Promise<UserProfileViewModel> {
-       let gravatarUrl: string | undefined
-       // const fetchGravatar = async (email: string) => Promise.resolve(`https://gravatar.com/avatar/${email}?d=identicon`);
-       try {
-         // gravatarUrl = await fetchGravatar(user.email); // Async operation
-       } catch (error) {
-         // console.error("Failed to fetch Gravatar:", error);
-       }
-       return new UserProfileViewModel(user, gravatarUrl)
-     }
-   }
-
-   // In your controller:
-   // import { ObjectSerializer } from '@rvoh/dream';
-   // const user = await User.find(userId);
-   // if (user) {
-   //   const userViewModel = await UserProfileViewModel.create(user);
-   //   this.ok(ObjectSerializer(userViewModel)
-   //     .attribute('id', { openapi: 'string' })
-   //     .attribute('name', { openapi: 'string' })
-   //     .attribute('gravatarUrl', { openapi: { type: ['string', 'null'] } })
-   //     .render()
-   //   );
-   // }
-   ```
-
-## Serializing ViewModels
-
-ViewModels are typically serialized using `ObjectSerializer` because they are plain objects or class instances, not Dream models. You'll need to explicitly define the `openapi` shape for each attribute when using `ObjectSerializer`:
-
-By using ViewModels, you can keep your data preparation logic clean, testable, and separate from the direct concerns of serialization, leading to more maintainable and robust applications.
+Since `ObjectSerializer` doesn't have access to any database schema, you'll need to provide the `openapi` option for every attribute.

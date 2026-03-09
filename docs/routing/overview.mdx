@@ -13,7 +13,7 @@ Psychic follows a paradigm set up by many other MVC frameworks, which is to have
 The route bindings for a Psychic application can be found in the `conf/routes.ts` file. Routes are expressed elegantly using standard HTTP-verb driven language, like so:
 
 ```ts // conf/routes.ts
-import { PsychicRouter } from 'psychic'
+import { PsychicRouter } from '@rvoh/psychic'
 
 export default (r: PsychicRouter) => {
   r.get('/health-check')
@@ -35,7 +35,7 @@ The RESTful verbs (`GET`, `POST`, `PATCH`, `PUT`, and `DELETE`) are the backbone
 Here is an example, demonstrating how these verbs might be used to clearly express a resourcefully-driven application:
 
 ```ts // conf/routes.ts
-import { PsychicRouter } from 'psychic'
+import { PsychicRouter } from '@rvoh/psychic'
 
 export default (r: PsychicRouter) => {
   r.post('places', PlacesController, 'create')
@@ -67,7 +67,7 @@ To learn more about REST-driven routing mechanisms, see the [REST guide](/docs/r
 Since this type of routing pattern is quite common, Psychic provides encapsulated methods which will automatically build out these exact route directives in a single call, using the `resources` method, like so:
 
 ```ts // conf/routes.ts
-import { PsychicRouter } from 'psychic'
+import { PsychicRouter } from '@rvoh/psychic'
 
 export default (r: PsychicRouter) => {
   r.resources('places')
@@ -94,7 +94,7 @@ To learn more about resourceful routing, see the [resourceful routing guide](/do
 The Psychic router also provides techniques for namespacing your application, using nested callbacks to organize clusters of routes together, like so:
 
 ```ts // conf/routes.ts
-import { PsychicRouter } from 'psychic'
+import { PsychicRouter } from '@rvoh/psychic'
 
 export default (r: PsychicRouter) => {
   r.namespace('v1', r => {

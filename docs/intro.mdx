@@ -30,7 +30,7 @@ Using decorators, you can expressively unleash powerful guards to restrain your 
 ```ts
 const deco = new Decorators<typeof User>()
 
-@deco.SoftDelete()
+@SoftDelete()
 export default class User extends ApplicationModel {
   public get table() {
     return 'users' as const
@@ -46,22 +46,21 @@ export default class User extends ApplicationModel {
   @deco.Validates('presence')
   public email: string
 
-  @deco.Validates('length', { min: 4, max: 18 })
-  public passwordDigest: string
-
-  @deco.Virtual()
-  public password?: string | null
   public passwordDigest: DreamColumn<User, 'passwordDigest'>
+
+  @deco.Virtual('string')
+  @deco.Validates('length', { min: 4, max: 18 })
+  public password?: string | null
 
   @deco.BeforeSave()
   public async hashPass() {
-    if (this.password) this.passworDigest = await argon2.hash(this.password)
+    if (this.password) this.passwordDigest = await argon2.hash(this.password)
     this.password = undefined
   }
 
   public async checkPassword(password: string) {
-    if (!this.passworDigest) return false
-    return await argon2.verify(this.passworDigest, password)
+    if (!this.passwordDigest) return false
+    return await argon2.verify(this.passwordDigest, password)
   }
 }
 ```

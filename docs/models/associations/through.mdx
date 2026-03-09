@@ -8,7 +8,7 @@ ai_summary: "Through associations enable many-to-many relationships by traveling
 Both `HasOne` and `HasMany` associations have recursively-nested `through` support built-in, enabling you to bring nested associations out of their nested context and into the parent model's domain:
 
 ```ts
-export default class CommentReply extends Dream {
+export default class CommentReply extends ApplicationModel {
   @deco.BelongsTo('Comment')
   public comment: Comment
 

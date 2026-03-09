@@ -4,168 +4,77 @@ title: rendering
 ai_summary: "Serializers can be used explicitly (call .render() directly) or implicitly (Psychic automatically infers and uses serializers from model's serializers getter). Implicit rendering requires model to define serializers getter with default/summary/detail keys. Can specify serializerKey option to use non-default serializer."
 ---
 
-# Rendering Data with Serializers
+# rendering
 
-Once you have defined your serializers, you'll use them in your Psychic controllers to shape the data for your API responses. Dream and Psychic offer both explicit and implicit ways to render data using these serializers.
+Once you've defined your serializers, you need to actually use them to render data in your controllers. There are two ways to go about this: explicitly calling `.render()` yourself, or letting Psychic do it for you automatically.
 
-## Explicit rendering
+## explicit rendering
 
-You can explicitly use a serializer within your controller methods. This gives you direct control over which serializer is used and when its `.render()` method is called:
+If you want full control, you can call a serializer directly and render it yourself:
 
 ```ts
-import { StuffSerializer } from 'app/serializers/stuff_serializer' // Assuming StuffSerializer is your defined serializer function
-import Stuff from 'app/models/stuff' // Your Dream model
-
-// In your controller
-export class StuffsController extends ApplicationController {
+export default class StuffsController extends ApplicationController {
   public async show() {
-    const stuff = await Stuff.find(this.params.id)
-    if (!stuff) {
-      return this.notFound()
-    }
-    // Explicitly create and render with the serializer
+    const stuff = await Stuff.findOrFail(this.castParam('id', 'bigint'))
     this.ok(StuffSerializer(stuff).render())
   }
 }
 ```
 
-In this example, `StuffSerializer(stuff)` creates the serializer instance with the data, and `.render()` generates the final JSON object to be sent in the response.
+## implicit rendering
 
-## Implicit rendering
+The more common approach is to let Psychic handle serialization for you. When you pass a Dream model instance (or an array of them) to a response method like `this.ok()`, Psychic will automatically look up the right serializer and call `.render()` on your behalf.
 
-Psychic controllers can automatically infer and use serializers when you pass Dream model instances (or arrays of them) to response methods like `this.ok()`.
-
-To enable implicit rendering, your Dream model needs to define a `serializers` getter that provides access to its available serializer functions.
-
-### Defining serializers on your model
-
-Your Dream model should have a `serializers` getter that returns an object. The keys of this object are names (like `default`, `summary`, `detail`), and the values are the serializer functions themselves.
+For this to work, your model needs a `serializers` getter that maps names to serializer function names:
 
 ```ts
-// app/models/stuff.ts
-import ApplicationModel from './application_model'
-import { StuffSerializer, StuffSummarySerializer } from 'app/serializers/stuff_serializer' // Import your serializer functions
-
 export default class Stuff extends ApplicationModel {
-  // ... your model attributes and methods
-
-  public get serializers() {
+  public get serializers(): DreamSerializers<Stuff> {
     return {
-      default: StuffSerializer, // The function itself
-      summary: StuffSummarySerializer, // Another serializer function
-      // You can pass the instance or options if needed by the serializer
-      // detail: (options?: MyOptions) => StuffDetailSerializer(this, options)
+      default: 'StuffSerializer',
+      summary: 'StuffSummarySerializer',
     }
   }
 }
 ```
 
-### Using Implicit Rendering in Controllers
-
-Once the `serializers` getter is set up on the model:
-
-- **Default Serializer**: If you pass a model instance or an array of instances directly to `this.ok()`, Psychic will look for a `default` serializer in the model's `serializers` getter and use it.
-
-  ```ts
-  // In your controller
-  public async index() {
-    const stuffs = await Stuff.all();
-    this.ok(stuffs); // Automatically uses Stuff.prototype.serializers.default for each item
-  }
-
-  public async show() {
-    const stuff = await Stuff.find(this.params.id);
-    this.ok(stuff); // Automatically uses Stuff.prototype.serializers.default
-  }
-  ```
-
-- **Named Serializer**: You can specify a different named serializer by passing its key in the options object to `this.ok()`.
-
-  ```ts
-  // In your controller
-  public async indexSummary() {
-    const stuffs = await Stuff.all();
-    this.ok(stuffs, { serializer: 'summary' }); // Uses Stuff.prototype.serializers.summary for each item
-  }
-  ```
-
-## Serializer Passthrough Data
-
-Often, you'll want to make request-specific data available to all serializers invoked during the handling of that request (e.g., the current user's locale, permissions, or other contextual information). Psychic controllers provide the `this.serializerPassthrough()` method for this purpose.
-
-This method is typically called in a `BeforeAction` within a base controller or a specific controller to set data that should be accessible by any serializer used in that request lifecycle.
+With that in place, you can just pass models straight through:
 
 ```ts
-// app/controllers/application_controller.ts
-import { BeforeAction, PsychicController } from '@rvoh/psychic'
-// Assume getLocaleFromHeaders is a utility function you have
-import { getLocaleFromHeaders } from 'app/helpers/i18n-helpers'
+public async index() {
+  const stuffs = await Stuff.preloadFor('summary').all()
+  this.ok(stuffs) // uses the 'default' serializer
+}
 
+public async show() {
+  const stuff = await Stuff.preloadFor('default').findOrFail(this.castParam('id', 'bigint'))
+  this.ok(stuff) // uses the 'default' serializer
+}
+```
+
+## serializer passthrough data
+
+Often you'll want to make request-specific data — like the current user's locale — available to your serializers. Psychic controllers provide `this.serializerPassthrough()` for exactly this. You'll typically call it in a `BeforeAction` on a base controller:
+
+```ts
 export default class ApplicationController extends PsychicController {
   @BeforeAction()
   public configureSerializers() {
-    // Data passed here will be available to serializers
     this.serializerPassthrough({
-      locale: getLocaleFromHeaders(this.req.headers),
+      locale: getLocaleFromHeaders(this.ctx.headers),
     })
   }
 }
 ```
 
-### Accessing Passthrough Data in Serializers
-
-The data provided via `serializerPassthrough()` is typically passed as an `options` argument to your main serializer function. You can then access this data within your serializer logic, such as in `customAttribute` callbacks.
+The passthrough data then shows up as the second argument to your serializer function:
 
 ```ts
-// app/serializers/my_data_serializer.ts
-import { ObjectSerializer } from '@rvoh/dream'
-
-interface MyData {
-  /* ... */
-}
-interface SerializerOptions {
-  locale?: string
-  // other passthrough properties
-}
-
-export const MyDataSerializer = (data: MyData, options?: SerializerOptions) =>
-  ObjectSerializer(data, options) // Pass options to ObjectSerializer
-    .attribute('someProperty')
-    .customAttribute(
-      'localizedGreeting',
-      (d, opts) => {
-        // `opts` here contains the passthrough data
-        if (opts?.locale === 'es') {
-          return 'Hola desde el serializador!'
-        }
-        return 'Hello from the serializer!'
-      },
-      { openapi: 'string' }
-    )
-
-// When MyDataSerializer is invoked (explicitly or implicitly),
-// the passthrough data (e.g., { locale: 'es' }) will be available in `opts`.
-```
-
-### Passthrough Data in Nested Serializers
-
-When using the `serializer` option with `rendersOne` or `rendersMany`, passthrough data from the parent serializer is automatically passed to the nested serializer function:
-
-```ts
-// Nested serializer receives passthrough automatically
-export const BedTypeSerializer = (bedType: BedTypesEnum, passthrough: { locale: LocalesEnum }) =>
-  ObjectSerializer({ bedType }, passthrough)
-    .attribute('bedType', { as: 'value' })
-    .customAttribute('label', () => i18n(passthrough.locale, `rooms.Bedroom.bedTypes.${bedType}`), {
+export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
+  DreamSerializer(Place, place, passthrough)
+    .customAttribute('style', () => i18n(passthrough.locale, `places.style.${place.style}`), {
       openapi: 'string',
     })
-
-// Parent serializer passes passthrough to nested serializers
-export const RoomBedroomSerializer = (room: Bedroom, passthrough: { locale: LocalesEnum }) =>
-  DreamSerializer(Bedroom, room, passthrough)
-    .attribute('id')
-    .rendersMany('bedTypes', { serializer: BedTypeSerializer })
-// passthrough is automatically passed to BedTypeSerializer for each bedType
 ```
 
-This mechanism allows for clean separation of concerns, keeping your serializers focused on data transformation while allowing contextual data to be injected from the controller layer.
+When using `rendersOne` or `rendersMany` with the `serializer` option, passthrough data from the parent serializer is automatically forwarded to the nested serializer — no extra wiring needed.

@@ -5,7 +5,7 @@ pagination_next: null
 ai_summary: "Serializer attribute methods include attribute (with options: openapi, default, as, precision), delegatedAttribute (renders from nested objects/associations), and customAttribute (arbitrary transformation with flatten option). All support OpenAPI shape definitions."
 ---
 
-# Serializing Attributes
+# attributes
 
 ## attribute
 
@@ -18,29 +18,21 @@ export const PlaceSummarySerializer = (place: Place) =>
 export const PlaceSerializer = (place: Place) =>
   PlaceSummarySerializer(place).attribute('style').attribute('sleeps')
 
-// PlaceSummarySerializer serializes to:
-// { id: 1234, name: 'My place' }
-// and PlaceSerializer serializes to:
-// { id: 1234, name: 'My place', style: 'cabin', sleeps: 5 }
+// PlaceSummarySerializer renders: { id: 1234, name: 'My place' }
+// PlaceSerializer renders: { id: 1234, name: 'My place', style: 'cabin', sleeps: 5 }
 ```
 
-:::info
-CalendarDate and DateTime attributes (even arrays of CalendarDate and DateTime values) are automatically converted to their ISO values as part of serialization.
-:::
+CalendarDate and DateTime attributes (even arrays of them) are automatically converted to their ISO values during serialization.
 
-### attribute.openapi
+### openapi
 
-When serializing a Dream model with `DreamSerializer`, the OpenAPI shape of attributes corresponding to database columns is determined automatically (except for json and jsonb columns). However, you may still want to include an OpenAPI description:
+When serializing a Dream model with `DreamSerializer`, the OpenAPI shape of database column attributes is determined automatically (except for json and jsonb columns). You can still add an OpenAPI description if you want:
 
 ```ts
-.attribute('name', { openapi: { description: 'The name of the Place' } })`
+.attribute('name', { openapi: { description: 'The name of the Place' } })
 ```
 
-:::info
-`ObjectSerializer` serializer attributes always requires the `openapi` option.
-:::
-
-For a [virtual attribute](/docs/models/decorators/virtual) on a Dream model, `openapi` is required even for `DreamSerializer`:
+With `ObjectSerializer`, you always need to provide the `openapi` option, since there's no schema to pull from. Same goes for [virtual attributes](/docs/models/decorators/virtual) on Dream models — even with `DreamSerializer`, virtual attributes need an explicit `openapi` shape:
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
@@ -49,7 +41,7 @@ export const PlaceSerializer = (place: Place) =>
     .attribute('myVirtualAttribute', { openapi: ['string', 'null'] })
 ```
 
-This example leverages [OpenAPI shorthand](/docs/openapi/serializers#shorthand), but the full OpenAPI shape is available for representing complex shapes, as one must do for attributes that correspond to `json`/`jsonb` columns:
+For `json`/`jsonb` columns, you'll need to spell out the full OpenAPI shape:
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
@@ -66,9 +58,9 @@ export const PlaceSerializer = (place: Place) =>
     })
 ```
 
-### attribute.default
+### default
 
-The `default` option provides a fallback value when the attribute is `null` or `undefined`. The default value undergoes the same transformations as regular data (e.g., decimals are rounded, dates are converted to ISO format):
+The `default` option provides a fallback when the attribute is `null` or `undefined`. Default values go through the same transformations as regular data (decimals get rounded, dates get converted to ISO format, etc.):
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
@@ -78,19 +70,18 @@ export const PlaceSerializer = (place: Place) =>
     .attribute('sleeps', { default: 0 })
 ```
 
-### attribute.as
+### as
 
-Use the `as` option to change the name of the attribute in the output:
+Use the `as` option to rename the attribute in the output:
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
-  DreamSerializer(Place, place).attribute('id').attribute('sleeps', { as: 'accomodates' })
+  DreamSerializer(Place, place).attribute('id').attribute('sleeps', { as: 'accommodates' })
 
-// PlaceSerializer serializes to:
-// { id: 1234, accomodates: 5 }
+// renders: { id: 1234, accommodates: 5 }
 ```
 
-### attribute.precision
+### precision
 
 Decimal values can be automatically rounded with the `precision` option:
 
@@ -98,13 +89,12 @@ Decimal values can be automatically rounded with the `precision` option:
 export const PlaceSerializer = (place: Place) =>
   DreamSerializer(Place, place).attribute('id').attribute('rating', { precision: 1 })
 
-// A place with rating 4.66666 would serialize to:
-// { id: 1234, rating: 4.7 }
+// A place with rating 4.66666 renders: { id: 1234, rating: 4.7 }
 ```
 
 ## delegatedAttribute
 
-The `delegatedAttribute` method renders an attribute from a nested object into the serialized output. `delegatedAttribute` attributes are automatically inspected as part of [preloadFor](/docs/models/querying/preloadFor) (so when delegating to an association, that association will be automatically preloaded):
+The `delegatedAttribute` method reaches into a nested object or association and pulls an attribute into the serialized output. Associations used by `delegatedAttribute` are automatically loaded by [`preloadFor`](/docs/models/querying/preloadFor):
 
 ```ts
 export const PlaceSummaryForGuestsSerializer = (place: Place) =>
@@ -112,30 +102,27 @@ export const PlaceSummaryForGuestsSerializer = (place: Place) =>
     .attribute('id')
     .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
 
-// A place with currentLocalizedText with { title: 'Hello world' } will render:
+// A place with currentLocalizedText { title: 'Hello world' } renders:
 // { id: 1234, title: 'Hello world' }
 ```
 
 ### delegatedAttribute.default
 
-All options from the `attribute` method are supported on `delegatedAttribute`. On a delegated attribute, the default will be applied whether the association is null or the attribute on the association is null:
+All options from `attribute` are supported on `delegatedAttribute`. The `default` kicks in whether the association itself is null or the attribute on the association is null:
 
 ```ts
-export const PlaceSummaryForGuestsSerializer = (place: Place) =>
-  DreamSerializer(Place, place).attribute('id').delegatedAttribute('currentLocalizedText', 'title', {
-    openapi: 'string',
-    default: 'Untitled',
-  })
+.delegatedAttribute('currentLocalizedText', 'title', {
+  openapi: 'string',
+  default: 'Untitled',
+})
 
-// A place without a currentLocalizedText or a currentLocalizedText with { title: null } will render:
+// A place without a currentLocalizedText, or one with { title: null }, renders:
 // { id: 1234, title: 'Untitled' }
 ```
 
-The `default` option provides a fallback value when either the target object is `null`/`undefined` OR when the delegated attribute itself is `null`/`undefined`.
-
 ## customAttribute
 
-The `customAttribute` method is used for arbitrary data transformation. It is especially useful for rendering or leveraging passthrough data into the serialized output. `customAttribute` always requires the `openapi` option:
+The `customAttribute` method is for arbitrary data transformation. It's especially handy for leveraging passthrough data. `customAttribute` always requires the `openapi` option:
 
 ```ts
 export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
@@ -148,11 +135,11 @@ export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: Lo
   )
 ```
 
-See the [passthrough setting documentation](/docs/serializers/render#serializer-passthrough-data) for details on how to set passthrough data on automatically rendered serializers.
+See the [passthrough documentation](/docs/serializers/render#serializer-passthrough-data) for how to set passthrough data on automatically rendered serializers.
 
 ### customAttribute.flatten
 
-When `flatten: true` is included, the attributes of the returned object are flattened into the serialized results:
+When `flatten: true` is included, the attributes of the returned object get flattened into the parent:
 
 ```ts
 const UserSerializer = (user: User) =>

@@ -1,0 +1,26 @@
+---
+sidebar_position: 5
+ai_summary: "normalizeUnicode normalizes a Unicode string according to the application's configured normalization form, defaulting to NFC."
+---
+
+# normalizeUnicode
+
+Normalizes a Unicode string according to the application's configured normalization form. The default form is `'NFC'`.
+
+This is useful for ensuring text consistency, since the same visual text can be represented differently in Unicode (e.g., `é` as a single character vs. `e` + combining accent). Dream automatically normalizes string values passed to models before database storage, so you'll mostly use this when you need to normalize strings outside of a model context.
+
+```ts
+import { normalizeUnicode } from '@rvoh/dream/utils'
+
+normalizeUnicode('café')
+```
+
+The normalization form is configured in your dream config:
+
+```ts
+// conf/dream.ts
+dream.set('unicodeNormalization', 'NFC') // default
+// or 'NFD', 'NFKC', 'NFKD', 'none'
+```
+
+Setting it to `'none'` disables normalization entirely.

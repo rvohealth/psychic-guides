@@ -4,24 +4,22 @@ title: associations
 ai_summary: "Serializer association methods include rendersOne (single association) and rendersMany (array of associations). Options include serializerKey (specify which serializer to use by name), serializer (pass serializer function directly, useful for ObjectSerializer), as (rename in output), and flatten (for rendersOne only, flattens nested attributes into parent)."
 ---
 
-# Serializing Associations
+# associations
 
 ## rendersOne
 
-Use `.rendersOne()` to include a single associated model in serialized output:
+Use `.rendersOne()` to include a single associated model in your serialized output:
 
 ```ts
-// Room with place
 export const RoomWithPlaceSerializer = (room: Room) =>
   DreamSerializer(Room, room).attribute('id').attribute('name').rendersOne('place')
 ```
 
 ## rendersMany
 
-Use `.rendersMany()` to include an array of associated models in serialized output:
+Use `.rendersMany()` to include an array of associated models:
 
 ```ts
-// From BearBnB: Place with rooms
 export const PlaceForGuestsSerializer = (place: Place) =>
   DreamSerializer(Place, place)
     .attribute('id')
@@ -29,9 +27,9 @@ export const PlaceForGuestsSerializer = (place: Place) =>
     .rendersMany('rooms', { serializerKey: 'forGuests' })
 ```
 
-### rendersOne.serializerKey / rendersMany.serializerKey
+### serializerKey
 
-Specify which serializer to use for the associated model (defaults to 'default'):
+By default, associations render using the `'default'` serializer declared on the associated model. Pass `serializerKey` to use a different one:
 
 ```ts
 export const PlaceDetailSerializer = (place: Place) =>
@@ -39,21 +37,17 @@ export const PlaceDetailSerializer = (place: Place) =>
     .attribute('id')
     .attribute('name')
     .rendersMany('rooms', { serializerKey: 'forGuests' })
-    .rendersMany('bookings') // renders using the default serializer
+    .rendersMany('bookings') // uses 'default'
 ```
 
-### rendersOne.serializer / rendersMany.serializer
+### serializer
 
-Instead of using `serializerKey` to reference a serializer by name, you can pass a serializer function directly using the `serializer` option. This is particularly useful when serializing nested data structures that aren't Dream models, such as arrays of enum values that need to be transformed into objects.
-
-When using the `serializer` option, passthrough data from the parent serializer is automatically passed to the nested serializer:
+Instead of referencing a serializer by name with `serializerKey`, you can pass a serializer function directly. This is particularly useful when you need to serialize something that isn't a Dream model — like transforming an array of enum values into objects:
 
 ```ts
 import { ObjectSerializer } from '@rvoh/dream'
-import { LocalesEnum, BedTypesEnum, BedTypesEnumValues } from '@src/types/db.js'
-import i18n from '@src/utils/i18n.js'
 
-// Serializer for a single bed type enum value
+// serializer for a single bed type enum value
 export const BedTypeSerializer = (bedType: BedTypesEnum, passthrough: { locale: LocalesEnum }) =>
   ObjectSerializer({ bedType }, passthrough)
     .attribute('bedType', { as: 'value', openapi: { type: 'string', enum: BedTypesEnumValues } })
@@ -61,7 +55,7 @@ export const BedTypeSerializer = (bedType: BedTypesEnum, passthrough: { locale: 
       openapi: 'string',
     })
 
-// Serializer for a bedroom with localized bed types
+// parent serializer that uses it
 export const RoomBedroomForGuestsSerializer = (
   roomBedroom: Bedroom,
   passthrough: { locale: LocalesEnum },
@@ -72,47 +66,9 @@ export const RoomBedroomForGuestsSerializer = (
     .rendersMany('bedTypes', { serializer: BedTypeSerializer })
 ```
 
-In this example, `bedTypes` is an array of enum values (e.g., `['cot', 'bunk']`). The `BedTypeSerializer` uses `ObjectSerializer` to transform each enum value into an object with both the `value` (the enum) and a `label` (the localized string). The `passthrough` data containing the locale is automatically passed from the parent serializer to each `BedTypeSerializer` invocation.
+Here, `bedTypes` is an array of enum values (e.g., `['cot', 'bunk']`). The `BedTypeSerializer` transforms each one into an object with both the raw `value` and a localized `label`. Passthrough data from the parent is automatically forwarded — no extra wiring needed.
 
-Similarly, you can use `rendersOne` with a serializer function for single values:
-
-```ts
-import { ObjectSerializer } from '@rvoh/dream'
-import { LocalesEnum, BathOrShowerStylesEnum, BathOrShowerStylesEnumValues } from '@src/types/db.js'
-import i18n from '@src/utils/i18n.js'
-
-export const BathOrShowerStyleSerializer = (
-  bathOrShowerStyle: BathOrShowerStylesEnum,
-  passthrough: { locale: LocalesEnum },
-) =>
-  ObjectSerializer({ bathOrShowerStyle }, passthrough)
-    .attribute('bathOrShowerStyle', {
-      as: 'value',
-      openapi: { type: 'string', enum: BathOrShowerStylesEnumValues },
-    })
-    .customAttribute(
-      'label',
-      () => i18n(passthrough.locale, `rooms.Bathroom.bathOrShowerStyles.${bathOrShowerStyle}`),
-      {
-        openapi: 'string',
-      },
-    )
-
-export const RoomBathroomForGuestsSerializer = (
-  roomBathroom: Bathroom,
-  passthrough: { locale: LocalesEnum },
-) =>
-  DreamSerializer(Bathroom, roomBathroom, passthrough)
-    .attribute('id')
-    .attribute('type')
-    .rendersOne('bathOrShowerStyle', { serializer: BathOrShowerStyleSerializer })
-```
-
-:::info
-When using `ObjectSerializer` for nested serializers, you must explicitly provide the OpenAPI shape for each attribute since `ObjectSerializer` doesn't have access to database schema information like `DreamSerializer` does.
-:::
-
-### rendersOne.as / rendersMany.as
+### as
 
 Rename the association in the output:
 
@@ -120,12 +76,12 @@ Rename the association in the output:
 export const PlaceSerializer = (place: Place) =>
   DreamSerializer(Place, place).attribute('id').rendersMany('rooms', { as: 'accommodations' })
 
-// Output: { id: 1234, accommodations: [...] }
+// renders: { id: 1234, accommodations: [...] }
 ```
 
 ### rendersOne.flatten
 
-When `flatten: true` is included, the attributes of the serialized, associated object are flattened into the serialized results:
+When `flatten: true` is included, the serialized association's attributes get flattened into the parent object:
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
@@ -134,21 +90,15 @@ export const PlaceSerializer = (place: Place) =>
     serializerKey: 'forPlaces',
   })
 
-// Output: { id: 1234, title: 'My localized title', markdown: 'My localized markdown' }
+// renders: { id: 1234, title: 'My localized title', markdown: 'My localized markdown' }
 ```
 
-:::info
-When the goal is to incorporate a property or two from the associated model, a [delegatedAttribute](./attributes.mdx#delegatedattribute) may be a simpler approach than creating a new named serializer.
-:::
+When you only need a property or two from an association, a [delegatedAttribute](./attributes#delegatedattribute) is usually simpler than creating a new named serializer just to flatten it.
 
-## Loading Associations
+## loading associations
 
-Associations must be loaded before serialization. Use [`preloadFor`](/docs/models/querying/preloadFor) to automatically load everything needed for a serializer:
+Associations need to be loaded before serialization. The easiest way is with [`preloadFor`](/docs/models/querying/preloadFor), which automatically figures out what to load based on the serializer:
 
 ```ts
-// Loads all associations needed for PlaceForGuestsSerializer
 const places = await Place.preloadFor('forGuests').all()
-
-// Better than manually specifying:
-// const places = await Place.preload('rooms', 'currentLocalizedText').all()
 ```

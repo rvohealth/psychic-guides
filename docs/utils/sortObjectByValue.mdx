@@ -1,0 +1,24 @@
+---
+sidebar_position: 8
+ai_summary: "sortObjectByValue returns a copy of the object with its entries sorted by value. Supports a custom comparison function."
+---
+
+# sortObjectByValue
+
+Returns a copy of the object with its entries sorted by value. For simple string or number values, no comparison function is needed. For more complex values, pass a function that extracts a comparable string or number.
+
+```ts
+import { sortObjectByValue } from '@rvoh/dream/utils'
+
+sortObjectByValue({ a: 3, b: 1, c: 2 })
+// { b: 1, c: 2, a: 3 }
+
+sortObjectByValue({ a: 'cherry', b: 'apple', c: 'banana' })
+// { b: 'apple', c: 'banana', a: 'cherry' }
+
+sortObjectByValue(
+  { a: { score: 90 }, b: { score: 70 }, c: { score: 80 } },
+  item => item.score
+)
+// { b: { score: 70 }, c: { score: 80 }, a: { score: 90 } }
+```
