@@ -17,10 +17,6 @@ Psychic has a concept of middleware which piggy-backs off of Koa, enabling you c
 
 This approach bypasses the controller layer, which we don't recommend since it provides such helpful utilities, but can be useful sometimes, say, when integrating with Koa middleware.
 
-:::info Psychic 2.0 (Express-based)
-If you're using Psychic 2.0 with Express middleware, see the [Psychic 2.0 documentation](/docs/psychic-v2/routing/middleware).
-:::
-
 ## Multiple middleware callbacks
 
 In addition to a single middleware callback, Psychic enables you to provide several, ordered middleware callbacks. To do this, simply put the callbacks into an array, like so:
