@@ -221,7 +221,7 @@ index 3f576e4..c8e9e95 100644
 +  }
 +
 +  protected get locale() {
-+    const locale = this.headers['content-language']
++    const locale = this.header('content-language')
 +    const locales = supportedLocales()
 +    return locales.includes(locale as (typeof locales)[number]) ? locale : 'en-US'
 +  }
