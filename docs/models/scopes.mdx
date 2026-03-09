@@ -10,12 +10,7 @@ The scoping system will be familiar to those coming from the Ruby on Rails camp,
 All scope functions receive a `Query<ClassName>` (where `ClassName` is the name of the Dream class defining the Scope) instance and return a clone of that instance (usually by calling `where` on that instance):
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public name: string
+export default class Post extends ApplicationModel {
   ...
 
   @deco.Scope()
@@ -32,12 +27,7 @@ const posts = await Post.scope('withFunnyName').all()
 While regular scopes are meant to be applied manually, default scopes will automatically be applied to all queries. This behavior should be used sparingly, but there are occasionally pretty good cases for it, as seen below, emulating the Ruby on Rails paranoid gem pattern:
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public name: string
+export default class Post extends ApplicationModel {
   ...
 
   @deco.Scope({ default: true })

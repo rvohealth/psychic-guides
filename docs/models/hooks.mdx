@@ -10,7 +10,7 @@ ai_summary: "Dream lifecycle hooks include BeforeCreate, BeforeUpdate, BeforeSav
 `BeforeCreate` hooks are run whenever a new record is being saved to the database. A decorator pattern is leveraged, so no arguments need to be passed to the hook, it simply needs to live above the property, like so:
 
 ```ts
-export default class User extends Dream {
+export default class User extends ApplicationModel {
   @deco.BeforeCreate()
   public async hashPassword() {
     if (this.password) this.passwordDigest = await Hash.gen(this.password)
@@ -24,13 +24,7 @@ export default class User extends Dream {
 `BeforeUpdate` hooks are run whenever an existing (meaning, previously-saved) record is updated, and can be leveraged like so:
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public id: number
-  public content: string | null
+export default class Post extends ApplicationModel {
   ...
 
   @deco.BeforeUpdate()
@@ -50,13 +44,7 @@ export default class Post extends Dream {
 `BeforeSave` hooks are run whenever either an existing OR new record is written to the DB, and can be leveraged like so:
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public id: number
-  public content: string | null
+export default class Post extends ApplicationModel {
   ...
 
   @deco.BeforeSave()
@@ -71,13 +59,7 @@ export default class Post extends Dream {
 BeforeDestroy hooks are run whenever either an existing record is destroyed from the DB, and can be leveraged like so:
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public id: number
-  public content: string | null
+export default class Post extends ApplicationModel {
   ...
 
   @deco.BeforeDestroy()
@@ -92,13 +74,7 @@ export default class Post extends Dream {
 AfterCreate hooks are run after a new record is saved to the database. A decorator pattern is leveraged, so no arguments need to be passed to the hook, it simply needs to live above the property, like so:
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public id: number
-  public content: string | null
+export default class Post extends ApplicationModel {
   ...
 
   @deco.AfterCreate()
@@ -112,16 +88,10 @@ export default class Post extends Dream {
 
 ## after update
 
-AfterUpdate hooks are run whenever an existing (meanin, previously-saved) record has been updated, and can be leveraged like so:
+AfterUpdate hooks are run whenever an existing (meaning, previously-saved) record has been updated, and can be leveraged like so:
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public id: number
-  public content: string | null
+export default class Post extends ApplicationModel {
   ...
 
   @deco.AfterUpdate()
@@ -141,13 +111,7 @@ export default class Post extends Dream {
 AfterSave hooks are run whenever either an existing OR new record has been written to the DB, and can be leveraged like so:
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public id: number
-  public content: string | null
+export default class Post extends ApplicationModel {
   ...
 
   @deco.AfterSave()
@@ -162,13 +126,7 @@ export default class Post extends Dream {
 AfterDestroy hooks are run whenever either an existing record has been destroyed from the DB, and can be leveraged like so:
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public id: number
-  public content: string | null
+export default class Post extends ApplicationModel {
   ...
 
   @deco.AfterDestroy()
@@ -189,13 +147,7 @@ IMPORTANT: when sending a model to a background job, _always_ use an after commi
 AfterCreateCommit hooks are run after a new record is saved to the database and the transaction is committed.
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public id: number
-  public content: string | null
+export default class Post extends ApplicationModel {
   ...
 
   @deco.AfterCreateCommit()
@@ -207,16 +159,10 @@ export default class Post extends Dream {
 
 ### after update commit
 
-AfterUpdateCommit hooks are run whenever an existing (meanin, previously-saved) record has been updated and the encapsulating transaction has been committed, and can be leveraged like so:
+AfterUpdateCommit hooks are run whenever an existing (meaning, previously-saved) record has been updated and the encapsulating transaction has been committed, and can be leveraged like so:
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public id: number
-  public content: string | null
+export default class Post extends ApplicationModel {
   ...
 
   @deco.AfterUpdateCommit()
@@ -236,13 +182,7 @@ export default class Post extends Dream {
 AfterSaveCommit hooks are run whenever either an existing OR new record has been written to the DB and the encapsulating transaction has been committed, and can be leveraged like so:
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public id: number
-  public content: string | null
+export default class Post extends ApplicationModel {
   ...
 
   @deco.AfterSaveCommit()
@@ -257,13 +197,7 @@ export default class Post extends Dream {
 AfterDestroyCommit hooks are run whenever an existing record has been destroyed from the DB and the transaction has been committed, and can be leveraged like so:
 
 ```ts
-export default class Post extends Dream {
-  public readonly get table() {
-    return 'posts' as const
-  }
-
-  public id: number
-  public content: string | null
+export default class Post extends ApplicationModel {
   ...
 
   @deco.AfterDestroyCommit()

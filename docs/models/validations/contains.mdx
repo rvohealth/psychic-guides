@@ -8,12 +8,8 @@ ai_summary: "The contains validator ensures a field contains a specified substri
 Use the `contains` validator to ensure a certain format is met against your model before saving:
 
 ```ts
-export default class User extends Dream {
-  public get table() {
-    return 'users' as const
-  }
-
-  public id: string
+export default class User extends ApplicationModel {
+  ...
 
   @deco.Validates('contains', '@')
   public email: string

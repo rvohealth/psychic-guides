@@ -15,7 +15,7 @@ export default class PlacesController extends PsychicController {
   public async index() {
     ...
     this.ok(places)
-    this.ok(places.map(place => new PlaceSerializer(place).render()))
+    this.ok(places.map(place => PlaceSerializer(place).render()))
   }
 }
 ```
@@ -28,7 +28,7 @@ export default class PlacesController extends PsychicController {
     const place = await this.currentHost
       .associationQuery('places')
       .leftJoinPreload('rooms')
-      .find(this.castParam('id'))
+      .find(this.castParam('id', 'bigint'))
     this.ok(place)
   }
 
@@ -94,7 +94,7 @@ export default class Place extends ApplicationModel {
   serializerKey: 'forGuests', // This must match a key in the model's serializers getter
 })
 public async show() {
-  this.ok(await Place.findOrFail(this.castParam('id')))
+  this.ok(await Place.findOrFail(this.castParam('id', 'bigint')))
 }
 ```
 
@@ -112,7 +112,7 @@ In addition to being able to do implicit and explicit serializer lookups, Psychi
 ```ts
 export default class PlacesController extends PsychicController {
   public async show() {
-    this.ok(new PlaceSerializer(place))
+    this.ok(PlaceSerializer(place))
   }
 }
 ```
