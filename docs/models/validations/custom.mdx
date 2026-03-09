@@ -11,12 +11,8 @@ ai_summary: >-
 Use custom validators for needs that are more specific than can be handled with provided validators:
 
 ```ts
-export default class User extends Dream {
-  public readonly get table() {
-    return 'users' as const
-  }
-
-  public id: string
+export default class User extends ApplicationModel {
+  ...
 
   @deco.Validate()
   public ensureEmailValid() {

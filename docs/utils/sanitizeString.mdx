@@ -1,0 +1,21 @@
+---
+sidebar_position: 6
+ai_summary: "sanitizeString escapes potentially dangerous characters in a string by replacing them with Unicode escape sequences."
+---
+
+# sanitizeString
+
+Escapes potentially dangerous characters (`\`, `/`, `<`, `>`, `&`, `'`, `"`) in a string by replacing them with Unicode escape sequences. Returns `null` or `undefined` unchanged if that's what was passed in.
+
+```ts
+import { sanitizeString } from '@rvoh/dream/utils'
+
+sanitizeString('<script>alert("xss")</script>')
+// '\\u003cscript\\u003ealert(\\u0022xss\\u0022)\\u003c\\u002fscript\\u003e'
+
+sanitizeString("it's fine")
+// 'it\\u0027s fine'
+
+sanitizeString(null)
+// null
+```

@@ -8,12 +8,8 @@ ai_summary: "The presence validator ensures a field is not blank before saving. 
 Use the `presence` validator when you want to guarantee a field is not blank before saving:
 
 ```ts
-export default class Post extends Dream {
-  public get table() {
-    return 'posts' as const
-  }
-
-  public id: number
+export default class Post extends ApplicationModel {
+  ...
 
   @deco.Validates('presence')
   public content: string

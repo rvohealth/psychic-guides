@@ -9,7 +9,7 @@ ai_summary: "Multiple OpenAPI specs can be configured for different audiences (a
 For some applications, it may be desirable to split your OpenAPI definitions into multiple, separate files. To do this, you can specify in `conf/app.ts` a second OpenAPI configuration under a different name (e.g. `admin`), like so:
 
 ```ts
-export default (psy: Psyconf) => {
+export default (psy: PsychicApp) => {
   psy.set('openapi', {
     // ...
   })
@@ -27,7 +27,7 @@ This can also be useful, if, say, you have an API which services both a mobile t
 The following approach does away with these concerns, since you can suppress response enums with a single config line. This enables you to deliver two identical OpenAPI files, except that one will suppress response enums, while the other will not:
 
 ```ts
-export default (psy: Psyconf) => {
+export default (psy: PsychicApp) => {
   psy.set('openapi', 'web', {
     outputFilename: 'web.openapi.json',
   })

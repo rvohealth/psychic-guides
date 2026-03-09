@@ -5,28 +5,22 @@ pagination_prev: null
 ai_summary: "Dream serializers translate data into JSON for API responses and participate in OpenAPI generation. Use DreamSerializer (for Dream models) or ObjectSerializer (for view models/plain objects). Fluent API with attribute, customAttribute, delegatedAttribute, rendersOne, rendersMany. Synchronous by design to prevent N+1 queries. Each model can have multiple serializers for different contexts."
 ---
 
-# Overview
+# overview
 
-Dream serializers translate data into JSON, usually for returning as an API response. They also participate in Psychic's automatic OpenAPI generation.
+Serializers are how your data gets from a Dream model into JSON for your API responses. They also feed into Psychic's automatic OpenAPI generation, so your docs stay in sync with your actual response shapes.
 
-- **`DreamSerializer` and `ObjectSerializer`**: All serializers will return the result of calling `DreamSerializer` (for serializing Dream models) or `ObjectSerializer` (for serializing [view models](./view-models.mdx) or simple JavaScript objects). `DreamSerializer` leverages Dream's knowledge of the database schema and associations to automatically determine OpenAPI shape. `ObjectSerializer` requires the OpenAPI shape of each attribute to be provided.
+Dream provides two serializer functions: `DreamSerializer` for serializing Dream models, and `ObjectSerializer` for serializing [view models](./view-models.mdx) or plain JavaScript objects. `DreamSerializer` knows about your database schema and associations, so it can automatically figure out OpenAPI shapes for you. `ObjectSerializer` needs you to tell it the shape of each attribute.
 
-- **Fluent API**: The structure is defined by chaining calls to `.attribute()`, `.customAttribute()`, `.delegatedAttribute()`, `.rendersOne()`, and `.rendersMany()`.
+The API is fluent — you chain calls to `.attribute()`, `.customAttribute()`, `.delegatedAttribute()`, `.rendersOne()`, and `.rendersMany()` to build up the shape of your serialized output.
 
-- **OpenAPI Generation**: Serializers feed into Psychic's automatic OpenAPI generation, thereby keeping API documentation consistent with its implementation.
+Each model can have multiple serializers for different contexts (e.g. a `summary` serializer for index endpoints and a `default` serializer for show endpoints), and serializers compose nicely — you can extend one from another.
 
-- **Flexibility**: Each model can have multiple serializers, so different data can be rendered in different contexts (e.g. `index` vs. `show` endpoints).
+One important design decision: serializers are intentionally synchronous. This prevents you from accidentally introducing N+1 query problems during serialization. Load your data upfront (using [`preloadFor`](/docs/models/querying/preloadFor) is the easiest way), then let the serializer do its thing.
 
-- **Synchronous by Design**: Dream serializers are intentionally synchronous. This prevents accidental introduction of N+1 query problems during serialization.
-
-## Example
-
-Here's an example serializer from [the BearBnB demo app](https://github.com/rvohealth/bearbnb):
+## example
 
 ```ts
 import { DreamSerializer } from '@rvoh/dream'
-import { LocalesEnum } from '../../types/db.js'
-import i18n from '../../utils/i18n.js'
 import Place from '../models/Place.js'
 
 export const PlaceSummarySerializer = (place: Place) =>
@@ -34,20 +28,14 @@ export const PlaceSummarySerializer = (place: Place) =>
 
 export const PlaceSerializer = (place: Place) =>
   PlaceSummarySerializer(place).attribute('style').attribute('sleeps').attribute('deletedAt')
-
-export const PlaceSummaryForGuestsSerializer = (place: Place) =>
-  DreamSerializer(Place, place)
-    .attribute('id')
-    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
-
-export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
-  PlaceSummaryForGuestsSerializer(place)
-    .customAttribute('style', () => i18n(passthrough.locale, `places.style.${place.style}`), {
-      openapi: 'string',
-    })
-    .attribute('sleeps')
-    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
-    .rendersMany('rooms', { serializerKey: 'forGuests' })
 ```
 
-This documentation will guide you through defining attributes, handling associations, generating serializers, and using them to render data and produce OpenAPI schemas.
+Here, `PlaceSerializer` extends `PlaceSummarySerializer` — it includes everything the summary does, plus a few more fields. This is a common pattern for keeping your serializers DRY.
+
+:::tip
+- [attributes guide](./attributes)
+- [associations guide](./associations)
+- [rendering guide](./render)
+- [generating guide](./generating)
+- [view models guide](./view-models)
+:::

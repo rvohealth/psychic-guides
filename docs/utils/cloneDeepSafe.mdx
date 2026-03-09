@@ -1,0 +1,23 @@
+---
+sidebar_position: 3
+ai_summary: "cloneDeepSafe returns a deep clone of a value, with special handling for Dream instances, Query instances, DateTime, CalendarDate, and other Dream types."
+---
+
+# cloneDeepSafe
+
+Returns a deep clone of a value. Dream instances are cloned using their internal clone method, and immutable types like `DateTime`, `CalendarDate`, and `Range` are returned as-is. Plain objects and arrays are recursively cloned.
+
+```ts
+import { cloneDeepSafe } from '@rvoh/dream/utils'
+
+const original = { name: 'hello', tags: ['a', 'b'] }
+const cloned = cloneDeepSafe(original)
+cloned.tags.push('c')
+// original.tags is still ['a', 'b']
+```
+
+An optional second argument can be provided to handle cloning of types that `cloneDeepSafe` doesn't know about. Without it, unsupported types will throw an error:
+
+```ts
+cloneDeepSafe(myCustomObject, obj => ({ ...obj }))
+```

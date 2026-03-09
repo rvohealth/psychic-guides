@@ -33,7 +33,7 @@ await place.destroyAssociation('rooms', { and: { name: 'my room' } })
 Deletion will cascade through associations declared `dependent: 'destroy'`. If each associated model is decorated with `@SoftDelete` (see below), then the models corresponding to that association will be soft deleted:
 
 ```ts
-const deco = new Decorators<InstanceType<typeof Place>>()
+const deco = new Decorators<typeof Place>()
 
 export default class Place extends ApplicationModel {
   @deco.HasMany('Room', { dependent: 'destroy' })

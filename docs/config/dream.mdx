@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-ai_summary: "Dream configuration is done in conf/dream.ts. Configures database connections (primary and replica), supports multiple database connections, primary key types, pagination page size, and other Dream-specific settings."
+ai_summary: 'Dream configuration is done in conf/dream.ts. Configures database connections (primary and replica), supports multiple database connections, primary key types, pagination page size, and other Dream-specific settings.'
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -18,8 +18,8 @@ A configuration file is used to configure Dream, and can be found at the `conf/d
 In order for Dream to connect to your database, you need to provide it with explicit credentials. Dream supports both primary and replica DB connections, and configuration for both can be provided. While this example taps into env vars, we recommend that in production, you switch to something more secure, like [AWS Secrets Manager](https://aws.amazon.com/secrets-manager):
 
 ```ts
-export default async function (dream: DreamApp) {
-  dream.set('db', {
+export default async function (dreamApp: DreamApp) {
+  dreamApp.set('db', {
     primary: {
       user: AppEnv.string('DB_USER'),
       password: AppEnv.string('DB_PASSWORD'),
@@ -48,7 +48,7 @@ export default async function (dream: DreamApp) {
 Dream provides the ability for you to house multiple database connections within your application. To do this, simply call the `set` method a second time, this time providing it with a string argument for a `connectionName` before providing it your connection options:
 
 ```ts
-  dream.set('db', 'myAlternateConnection', {
+  dreamApp.set('db', 'myAlternateConnection', {
     primary: ...,
   })
 ```
@@ -57,9 +57,7 @@ Be sure to add any new environment variables to your .env and .env.test files.
 
 2. Run sync
 
-<PackageManagerTabs
-  code={`{{PM}} psy sync`}
-/>
+<PackageManagerTabs code={`{{PM}} psy sync`} />
 
 3. add a new application model for your new connection, naming it the name of your connection, pascalized, with the string `ApplicationModel` at the end, like so:
 
@@ -71,7 +69,7 @@ import { DBClass } from '../../types/db.alternateConnection.js'
 import { globalSchema, schema } from '../../types/dream.alternateConnection.js'
 
 export default class MyAlternateConnectionApplicationModel extends Dream {
-  public declare DB: DBClass
+  declare public DB: DBClass
 
   public override get connectionName() {
     return 'myAlternateConnection' as const
@@ -143,10 +141,10 @@ In order for dream to function properly, it needs you to provide it folders to s
 To do so, every dream application must have the following lines provided in the dream configuration:
 
 ```ts
-export default async function (dream: DreamApp) {
-  app.load('models', srcPath('app', 'models'), await importModels())
-  app.load('serializers', srcPath('app', 'serializers'), await importSerializers())
-  app.load('services', srcPath('app', 'services'), await importServices())
+export default async function (dreamApp: DreamApp) {
+  dreamApp.load('models', srcPath('app', 'models'), await importModels())
+  dreamApp.load('serializers', srcPath('app', 'serializers'), await importSerializers())
+  dreamApp.load('services', srcPath('app', 'services'), await importServices())
   ...
 }
 ```
@@ -156,8 +154,8 @@ export default async function (dream: DreamApp) {
 Dream requires you to provide it the path from your configuration file to the project's root file. This should be an absolute path, including the \_\_dirname variable provided by node.
 
 ```ts
-export default async function (dream: DreamApp) {
-  dream.set('projectRoot', path.join(__dirname, '..', '..', '..'))
+export default async function (dreamApp: DreamApp) {
+  dreamApp.set('projectRoot', path.join(__dirname, '..', '..', '..'))
   ...
 }
 ```
@@ -167,8 +165,8 @@ export default async function (dream: DreamApp) {
 The primaryKeyType configuration informs the cli how to generate your migrations for you when building out models using the cli generators provided by dream.
 
 ```ts
-export default async function (dream: DreamApp) {
-  dream.set('primaryKeyType', 'bigserial')
+export default async function (dreamApp: DreamApp) {
+  dreamApp.set('primaryKeyType', 'bigserial')
   ...
 }
 ```
@@ -180,22 +178,20 @@ Provide inflections to your dream application to inform the dream cli generators
 ```ts
 import inflections from './inflections'
 
-export default async function (dream: DreamApp) {
-  dream.set('inflections', inflections)
+export default async function (dreamApp: DreamApp) {
+  dreamApp.set('inflections', inflections)
   ...
 }
 ```
 
 ### application logging
 
-Provide inflections to your dream application to inform the dream cli generators how to generate pluralized version of singulars.
+Dream accepts a custom logger so you can integrate with your preferred logging solution. If no logger is provided, dream will fall back to `console.log`.
 
 ```ts
 // conf/dream.ts
-import inflections from './inflections'
-
-export default async function (dream: DreamApp) {
-  dream.set(
+export default async function (dreamApp: DreamApp) {
+  dreamApp.set(
     'logger',
     winston.createLogger({
       level: 'info',
@@ -226,10 +222,10 @@ Provide information about the paths to the specific directories that dream cares
 
 ```ts
 // conf/dream.ts
-export default async function (dream: DreamApp) {
+export default async function (dreamApp: DreamApp) {
   // provides a list of path overrides for your app. This is optional, and will default
   // to the paths expected for a typical psychic application.
-  dream.set('paths', {
+  dreamApp.set('paths', {
     conf: 'my/custom/path/to/app/conf',
     db: 'my/custom/path/to/db',
     factories: 'my/custom/path/to/factories',
@@ -247,8 +243,8 @@ export default async function (dream: DreamApp) {
 Dream tests can be slower than traditional vitest testing, since each test utilizes a connection to a single database, and that database must be truncated between each test run, preventing multiple test runs from being done at once. This means your tests _must_ run one at a time, which can be quite slow. To speed things up, we provide the ability for you to partition your test runs onto multiple databases, enabling you to run as many tests as you have databases at once.
 
 ```ts
-export default async function (dream: DreamApp) {
-  app.set('parallelTests', AppEnv.integer('DREAM_PARALLEL_TESTS', { optional: true }) || 1)
+export default async function (dreamApp: DreamApp) {
+  dreamApp.set('parallelTests', AppEnv.integer('DREAM_PARALLEL_TESTS', { optional: true }) || 1)
   ...
 }
 ```
@@ -257,23 +253,27 @@ The value provided to `parallelTests` needs to be an integer, and will be used t
 
 ### ApplicationModel
 
-Additionally, a base model (called `ApplicationModel`) is pre-established for you which contains carefully constructed type bindings to bridge the types generated by kysely throughout the app through each of your models. This happens automatically for you, but it must be the base class for each of your models in order for the type safety of the system to work properly.
+A base model (called `ApplicationModel`) is pre-established for you which contains carefully constructed type bindings to bridge the types generated by kysely throughout the app through each of your models. This happens automatically for you, but it must be the base class for each of your models in order for the type safety of the system to work properly.
 
 ```ts
-import { Dream, Dreamconf } from '@rvoh/dream'
-import { AllColumns, DBClass } from '../../types/db'
-import { schema } from '../../types/dream'
-import dreamconf from '../../conf/dreamconf'
+import { Dream } from '@rvoh/dream'
+import { DB } from '../../types/db.js'
+import { connectionTypeConfig, schema } from '../../types/dream.js'
+import { globalTypeConfig } from '../../types/dream.globals.js'
 
 export default class ApplicationModel extends Dream {
-  public declare DB: DBClass
+  declare public DB: DB
 
-  public get allColumns(): typeof AllColumns {
-    return AllColumns
+  public override get schema() {
+    return schema
   }
 
-  public get dreamconf(): Dreamconf<DBClass, typeof schema> {
-    return dreamconf
+  public override get connectionTypeConfig() {
+    return connectionTypeConfig
+  }
+
+  public override get globalTypeConfig() {
+    return globalTypeConfig
   }
 }
 ```
