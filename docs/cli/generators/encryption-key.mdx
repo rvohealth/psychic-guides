@@ -1,0 +1,37 @@
+---
+sidebar_position: 7
+title: encryption-key
+pagination_next: null
+ai_summary: "The generate:encryption-key command generates a new encryption key for use with encrypted columns, encrypting/decrypting cookies, or general use of the Encrypt library in Dream or Psychic. Supports aes-256-gcm (default), aes-192-gcm, and aes-128-gcm algorithms."
+---
+
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
+# generate\:encryption-key
+
+Generates a new encryption key for any of the encryption use cases in Dream or Psychic, including encrypted columns (used with the `@deco.Encrypted` decorator), encrypting/decrypting cookies, and generalized use of the Encrypt library.
+
+## Usage
+
+<PackageManagerTabs
+  code={`{{PM}} psy g:encryption-key`}
+/>
+
+### Options
+
+- `--algorithm <algorithm>`: The encryption algorithm to generate a key for (choices: `aes-256-gcm`, `aes-192-gcm`, `aes-128-gcm`, default: `aes-256-gcm`).
+- `-h, --help`: Display help for command.
+
+## Examples
+
+Generate a key using the default algorithm (aes-256-gcm):
+
+<PackageManagerTabs
+  code={`{{PM}} psy g:encryption-key`}
+/>
+
+Generate a key for a specific algorithm:
+
+<PackageManagerTabs
+  code={`{{PM}} psy g:encryption-key --algorithm aes-128-gcm`}
+/>

@@ -1,15 +1,15 @@
 ---
 sidebar_position: 6
 title: client
-pagination_next: null
-ai_summary: "Client generators include openapi:redux for generating Redux bindings from OpenAPI specs using @rtk-query/codegen-openapi. Automatically syncs bindings when psy sync is called. Also supports openapi:typescript for TypeScript type generation."
+
+ai_summary: "Client setup commands include setup:sync:openapi-redux for generating Redux bindings from OpenAPI specs using @rtk-query/codegen-openapi, setup:sync:enums for syncing backend enums to a client app, and setup:sync:openapi-typescript for generating TypeScript types from OpenAPI specs. All automatically sync when psy sync is called."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 In addition to strict backend utilities, Psychic also exports a few CLI utilities that can be used to help smooth out a client integration with Psychic.
 
-## openapi:redux
+## setup\:sync\:openapi-redux
 
 Since the majority of the world is using React, we have provided a util which easily generates Redux bindings for a given client application. The bindings provided will create a bridge that keeps client OpenAPI integrations up to date with the latest OpenAPI files, syncing the newly-generated bindings over to your client any time `psy sync` is called:
 
@@ -18,10 +18,19 @@ Under the hood, Psychic uses the [@rtk-query/codegen-openapi](https://www.npmjs.
 To make use of this utility, you can run the following:
 
 <PackageManagerTabs
-  code={`{{PM}} psy g:openapi:redux`}
+  code={`{{PM}} psy setup:sync:openapi-redux`}
 />
 
-You will be prompted to answer a few questions, primarily to fill out the configuration file provided by the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) package. The configuration for this package is confusing, and also _must_ be set up using JSON as of now, due to limitations in their own library when paired with an ESM package. These nuances are hard to tango with and can lead to frustration, which is why we provided this generator to begin with.
+### Options
+
+- `--schema-file <schemaFile>`: The path from your api root to the openapi file you wish to use to generate your schema, e.g. `./src/openapi/openapi.json`.
+- `--api-file <apiFile>`: The path to the boilerplate api file that will be used to scaffold your backend endpoints together with, e.g. `../client/app/api.ts`.
+- `--api-import <apiImport>`: The camelCased name of the export from your api module, e.g. `emptyBackendApi`.
+- `--output-file <outputFile>`: The path to the file that will contain your typescript openapi redux bindings, e.g. `../client/app/myBackendApi.ts`.
+- `--export-name <exportName>`: The camelCased name to use for your exported api, e.g. `myBackendApi`.
+- `-h, --help`: Display help for command.
+
+You will be prompted to answer a few questions if the options above are not provided, primarily to fill out the configuration file provided by the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) package. The configuration for this package is confusing, and also _must_ be set up using JSON as of now, due to limitations in their own library when paired with an ESM package. These nuances are hard to tango with and can lead to frustration, which is why we provided this setup command to begin with.
 
 Nuances aside, the package does an incredible job at providing useful, Redux-driven bindings to your application that will create a seamless integration between your client and back end applications. By default, Psychic will attempt to sync to your `openapi/openapi.json` file, but you can redirect it to any OpenAPI file of your choosing. Psychic will make a few other intelligent guesses as to a few of the configuration options, but feel free to override any of the defaults.
 
@@ -122,14 +131,41 @@ export const emptyMyAppApi = createApi({
 })
 ```
 
-## sync enums
+## setup\:sync\:enums
 
-you may find yourself wishing to have access to your backend enums from your client, perhaps to populate a select box. Even if you are using the `@rtk-query/codegen-openapi` utility, it will not provide you with easy access to the enums that are generated from it. Rather than burden you with copying the enums manually by hand, psychic offers a helpful generator to bridge your backend enums to your client.
+You may find yourself wishing to have access to your backend enums from your client, perhaps to populate a select box. Even if you are using the `@rtk-query/codegen-openapi` utility, it will not provide you with easy access to the enums that are generated from it. Rather than burden you with copying the enums manually by hand, psychic offers a helpful setup command to bridge your backend enums to your client.
 
 To do this, simply run
 
 <PackageManagerTabs
-  code={`{{PM}} psy g:initializer:sync-enums ../client/src/enums.ts`}
+  code={`{{PM}} psy setup:sync:enums ../client/src/enums.ts`}
 />
 
+### Arguments
+
+- `<outfile>`: The path from your backend directory to the location which you want the enums copied. Should end with `.ts`, e.g. `../client/src/api/enums.ts`.
+
+### Options
+
+- `--initializer-filename <initializerFilename>`: The name you want the file to be in your initializers folder. Defaults to `sync-enums.ts`.
+- `-h, --help`: Display help for command.
+
 This will generate an initializer that will tap into psychic lifecycle hooks, ensuring that any time `psy sync` is run, the enums will be synced to the outfile destination of your choosing.
+
+## setup\:sync\:openapi-typescript
+
+Generates an initializer in your app for converting one of your OpenAPI files to TypeScript types.
+
+<PackageManagerTabs
+  code={`{{PM}} psy setup:sync:openapi-typescript ./src/openapi/openapi.json ./src/conf/openapi/openapi.types.d.ts`}
+/>
+
+### Arguments
+
+- `<openapiFilepath>`: The path from your backend directory to the openapi file you wish to scan, e.g. `./src/openapi/openapi.json`.
+- `<outfile>`: The path from your backend directory to the location which you want the openapi types written to. Must end with `.d.ts`, e.g. `./src/conf/openapi/openapi.types.d.ts`.
+
+### Options
+
+- `--initializer-filename <initializerFilename>`: The name you want the file to be in your initializers folder. Defaults to `sync-openapi-typescript.ts`.
+- `-h, --help`: Display help for command.

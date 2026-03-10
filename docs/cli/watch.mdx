@@ -1,6 +1,6 @@
 ---
 sidebar_position: 5
-ai_summary: "The watch command automatically syncs types when files change. Watches src directory (or specified directory) and calls sync automatically. Swallows errors and continues watching until valid code is achieved."
+ai_summary: "The sync command generates types from the database and OpenAPI specs, with --ignore-errors and --schema-only options. The watch command automatically syncs types when files change. Watches src directory (or specified directory) and calls sync automatically. Swallows errors and continues watching until valid code is achieved."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -12,6 +12,12 @@ Dream, Psychic, and Kysely all use custom type compilation steps to supply their
 <PackageManagerTabs
   code={`{{PM}} psy sync`}
 />
+
+### sync options
+
+- `--ignore-errors`: Continue syncing even if errors are encountered.
+- `--schema-only`: Only sync the database schema types, skipping OpenAPI and other sync actions.
+- `-h, --help`: Display help for command.
 
 This can get cumbersome, especially considering it is difficult to know what change necessitates a type sync. Considering this pain point, a simple utility was written to enable you to get automatic type syncing any time a file changes. To activate this, simply open a new tab in your terminal, cd into the api directory for your app (or the root directory if you did an api-only build), and run the `watch` command, like so:
 

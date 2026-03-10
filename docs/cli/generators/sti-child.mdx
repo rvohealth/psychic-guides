@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: sti-child
-ai_summary: 'The generate:sti-child command creates STI (Single Table Inheritance) child models that extend a parent model. Requires parent model to be created first with --sti-base-serializer flag. Supports same column types as model generator.'
+ai_summary: 'The generate:sti-child command creates STI (Single Table Inheritance) child models that extend a parent model. Requires parent model to be created first with --sti-base-serializer flag. Supports same column types as model generator, plus --model-name, --admin-serializers, and --internal-serializers options.'
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -51,13 +51,17 @@ You can also create an STI parent using the model generator:
 
   #### Supported types
 
+  - `uuid`, `uuid[]`: a column optimized for storing UUIDs
   - `citext`, `citext[]`: case insensitive text (indexes and queries are automatically case insensitive)
+  - `encrypted`: encrypted text (used in conjunction with the `@deco.Encrypted` decorator)
   - `string`, `string[]`: varchar; allowed length defaults to 255, but may be customized, e.g.: `subtitle:string:128` or `subtitle:string:128:optional`
   - `text`, `text[]`
   - `date`, `date[]`
   - `datetime`, `datetime[]`
+  - `time`, `time[]`
+  - `timetz`, `timetz[]`
   - `integer`, `integer[]`
-  - `decimal`, `decimal[]`: scale,precision is required, e.g.: `volume:decimal:3,2` or `volume:decimal:3,2:optional`
+  - `decimal`, `decimal[]`: precision,scale is required, e.g.: `volume:decimal:3,2` or `volume:decimal:3,2:optional`
     - Leveraging arrays, add the "[]" suffix, e.g.: `volume:decimal[]:3,2`
   - `enum`, `enum[]`: include the enum name to automatically create the enum:
     `type:enum:room_types:bathroom,kitchen,bedroom` or `type:enum:room_types:bathroom,kitchen,bedroom:optional`
@@ -71,7 +75,10 @@ You can also create an STI parent using the model generator:
 ### Options
 
 - `--no-serializer`: Skip generating a serializer for the child model.
-- `--connection-name <connectionName>`: The db connection you want this model attached to (defaults to the default connection).
+- `--connection-name`: The db connection you want this model attached to (defaults to the default connection).
+- `--model-name <modelName>`: Explicit model class name to use instead of the auto-generated one (e.g. `--model-name=Kitchen` for `Room/Kitchen`).
+- `--admin-serializers`: Generate admin serializer variants (`AdminSerializer` and `AdminSummarySerializer`) in addition to the default serializers.
+- `--internal-serializers`: Generate internal serializer variants (`InternalSerializer` and `InternalSummarySerializer`) in addition to the default serializers.
 - `-h, --help`: Display help for command.
 
 ## STI Example
