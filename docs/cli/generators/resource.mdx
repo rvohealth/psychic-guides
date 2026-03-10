@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: resource
-ai_summary: "The generate:resource command creates a complete resource with model, migration, serializer, controller, and specs. Supports nested paths, column types, optional columns, belongs_to associations, and options like --only, --singular, --owning-model, and --sti-base-serializer."
+ai_summary: "The generate:resource command creates a complete resource with model, migration, serializer, controller, and specs. Supports nested paths, column types (uuid, citext, encrypted, string, text, date, datetime, time, timetz, integer, decimal, enum, belongs_to), optional columns, and options like --only, --singular, --owning-model, --model-name, and --sti-base-serializer."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -30,13 +30,17 @@ See the [resource generator documentation](/docs/controllers/generating) for det
   
   #### Supported types
 
+  - `uuid`, `uuid[]`: a column optimized for storing UUIDs
   - `citext`, `citext[]`: case insensitive text (indexes and queries are automatically case insensitive)
+  - `encrypted`: encrypted text (used in conjunction with the `@deco.Encrypted` decorator)
   - `string`, `string[]`: varchar; allowed length defaults to 255, but may be customized, e.g.: `subtitle:string:128` or `subtitle:string:128:optional`
   - `text`, `text[]`
   - `date`, `date[]`
   - `datetime`, `datetime[]`
+  - `time`, `time[]`
+  - `timetz`, `timetz[]`
   - `integer`, `integer[]`
-  - `decimal`, `decimal[]`: scale,precision is required, e.g.: `volume:decimal:3,2` or `volume:decimal:3,2:optional`
+  - `decimal`, `decimal[]`: precision,scale is required, e.g.: `volume:decimal:3,2` or `volume:decimal:3,2:optional`
     - Leveraging arrays, add the "[]" suffix, e.g.: `volume:decimal[]:3,2`
   - `enum`, `enum[]`: include the enum name to automatically create the enum:
     `type:enum:room_types:bathroom,kitchen,bedroom` or `type:enum:room_types:bathroom,kitchen,bedroom:optional`
@@ -57,6 +61,7 @@ See the [resource generator documentation](/docs/controllers/generating) for det
   - `update`
   - `delete`
 - `--sti-base-serializer`: Omits the serializer from the dream model, but does create the serializer so it can be extended by STI children.
-- `--owning-model <modelName>`: The model class of the object that `associationQuery`/`createAssociation` will be performed on in the created controller and spec (e.g., "Host", "Guest", "Ticketing/Ticket") (simply to save time making changes to the generated code). Defaults to User.
+- `--owning-model <modelName>`: The model class of the object that `associationQuery`/`createAssociation` will be performed on in the created controller and spec (e.g., "Host", "Guest", "Ticketing/Ticket"). Defaults to the current user for non-admin/internal namespaced controllers. For admin/internal namespaced controllers, this defaults to null, meaning every admin/internal user can access the model.
 - `--connection-name <connectionName>`: The name of the db connection you would like to use for your model. Defaults to "default" (default: "default").
+- `--model-name <modelName>`: Explicit model class name to use instead of the auto-generated one (e.g. `--model-name=Kitchen` for `Room/Kitchen`).
 - `-h, --help`: Display help for command.

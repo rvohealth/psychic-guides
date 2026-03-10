@@ -1,0 +1,29 @@
+---
+sidebar_position: 7
+ai_summary: "The diff:openapi command compares the current branch's OpenAPI spec file(s) with the main/master/head branch's OpenAPI spec file(s). Useful for detecting breaking API changes in CI pipelines with the -f (--fail-on-breaking) option."
+---
+
+import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
+
+# diff\:openapi
+
+The `diff:openapi` command compares the current branch's OpenAPI spec file(s) with the main/master/head branch's OpenAPI spec file(s). This is useful for reviewing API changes between branches and detecting breaking changes in CI pipelines.
+
+## Usage
+
+<PackageManagerTabs
+  code={`{{PM}} psy diff:openapi`}
+/>
+
+### Options
+
+- `-f`: Fail on breaking changes. Useful in CI to prevent merging branches that introduce breaking API changes.
+- `-h, --help`: Display help for command.
+
+## Example
+
+Fail if any breaking OpenAPI changes are detected (useful in CI):
+
+<PackageManagerTabs
+  code={`{{PM}} psy diff:openapi -f`}
+/>
