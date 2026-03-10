@@ -1,13 +1,13 @@
 ---
 title: Rooms controller specs passing
-id: bearbnb-22-rooms-controller-specs-passing
+id: bearbnb-18-rooms-controller-specs-passing
 ---
 
 # Rooms controller specs passing
 
 ## Commit Message
 
-```
+``````
 Rooms controller specs passing
 
 NOTE: if, after running `pnpm psy sync`, your editor starts showing errors like
@@ -33,86 +33,102 @@ Note the changes in api/spec/unit/controllers/V1/Host/Places/RoomsController.spe
 pnpm psy sync
 pnpm build:spec # to surface any errors so you can fix them
 pnpm uspec spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
-// The NODE_DEBUG psychic flag can be helpful in debugging controller problems:
+// The NODE_DEBUG "psychic" flag can be helpful in debugging controller problems:
 NODE_DEBUG=psychic pnpm uspec spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
-// There is also an sql flag. They can be applied simultaneously:
-// `NODE_DEBUG=sql,psychic`
+// The NODE_DEBUG "json" flag displays the fast-json-stringify function compiled for a particular endpoint:
+NODE_DEBUG=json pnpm uspec spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
+// There is also an "sql" flag. The flags can be applied simultaneously:
+// `NODE_DEBUG=sql,psychic,json`
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
+diff --git a/.prettierignore b/.prettierignore
+index c891352..00a5bda 100644
+--- a/.prettierignore
++++ b/.prettierignore
+@@ -25,3 +25,4 @@ package-lock.json
+ api/src/app/serializers/**/*.ts
+ api/src/db/migrations/*.ts
+ api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
++api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 diff --git a/api/spec/factories/Room/BathroomFactory.ts b/api/spec/factories/Room/BathroomFactory.ts
-index 7ffc1b1..e7061b1 100644
+index 749ce6b..d9b083e 100644
 --- a/api/spec/factories/Room/BathroomFactory.ts
 +++ b/api/spec/factories/Room/BathroomFactory.ts
 @@ -1,8 +1,10 @@
+-import { UpdateableProperties } from '@rvoh/dream/types'
  import Bathroom from '@models/Room/Bathroom.js'
- import { UpdateableProperties } from '@rvoh/dream/types'
-+import createPlace from '../PlaceFactory.js'
++import { UpdateableProperties } from '@rvoh/dream/types'
++import createPlace from '@spec/factories/PlaceFactory.js'
  
- export default async function createRoomBathroom(attrs: UpdateableProperties<Bathroom> = {}) {
+ export default async function createBathroom(attrs: UpdateableProperties<Bathroom> = {}) {
    return await Bathroom.create({
 +    place: attrs.place ? null : await createPlace(),
      bathOrShowerStyle: 'bath',
      ...attrs,
    })
 diff --git a/api/spec/factories/Room/BedroomFactory.ts b/api/spec/factories/Room/BedroomFactory.ts
-index 67bb8ec..36c3388 100644
+index 354c9e9..e482350 100644
 --- a/api/spec/factories/Room/BedroomFactory.ts
 +++ b/api/spec/factories/Room/BedroomFactory.ts
 @@ -1,8 +1,10 @@
+-import { UpdateableProperties } from '@rvoh/dream/types'
  import Bedroom from '@models/Room/Bedroom.js'
- import { UpdateableProperties } from '@rvoh/dream/types'
-+import createPlace from '../PlaceFactory.js'
++import { UpdateableProperties } from '@rvoh/dream/types'
++import createPlace from '@spec/factories/PlaceFactory.js'
  
- export default async function createRoomBedroom(attrs: UpdateableProperties<Bedroom> = {}) {
+ export default async function createBedroom(attrs: UpdateableProperties<Bedroom> = {}) {
    return await Bedroom.create({
 +    place: attrs.place ? null : await createPlace(),
      bedTypes: ['twin'],
      ...attrs,
    })
 diff --git a/api/spec/factories/Room/DenFactory.ts b/api/spec/factories/Room/DenFactory.ts
-index 36df1c4..f1209e0 100644
+index 1a26df8..d6d03f7 100644
 --- a/api/spec/factories/Room/DenFactory.ts
 +++ b/api/spec/factories/Room/DenFactory.ts
 @@ -1,8 +1,10 @@
+-import { UpdateableProperties } from '@rvoh/dream/types'
  import Den from '@models/Room/Den.js'
- import { UpdateableProperties } from '@rvoh/dream/types'
-+import createPlace from '../PlaceFactory.js'
++import { UpdateableProperties } from '@rvoh/dream/types'
++import createPlace from '@spec/factories/PlaceFactory.js'
  
- export default async function createRoomDen(attrs: UpdateableProperties<Den> = {}) {
+ export default async function createDen(attrs: UpdateableProperties<Den> = {}) {
    return await Den.create({
 +    place: attrs.place ? null : await createPlace(),
      ...attrs,
    })
  }
 diff --git a/api/spec/factories/Room/KitchenFactory.ts b/api/spec/factories/Room/KitchenFactory.ts
-index 2e89aa9..e26f1de 100644
+index cb6d068..5006d45 100644
 --- a/api/spec/factories/Room/KitchenFactory.ts
 +++ b/api/spec/factories/Room/KitchenFactory.ts
 @@ -1,8 +1,10 @@
+-import { UpdateableProperties } from '@rvoh/dream/types'
  import Kitchen from '@models/Room/Kitchen.js'
- import { UpdateableProperties } from '@rvoh/dream/types'
-+import createPlace from '../PlaceFactory.js'
++import { UpdateableProperties } from '@rvoh/dream/types'
++import createPlace from '@spec/factories/PlaceFactory.js'
  
- export default async function createRoomKitchen(attrs: UpdateableProperties<Kitchen> = {}) {
+ export default async function createKitchen(attrs: UpdateableProperties<Kitchen> = {}) {
    return await Kitchen.create({
 +    place: attrs.place ? null : await createPlace(),
      appliances: ['stove'],
      ...attrs,
    })
 diff --git a/api/spec/factories/Room/LivingRoomFactory.ts b/api/spec/factories/Room/LivingRoomFactory.ts
-index 41b9807..08f78d7 100644
+index acca82d..cb831f8 100644
 --- a/api/spec/factories/Room/LivingRoomFactory.ts
 +++ b/api/spec/factories/Room/LivingRoomFactory.ts
 @@ -1,8 +1,10 @@
+-import { UpdateableProperties } from '@rvoh/dream/types'
  import LivingRoom from '@models/Room/LivingRoom.js'
- import { UpdateableProperties } from '@rvoh/dream/types'
-+import createPlace from '../PlaceFactory.js'
++import { UpdateableProperties } from '@rvoh/dream/types'
++import createPlace from '@spec/factories/PlaceFactory.js'
  
- export default async function createRoomLivingRoom(attrs: UpdateableProperties<LivingRoom> = {}) {
+ export default async function createLivingRoom(attrs: UpdateableProperties<LivingRoom> = {}) {
    return await LivingRoom.create({
 +    place: attrs.place ? null : await createPlace(),
      ...attrs,
@@ -135,7 +151,7 @@ index c75d9f4..0000000
 -  })
 -}
 diff --git a/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts b/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
-index 6c5f66d..5d2efd5 100644
+index 88ac684..453300a 100644
 --- a/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 +++ b/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 @@ -1,9 +1,12 @@
@@ -149,7 +165,7 @@ index 6c5f66d..5d2efd5 100644
 +import createHost from '@spec/factories/HostFactory.js'
 +import createHostPlace from '@spec/factories/HostPlaceFactory.js'
  import createPlace from '@spec/factories/PlaceFactory.js'
-+import createRoomKitchen from '@spec/factories/Room/KitchenFactory.js'
++import createKitchen from '@spec/factories/Room/KitchenFactory.js'
 +import createUser from '@spec/factories/UserFactory.js'
  import { RequestBody, session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
  
@@ -170,62 +186,45 @@ index 6c5f66d..5d2efd5 100644
  
      it('returns the index of Rooms', async () => {
 -      const room = await createRoom({ place })
-+      const room = await createRoomKitchen({ place })
++      const room = await createKitchen({ place })
  
-       const { body } = await indexRooms(200)
+       const { body } = await index(200)
  
 @@ -38,7 +43,7 @@ describe('V1/Host/Places/RoomsController', () => {
  
      context('Rooms created by another Place', () => {
        it('are omitted', async () => {
 -        await createRoom()
-+        await createRoomKitchen()
++        await createKitchen()
  
-         const { body } = await indexRooms(200)
+         const { body } = await index(200)
  
 @@ -56,7 +61,7 @@ describe('V1/Host/Places/RoomsController', () => {
      }
  
      it('returns the specified Room', async () => {
 -      const room = await createRoom({ place })
-+      const room = await createRoomKitchen({ place })
++      const room = await createKitchen({ place })
  
-       const { body } = await showRoom(room, 200)
+       const { body } = await show(room, 200)
  
 @@ -71,7 +76,7 @@ describe('V1/Host/Places/RoomsController', () => {
  
      context('Room created by another Place', () => {
        it('is not found', async () => {
 -        const otherPlaceRoom = await createRoom()
-+        const otherPlaceRoom = await createRoomKitchen()
++        const otherPlaceRoom = await createKitchen()
  
-         await showRoom(otherPlaceRoom, 404)
+         await show(otherPlaceRoom, 404)
        })
-@@ -81,27 +86,32 @@ describe('V1/Host/Places/RoomsController', () => {
-   describe('POST create', () => {
-     const createRoom = async <StatusCode extends 201 | 400 | 404>(
-       data: RequestBody<'post', '/v1/host/places/{placeId}/rooms'>,
--      expectedStatus: StatusCode
-+      expectedStatus: StatusCode,
-     ) => {
-       return request.post('/v1/host/places/{placeId}/rooms', expectedStatus, {
-         placeId: place.id,
--        data
-+        data,
-       })
-     }
+@@ -91,17 +96,19 @@ describe('V1/Host/Places/RoomsController', () => {
  
      it('creates a Room for this Place', async () => {
--      const { body } = await createRoom({
+       const { body } = await create({
 -        position: 1,
--      }, 201)
-+      const { body } = await createRoom(
-+        {
-+          type: 'Kitchen',
-+          appliances: ['oven', 'stove'],
-+        },
-+        201,
-+      )
++        type: 'Kitchen',
++        appliances: ['oven', 'stove'],
+       }, 201)
  
        const room = await place.associationQuery('rooms').firstOrFail()
 -      expect(room.position).toEqual(1)
@@ -242,33 +241,17 @@ index 6c5f66d..5d2efd5 100644
          }),
        )
      })
-@@ -111,7 +121,7 @@ describe('V1/Host/Places/RoomsController', () => {
-     const updateRoom = async <StatusCode extends 204 | 400 | 404>(
-       room: Room,
-       data: RequestBody<'patch', '/v1/host/places/{placeId}/rooms/{id}'>,
--      expectedStatus: StatusCode
-+      expectedStatus: StatusCode,
-     ) => {
-       return request.patch('/v1/host/places/{placeId}/rooms/{id}', expectedStatus, {
-         placeId: place.id,
-@@ -121,33 +131,43 @@ describe('V1/Host/Places/RoomsController', () => {
+@@ -121,27 +128,26 @@ describe('V1/Host/Places/RoomsController', () => {
      }
  
      it('updates the Room', async () => {
 -      const room = await createRoom({ place })
--
--      await updateRoom(room, {
++      const room = await createKitchen({ place, appliances: ['microwave'] })
+ 
+       await update(room, {
 -        position: 2,
--      }, 204)
-+      const room = await createRoomKitchen({ place, appliances: ['microwave'] })
-+
-+      await updateRoom(
-+        room,
-+        {
-+          appliances: ['dishwasher'],
-+        },
-+        204,
-+      )
++        appliances: ['dishwasher'],
+       }, 204)
  
        await room.reload()
 -      expect(room.position).toEqual(2)
@@ -279,18 +262,12 @@ index 6c5f66d..5d2efd5 100644
        it('is not updated', async () => {
 -        const room = await createRoom()
 -        const originalPosition = room.position
-+        const room = await createRoomKitchen({ appliances: ['microwave'] })
++        const room = await createKitchen({ appliances: ['microwave'] })
  
--        await updateRoom(room, {
+         await update(room, {
 -          position: 2,
--        }, 404)
-+        await updateRoom(
-+          room,
-+          {
-+            appliances: ['dishwasher'],
-+          },
-+          404,
-+        )
++          appliances: ['dishwasher'],
+         }, 404)
  
          await room.reload()
 -        expect(room.position).toEqual(originalPosition)
@@ -298,33 +275,23 @@ index 6c5f66d..5d2efd5 100644
        })
      })
    })
- 
-   describe('DELETE destroy', () => {
--    const destroyRoom = async <StatusCode extends 204 | 400 | 404>(room: Room, expectedStatus: StatusCode) => {
-+    const destroyRoom = async <StatusCode extends 204 | 400 | 404>(
-+      room: Room,
-+      expectedStatus: StatusCode,
-+    ) => {
-       return request.delete('/v1/host/places/{placeId}/rooms/{id}', expectedStatus, {
-         placeId: place.id,
-         id: room.id,
-@@ -155,7 +175,7 @@ describe('V1/Host/Places/RoomsController', () => {
+@@ -155,7 +161,7 @@ describe('V1/Host/Places/RoomsController', () => {
      }
  
      it('deletes the Room', async () => {
 -      const room = await createRoom({ place })
-+      const room = await createRoomKitchen({ place })
++      const room = await createKitchen({ place })
  
-       await destroyRoom(room, 204)
+       await destroy(room, 204)
  
-@@ -164,7 +184,7 @@ describe('V1/Host/Places/RoomsController', () => {
+@@ -164,7 +170,7 @@ describe('V1/Host/Places/RoomsController', () => {
  
      context('a Room created by another Place', () => {
        it('is not deleted', async () => {
 -        const room = await createRoom()
-+        const room = await createRoomKitchen()
++        const room = await createKitchen()
  
-         await destroyRoom(room, 404)
+         await destroy(room, 404)
  
 diff --git a/api/src/app/controllers/V1/Host/Places/BaseController.ts b/api/src/app/controllers/V1/Host/Places/BaseController.ts
 index 475dacc..9da129a 100644
@@ -346,7 +313,7 @@ index 475dacc..9da129a 100644
 +  }
  }
 diff --git a/api/src/app/controllers/V1/Host/Places/RoomsController.ts b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
-index f508ae6..2192e70 100644
+index 3fdec77..bf6c9f2 100644
 --- a/api/src/app/controllers/V1/Host/Places/RoomsController.ts
 +++ b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
 @@ -1,6 +1,12 @@
@@ -363,8 +330,8 @@ index f508ae6..2192e70 100644
  
  const openApiTags = ['rooms']
  
-@@ -13,10 +19,11 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
-     serializerKey: 'summary',
+@@ -14,10 +20,11 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
+     fastJsonStringify: true,
    })
    public async index() {
 -    // const rooms = await this.currentPlace.associationQuery('rooms')
@@ -379,8 +346,8 @@ index f508ae6..2192e70 100644
    }
  
    @OpenAPI(Room, {
-@@ -25,19 +32,67 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
-     description: 'Fetch a Room',
+@@ -27,8 +34,8 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
+     fastJsonStringify: true,
    })
    public async show() {
 -    // const room = await this.room()
@@ -390,9 +357,10 @@ index f508ae6..2192e70 100644
    }
  
    @OpenAPI(Room, {
-     status: 201,
+@@ -36,11 +43,59 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      tags: openApiTags,
      description: 'Create a Room',
+     fastJsonStringify: true,
 +    requestBody: {
 +      /**
 +       * `type` is normally a protected attribute, but when creating a room, we do want the user
@@ -452,8 +420,8 @@ index f508ae6..2192e70 100644
    }
  
    @OpenAPI(Room, {
-@@ -46,9 +101,9 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
-     description: 'Update a Room',
+@@ -50,9 +105,9 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
+     fastJsonStringify: true,
    })
    public async update() {
 -    // const room = await this.room()
@@ -465,8 +433,8 @@ index f508ae6..2192e70 100644
    }
  
    @OpenAPI({
-@@ -57,14 +112,15 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
-     description: 'Destroy a Room',
+@@ -62,14 +117,15 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
+     fastJsonStringify: true,
    })
    public async destroy() {
 -    // const room = await this.room()
@@ -488,16 +456,16 @@ index f508ae6..2192e70 100644
    }
  }
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index 64ddfc8..399d7a9 100644
+index 9f8b47d..9243aa1 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
-@@ -3,6 +3,7 @@ import { Decorators } from '@rvoh/dream'
+@@ -1,6 +1,7 @@
+ import ApplicationModel from '@models/ApplicationModel.js'
+ import Host from '@models/Host.js'
+ import HostPlace from '@models/HostPlace.js'
++import Room from '@models/Room.js'
+ import { Decorators } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- import Host from './Host.js'
- import HostPlace from './HostPlace.js'
-+import Room from './Room.js'
- 
- const deco = new Decorators<typeof Place>()
  
 @@ -31,4 +32,9 @@ export default class Place extends ApplicationModel {
  
@@ -538,10 +506,18 @@ index 4ea9146..7b34e52 100644
    public type: DreamColumn<Room, 'type'>
    public position: DreamColumn<Room, 'position'>
 diff --git a/api/src/app/models/Room/Bathroom.ts b/api/src/app/models/Room/Bathroom.ts
-index ede559a..9d57fc5 100644
+index 70f5f61..881ead9 100644
 --- a/api/src/app/models/Room/Bathroom.ts
 +++ b/api/src/app/models/Room/Bathroom.ts
-@@ -6,7 +6,7 @@ const deco = new Decorators<typeof Bathroom>()
+@@ -1,12 +1,12 @@
+-import { Decorators, STI } from '@rvoh/dream'
+-import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import Room from '@models/Room.js'
++import { STI } from '@rvoh/dream'
++import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ 
+-const deco = new Decorators<typeof Bathroom>()
++// const deco = new Decorators<typeof Bathroom>()
  
  @STI(Room)
  export default class Bathroom extends Room {
@@ -551,10 +527,18 @@ index ede559a..9d57fc5 100644
        default: 'Room/BathroomSerializer',
        summary: 'Room/BathroomSummarySerializer',
 diff --git a/api/src/app/models/Room/Bedroom.ts b/api/src/app/models/Room/Bedroom.ts
-index 451c883..203a911 100644
+index b7eabca..2fb83d7 100644
 --- a/api/src/app/models/Room/Bedroom.ts
 +++ b/api/src/app/models/Room/Bedroom.ts
-@@ -6,7 +6,7 @@ const deco = new Decorators<typeof Bedroom>()
+@@ -1,12 +1,12 @@
+-import { Decorators, STI } from '@rvoh/dream'
+-import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import Room from '@models/Room.js'
++import { STI } from '@rvoh/dream'
++import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ 
+-const deco = new Decorators<typeof Bedroom>()
++// const deco = new Decorators<typeof Bedroom>()
  
  @STI(Room)
  export default class Bedroom extends Room {
@@ -564,10 +548,18 @@ index 451c883..203a911 100644
        default: 'Room/BedroomSerializer',
        summary: 'Room/BedroomSummarySerializer',
 diff --git a/api/src/app/models/Room/Den.ts b/api/src/app/models/Room/Den.ts
-index 8b65ee8..f80981a 100644
+index 616ff1e..0f80449 100644
 --- a/api/src/app/models/Room/Den.ts
 +++ b/api/src/app/models/Room/Den.ts
-@@ -6,7 +6,7 @@ const deco = new Decorators<typeof Den>()
+@@ -1,16 +1,15 @@
+-import { Decorators, STI } from '@rvoh/dream'
+-import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import Room from '@models/Room.js'
++import { STI } from '@rvoh/dream'
++import { DreamSerializers } from '@rvoh/dream/types'
+ 
+-const deco = new Decorators<typeof Den>()
++// const deco = new Decorators<typeof Den>()
  
  @STI(Room)
  export default class Den extends Room {
@@ -576,11 +568,23 @@ index 8b65ee8..f80981a 100644
      return {
        default: 'Room/DenSerializer',
        summary: 'Room/DenSummarySerializer',
+     }
+   }
+-
+ }
 diff --git a/api/src/app/models/Room/Kitchen.ts b/api/src/app/models/Room/Kitchen.ts
-index 0a7b3f1..bcf3068 100644
+index e6e9a80..84eebb2 100644
 --- a/api/src/app/models/Room/Kitchen.ts
 +++ b/api/src/app/models/Room/Kitchen.ts
-@@ -6,7 +6,7 @@ const deco = new Decorators<typeof Kitchen>()
+@@ -1,12 +1,12 @@
+-import { Decorators, STI } from '@rvoh/dream'
+-import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import Room from '@models/Room.js'
++import { STI } from '@rvoh/dream'
++import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ 
+-const deco = new Decorators<typeof Kitchen>()
++// const deco = new Decorators<typeof Kitchen>()
  
  @STI(Room)
  export default class Kitchen extends Room {
@@ -590,10 +594,18 @@ index 0a7b3f1..bcf3068 100644
        default: 'Room/KitchenSerializer',
        summary: 'Room/KitchenSummarySerializer',
 diff --git a/api/src/app/models/Room/LivingRoom.ts b/api/src/app/models/Room/LivingRoom.ts
-index f6aaa38..64c5cd7 100644
+index 18781f3..4231e84 100644
 --- a/api/src/app/models/Room/LivingRoom.ts
 +++ b/api/src/app/models/Room/LivingRoom.ts
-@@ -6,7 +6,7 @@ const deco = new Decorators<typeof LivingRoom>()
+@@ -1,16 +1,15 @@
+-import { Decorators, STI } from '@rvoh/dream'
+-import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import Room from '@models/Room.js'
++import { STI } from '@rvoh/dream'
++import { DreamSerializers } from '@rvoh/dream/types'
+ 
+-const deco = new Decorators<typeof LivingRoom>()
++// const deco = new Decorators<typeof LivingRoom>()
  
  @STI(Room)
  export default class LivingRoom extends Room {
@@ -602,6 +614,10 @@ index f6aaa38..64c5cd7 100644
      return {
        default: 'Room/LivingRoomSerializer',
        summary: 'Room/LivingRoomSummarySerializer',
+     }
+   }
+-
+ }
 diff --git a/api/src/app/serializers/RoomSerializer.ts b/api/src/app/serializers/RoomSerializer.ts
 index 79390f9..7a26a36 100644
 --- a/api/src/app/serializers/RoomSerializer.ts
@@ -623,7 +639,7 @@ index 79390f9..7a26a36 100644
 -    .attribute('position')
      .attribute('deletedAt')
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index caa84e8..6c6f824 100644
+index 2c48296..a5705ec 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -446,6 +446,16 @@
@@ -643,9 +659,9 @@ index caa84e8..6c6f824 100644
                    }
                  }
                }
-@@ -847,11 +857,23 @@
-       "RoomBathroomSummary": {
+@@ -851,11 +861,23 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -668,9 +684,9 @@ index caa84e8..6c6f824 100644
            }
          }
        },
-@@ -897,11 +919,23 @@
-       "RoomBedroomSummary": {
+@@ -903,11 +925,23 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -693,9 +709,9 @@ index caa84e8..6c6f824 100644
            }
          }
        },
-@@ -939,11 +973,23 @@
-       "RoomDenSummary": {
+@@ -947,11 +981,23 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -718,9 +734,9 @@ index caa84e8..6c6f824 100644
            }
          }
        },
-@@ -989,11 +1035,23 @@
-       "RoomKitchenSummary": {
+@@ -999,11 +1045,23 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -743,9 +759,9 @@ index caa84e8..6c6f824 100644
            }
          }
        },
-@@ -1031,11 +1089,23 @@
-       "RoomLivingRoomSummary": {
+@@ -1043,11 +1101,23 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -769,7 +785,7 @@ index caa84e8..6c6f824 100644
          }
        },
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 1b45578..f12780b 100644
+index 6616d1e..e4a969f 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -446,6 +446,16 @@
@@ -789,9 +805,9 @@ index 1b45578..f12780b 100644
                    }
                  }
                }
-@@ -863,11 +873,25 @@
-       "RoomBathroomSummary": {
+@@ -867,11 +877,25 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -816,9 +832,9 @@ index 1b45578..f12780b 100644
            }
          }
        },
-@@ -922,11 +946,25 @@
-       "RoomBedroomSummary": {
+@@ -928,11 +952,25 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -843,9 +859,9 @@ index 1b45578..f12780b 100644
            }
          }
        },
-@@ -966,11 +1004,25 @@
-       "RoomDenSummary": {
+@@ -974,11 +1012,25 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -870,9 +886,9 @@ index 1b45578..f12780b 100644
            }
          }
        },
-@@ -1023,11 +1075,25 @@
-       "RoomKitchenSummary": {
+@@ -1033,11 +1085,25 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -897,9 +913,9 @@ index 1b45578..f12780b 100644
            }
          }
        },
-@@ -1067,11 +1133,25 @@
-       "RoomLivingRoomSummary": {
+@@ -1079,11 +1145,25 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -925,7 +941,7 @@ index 1b45578..f12780b 100644
          }
        },
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index b155f01..aed4399 100644
+index e34f706..fcc24fe 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -446,6 +446,16 @@
@@ -945,9 +961,9 @@ index b155f01..aed4399 100644
                    }
                  }
                }
-@@ -863,11 +873,25 @@
-       "RoomBathroomSummary": {
+@@ -867,11 +877,25 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -972,9 +988,9 @@ index b155f01..aed4399 100644
            }
          }
        },
-@@ -922,11 +946,25 @@
-       "RoomBedroomSummary": {
+@@ -928,11 +952,25 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -999,9 +1015,9 @@ index b155f01..aed4399 100644
            }
          }
        },
-@@ -966,11 +1004,25 @@
-       "RoomDenSummary": {
+@@ -974,11 +1012,25 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -1026,9 +1042,9 @@ index b155f01..aed4399 100644
            }
          }
        },
-@@ -1023,11 +1075,25 @@
-       "RoomKitchenSummary": {
+@@ -1033,11 +1085,25 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -1053,9 +1069,9 @@ index b155f01..aed4399 100644
            }
          }
        },
-@@ -1067,11 +1133,25 @@
-       "RoomLivingRoomSummary": {
+@@ -1079,11 +1145,25 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -1081,10 +1097,10 @@ index b155f01..aed4399 100644
          }
        },
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index c146340..a26460e 100644
+index a45e34d..9e6360b 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -397,6 +397,15 @@ export const schema = {
+@@ -402,6 +402,15 @@ export const schema = {
          requiredAndClauses: null,
          passthroughAndClauses: null,
        },
@@ -1163,4 +1179,4 @@ index 0ff0366..8135272 100644
          };
          ValidationErrors: {
              /** @enum {string} */
-```
+``````

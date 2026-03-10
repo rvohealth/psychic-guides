@@ -7,19 +7,19 @@ id: bearbnb-08-run-the-migration
 
 ## Commit Message
 
-```
+``````
 Run the migration
 
 ```console
 pnpm psy db:migrate
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 725471e..a34b3c5 100644
+index 725471e..4b04f2c 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -5,7 +5,296 @@
@@ -320,12 +320,13 @@ index 725471e..a34b3c5 100644
    "components": {
      "schemas": {
        "OpenapiValidationErrors": {
-@@ -63,6 +352,49 @@
+@@ -63,6 +352,51 @@
            }
          }
        },
 +      "Place": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "deletedAt",
 +          "id",
@@ -358,6 +359,7 @@ index 725471e..a34b3c5 100644
 +      },
 +      "PlaceSummary": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -371,7 +373,7 @@ index 725471e..a34b3c5 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 934ac80..1d154e6 100644
+index 934ac80..b18e7cb 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -5,7 +5,296 @@
@@ -672,12 +674,13 @@ index 934ac80..1d154e6 100644
    "components": {
      "schemas": {
        "OpenapiValidationErrors": {
-@@ -63,6 +352,57 @@
+@@ -63,6 +352,59 @@
            }
          }
        },
 +      "Place": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "deletedAt",
 +          "id",
@@ -718,6 +721,7 @@ index 934ac80..1d154e6 100644
 +      },
 +      "PlaceSummary": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -731,7 +735,7 @@ index 934ac80..1d154e6 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index e6354ae..0ea3271 100644
+index e6354ae..24ce955 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -5,7 +5,296 @@
@@ -1032,12 +1036,13 @@ index e6354ae..0ea3271 100644
    "components": {
      "schemas": {
        "OpenapiValidationErrors": {
-@@ -63,6 +352,57 @@
+@@ -63,6 +352,59 @@
            }
          }
        },
 +      "Place": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "deletedAt",
 +          "id",
@@ -1078,6 +1083,7 @@ index e6354ae..0ea3271 100644
 +      },
 +      "PlaceSummary": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -1091,10 +1097,10 @@ index e6354ae..0ea3271 100644
          "type": "object",
          "required": [
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 588e001..9cb8801 100644
+index d46484f..2776ce8 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -68,6 +68,25 @@ export type Generated<T> =
+@@ -73,6 +73,25 @@ export type Generated<T> =
      ? ColumnType<S, I | undefined, U>
      : ColumnType<T, T | undefined, T>
  
@@ -1120,7 +1126,7 @@ index 588e001..9cb8801 100644
  export type Timestamp = ColumnType<DateTime | CalendarDate>
  
  export interface Guests {
-@@ -84,6 +103,16 @@ export interface Hosts {
+@@ -89,6 +108,16 @@ export interface Hosts {
    userId: string
  }
  
@@ -1137,7 +1143,7 @@ index 588e001..9cb8801 100644
  export interface Users {
    createdAt: Timestamp
    email: string
-@@ -94,11 +123,13 @@ export interface Users {
+@@ -100,11 +129,13 @@ export interface Users {
  export interface DB {
    guests: Guests
    hosts: Hosts
@@ -1164,19 +1170,19 @@ index f241f3d..538a900 100644
    ],
  } as const
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index c3578c8..6bdb2a0 100644
+index a4a5d27..cd08bd3 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -57,7 +57,7 @@ us humans, he says:
- */
- 
- import { type CalendarDate, type DateTime } from '@rvoh/dream'
+@@ -62,7 +62,7 @@ import {
+   type ClockTime,
+   type ClockTimeTz,
+ } from '@rvoh/dream'
 -import {} from './db.js'
 +import { type PlaceStylesEnum, PlaceStylesEnumValues } from './db.js'
  
  export const schema = {
    guests: {
-@@ -176,6 +176,89 @@ export const schema = {
+@@ -181,6 +181,89 @@ export const schema = {
        },
      },
    },
@@ -1266,7 +1272,7 @@ index c3578c8..6bdb2a0 100644
    users: {
      serializerKeys: [],
      scopes: {
-@@ -252,6 +335,7 @@ export const connectionTypeConfig = {
+@@ -272,6 +355,7 @@ export const connectionTypeConfig = {
      models: {
        Guest: 'guests',
        Host: 'hosts',
@@ -1495,4 +1501,4 @@ index 36895e1..ee7fc12 100644
          ValidationErrors: {
              /** @enum {string} */
              type: "validation";
-```
+``````

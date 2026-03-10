@@ -7,7 +7,7 @@ id: bearbnb-06-user-hasone-host
 
 ## Commit Message
 
-```
+``````
 User HasOne Host
 
 Users do _not_ automatically get a Host (special onboarding process for
@@ -26,24 +26,23 @@ a new association, one could run `sync` instead
 ```console
 pnpm psy sync
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
 diff --git a/api/src/app/models/User.ts b/api/src/app/models/User.ts
-index 09fd61c..93297cb 100644
+index ec6b4ab..4250201 100644
 --- a/api/src/app/models/User.ts
 +++ b/api/src/app/models/User.ts
-@@ -2,6 +2,7 @@ import ApplicationModel from '@models/ApplicationModel.js'
+@@ -1,5 +1,6 @@
+ import ApplicationModel from '@models/ApplicationModel.js'
+ import Guest from '@models/Guest.js'
++import Host from '@models/Host.js'
  import { Decorators } from '@rvoh/dream'
  import { DreamColumn } from '@rvoh/dream/types'
- import Guest from './Guest.js'
-+import Host from './Host.js'
  
- const deco = new Decorators<typeof User>()
- 
-@@ -22,4 +23,7 @@ export default class User extends ApplicationModel {
+@@ -25,4 +26,7 @@ export default class User extends ApplicationModel {
  
    @deco.HasOne('Guest')
    public guest: Guest
@@ -51,10 +50,10 @@ index 09fd61c..93297cb 100644
 +  @deco.HasOne('Host')
 +  public host: Host
  }
-diff --git a/api/src/db/migrations/1765411028183-create-host.ts b/api/src/db/migrations/1765411028183-create-host.ts
+diff --git a/api/src/db/migrations/1773151769580-create-host.ts b/api/src/db/migrations/1773151769580-create-host.ts
 index fc937ae..4c9bc1f 100644
---- a/api/src/db/migrations/1765411028183-create-host.ts
-+++ b/api/src/db/migrations/1765411028183-create-host.ts
+--- a/api/src/db/migrations/1773151769580-create-host.ts
++++ b/api/src/db/migrations/1773151769580-create-host.ts
 @@ -9,7 +9,8 @@ export async function up(db: Kysely<any>): Promise<void> {
          .primaryKey()
          .defaultTo(sql`uuidv7()`),
@@ -66,10 +65,10 @@ index fc937ae..4c9bc1f 100644
      .addColumn('updated_at', 'timestamp', col => col.notNull())
      .execute()
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index e236e7c..588e001 100644
+index b5f6597..d46484f 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -77,6 +77,13 @@ export interface Guests {
+@@ -82,6 +82,13 @@ export interface Guests {
    userId: string
  }
  
@@ -83,7 +82,7 @@ index e236e7c..588e001 100644
  export interface Users {
    createdAt: Timestamp
    email: string
-@@ -86,10 +93,12 @@ export interface Users {
+@@ -92,10 +99,12 @@ export interface Users {
  
  export interface DB {
    guests: Guests
@@ -113,10 +112,10 @@ index 6c9f10f..f241f3d 100644
 +  ],
  } as const
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 28bcc2f..c3578c8 100644
+index 2373941..a4a5d27 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -118,6 +118,64 @@ export const schema = {
+@@ -123,6 +123,64 @@ export const schema = {
        },
      },
    },
@@ -181,7 +180,7 @@ index 28bcc2f..c3578c8 100644
    users: {
      serializerKeys: [],
      scopes: {
-@@ -174,6 +232,15 @@ export const schema = {
+@@ -194,6 +252,15 @@ export const schema = {
          requiredAndClauses: null,
          passthroughAndClauses: null,
        },
@@ -197,7 +196,7 @@ index 28bcc2f..c3578c8 100644
      },
    },
  } as const
-@@ -184,6 +251,7 @@ export const connectionTypeConfig = {
+@@ -204,6 +271,7 @@ export const connectionTypeConfig = {
    globalNames: {
      models: {
        Guest: 'guests',
@@ -205,4 +204,4 @@ index 28bcc2f..c3578c8 100644
        User: 'users',
      },
    },
-```
+``````

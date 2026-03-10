@@ -7,7 +7,7 @@ id: bearbnb-13-generate-room-resource
 
 ## Commit Message
 
-```
+``````
 Generate Room resource
 
 ```console
@@ -22,11 +22,11 @@ see with `pnpm psy routes`:
 pnpm psy db:migrate
 pnpm psy routes
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
 diff --git a/api/spec/factories/RoomFactory.ts b/api/spec/factories/RoomFactory.ts
 new file mode 100644
 index 0000000..c75d9f4
@@ -45,7 +45,7 @@ index 0000000..c75d9f4
 +}
 diff --git a/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts b/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 new file mode 100644
-index 0000000..6c5f66d
+index 0000000..88ac684
 --- /dev/null
 +++ b/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 @@ -0,0 +1,175 @@
@@ -69,7 +69,7 @@ index 0000000..6c5f66d
 +  })
 +
 +  describe('GET index', () => {
-+    const indexRooms = async <StatusCode extends 200 | 400 | 404>(expectedStatus: StatusCode) => {
++    const index = async <StatusCode extends 200 | 400 | 404>(expectedStatus: StatusCode) => {
 +      return request.get('/v1/host/places/{placeId}/rooms', expectedStatus, {
 +        placeId: place.id,
 +      })
@@ -78,7 +78,7 @@ index 0000000..6c5f66d
 +    it('returns the index of Rooms', async () => {
 +      const room = await createRoom({ place })
 +
-+      const { body } = await indexRooms(200)
++      const { body } = await index(200)
 +
 +      expect(body.results).toEqual([
 +        expect.objectContaining({
@@ -91,7 +91,7 @@ index 0000000..6c5f66d
 +      it('are omitted', async () => {
 +        await createRoom()
 +
-+        const { body } = await indexRooms(200)
++        const { body } = await index(200)
 +
 +        expect(body.results).toEqual([])
 +      })
@@ -99,7 +99,7 @@ index 0000000..6c5f66d
 +  })
 +
 +  describe('GET show', () => {
-+    const showRoom = async <StatusCode extends 200 | 400 | 404>(room: Room, expectedStatus: StatusCode) => {
++    const show = async <StatusCode extends 200 | 400 | 404>(room: Room, expectedStatus: StatusCode) => {
 +      return request.get('/v1/host/places/{placeId}/rooms/{id}', expectedStatus, {
 +        placeId: place.id,
 +        id: room.id,
@@ -109,7 +109,7 @@ index 0000000..6c5f66d
 +    it('returns the specified Room', async () => {
 +      const room = await createRoom({ place })
 +
-+      const { body } = await showRoom(room, 200)
++      const { body } = await show(room, 200)
 +
 +      expect(body).toEqual(
 +        expect.objectContaining({
@@ -124,13 +124,13 @@ index 0000000..6c5f66d
 +      it('is not found', async () => {
 +        const otherPlaceRoom = await createRoom()
 +
-+        await showRoom(otherPlaceRoom, 404)
++        await show(otherPlaceRoom, 404)
 +      })
 +    })
 +  })
 +
 +  describe('POST create', () => {
-+    const createRoom = async <StatusCode extends 201 | 400 | 404>(
++    const create = async <StatusCode extends 201 | 400 | 404>(
 +      data: RequestBody<'post', '/v1/host/places/{placeId}/rooms'>,
 +      expectedStatus: StatusCode
 +    ) => {
@@ -141,7 +141,7 @@ index 0000000..6c5f66d
 +    }
 +
 +    it('creates a Room for this Place', async () => {
-+      const { body } = await createRoom({
++      const { body } = await create({
 +        position: 1,
 +      }, 201)
 +
@@ -159,7 +159,7 @@ index 0000000..6c5f66d
 +  })
 +
 +  describe('PATCH update', () => {
-+    const updateRoom = async <StatusCode extends 204 | 400 | 404>(
++    const update = async <StatusCode extends 204 | 400 | 404>(
 +      room: Room,
 +      data: RequestBody<'patch', '/v1/host/places/{placeId}/rooms/{id}'>,
 +      expectedStatus: StatusCode
@@ -174,7 +174,7 @@ index 0000000..6c5f66d
 +    it('updates the Room', async () => {
 +      const room = await createRoom({ place })
 +
-+      await updateRoom(room, {
++      await update(room, {
 +        position: 2,
 +      }, 204)
 +
@@ -187,7 +187,7 @@ index 0000000..6c5f66d
 +        const room = await createRoom()
 +        const originalPosition = room.position
 +
-+        await updateRoom(room, {
++        await update(room, {
 +          position: 2,
 +        }, 404)
 +
@@ -198,7 +198,7 @@ index 0000000..6c5f66d
 +  })
 +
 +  describe('DELETE destroy', () => {
-+    const destroyRoom = async <StatusCode extends 204 | 400 | 404>(room: Room, expectedStatus: StatusCode) => {
++    const destroy = async <StatusCode extends 204 | 400 | 404>(room: Room, expectedStatus: StatusCode) => {
 +      return request.delete('/v1/host/places/{placeId}/rooms/{id}', expectedStatus, {
 +        placeId: place.id,
 +        id: room.id,
@@ -208,7 +208,7 @@ index 0000000..6c5f66d
 +    it('deletes the Room', async () => {
 +      const room = await createRoom({ place })
 +
-+      await destroyRoom(room, 204)
++      await destroy(room, 204)
 +
 +      expect(await Room.find(room.id)).toBeNull()
 +    })
@@ -217,7 +217,7 @@ index 0000000..6c5f66d
 +      it('is not deleted', async () => {
 +        const room = await createRoom()
 +
-+        await destroyRoom(room, 404)
++        await destroy(room, 404)
 +
 +        expect(await Room.find(room.id)).toMatchDreamModel(room)
 +      })
@@ -246,10 +246,10 @@ index 0000000..475dacc
 +}
 diff --git a/api/src/app/controllers/V1/Host/Places/RoomsController.ts b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
 new file mode 100644
-index 0000000..f508ae6
+index 0000000..3fdec77
 --- /dev/null
 +++ b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
-@@ -0,0 +1,70 @@
+@@ -0,0 +1,75 @@
 +import { OpenAPI } from '@rvoh/psychic'
 +import V1HostPlacesBaseController from './BaseController.js'
 +import Room from '@models/Room.js'
@@ -263,6 +263,7 @@ index 0000000..f508ae6
 +    description: 'Paginated index of Rooms',
 +    cursorPaginate: true,
 +    serializerKey: 'summary',
++    fastJsonStringify: true,
 +  })
 +  public async index() {
 +    // const rooms = await this.currentPlace.associationQuery('rooms')
@@ -275,6 +276,7 @@ index 0000000..f508ae6
 +    status: 200,
 +    tags: openApiTags,
 +    description: 'Fetch a Room',
++    fastJsonStringify: true,
 +  })
 +  public async show() {
 +    // const room = await this.room()
@@ -285,6 +287,7 @@ index 0000000..f508ae6
 +    status: 201,
 +    tags: openApiTags,
 +    description: 'Create a Room',
++    fastJsonStringify: true,
 +  })
 +  public async create() {
 +    // let room = await this.currentPlace.createAssociation('rooms', this.paramsFor(Room))
@@ -296,6 +299,7 @@ index 0000000..f508ae6
 +    status: 204,
 +    tags: openApiTags,
 +    description: 'Update a Room',
++    fastJsonStringify: true,
 +  })
 +  public async update() {
 +    // const room = await this.room()
@@ -307,6 +311,7 @@ index 0000000..f508ae6
 +    status: 204,
 +    tags: openApiTags,
 +    description: 'Destroy a Room',
++    fastJsonStringify: true,
 +  })
 +  public async destroy() {
 +    // const room = await this.room()
@@ -375,10 +380,10 @@ index 0000000..79390f9
 +    .attribute('position')
 +    .attribute('deletedAt')
 diff --git a/api/src/conf/routes.ts b/api/src/conf/routes.ts
-index 198aa15..036f15f 100644
+index cfc3ed8..d45c7d4 100644
 --- a/api/src/conf/routes.ts
 +++ b/api/src/conf/routes.ts
-@@ -4,7 +4,11 @@ import { PsychicRouter } from '@rvoh/psychic'
+@@ -5,7 +5,11 @@ import { PsychicRouter } from '@rvoh/psychic'
  export default function routes(r: PsychicRouter) {
    r.namespace('v1', r => {
      r.namespace('host', r => {
@@ -391,11 +396,11 @@ index 198aa15..036f15f 100644
      })
    })
  
-diff --git a/api/src/db/migrations/1765413832143-create-room.ts b/api/src/db/migrations/1765413832143-create-room.ts
+diff --git a/api/src/db/migrations/1773152983694-create-room.ts b/api/src/db/migrations/1773152983694-create-room.ts
 new file mode 100644
 index 0000000..1de9d4c
 --- /dev/null
-+++ b/api/src/db/migrations/1765413832143-create-room.ts
++++ b/api/src/db/migrations/1773152983694-create-room.ts
 @@ -0,0 +1,51 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -450,7 +455,7 @@ index 0000000..1de9d4c
 +}
 \ No newline at end of file
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index f376703..1230573 100644
+index 51b81af..f608642 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -293,6 +293,306 @@
@@ -760,12 +765,13 @@ index f376703..1230573 100644
      }
    },
    "components": {
-@@ -399,6 +699,48 @@
+@@ -401,6 +701,50 @@
            }
          }
        },
 +      "Room": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "deletedAt",
 +          "id",
@@ -797,6 +803,7 @@ index f376703..1230573 100644
 +      },
 +      "RoomSummary": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -810,7 +817,7 @@ index f376703..1230573 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 0462482..0464845 100644
+index e015ff7..fe1bfc1 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -293,6 +293,306 @@
@@ -1120,12 +1127,13 @@ index 0462482..0464845 100644
      }
    },
    "components": {
-@@ -407,6 +707,50 @@
+@@ -409,6 +709,52 @@
            }
          }
        },
 +      "Room": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "deletedAt",
 +          "id",
@@ -1159,6 +1167,7 @@ index 0462482..0464845 100644
 +      },
 +      "RoomSummary": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -1172,7 +1181,7 @@ index 0462482..0464845 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index 692a565..ec35862 100644
+index ef08622..f18af13 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -293,6 +293,306 @@
@@ -1482,12 +1491,13 @@ index 692a565..ec35862 100644
      }
    },
    "components": {
-@@ -407,6 +707,50 @@
+@@ -409,6 +709,52 @@
            }
          }
        },
 +      "Room": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "deletedAt",
 +          "id",
@@ -1521,6 +1531,7 @@ index 692a565..ec35862 100644
 +      },
 +      "RoomSummary": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -1534,10 +1545,10 @@ index 692a565..ec35862 100644
          "type": "object",
          "required": [
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 6769319..b11f983 100644
+index 92bc55d..4586d5f 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -87,6 +87,21 @@ export const PlaceStylesEnumValues = [
+@@ -92,6 +92,21 @@ export const PlaceStylesEnumValues = [
    'treehouse',
  ] as const
  
@@ -1559,7 +1570,7 @@ index 6769319..b11f983 100644
  export type Timestamp = ColumnType<DateTime | CalendarDate>
  
  export interface Guests {
-@@ -122,6 +137,16 @@ export interface Places {
+@@ -127,6 +142,16 @@ export interface Places {
    updatedAt: Timestamp
  }
  
@@ -1576,7 +1587,7 @@ index 6769319..b11f983 100644
  export interface Users {
    createdAt: Timestamp
    email: string
-@@ -134,6 +159,7 @@ export interface DB {
+@@ -140,6 +165,7 @@ export interface DB {
    host_places: HostPlaces
    hosts: Hosts
    places: Places
@@ -1584,7 +1595,7 @@ index 6769319..b11f983 100644
    users: Users
  }
  
-@@ -142,5 +168,6 @@ export class DBClass {
+@@ -148,5 +174,6 @@ export class DBClass {
    host_places: HostPlaces
    hosts: Hosts
    places: Places
@@ -1604,13 +1615,13 @@ index 538a900..a55e48c 100644
    ],
  } as const
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 6efd28d..a613c27 100644
+index 605ac00..4961f68 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -57,7 +57,12 @@ us humans, he says:
- */
- 
- import { type CalendarDate, type DateTime } from '@rvoh/dream'
+@@ -62,7 +62,12 @@ import {
+   type ClockTime,
+   type ClockTimeTz,
+ } from '@rvoh/dream'
 -import { type PlaceStylesEnum, PlaceStylesEnumValues } from './db.js'
 +import {
 +  type PlaceStylesEnum,
@@ -1621,7 +1632,7 @@ index 6efd28d..a613c27 100644
  
  export const schema = {
    guests: {
-@@ -388,6 +393,99 @@ export const schema = {
+@@ -393,6 +398,99 @@ export const schema = {
        },
      },
    },
@@ -1721,7 +1732,7 @@ index 6efd28d..a613c27 100644
    users: {
      serializerKeys: [],
      scopes: {
-@@ -466,6 +564,7 @@ export const connectionTypeConfig = {
+@@ -486,6 +584,7 @@ export const connectionTypeConfig = {
        Host: 'hosts',
        HostPlace: 'host_places',
        Place: 'places',
@@ -1957,4 +1968,4 @@ index 9818b61..2208354 100644
          ValidationErrors: {
              /** @enum {string} */
              type: "validation";
-```
+``````

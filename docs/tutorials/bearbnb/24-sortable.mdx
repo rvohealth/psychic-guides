@@ -1,13 +1,13 @@
 ---
 title: Sortable
-id: bearbnb-28-sortable
+id: bearbnb-24-sortable
 ---
 
 # Sortable
 
 ## Commit Message
 
-```
+``````
 Sortable
 
 To prevent more than one Room within a Place having the same
@@ -21,21 +21,21 @@ pnpm psy db:migrate
 pnpm uspec spec/unit/models/Room.spec.ts
 pnpm uspec
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
 diff --git a/api/spec/unit/models/Room.spec.ts b/api/spec/unit/models/Room.spec.ts
-index e6c7481..f34ea18 100644
+index 0e6ea36..28f60c7 100644
 --- a/api/spec/unit/models/Room.spec.ts
 +++ b/api/spec/unit/models/Room.spec.ts
 @@ -1,5 +1,8 @@
  import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
 +import createPlace from '@spec/factories/PlaceFactory.js'
-+import createRoomBedroom from '@spec/factories/Room/BedroomFactory.js'
- import createRoomDen from '@spec/factories/Room/DenFactory.js'
-+import createRoomKitchen from '@spec/factories/Room/KitchenFactory.js'
++import createBedroom from '@spec/factories/Room/BedroomFactory.js'
+ import createDen from '@spec/factories/Room/DenFactory.js'
++import createKitchen from '@spec/factories/Room/KitchenFactory.js'
  
  describe('Room', () => {
    it('has many LocalizedTexts', async () => {
@@ -47,9 +47,9 @@ index e6c7481..f34ea18 100644
 +  describe('position', () => {
 +    it('is automatically set and scoped to Place', async () => {
 +      const place = await createPlace()
-+      const kitchen = await createRoomKitchen({ place })
-+      const otherBedroom = await createRoomBedroom()
-+      const bedroom = await createRoomBedroom({ place })
++      const kitchen = await createKitchen({ place })
++      const otherBedroom = await createBedroom()
++      const bedroom = await createBedroom({ place })
 +
 +      expect(kitchen.position).toEqual(1)
 +      expect(bedroom.position).toEqual(2)
@@ -58,7 +58,7 @@ index e6c7481..f34ea18 100644
 +  })
  })
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index 596e4c3..23f0515 100644
+index 24bff21..675c7c5 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
 @@ -37,7 +37,7 @@ export default class Place extends ApplicationModel {
@@ -71,7 +71,7 @@ index 596e4c3..23f0515 100644
    // not from `import { Room } from 'socket.io-adapter'`
    public rooms: Room[]
 diff --git a/api/src/app/models/Room.ts b/api/src/app/models/Room.ts
-index eb177b3..0eb640b 100644
+index ffd5409..a0c638a 100644
 --- a/api/src/app/models/Room.ts
 +++ b/api/src/app/models/Room.ts
 @@ -14,7 +14,10 @@ export default class Room extends ApplicationModel {
@@ -85,11 +85,11 @@ index eb177b3..0eb640b 100644
    public deletedAt: DreamColumn<Room, 'deletedAt'>
    public createdAt: DreamColumn<Room, 'createdAt'>
    public updatedAt: DreamColumn<Room, 'updatedAt'>
-diff --git a/api/src/db/migrations/1765422215354-add-deferrable-unique-constraint-to-rooms.ts b/api/src/db/migrations/1765422215354-add-deferrable-unique-constraint-to-rooms.ts
+diff --git a/api/src/db/migrations/1773157634327-add-deferrable-unique-constraint-to-rooms.ts b/api/src/db/migrations/1773157634327-add-deferrable-unique-constraint-to-rooms.ts
 new file mode 100644
 index 0000000..acf0882
 --- /dev/null
-+++ b/api/src/db/migrations/1765422215354-add-deferrable-unique-constraint-to-rooms.ts
++++ b/api/src/db/migrations/1773157634327-add-deferrable-unique-constraint-to-rooms.ts
 @@ -0,0 +1,19 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely } from 'kysely'
@@ -111,4 +111,4 @@ index 0000000..acf0882
 +  await DreamMigrationHelpers.dropConstraint(db, 'room_position_contraint', { table: 'rooms' })
 +}
 \ No newline at end of file
-```
+``````

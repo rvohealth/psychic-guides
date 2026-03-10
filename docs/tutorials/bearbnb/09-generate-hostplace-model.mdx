@@ -7,17 +7,17 @@ id: bearbnb-09-generate-hostplace-model
 
 ## Commit Message
 
-```
+``````
 Generate HostPlace model
 
 ```console
 pnpm psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to deleted_at:datetime:optional
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
 diff --git a/api/spec/factories/HostPlaceFactory.ts b/api/spec/factories/HostPlaceFactory.ts
 new file mode 100644
 index 0000000..aeb0b16
@@ -77,11 +77,11 @@ index 0000000..baf74e2
 +  public place: Place
 +  public placeId: DreamColumn<HostPlace, 'placeId'>
 +}
-diff --git a/api/src/db/migrations/1765411215763-create-host-place.ts b/api/src/db/migrations/1765411215763-create-host-place.ts
+diff --git a/api/src/db/migrations/1773152412417-create-host-place.ts b/api/src/db/migrations/1773152412417-create-host-place.ts
 new file mode 100644
 index 0000000..833a587
 --- /dev/null
-+++ b/api/src/db/migrations/1765411215763-create-host-place.ts
++++ b/api/src/db/migrations/1773152412417-create-host-place.ts
 @@ -0,0 +1,37 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -121,4 +121,4 @@ index 0000000..833a587
 +  await db.schema.dropTable('host_places').execute()
 +}
 \ No newline at end of file
-```
+``````

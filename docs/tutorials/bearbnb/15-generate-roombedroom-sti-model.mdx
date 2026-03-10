@@ -1,92 +1,126 @@
 ---
-title: Rename generated RoomBedroom to Bedroom.
-id: bearbnb-17-rename-generated-roombedroom-to-bedroom
+title: Generate Room/Bedroom STI model
+id: bearbnb-15-generate-roombedroom-sti-model
 ---
 
-# Rename generated RoomBedroom to Bedroom.
+# Generate Room/Bedroom STI model
 
 ## Commit Message
 
-```
-Rename generated RoomBedroom to Bedroom.
-
-No check constraint to update in the migration because, for
-array types, the generator always sets a default for array
-types (`{}` is the Postgres representation of an empty array),
-so even non-Bedroom Rooms will have non-null, empty-array `bed_types`
+``````
+Generate Room/Bedroom STI model
 
 ```console
+pnpm psy g:sti-child --model-name=Bedroom Room/Bedroom extends Room bed_types:enum\[\]:bed_types:twin,bunk,queen,king,cot,sofabed
 pnpm psy db:migrate
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
 diff --git a/api/spec/factories/Room/BedroomFactory.ts b/api/spec/factories/Room/BedroomFactory.ts
-index 0f25e2e..67bb8ec 100644
---- a/api/spec/factories/Room/BedroomFactory.ts
+new file mode 100644
+index 0000000..354c9e9
+--- /dev/null
 +++ b/api/spec/factories/Room/BedroomFactory.ts
-@@ -1,8 +1,8 @@
+@@ -0,0 +1,9 @@
++import { UpdateableProperties } from '@rvoh/dream/types'
 +import Bedroom from '@models/Room/Bedroom.js'
- import { UpdateableProperties } from '@rvoh/dream/types'
--import RoomBedroom from '@models/Room/Bedroom.js'
- 
--export default async function createRoomBedroom(attrs: UpdateableProperties<RoomBedroom> = {}) {
--  return await RoomBedroom.create({
-+export default async function createRoomBedroom(attrs: UpdateableProperties<Bedroom> = {}) {
++
++export default async function createBedroom(attrs: UpdateableProperties<Bedroom> = {}) {
 +  return await Bedroom.create({
-     bedTypes: ['twin'],
-     ...attrs,
-   })
++    bedTypes: ['twin'],
++    ...attrs,
++  })
++}
+diff --git a/api/spec/unit/models/Room/Bedroom.spec.ts b/api/spec/unit/models/Room/Bedroom.spec.ts
+new file mode 100644
+index 0000000..89fb496
+--- /dev/null
++++ b/api/spec/unit/models/Room/Bedroom.spec.ts
+@@ -0,0 +1,3 @@
++describe('Room/Bedroom', () => {
++  it.todo('add a test here to get started building Room/Bedroom')
++})
 diff --git a/api/src/app/models/Room/Bedroom.ts b/api/src/app/models/Room/Bedroom.ts
-index b01cab6..451c883 100644
---- a/api/src/app/models/Room/Bedroom.ts
+new file mode 100644
+index 0000000..b7eabca
+--- /dev/null
 +++ b/api/src/app/models/Room/Bedroom.ts
-@@ -1,17 +1,17 @@
+@@ -0,0 +1,17 @@
++import { Decorators, STI } from '@rvoh/dream'
++import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 +import Room from '@models/Room.js'
- import { Decorators, STI } from '@rvoh/dream'
- import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
--import Room from '@models/Room.js'
- 
--const deco = new Decorators<typeof RoomBedroom>()
++
 +const deco = new Decorators<typeof Bedroom>()
- 
- @STI(Room)
--export default class RoomBedroom extends Room {
--  public override get serializers(): DreamSerializers<RoomBedroom> {
++
++@STI(Room)
 +export default class Bedroom extends Room {
 +  public override get serializers(): DreamSerializers<Bedroom> {
-     return {
-       default: 'Room/BedroomSerializer',
-       summary: 'Room/BedroomSummarySerializer',
-     }
-   }
- 
--  public bedTypes: DreamColumn<RoomBedroom, 'bedTypes'>
++    return {
++      default: 'Room/BedroomSerializer',
++      summary: 'Room/BedroomSummarySerializer',
++    }
++  }
++
 +  public bedTypes: DreamColumn<Bedroom, 'bedTypes'>
- }
++}
 diff --git a/api/src/app/serializers/Room/BedroomSerializer.ts b/api/src/app/serializers/Room/BedroomSerializer.ts
-index e705036..85e9783 100644
---- a/api/src/app/serializers/Room/BedroomSerializer.ts
+new file mode 100644
+index 0000000..f34b5b4
+--- /dev/null
 +++ b/api/src/app/serializers/Room/BedroomSerializer.ts
-@@ -1,9 +1,9 @@
+@@ -0,0 +1,9 @@
++import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 +import Bedroom from '@models/Room/Bedroom.js'
- import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
--import RoomBedroom from '@models/Room/Bedroom.js'
- 
--export const RoomBedroomSummarySerializer = (roomBedroom: RoomBedroom) =>
--  RoomSummarySerializer(RoomBedroom, roomBedroom)
-+export const RoomBedroomSummarySerializer = (roomBedroom: Bedroom) =>
-+  RoomSummarySerializer(Bedroom, roomBedroom)
- 
--export const RoomBedroomSerializer = (roomBedroom: RoomBedroom) =>
--  RoomSerializer(RoomBedroom, roomBedroom)
-+export const RoomBedroomSerializer = (roomBedroom: Bedroom) =>
-+  RoomSerializer(Bedroom, roomBedroom)
-     .attribute('bedTypes')
++
++export const RoomBedroomSummarySerializer = (bedroom: Bedroom) =>
++  RoomSummarySerializer(Bedroom, bedroom)
++
++export const RoomBedroomSerializer = (bedroom: Bedroom) =>
++  RoomSerializer(Bedroom, bedroom)
++    .attribute('bedTypes')
+diff --git a/api/src/db/migrations/1773153070336-create-room-bedroom.ts b/api/src/db/migrations/1773153070336-create-room-bedroom.ts
+new file mode 100644
+index 0000000..55d5d4c
+--- /dev/null
++++ b/api/src/db/migrations/1773153070336-create-room-bedroom.ts
+@@ -0,0 +1,31 @@
++import { Kysely, sql } from 'kysely'
++
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export async function up(db: Kysely<any>): Promise<void> {
++  await db.schema
++    .createType('bed_types_enum')
++    .asEnum([
++      'twin',
++      'bunk',
++      'queen',
++      'king',
++      'cot',
++      'sofabed'
++    ])
++    .execute()
++
++  await db.schema
++    .alterTable('rooms')
++    .addColumn('bed_types', sql`bed_types_enum[]`, col => col.notNull().defaultTo('{}'))
++    .execute()
++}
++
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export async function down(db: Kysely<any>): Promise<void> {
++  await db.schema
++    .alterTable('rooms')
++    .dropColumn('bed_types')
++    .execute()
++
++  await db.schema.dropType('bed_types_enum').execute()
++}
+\ No newline at end of file
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 9f98408..136367e 100644
+index 011167c..8cf4e91 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -343,7 +343,14 @@
@@ -179,12 +213,13 @@ index 9f98408..136367e 100644
                    "position": {
                      "type": [
                        "integer",
-@@ -755,6 +804,56 @@
+@@ -759,6 +808,58 @@
            }
          }
        },
 +      "RoomBedroom": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "bedTypes",
 +          "deletedAt",
@@ -224,6 +259,7 @@ index 9f98408..136367e 100644
 +      },
 +      "RoomBedroomSummary": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -237,7 +273,7 @@ index 9f98408..136367e 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 4e4a21c..72d4ae7 100644
+index c741d69..e5027c7 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -343,7 +343,14 @@
@@ -330,12 +366,13 @@ index 4e4a21c..72d4ae7 100644
                    "position": {
                      "type": [
                        "integer",
-@@ -771,6 +820,65 @@
+@@ -775,6 +824,67 @@
            }
          }
        },
 +      "RoomBedroom": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "bedTypes",
 +          "deletedAt",
@@ -384,6 +421,7 @@ index 4e4a21c..72d4ae7 100644
 +      },
 +      "RoomBedroomSummary": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -397,7 +435,7 @@ index 4e4a21c..72d4ae7 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index 45c3b98..edcc2ef 100644
+index ca33fa0..73bcb9c 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -343,7 +343,14 @@
@@ -490,12 +528,13 @@ index 45c3b98..edcc2ef 100644
                    "position": {
                      "type": [
                        "integer",
-@@ -771,6 +820,65 @@
+@@ -775,6 +824,67 @@
            }
          }
        },
 +      "RoomBedroom": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "bedTypes",
 +          "deletedAt",
@@ -544,6 +583,7 @@ index 45c3b98..edcc2ef 100644
 +      },
 +      "RoomBedroomSummary": {
 +        "type": "object",
++        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -557,10 +597,10 @@ index 45c3b98..edcc2ef 100644
          "type": "object",
          "required": [
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 2e9b1b0..c66af38 100644
+index f2fd5c5..822576f 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -63,6 +63,14 @@ import { type CalendarDate, type DateTime } from '@rvoh/dream'
+@@ -68,6 +68,14 @@ import {
   */
  import type { ColumnType } from 'kysely'
  
@@ -575,7 +615,7 @@ index 2e9b1b0..c66af38 100644
  export type BathOrShowerStylesEnum =
    | 'bath'
    | 'bath_and_shower'
-@@ -76,6 +84,23 @@ export const BathOrShowerStylesEnumValues = [
+@@ -81,6 +89,23 @@ export const BathOrShowerStylesEnumValues = [
    'shower',
  ] as const
  
@@ -599,7 +639,7 @@ index 2e9b1b0..c66af38 100644
  export type Generated<T> =
    T extends ColumnType<infer S, infer I, infer U>
      ? ColumnType<S, I | undefined, U>
-@@ -152,6 +177,7 @@ export interface Places {
+@@ -157,6 +182,7 @@ export interface Places {
  
  export interface Rooms {
    bathOrShowerStyle: BathOrShowerStylesEnum | null
@@ -621,11 +661,11 @@ index b4348f8..6109591 100644
      'RoomSummarySerializer',
    ],
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 73660b8..7ff53e5 100644
+index 3121dfe..8203e1f 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -59,9 +59,11 @@ us humans, he says:
- import { type CalendarDate, type DateTime } from '@rvoh/dream'
+@@ -64,9 +64,11 @@ import {
+ } from '@rvoh/dream'
  import {
    type BathOrShowerStylesEnum,
 +  type BedTypesEnum,
@@ -636,7 +676,7 @@ index 73660b8..7ff53e5 100644
    PlaceStylesEnumValues,
    RoomTypesEnumValues,
  } from './db.js'
-@@ -403,6 +405,7 @@ export const schema = {
+@@ -408,6 +410,7 @@ export const schema = {
      },
      nonJsonColumnNames: [
        'bathOrShowerStyle',
@@ -644,7 +684,7 @@ index 73660b8..7ff53e5 100644
        'createdAt',
        'deletedAt',
        'id',
-@@ -421,6 +424,15 @@ export const schema = {
+@@ -426,6 +429,15 @@ export const schema = {
          allowNull: true,
          isArray: false,
        },
@@ -660,7 +700,7 @@ index 73660b8..7ff53e5 100644
        createdAt: {
          coercedType: {} as DateTime,
          enumType: null,
-@@ -578,6 +590,7 @@ export const connectionTypeConfig = {
+@@ -598,6 +610,7 @@ export const connectionTypeConfig = {
        Place: 'places',
        Room: 'rooms',
        'Room/Bathroom': 'rooms',
@@ -734,4 +774,4 @@ index 603ae3d..60e921d 100644
          ValidationErrors: {
              /** @enum {string} */
              type: "validation";
-```
+``````

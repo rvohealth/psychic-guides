@@ -7,7 +7,7 @@ id: bearbnb-04-user-hasone-guest
 
 ## Commit Message
 
-```
+``````
 User HasOne Guest
 Every User automatically creates a Guest
 Each User can have at most one Guest (unique index on user_id foreign key)
@@ -32,23 +32,11 @@ a new association, one could run `sync` instead
 ```console
 pnpm psy sync
 ```
-```
+``````
 
 ## Changes
 
-```diff
-diff --git a/api/.prettierignore b/api/.prettierignore
-index f4ef007..9687f36 100644
---- a/api/.prettierignore
-+++ b/api/.prettierignore
-@@ -9,3 +9,7 @@ dist/
- .yarn/
- .yarnrc.yml
- pnpm-lock.yaml
-+
-+# only adding so that diffs are clearer for demo app
-+src/app/serializers/**/*.ts
-+src/db/migrations/*.ts
+``````
 diff --git a/api/spec/unit/models/User.spec.ts b/api/spec/unit/models/User.spec.ts
 index 06dac32..3bdfe80 100644
 --- a/api/spec/unit/models/User.spec.ts
@@ -70,22 +58,22 @@ index 06dac32..3bdfe80 100644
 +  })
  })
 diff --git a/api/src/app/models/User.ts b/api/src/app/models/User.ts
-index 0c415a7..09fd61c 100644
+index ed12a4f..ec6b4ab 100644
 --- a/api/src/app/models/User.ts
 +++ b/api/src/app/models/User.ts
 @@ -1,6 +1,7 @@
 +import ApplicationModel from '@models/ApplicationModel.js'
++import Guest from '@models/Guest.js'
  import { Decorators } from '@rvoh/dream'
  import { DreamColumn } from '@rvoh/dream/types'
 -import ApplicationModel from '@models/ApplicationModel.js'
-+import Guest from './Guest.js'
  
  const deco = new Decorators<typeof User>()
  
-@@ -13,4 +14,12 @@ export default class User extends ApplicationModel {
-   public email: DreamColumn<User, 'email'>
-   public createdAt: DreamColumn<User, 'createdAt'>
-   public updatedAt: DreamColumn<User, 'updatedAt'>
+@@ -16,4 +17,12 @@ export default class User extends ApplicationModel {
+ 
+   @deco.Encrypted()
+   public phone: DreamColumn<User, 'encryptedPhone'>
 +
 +  @deco.AfterCreate()
 +  public async createGuest(this: User) {
@@ -95,10 +83,10 @@ index 0c415a7..09fd61c 100644
 +  @deco.HasOne('Guest')
 +  public guest: Guest
  }
-diff --git a/api/src/db/migrations/1765410597252-create-guest.ts b/api/src/db/migrations/1765410597252-create-guest.ts
+diff --git a/api/src/db/migrations/1773150513217-create-guest.ts b/api/src/db/migrations/1773150513217-create-guest.ts
 index 5e39ada..4293a81 100644
---- a/api/src/db/migrations/1765410597252-create-guest.ts
-+++ b/api/src/db/migrations/1765410597252-create-guest.ts
+--- a/api/src/db/migrations/1773150513217-create-guest.ts
++++ b/api/src/db/migrations/1773150513217-create-guest.ts
 @@ -9,7 +9,8 @@ export async function up(db: Kysely<any>): Promise<void> {
          .primaryKey()
          .defaultTo(sql`uuidv7()`),
@@ -110,10 +98,10 @@ index 5e39ada..4293a81 100644
      .addColumn('updated_at', 'timestamp', col => col.notNull())
      .execute()
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 9d90506..e236e7c 100644
+index 8a3a92a..b5f6597 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -70,6 +70,13 @@ export type Generated<T> =
+@@ -75,6 +75,13 @@ export type Generated<T> =
  
  export type Timestamp = ColumnType<DateTime | CalendarDate>
  
@@ -127,7 +115,7 @@ index 9d90506..e236e7c 100644
  export interface Users {
    createdAt: Timestamp
    email: string
-@@ -78,9 +85,11 @@ export interface Users {
+@@ -84,9 +91,11 @@ export interface Users {
  }
  
  export interface DB {
@@ -151,10 +139,10 @@ index 901c67b..6c9f10f 100644
 +  serializers: ['GuestSerializer', 'GuestSummarySerializer'],
  } as const
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index b6fde7f..28bcc2f 100644
+index ac17a6b..2373941 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -60,6 +60,64 @@ import { type CalendarDate, type DateTime } from '@rvoh/dream'
+@@ -65,6 +65,64 @@ import {
  import {} from './db.js'
  
  export const schema = {
@@ -219,10 +207,10 @@ index b6fde7f..28bcc2f 100644
    users: {
      serializerKeys: [],
      scopes: {
-@@ -106,7 +164,17 @@ export const schema = {
+@@ -126,7 +184,17 @@ export const schema = {
        },
      },
-     virtualColumns: [],
+     virtualColumns: ['phone'],
 -    associations: {},
 +    associations: {
 +      guest: {
@@ -238,7 +226,7 @@ index b6fde7f..28bcc2f 100644
    },
  } as const
  
-@@ -115,6 +183,7 @@ export const connectionTypeConfig = {
+@@ -135,6 +203,7 @@ export const connectionTypeConfig = {
    allDefaultScopeNames: [],
    globalNames: {
      models: {
@@ -246,4 +234,4 @@ index b6fde7f..28bcc2f 100644
        User: 'users',
      },
    },
-```
+``````
