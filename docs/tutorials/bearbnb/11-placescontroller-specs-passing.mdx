@@ -7,7 +7,7 @@ id: bearbnb-11-placescontroller-specs-passing
 
 ## Commit Message
 
-```
+``````
 PlacesController specs passing
 
 NOTE: if, after running `pnpm psy sync`, your editor starts
@@ -21,13 +21,13 @@ pnpm uspec spec/unit/controllers/V1/Host/PlacesController.spec.ts
 // changes; simply adding `this.ok()` or `this.noContent()` to each action
 // in the controller will get the spec run to complete
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
 diff --git a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
-index 10c5a6a..25e59a6 100644
+index 64923d4..862bb32 100644
 --- a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 +++ b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 @@ -1,9 +1,10 @@
@@ -51,20 +51,9 @@ index 10c5a6a..25e59a6 100644
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
  
-       const { body } = await indexPlaces(200)
+       const { body } = await index(200)
  
-@@ -46,14 +48,18 @@ describe('V1/Host/PlacesController', () => {
-   })
- 
-   describe('GET show', () => {
--    const showPlace = async <StatusCode extends 200 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
-+    const showPlace = async <StatusCode extends 200 | 400 | 404>(
-+      place: Place,
-+      expectedStatus: StatusCode,
-+    ) => {
-       return request.get('/v1/host/places/{id}', expectedStatus, {
-         id: place.id,
-       })
+@@ -53,7 +55,8 @@ describe('V1/Host/PlacesController', () => {
      }
  
      it('returns the specified Place', async () => {
@@ -72,48 +61,9 @@ index 10c5a6a..25e59a6 100644
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
  
-       const { body } = await showPlace(place, 200)
+       const { body } = await show(place, 200)
  
-@@ -79,19 +85,22 @@ describe('V1/Host/PlacesController', () => {
-   describe('POST create', () => {
-     const createPlace = async <StatusCode extends 201 | 400 | 404>(
-       data: RequestBody<'post', '/v1/host/places'>,
--      expectedStatus: StatusCode
-+      expectedStatus: StatusCode,
-     ) => {
-       return request.post('/v1/host/places', expectedStatus, {
--        data
-+        data,
-       })
-     }
- 
-     it('creates a Place for this Host', async () => {
--      const { body } = await createPlace({
--        name: 'The Place name',
--        style: 'cottage',
--        sleeps: 1,
--      }, 201)
-+      const { body } = await createPlace(
-+        {
-+          name: 'The Place name',
-+          style: 'cottage',
-+          sleeps: 1,
-+        },
-+        201,
-+      )
- 
-       const place = await host.associationQuery('places').firstOrFail()
-       expect(place.name).toEqual('The Place name')
-@@ -113,7 +122,7 @@ describe('V1/Host/PlacesController', () => {
-     const updatePlace = async <StatusCode extends 204 | 400 | 404>(
-       place: Place,
-       data: RequestBody<'patch', '/v1/host/places/{id}'>,
--      expectedStatus: StatusCode
-+      expectedStatus: StatusCode,
-     ) => {
-       return request.patch('/v1/host/places/{id}', expectedStatus, {
-         id: place.id,
-@@ -122,13 +131,18 @@ describe('V1/Host/PlacesController', () => {
+@@ -122,7 +125,8 @@ describe('V1/Host/PlacesController', () => {
      }
  
      it('updates the Place', async () => {
@@ -121,56 +71,9 @@ index 10c5a6a..25e59a6 100644
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
  
--      await updatePlace(place, {
--        name: 'Updated Place name',
--        style: 'dump',
--        sleeps: 2,
--      }, 204)
-+      await updatePlace(
-+        place,
-+        {
-+          name: 'Updated Place name',
-+          style: 'dump',
-+          sleeps: 2,
-+        },
-+        204,
-+      )
- 
-       await place.reload()
-       expect(place.name).toEqual('Updated Place name')
-@@ -143,11 +157,15 @@ describe('V1/Host/PlacesController', () => {
-         const originalStyle = place.style
-         const originalSleeps = place.sleeps
- 
--        await updatePlace(place, {
--          name: 'Updated Place name',
--          style: 'dump',
--          sleeps: 2,
--        }, 404)
-+        await updatePlace(
-+          place,
-+          {
-+            name: 'Updated Place name',
-+            style: 'dump',
-+            sleeps: 2,
-+          },
-+          404,
-+        )
- 
-         await place.reload()
-         expect(place.name).toEqual(originalName)
-@@ -158,14 +176,18 @@ describe('V1/Host/PlacesController', () => {
-   })
- 
-   describe('DELETE destroy', () => {
--    const destroyPlace = async <StatusCode extends 204 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
-+    const destroyPlace = async <StatusCode extends 204 | 400 | 404>(
-+      place: Place,
-+      expectedStatus: StatusCode,
-+    ) => {
-       return request.delete('/v1/host/places/{id}', expectedStatus, {
-         id: place.id,
-       })
+       await update(place, {
+         name: 'Updated Place name',
+@@ -165,7 +169,8 @@ describe('V1/Host/PlacesController', () => {
      }
  
      it('deletes the Place', async () => {
@@ -178,10 +81,10 @@ index 10c5a6a..25e59a6 100644
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
  
-       await destroyPlace(place, 204)
+       await destroy(place, 204)
  
 diff --git a/api/src/app/controllers/AuthedController.ts b/api/src/app/controllers/AuthedController.ts
-index fc70d67..3f576e4 100644
+index 9ecb9f2..7f37ec2 100644
 --- a/api/src/app/controllers/AuthedController.ts
 +++ b/api/src/app/controllers/AuthedController.ts
 @@ -1,30 +1,27 @@
@@ -224,7 +127,7 @@ index fc70d67..3f576e4 100644
 +        'The current authentication scheme is only for early development. Replace with a production grade authentication scheme.',
        )
  
-     const token = (this.req.header('Authorization') ?? '').split(' ').at(-1)!
+     const token = (this.header('authorization') ?? '').split(' ').at(-1)!
 diff --git a/api/src/app/controllers/V1/Host/BaseController.ts b/api/src/app/controllers/V1/Host/BaseController.ts
 index 1a200d0..1f537e5 100644
 --- a/api/src/app/controllers/V1/Host/BaseController.ts
@@ -246,7 +149,7 @@ index 1a200d0..1f537e5 100644
 +  }
  }
 diff --git a/api/src/app/controllers/V1/Host/PlacesController.ts b/api/src/app/controllers/V1/Host/PlacesController.ts
-index 8265af5..f919906 100644
+index f6b0e42..ee34669 100644
 --- a/api/src/app/controllers/V1/Host/PlacesController.ts
 +++ b/api/src/app/controllers/V1/Host/PlacesController.ts
 @@ -1,6 +1,8 @@
@@ -259,8 +162,8 @@ index 8265af5..f919906 100644
  
  const openApiTags = ['places']
  
-@@ -13,10 +15,11 @@ export default class V1HostPlacesController extends V1HostBaseController {
-     serializerKey: 'summary',
+@@ -14,10 +16,11 @@ export default class V1HostPlacesController extends V1HostBaseController {
+     fastJsonStringify: true,
    })
    public async index() {
 -    // const places = await this.currentHost.associationQuery('places')
@@ -275,8 +178,8 @@ index 8265af5..f919906 100644
    }
  
    @OpenAPI(Place, {
-@@ -25,8 +28,8 @@ export default class V1HostPlacesController extends V1HostBaseController {
-     description: 'Fetch a Place',
+@@ -27,8 +30,8 @@ export default class V1HostPlacesController extends V1HostBaseController {
+     fastJsonStringify: true,
    })
    public async show() {
 -    // const place = await this.place()
@@ -286,8 +189,8 @@ index 8265af5..f919906 100644
    }
  
    @OpenAPI(Place, {
-@@ -35,9 +38,14 @@ export default class V1HostPlacesController extends V1HostBaseController {
-     description: 'Create a Place',
+@@ -38,9 +41,14 @@ export default class V1HostPlacesController extends V1HostBaseController {
+     fastJsonStringify: true,
    })
    public async create() {
 -    // let place = await this.currentHost.createAssociation('places', this.paramsFor(Place))
@@ -304,8 +207,8 @@ index 8265af5..f919906 100644
    }
  
    @OpenAPI(Place, {
-@@ -46,9 +54,9 @@ export default class V1HostPlacesController extends V1HostBaseController {
-     description: 'Update a Place',
+@@ -50,9 +58,9 @@ export default class V1HostPlacesController extends V1HostBaseController {
+     fastJsonStringify: true,
    })
    public async update() {
 -    // const place = await this.place()
@@ -317,8 +220,8 @@ index 8265af5..f919906 100644
    }
  
    @OpenAPI({
-@@ -57,14 +65,15 @@ export default class V1HostPlacesController extends V1HostBaseController {
-     description: 'Destroy a Place',
+@@ -62,14 +70,15 @@ export default class V1HostPlacesController extends V1HostBaseController {
+     fastJsonStringify: true,
    })
    public async destroy() {
 -    // const place = await this.place()
@@ -339,4 +242,4 @@ index 8265af5..f919906 100644
 +      .findOrFail(this.castParam('id', 'string'))
    }
  }
-```
+``````

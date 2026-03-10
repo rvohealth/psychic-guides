@@ -7,17 +7,17 @@ id: bearbnb-07-generate-place-resource
 
 ## Commit Message
 
-```
+``````
 Generate Place resource
 
 ```console
 pnpm psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
 diff --git a/api/spec/factories/PlaceFactory.ts b/api/spec/factories/PlaceFactory.ts
 new file mode 100644
 index 0000000..d0a664e
@@ -39,7 +39,7 @@ index 0000000..d0a664e
 +}
 diff --git a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 new file mode 100644
-index 0000000..10c5a6a
+index 0000000..64923d4
 --- /dev/null
 +++ b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 @@ -0,0 +1,185 @@
@@ -63,14 +63,14 @@ index 0000000..10c5a6a
 +  })
 +
 +  describe('GET index', () => {
-+    const indexPlaces = async <StatusCode extends 200 | 400 | 404>(expectedStatus: StatusCode) => {
++    const index = async <StatusCode extends 200 | 400 | 404>(expectedStatus: StatusCode) => {
 +      return request.get('/v1/host/places', expectedStatus)
 +    }
 +
 +    it('returns the index of Places', async () => {
 +      const place = await createPlace({ host })
 +
-+      const { body } = await indexPlaces(200)
++      const { body } = await index(200)
 +
 +      expect(body.results).toEqual([
 +        expect.objectContaining({
@@ -83,7 +83,7 @@ index 0000000..10c5a6a
 +      it('are omitted', async () => {
 +        await createPlace()
 +
-+        const { body } = await indexPlaces(200)
++        const { body } = await index(200)
 +
 +        expect(body.results).toEqual([])
 +      })
@@ -91,7 +91,7 @@ index 0000000..10c5a6a
 +  })
 +
 +  describe('GET show', () => {
-+    const showPlace = async <StatusCode extends 200 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
++    const show = async <StatusCode extends 200 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
 +      return request.get('/v1/host/places/{id}', expectedStatus, {
 +        id: place.id,
 +      })
@@ -100,7 +100,7 @@ index 0000000..10c5a6a
 +    it('returns the specified Place', async () => {
 +      const place = await createPlace({ host })
 +
-+      const { body } = await showPlace(place, 200)
++      const { body } = await show(place, 200)
 +
 +      expect(body).toEqual(
 +        expect.objectContaining({
@@ -116,13 +116,13 @@ index 0000000..10c5a6a
 +      it('is not found', async () => {
 +        const otherHostPlace = await createPlace()
 +
-+        await showPlace(otherHostPlace, 404)
++        await show(otherHostPlace, 404)
 +      })
 +    })
 +  })
 +
 +  describe('POST create', () => {
-+    const createPlace = async <StatusCode extends 201 | 400 | 404>(
++    const create = async <StatusCode extends 201 | 400 | 404>(
 +      data: RequestBody<'post', '/v1/host/places'>,
 +      expectedStatus: StatusCode
 +    ) => {
@@ -132,7 +132,7 @@ index 0000000..10c5a6a
 +    }
 +
 +    it('creates a Place for this Host', async () => {
-+      const { body } = await createPlace({
++      const { body } = await create({
 +        name: 'The Place name',
 +        style: 'cottage',
 +        sleeps: 1,
@@ -155,7 +155,7 @@ index 0000000..10c5a6a
 +  })
 +
 +  describe('PATCH update', () => {
-+    const updatePlace = async <StatusCode extends 204 | 400 | 404>(
++    const update = async <StatusCode extends 204 | 400 | 404>(
 +      place: Place,
 +      data: RequestBody<'patch', '/v1/host/places/{id}'>,
 +      expectedStatus: StatusCode
@@ -169,7 +169,7 @@ index 0000000..10c5a6a
 +    it('updates the Place', async () => {
 +      const place = await createPlace({ host })
 +
-+      await updatePlace(place, {
++      await update(place, {
 +        name: 'Updated Place name',
 +        style: 'dump',
 +        sleeps: 2,
@@ -188,7 +188,7 @@ index 0000000..10c5a6a
 +        const originalStyle = place.style
 +        const originalSleeps = place.sleeps
 +
-+        await updatePlace(place, {
++        await update(place, {
 +          name: 'Updated Place name',
 +          style: 'dump',
 +          sleeps: 2,
@@ -203,7 +203,7 @@ index 0000000..10c5a6a
 +  })
 +
 +  describe('DELETE destroy', () => {
-+    const destroyPlace = async <StatusCode extends 204 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
++    const destroy = async <StatusCode extends 204 | 400 | 404>(place: Place, expectedStatus: StatusCode) => {
 +      return request.delete('/v1/host/places/{id}', expectedStatus, {
 +        id: place.id,
 +      })
@@ -212,7 +212,7 @@ index 0000000..10c5a6a
 +    it('deletes the Place', async () => {
 +      const place = await createPlace({ host })
 +
-+      await destroyPlace(place, 204)
++      await destroy(place, 204)
 +
 +      expect(await Place.find(place.id)).toBeNull()
 +    })
@@ -221,7 +221,7 @@ index 0000000..10c5a6a
 +      it('is not deleted', async () => {
 +        const place = await createPlace()
 +
-+        await destroyPlace(place, 404)
++        await destroy(place, 404)
 +
 +        expect(await Place.find(place.id)).toMatchDreamModel(place)
 +      })
@@ -261,10 +261,10 @@ index 0000000..1a200d0
 +}
 diff --git a/api/src/app/controllers/V1/Host/PlacesController.ts b/api/src/app/controllers/V1/Host/PlacesController.ts
 new file mode 100644
-index 0000000..8265af5
+index 0000000..f6b0e42
 --- /dev/null
 +++ b/api/src/app/controllers/V1/Host/PlacesController.ts
-@@ -0,0 +1,70 @@
+@@ -0,0 +1,75 @@
 +import { OpenAPI } from '@rvoh/psychic'
 +import V1HostBaseController from './BaseController.js'
 +import Place from '@models/Place.js'
@@ -278,6 +278,7 @@ index 0000000..8265af5
 +    description: 'Paginated index of Places',
 +    cursorPaginate: true,
 +    serializerKey: 'summary',
++    fastJsonStringify: true,
 +  })
 +  public async index() {
 +    // const places = await this.currentHost.associationQuery('places')
@@ -290,6 +291,7 @@ index 0000000..8265af5
 +    status: 200,
 +    tags: openApiTags,
 +    description: 'Fetch a Place',
++    fastJsonStringify: true,
 +  })
 +  public async show() {
 +    // const place = await this.place()
@@ -300,6 +302,7 @@ index 0000000..8265af5
 +    status: 201,
 +    tags: openApiTags,
 +    description: 'Create a Place',
++    fastJsonStringify: true,
 +  })
 +  public async create() {
 +    // let place = await this.currentHost.createAssociation('places', this.paramsFor(Place))
@@ -311,6 +314,7 @@ index 0000000..8265af5
 +    status: 204,
 +    tags: openApiTags,
 +    description: 'Update a Place',
++    fastJsonStringify: true,
 +  })
 +  public async update() {
 +    // const place = await this.place()
@@ -322,6 +326,7 @@ index 0000000..8265af5
 +    status: 204,
 +    tags: openApiTags,
 +    description: 'Destroy a Place',
++    fastJsonStringify: true,
 +  })
 +  public async destroy() {
 +    // const place = await this.place()
@@ -387,10 +392,10 @@ index 0000000..83fab47
 +    .attribute('sleeps')
 +    .attribute('deletedAt')
 diff --git a/api/src/conf/routes.ts b/api/src/conf/routes.ts
-index 67975fc..198aa15 100644
+index 47b692e..cfc3ed8 100644
 --- a/api/src/conf/routes.ts
 +++ b/api/src/conf/routes.ts
-@@ -2,6 +2,12 @@ import adminRoutes from '@conf/routes.admin.js'
+@@ -3,6 +3,12 @@ import internalRoutes from '@conf/routes.internal.js'
  import { PsychicRouter } from '@rvoh/psychic'
  
  export default function routes(r: PsychicRouter) {
@@ -401,13 +406,13 @@ index 67975fc..198aa15 100644
 +  })
 +
    adminRoutes(r)
+   internalRoutes(r)
    // add routes here, perhaps by running `yarn psy g:resource v1/pets Pet name:citext birthdate:date species:enum:pet_species:dog,cat,fish`
- }
-diff --git a/api/src/db/migrations/1765411129394-create-place.ts b/api/src/db/migrations/1765411129394-create-place.ts
+diff --git a/api/src/db/migrations/1773151915966-create-place.ts b/api/src/db/migrations/1773151915966-create-place.ts
 new file mode 100644
 index 0000000..c18822a
 --- /dev/null
-+++ b/api/src/db/migrations/1765411129394-create-place.ts
++++ b/api/src/db/migrations/1773151915966-create-place.ts
 @@ -0,0 +1,42 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely, sql } from 'kysely'
@@ -452,4 +457,4 @@ index 0000000..c18822a
 +  await db.schema.dropType('place_styles_enum').execute()
 +}
 \ No newline at end of file
-```
+``````

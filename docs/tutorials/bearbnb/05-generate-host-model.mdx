@@ -7,17 +7,17 @@ id: bearbnb-05-generate-host-model
 
 ## Commit Message
 
-```
+``````
 Generate Host model
 
 ```console
 pnpm psy g:model Host User:belongs_to
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
 diff --git a/api/spec/factories/HostFactory.ts b/api/spec/factories/HostFactory.ts
 new file mode 100644
 index 0000000..d28f07b
@@ -91,11 +91,11 @@ index 0000000..9ccbada
 +
 +export const HostSerializer = (host: Host) =>
 +  HostSummarySerializer(host)
-diff --git a/api/src/db/migrations/1765411028183-create-host.ts b/api/src/db/migrations/1765411028183-create-host.ts
+diff --git a/api/src/db/migrations/1773151769580-create-host.ts b/api/src/db/migrations/1773151769580-create-host.ts
 new file mode 100644
 index 0000000..fc937ae
 --- /dev/null
-+++ b/api/src/db/migrations/1765411028183-create-host.ts
++++ b/api/src/db/migrations/1773151769580-create-host.ts
 @@ -0,0 +1,28 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -126,4 +126,4 @@ index 0000000..fc937ae
 +  await db.schema.dropTable('hosts').execute()
 +}
 \ No newline at end of file
-```
+``````

@@ -7,7 +7,7 @@ id: bearbnb-10-host-hasmany-places-through-hostplace
 
 ## Commit Message
 
-```
+``````
 Host hasMany places through HostPlace
 Place hasMany hosts through HostPlace
 
@@ -41,11 +41,11 @@ To run model unit specs:
 ```console
 pnpm uspec spec/unit/models
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
 diff --git a/api/spec/unit/models/Host.spec.ts b/api/spec/unit/models/Host.spec.ts
 index 9255d5c..ef54e54 100644
 --- a/api/spec/unit/models/Host.spec.ts
@@ -85,18 +85,18 @@ index 10bcdd9..6315065 100644
 +  })
  })
 diff --git a/api/src/app/models/Host.ts b/api/src/app/models/Host.ts
-index 8536e0d..b7d7420 100644
+index 8536e0d..b5e8782 100644
 --- a/api/src/app/models/Host.ts
 +++ b/api/src/app/models/Host.ts
 @@ -1,7 +1,9 @@
 -import { Decorators } from '@rvoh/dream'
 -import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
  import ApplicationModel from '@models/ApplicationModel.js'
++import HostPlace from '@models/HostPlace.js'
++import Place from '@models/Place.js'
  import User from '@models/User.js'
 +import { Decorators } from '@rvoh/dream'
 +import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
-+import HostPlace from './HostPlace.js'
-+import Place from './Place.js'
  
  const deco = new Decorators<typeof Host>()
  
@@ -112,16 +112,16 @@ index 8536e0d..b7d7420 100644
 +  public places: Place[]
  }
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index ee1bcf4..64ddfc8 100644
+index ee1bcf4..9f8b47d 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
 @@ -1,6 +1,8 @@
 +import ApplicationModel from '@models/ApplicationModel.js'
++import Host from '@models/Host.js'
++import HostPlace from '@models/HostPlace.js'
  import { Decorators } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 -import ApplicationModel from '@models/ApplicationModel.js'
-+import Host from './Host.js'
-+import HostPlace from './HostPlace.js'
  
  const deco = new Decorators<typeof Place>()
  
@@ -137,10 +137,10 @@ index ee1bcf4..64ddfc8 100644
 +  public hosts: Host[]
  }
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 9cb8801..6769319 100644
+index 2776ce8..92bc55d 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -96,6 +96,15 @@ export interface Guests {
+@@ -101,6 +101,15 @@ export interface Guests {
    userId: string
  }
  
@@ -156,7 +156,7 @@ index 9cb8801..6769319 100644
  export interface Hosts {
    createdAt: Timestamp
    id: Generated<string>
-@@ -122,6 +131,7 @@ export interface Users {
+@@ -128,6 +137,7 @@ export interface Users {
  
  export interface DB {
    guests: Guests
@@ -164,7 +164,7 @@ index 9cb8801..6769319 100644
    hosts: Hosts
    places: Places
    users: Users
-@@ -129,6 +139,7 @@ export interface DB {
+@@ -135,6 +145,7 @@ export interface DB {
  
  export class DBClass {
    guests: Guests
@@ -173,10 +173,10 @@ index 9cb8801..6769319 100644
    places: Places
    users: Users
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 6bdb2a0..6efd28d 100644
+index cd08bd3..605ac00 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -118,6 +118,98 @@ export const schema = {
+@@ -123,6 +123,98 @@ export const schema = {
        },
      },
    },
@@ -275,7 +275,7 @@ index 6bdb2a0..6efd28d 100644
    hosts: {
      serializerKeys: ['default', 'summary'],
      scopes: {
-@@ -165,6 +257,24 @@ export const schema = {
+@@ -170,6 +262,24 @@ export const schema = {
      },
      virtualColumns: [],
      associations: {
@@ -300,7 +300,7 @@ index 6bdb2a0..6efd28d 100644
        user: {
          type: 'BelongsTo',
          foreignKey: 'userId',
-@@ -257,7 +367,26 @@ export const schema = {
+@@ -262,7 +372,26 @@ export const schema = {
        },
      },
      virtualColumns: [],
@@ -328,7 +328,7 @@ index 6bdb2a0..6efd28d 100644
    },
    users: {
      serializerKeys: [],
-@@ -335,6 +464,7 @@ export const connectionTypeConfig = {
+@@ -355,6 +484,7 @@ export const connectionTypeConfig = {
      models: {
        Guest: 'guests',
        Host: 'hosts',
@@ -336,4 +336,4 @@ index 6bdb2a0..6efd28d 100644
        Place: 'places',
        User: 'users',
      },
-```
+``````

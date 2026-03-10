@@ -7,35 +7,40 @@ id: bearbnb-01-generate-user-model
 
 ## Commit Message
 
-```
+``````
 Generate User model
 
 The User model is primarily used for authentication
 and associating the authenticated user with resources.
 Since we haven't selected an authentication strategy
-yet, we'll simply start with an email address.
+yet, we'll simply start with an email address and phone
+number.
 
-citext ensures both that when we create a unique
+`citext` ensures both that when we create a unique
 constraint, the email address will be case-insensitively
 unique, and that all queries are automatically case-
 insensitve.
 
+`phone:encrypted` will result in a database field of `encryptedPhone`
+and a phone property on the model. The data is automatically
+encrypted upon setting and decrypted upon getting.
+
 ```console
 cd api
 pnpm psy db:create
-pnpm psy g:model --no-serializer User email:citext
+pnpm psy g:model --no-serializer User email:citext phone:encrypted
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
 diff --git a/api/spec/factories/UserFactory.ts b/api/spec/factories/UserFactory.ts
 new file mode 100644
-index 0000000..26cdcf8
+index 0000000..b95c066
 --- /dev/null
 +++ b/api/spec/factories/UserFactory.ts
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,12 @@
 +import { UpdateableProperties } from '@rvoh/dream/types'
 +import User from '@models/User.js'
 +
@@ -43,7 +48,8 @@ index 0000000..26cdcf8
 +
 +export default async function createUser(attrs: UpdateableProperties<User> = {}) {
 +  return await User.create({
-+    email: `User email ${++counter}`,
++    email: `email-${++counter}@example.com`,
++    phone: `User phone ${counter}`,
 +    ...attrs,
 +  })
 +}
@@ -58,10 +64,10 @@ index 0000000..06dac32
 +})
 diff --git a/api/src/app/models/User.ts b/api/src/app/models/User.ts
 new file mode 100644
-index 0000000..0c415a7
+index 0000000..ed12a4f
 --- /dev/null
 +++ b/api/src/app/models/User.ts
-@@ -0,0 +1,16 @@
+@@ -0,0 +1,19 @@
 +import { Decorators } from '@rvoh/dream'
 +import { DreamColumn } from '@rvoh/dream/types'
 +import ApplicationModel from '@models/ApplicationModel.js'
@@ -77,13 +83,16 @@ index 0000000..0c415a7
 +  public email: DreamColumn<User, 'email'>
 +  public createdAt: DreamColumn<User, 'createdAt'>
 +  public updatedAt: DreamColumn<User, 'updatedAt'>
++
++  @deco.Encrypted()
++  public phone: DreamColumn<User, 'encryptedPhone'>
 +}
-diff --git a/api/src/db/migrations/1765325303509-create-user.ts b/api/src/db/migrations/1765325303509-create-user.ts
+diff --git a/api/src/db/migrations/1773147721872-create-user.ts b/api/src/db/migrations/1773147721872-create-user.ts
 new file mode 100644
-index 0000000..92fd418
+index 0000000..17544f2
 --- /dev/null
-+++ b/api/src/db/migrations/1765325303509-create-user.ts
-@@ -0,0 +1,24 @@
++++ b/api/src/db/migrations/1773147721872-create-user.ts
+@@ -0,0 +1,25 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely, sql } from 'kysely'
 +
@@ -99,6 +108,7 @@ index 0000000..92fd418
 +        .defaultTo(sql`uuidv7()`),
 +    )
 +    .addColumn('email', sql`citext`, col => col.notNull().unique())
++    .addColumn('encrypted_phone', 'text', col => col.notNull())
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
 +    .execute()
@@ -109,4 +119,4 @@ index 0000000..92fd418
 +  await db.schema.dropTable('users').execute()
 +}
 \ No newline at end of file
-```
+``````

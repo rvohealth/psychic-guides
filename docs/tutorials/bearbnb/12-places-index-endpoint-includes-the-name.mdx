@@ -7,20 +7,28 @@ id: bearbnb-12-places-index-endpoint-includes-the-name
 
 ## Commit Message
 
-```
+``````
 Places index endpoint includes the name
-
 ```cosole
-pnpm psy sync # after updating the serializer to update OpenAPI
+pnpm psy sync # to update the OpenAPI spec after updating the serializer
 pnpm uspec spec/unit/controllers/V1/Host/PlacesController.spec.ts
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
+diff --git a/.prettierignore b/.prettierignore
+index dea0610..c891352 100644
+--- a/.prettierignore
++++ b/.prettierignore
+@@ -24,3 +24,4 @@ package-lock.json
+ # only adding so that diffs are clearer for demo app
+ api/src/app/serializers/**/*.ts
+ api/src/db/migrations/*.ts
++api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 diff --git a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
-index 25e59a6..b4ccace 100644
+index 862bb32..fba71ea 100644
 --- a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 +++ b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 @@ -32,6 +32,7 @@ describe('V1/Host/PlacesController', () => {
@@ -52,12 +60,12 @@ index 83fab47..ff993f0 100644
      .attribute('sleeps')
      .attribute('deletedAt')
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index a34b3c5..f376703 100644
+index 4b04f2c..51b81af 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
-@@ -387,11 +387,15 @@
-       "PlaceSummary": {
+@@ -389,11 +389,15 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -73,12 +81,12 @@ index a34b3c5..f376703 100644
          }
        },
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 1d154e6..0462482 100644
+index b18e7cb..e015ff7 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
-@@ -395,11 +395,15 @@
-       "PlaceSummary": {
+@@ -397,11 +397,15 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -94,12 +102,12 @@ index 1d154e6..0462482 100644
          }
        },
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index 0ea3271..692a565 100644
+index 24ce955..ef08622 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
-@@ -395,11 +395,15 @@
-       "PlaceSummary": {
+@@ -397,11 +397,15 @@
          "type": "object",
+         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -126,4 +134,4 @@ index ee7fc12..9818b61 100644
          };
          ValidationErrors: {
              /** @enum {string} */
-```
+``````

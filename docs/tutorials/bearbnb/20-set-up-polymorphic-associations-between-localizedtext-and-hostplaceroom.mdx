@@ -1,13 +1,13 @@
 ---
 title: Set up polymorphic associations between LocalizedText and Host/Place/Room
-id: bearbnb-24-set-up-polymorphic-associations-between-localizedtext-and-host-place-room
+id: bearbnb-20-set-up-polymorphic-associations-between-localizedtext-and-hostplaceroom
 ---
 
 # Set up polymorphic associations between LocalizedText and Host/Place/Room
 
 ## Commit Message
 
-```
+``````
 Set up polymorphic associations between LocalizedText and Host/Place/Room
 Create a default LocalizedText for each Host/Place/Room
 
@@ -27,20 +27,19 @@ Before committing, ensure all specs pass:
 ```console
 pnpm uspec
 ```
-```
+``````
 
 ## Changes
 
-```diff
+``````
 diff --git a/api/spec/factories/LocalizedTextFactory.ts b/api/spec/factories/LocalizedTextFactory.ts
-index 0df341b..638e4f4 100644
+index 0df341b..9a2923b 100644
 --- a/api/spec/factories/LocalizedTextFactory.ts
 +++ b/api/spec/factories/LocalizedTextFactory.ts
-@@ -1,10 +1,12 @@
+@@ -1,10 +1,11 @@
 -import { UpdateableProperties } from '@rvoh/dream/types'
  import LocalizedText from '@models/LocalizedText.js'
 +import { UpdateableProperties } from '@rvoh/dream/types'
-+import createPlace from './PlaceFactory.js'
  
  let counter = 0
  
@@ -51,7 +50,7 @@ index 0df341b..638e4f4 100644
      title: `LocalizedText title ${++counter}`,
      markdown: `LocalizedText markdown ${counter}`,
 diff --git a/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts b/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
-index 9cfebae..7306040 100644
+index c550e8f..2dda12a 100644
 --- a/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
 +++ b/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
 @@ -1,6 +1,9 @@
@@ -61,7 +60,7 @@ index 9cfebae..7306040 100644
 +import createHost from '@spec/factories/HostFactory.js'
 +import createHostPlace from '@spec/factories/HostPlaceFactory.js'
 +import createPlace from '@spec/factories/PlaceFactory.js'
-+import createRoomDen from '@spec/factories/Room/DenFactory.js'
++import createDen from '@spec/factories/Room/DenFactory.js'
  import createUser from '@spec/factories/UserFactory.js'
  import { RequestBody, session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
  
@@ -70,7 +69,7 @@ index 9cfebae..7306040 100644
    })
  
 -  describe('PATCH update', () => {
--    const updateLocalizedText = async <StatusCode extends 204 | 400 | 404>(
+-    const update = async <StatusCode extends 204 | 400 | 404>(
 -      localizedText: LocalizedText,
 -      data: RequestBody<'patch', '/v1/host/localized-texts/{id}'>,
 -      expectedStatus: StatusCode
@@ -165,7 +164,7 @@ index 9cfebae..7306040 100644
 +          const otherHost = await createHost()
 +          localizedText = await otherHost.associationQuery('localizedTexts').firstOrFail()
  
--      await updateLocalizedText(localizedText, {
+-      await update(localizedText, {
 -        locale: 'es-ES',
 -        title: 'Updated LocalizedText title',
 -        markdown: 'Updated LocalizedText markdown',
@@ -191,7 +190,7 @@ index 9cfebae..7306040 100644
 +  context('belonging to a Place', () => {
 +    let localizedText: LocalizedText
  
--        await updateLocalizedText(localizedText, {
+-        await update(localizedText, {
 -          locale: 'es-ES',
 -          title: 'Updated LocalizedText title',
 -          markdown: 'Updated LocalizedText markdown',
@@ -291,7 +290,7 @@ index 9cfebae..7306040 100644
    })
  
 -  describe('DELETE destroy', () => {
--    const destroyLocalizedText = async <StatusCode extends 204 | 400 | 404>(localizedText: LocalizedText, expectedStatus: StatusCode) => {
+-    const destroy = async <StatusCode extends 204 | 400 | 404>(localizedText: LocalizedText, expectedStatus: StatusCode) => {
 -      return request.delete('/v1/host/localized-texts/{id}', expectedStatus, {
 -        id: localizedText.id,
 +  context('belonging to a Room', () => {
@@ -301,7 +300,7 @@ index 9cfebae..7306040 100644
 +      const host = await createHost({ user })
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
-+      const room = await createRoomDen({ place })
++      const room = await createDen({ place })
 +      localizedText = await room.associationQuery('localizedTexts').firstOrFail()
 +    })
 +
@@ -339,13 +338,13 @@ index 9cfebae..7306040 100644
 -      const localizedText = await createLocalizedText({ user })
 +      context('a LocalizedText associated with a Room belonging to a different Host', () => {
 +        it('is not updated', async () => {
-+          const otherRoom = await createRoomDen()
++          const otherRoom = await createDen()
 +          localizedText = await otherRoom.associationQuery('localizedTexts').firstOrFail()
 +          const originalLocale = localizedText.locale
 +          const originalTitle = localizedText.title
 +          const originalMarkdown = localizedText.markdown
  
--      await destroyLocalizedText(localizedText, 204)
+-      await destroy(localizedText, 204)
 +          await updateLocalizedText(
 +            localizedText,
 +            {
@@ -386,10 +385,10 @@ index 9cfebae..7306040 100644
 +
 +      context('a LocalizedText associated with a Room belonging to a different Host', () => {
 +        it('is not deleted', async () => {
-+          const otherRoom = await createRoomDen()
++          const otherRoom = await createDen()
 +          localizedText = await otherRoom.associationQuery('localizedTexts').firstOrFail()
  
--        await destroyLocalizedText(localizedText, 404)
+-        await destroy(localizedText, 404)
 +          await destroyLocalizedText(localizedText, 404)
  
 -        expect(await LocalizedText.find(localizedText.id)).toMatchDreamModel(localizedText)
@@ -466,12 +465,12 @@ index 6315065..7399652 100644
 +  })
  })
 diff --git a/api/spec/unit/models/Room.spec.ts b/api/spec/unit/models/Room.spec.ts
-index 1e8d460..0c9281f 100644
+index 1e8d460..3ae3183 100644
 --- a/api/spec/unit/models/Room.spec.ts
 +++ b/api/spec/unit/models/Room.spec.ts
 @@ -1,3 +1,28 @@
 +import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
-+import createRoomDen from '@spec/factories/Room/DenFactory.js'
++import createDen from '@spec/factories/Room/DenFactory.js'
 +
  describe('Room', () => {
 -  it.todo('add a test here to get started building Room')
@@ -479,7 +478,7 @@ index 1e8d460..0c9281f 100644
 +    // using Den as a stand-in for any Room since STI base models cannot be
 +    // saved to the database (enforced by intentionally omitting the base
 +    // STI model controller name from the enum values allowed for `type`)
-+    const room = await createRoomDen()
++    const room = await createDen()
 +    const esLocalizedText = await createLocalizedText({ localizable: room, locale: 'es-ES' })
 +
 +    const localizedText = await room.associationQuery('localizedTexts', { and: { locale: 'es-ES' } }).last()
@@ -491,7 +490,7 @@ index 1e8d460..0c9281f 100644
 +      // using Den as a stand-in for any Room since STI base models cannot be
 +      // saved to the database (enforced by intentionally omitting the base
 +      // STI model controller name from the enum values allowed for `type`)
-+      const room = await createRoomDen()
++      const room = await createDen()
 +      const localizedText = await room.associationQuery('localizedTexts').firstOrFail()
 +
 +      expect(localizedText.locale).toEqual('en-US')
@@ -500,7 +499,7 @@ index 1e8d460..0c9281f 100644
 +  })
  })
 diff --git a/api/src/app/controllers/V1/Host/LocalizedTextsController.ts b/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
-index 38fd532..f85450b 100644
+index 12f4ab2..1cddd7a 100644
 --- a/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
 +++ b/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
 @@ -1,6 +1,8 @@
@@ -513,8 +512,8 @@ index 38fd532..f85450b 100644
  
  const openApiTags = ['localized-texts']
  
-@@ -11,9 +13,9 @@ export default class V1HostLocalizedTextsController extends V1HostBaseController
-     description: 'Update a LocalizedText',
+@@ -12,9 +14,9 @@ export default class V1HostLocalizedTextsController extends V1HostBaseController
+     fastJsonStringify: true,
    })
    public async update() {
 -    // const localizedText = await this.localizedText()
@@ -526,8 +525,8 @@ index 38fd532..f85450b 100644
    }
  
    @OpenAPI({
-@@ -22,14 +24,53 @@ export default class V1HostLocalizedTextsController extends V1HostBaseController
-     description: 'Destroy a LocalizedText',
+@@ -24,14 +26,53 @@ export default class V1HostLocalizedTextsController extends V1HostBaseController
+     fastJsonStringify: true,
    })
    public async destroy() {
 -    // const localizedText = await this.localizedText()
@@ -587,17 +586,16 @@ index 38fd532..f85450b 100644
    }
  }
 diff --git a/api/src/app/models/Host.ts b/api/src/app/models/Host.ts
-index b7d7420..f0bb141 100644
+index b5e8782..4fae757 100644
 --- a/api/src/app/models/Host.ts
 +++ b/api/src/app/models/Host.ts
-@@ -3,6 +3,7 @@ import User from '@models/User.js'
+@@ -1,5 +1,6 @@
+ import ApplicationModel from '@models/ApplicationModel.js'
+ import HostPlace from '@models/HostPlace.js'
++import LocalizedText from '@models/LocalizedText.js'
+ import Place from '@models/Place.js'
+ import User from '@models/User.js'
  import { Decorators } from '@rvoh/dream'
- import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- import HostPlace from './HostPlace.js'
-+import LocalizedText from './LocalizedText.js'
- import Place from './Place.js'
- 
- const deco = new Decorators<typeof Host>()
 @@ -32,4 +33,12 @@ export default class Host extends ApplicationModel {
  
    @deco.HasMany('Place', { through: 'hostPlaces' })
@@ -612,17 +610,17 @@ index b7d7420..f0bb141 100644
 +  }
  }
 diff --git a/api/src/app/models/LocalizedText.ts b/api/src/app/models/LocalizedText.ts
-index d73684f..aecf7ca 100644
+index d73684f..b44ef83 100644
 --- a/api/src/app/models/LocalizedText.ts
 +++ b/api/src/app/models/LocalizedText.ts
 @@ -1,6 +1,9 @@
 +import ApplicationModel from '@models/ApplicationModel.js'
++import Host from '@models/Host.js'
++import Place from '@models/Place.js'
++import Room from '@models/Room.js'
  import { Decorators } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 -import ApplicationModel from '@models/ApplicationModel.js'
-+import Host from './Host.js'
-+import Place from './Place.js'
-+import Room from './Room.js'
  
  const deco = new Decorators<typeof LocalizedText>()
  
@@ -637,17 +635,17 @@ index d73684f..aecf7ca 100644
 +  public localizable: Host | Place | Room
  }
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index 399d7a9..114e2cc 100644
+index 9243aa1..717990e 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
-@@ -3,6 +3,7 @@ import { Decorators } from '@rvoh/dream'
+@@ -1,6 +1,7 @@
+ import ApplicationModel from '@models/ApplicationModel.js'
+ import Host from '@models/Host.js'
+ import HostPlace from '@models/HostPlace.js'
++import LocalizedText from '@models/LocalizedText.js'
+ import Room from '@models/Room.js'
+ import { Decorators } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- import Host from './Host.js'
- import HostPlace from './HostPlace.js'
-+import LocalizedText from './LocalizedText.js'
- import Room from './Room.js'
- 
- const deco = new Decorators<typeof Place>()
 @@ -37,4 +38,12 @@ export default class Place extends ApplicationModel {
    // make sure this imports from `import Room from '@models/Room.js'`
    // not from `import { Room } from 'socket.io-adapter'`
@@ -662,17 +660,15 @@ index 399d7a9..114e2cc 100644
 +  }
  }
 diff --git a/api/src/app/models/Room.ts b/api/src/app/models/Room.ts
-index 7b34e52..289e533 100644
+index 7b34e52..fc0ed30 100644
 --- a/api/src/app/models/Room.ts
 +++ b/api/src/app/models/Room.ts
-@@ -2,6 +2,7 @@ import ApplicationModel from '@models/ApplicationModel.js'
+@@ -1,4 +1,5 @@
+ import ApplicationModel from '@models/ApplicationModel.js'
++import LocalizedText from '@models/LocalizedText.js'
  import Place from '@models/Place.js'
  import { Decorators } from '@rvoh/dream'
  import { DreamColumn } from '@rvoh/dream/types'
-+import LocalizedText from './LocalizedText.js'
- 
- const deco = new Decorators<typeof Room>()
- 
 @@ -20,4 +21,12 @@ export default class Room extends ApplicationModel {
    @deco.BelongsTo('Place', { on: 'placeId' })
    public place: Place
@@ -686,10 +682,10 @@ index 7b34e52..289e533 100644
 +    await this.createAssociation('localizedTexts', { locale: 'en-US', title: this.type })
 +  }
  }
-diff --git a/api/src/db/migrations/1765416239882-create-localized-text.ts b/api/src/db/migrations/1765416239882-create-localized-text.ts
+diff --git a/api/src/db/migrations/1773154136747-create-localized-text.ts b/api/src/db/migrations/1773154136747-create-localized-text.ts
 index 58549f0..5819bd4 100644
---- a/api/src/db/migrations/1765416239882-create-localized-text.ts
-+++ b/api/src/db/migrations/1765416239882-create-localized-text.ts
+--- a/api/src/db/migrations/1773154136747-create-localized-text.ts
++++ b/api/src/db/migrations/1773154136747-create-localized-text.ts
 @@ -29,12 +29,19 @@ export async function up(db: Kysely<any>): Promise<void> {
      .addColumn('localizable_type', sql`localized_types_enum`, col => col.notNull())
      .addColumn('localizable_id', 'uuid', col => col.notNull())
@@ -713,7 +709,7 @@ index 58549f0..5819bd4 100644
  
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 6c6f824..d8b0e55 100644
+index a5705ec..f4e9077 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -6,6 +6,114 @@
@@ -832,7 +828,7 @@ index 6c6f824..d8b0e55 100644
        "parameters": [
          {
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index f12780b..8670685 100644
+index e4a969f..10bf720 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -6,6 +6,114 @@
@@ -951,7 +947,7 @@ index f12780b..8670685 100644
        "parameters": [
          {
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index aed4399..32c7710 100644
+index fcc24fe..8d6ad26 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -6,6 +6,114 @@
@@ -1070,10 +1066,10 @@ index aed4399..32c7710 100644
        "parameters": [
          {
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 34aae49..263e787 100644
+index cacb7e2..0fd2b2c 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -115,6 +115,14 @@ export type Generated<T> =
+@@ -120,6 +120,14 @@ export type Generated<T> =
      ? ColumnType<S, I | undefined, U>
      : ColumnType<T, T | undefined, T>
  
@@ -1088,7 +1084,7 @@ index 34aae49..263e787 100644
  export type PlaceStylesEnum =
    | 'cabin'
    | 'cave'
-@@ -174,6 +182,18 @@ export interface Hosts {
+@@ -179,6 +187,18 @@ export interface Hosts {
    userId: string
  }
  
@@ -1107,7 +1103,7 @@ index 34aae49..263e787 100644
  export interface Places {
    createdAt: Timestamp
    deletedAt: Timestamp | null
-@@ -208,6 +228,7 @@ export interface DB {
+@@ -214,6 +234,7 @@ export interface DB {
    guests: Guests
    host_places: HostPlaces
    hosts: Hosts
@@ -1115,7 +1111,7 @@ index 34aae49..263e787 100644
    places: Places
    rooms: Rooms
    users: Users
-@@ -217,6 +238,7 @@ export class DBClass {
+@@ -223,6 +244,7 @@ export class DBClass {
    guests: Guests
    host_places: HostPlaces
    hosts: Hosts
@@ -1137,10 +1133,10 @@ index b6e5538..0f826c1 100644
      'PlaceSummarySerializer',
      'Room/BathroomSerializer',
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index a26460e..3e9c44b 100644
+index 9e6360b..73f17b4 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -61,11 +61,15 @@ import {
+@@ -66,11 +66,15 @@ import {
    type ApplianceTypesEnum,
    type BathOrShowerStylesEnum,
    type BedTypesEnum,
@@ -1156,7 +1152,7 @@ index a26460e..3e9c44b 100644
    PlaceStylesEnumValues,
    RoomTypesEnumValues,
  } from './db.js'
-@@ -277,6 +281,15 @@ export const schema = {
+@@ -282,6 +286,15 @@ export const schema = {
          requiredAndClauses: null,
          passthroughAndClauses: null,
        },
@@ -1172,7 +1168,7 @@ index a26460e..3e9c44b 100644
        places: {
          type: 'HasMany',
          foreignKey: null,
-@@ -297,6 +310,119 @@ export const schema = {
+@@ -302,6 +315,119 @@ export const schema = {
        },
      },
    },
@@ -1292,7 +1288,7 @@ index a26460e..3e9c44b 100644
    places: {
      serializerKeys: ['default', 'summary'],
      scopes: {
-@@ -397,6 +523,15 @@ export const schema = {
+@@ -402,6 +528,15 @@ export const schema = {
          requiredAndClauses: null,
          passthroughAndClauses: null,
        },
@@ -1308,7 +1304,7 @@ index a26460e..3e9c44b 100644
        rooms: {
          type: 'HasMany',
          foreignKey: 'placeId',
-@@ -520,6 +655,15 @@ export const schema = {
+@@ -525,6 +660,15 @@ export const schema = {
      },
      virtualColumns: [],
      associations: {
@@ -1324,7 +1320,7 @@ index a26460e..3e9c44b 100644
        place: {
          type: 'BelongsTo',
          foreignKey: 'placeId',
-@@ -608,6 +752,7 @@ export const connectionTypeConfig = {
+@@ -628,6 +772,7 @@ export const connectionTypeConfig = {
        Guest: 'guests',
        Host: 'hosts',
        HostPlace: 'host_places',
@@ -1412,4 +1408,4 @@ index 8135272..b2bfc20 100644
      "/v1/host/places": {
          parameters: {
              query?: {
-```
+``````
