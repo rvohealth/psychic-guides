@@ -7,7 +7,7 @@ id: bearbnb-22-places-controller-for-guests-including-localization
 
 ## Commit Message
 
-``````
+````
 Places controller for Guests, including localization
 
 If the i18n text is coming through in English when it should
@@ -34,11 +34,11 @@ pnpm uspec spec/unit/controllers/V1/Guest/PlacesController.spec.ts
 NODE_DEBUG=psychic pnpm uspec spec/unit/controllers/V1/Guest/PlacesController.spec.ts
 pnpm uspec
 ```
-``````
+````
 
 ## Changes
 
-``````
+```
 diff --git a/api/spec/factories/LocalizedTextFactory.ts b/api/spec/factories/LocalizedTextFactory.ts
 index 9a2923b..66beb3d 100644
 --- a/api/spec/factories/LocalizedTextFactory.ts
@@ -47,9 +47,9 @@ index 9a2923b..66beb3d 100644
  import LocalizedText from '@models/LocalizedText.js'
  import { UpdateableProperties } from '@rvoh/dream/types'
 +import createPlace from '@spec/factories/PlaceFactory.js'
- 
+
  let counter = 0
- 
+
 diff --git a/api/spec/unit/controllers/V1/Guest/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Guest/PlacesController.spec.ts
 new file mode 100644
 index 0000000..c35a19a
@@ -81,7 +81,7 @@ index 0000000..c35a19a
 +    const subject = async <StatusCode extends 200 | 400>(expectedStatus: StatusCode) => {
 +      return request.get('/v1/guest/places', expectedStatus, {
 +        headers: {
-+          'content-language': 'es-ES',
++          'accept-language': 'es-ES',
 +        },
 +      })
 +    }
@@ -106,7 +106,7 @@ index 0000000..c35a19a
 +      return request.get('/v1/guest/places/{id}', expectedStatus, {
 +        id: place.id,
 +        headers: {
-+          'content-language': 'es-ES',
++          'accept-language': 'es-ES',
 +        },
 +      })
 +    }
@@ -217,13 +217,13 @@ index 7f37ec2..159c124 100644
  import { Encrypt } from '@rvoh/dream/utils'
  import { BeforeAction } from '@rvoh/psychic'
 +import { supportedLocales } from '@src/utils/i18n.js'
- 
+
  export default class AuthedController extends ApplicationController {
    protected currentUser: User
 @@ -18,6 +19,19 @@ export default class AuthedController extends ApplicationController {
      this.currentUser = user
    }
- 
+
 +  @BeforeAction()
 +  public configureSerializers() {
 +    this.serializerPassthrough({
@@ -232,7 +232,7 @@ index 7f37ec2..159c124 100644
 +  }
 +
 +  protected get locale() {
-+    const locale = this.headers['content-language']
++    const locale = this.header('Accept-Language')
 +    const locales = supportedLocales()
 +    return locales.includes(locale as (typeof locales)[number]) ? locale : 'en-US'
 +  }
@@ -306,7 +306,7 @@ index 9e6d48f..a7f0a8a 100644
 +      forGuests: 'PlaceForGuestsSerializer',
      }
    }
- 
+
 diff --git a/api/src/app/models/Room/Bathroom.ts b/api/src/app/models/Room/Bathroom.ts
 index 881ead9..e196696 100644
 --- a/api/src/app/models/Room/Bathroom.ts
@@ -318,7 +318,7 @@ index 881ead9..e196696 100644
 +      forGuests: 'Room/BathroomForGuestsSerializer',
      }
    }
- 
+
 diff --git a/api/src/app/models/Room/Bedroom.ts b/api/src/app/models/Room/Bedroom.ts
 index 2fb83d7..69d4d29 100644
 --- a/api/src/app/models/Room/Bedroom.ts
@@ -330,7 +330,7 @@ index 2fb83d7..69d4d29 100644
 +      forGuests: 'Room/BedroomForGuestsSerializer',
      }
    }
- 
+
 diff --git a/api/src/app/models/Room/Den.ts b/api/src/app/models/Room/Den.ts
 index 0f80449..9e3ba44 100644
 --- a/api/src/app/models/Room/Den.ts
@@ -354,7 +354,7 @@ index 84eebb2..88e86e7 100644
 +      forGuests: 'Room/KitchenForGuestsSerializer',
      }
    }
- 
+
 diff --git a/api/src/app/models/Room/LivingRoom.ts b/api/src/app/models/Room/LivingRoom.ts
 index 4231e84..bc9eadf 100644
 --- a/api/src/app/models/Room/LivingRoom.ts
@@ -376,7 +376,7 @@ index ff993f0..4ae5e31 100644
  import { DreamSerializer } from '@rvoh/dream'
 +import { LocalesEnum } from '@src/types/db.js'
 +import i18n from '@src/utils/i18n.js'
- 
+
  export const PlaceSummarySerializer = (place: Place) =>
    DreamSerializer(Place, place)
 @@ -11,3 +13,17 @@ export const PlaceSerializer = (place: Place) =>
@@ -408,7 +408,7 @@ index a80452b..a0f7560 100644
 +import { RoomForGuestsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 +import { BathOrShowerStylesEnum, BathOrShowerStylesEnumValues, LocalesEnum } from '@src/types/db.js'
 +import i18n from '@src/utils/i18n.js'
- 
+
  export const RoomBathroomSummarySerializer = (bathroom: Bathroom) =>
    RoomSummarySerializer(Bathroom, bathroom)
 @@ -7,3 +10,27 @@ export const RoomBathroomSummarySerializer = (bathroom: Bathroom) =>
@@ -450,7 +450,7 @@ index f34b5b4..f206507 100644
 +import { RoomForGuestsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 +import { BedTypesEnum, BedTypesEnumValues, LocalesEnum } from '@src/types/db.js'
 +import i18n from '@src/utils/i18n.js'
- 
+
  export const RoomBedroomSummarySerializer = (bedroom: Bedroom) =>
    RoomSummarySerializer(Bedroom, bedroom)
 @@ -7,3 +10,15 @@ export const RoomBedroomSummarySerializer = (bedroom: Bedroom) =>
@@ -478,10 +478,10 @@ index 5d4db09..a62b888 100644
  import Den from '@models/Room/Den.js'
 +import { RoomForGuestsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 +import { LocalesEnum } from '@src/types/db.js'
- 
+
  export const RoomDenSummarySerializer = (den: Den) =>
    RoomSummarySerializer(Den, den)
- 
+
  export const RoomDenSerializer = (den: Den) =>
    RoomSerializer(Den, den)
 +
@@ -498,7 +498,7 @@ index 633aa8f..7f42f47 100644
 +import { RoomForGuestsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 +import { ApplianceTypesEnum, ApplianceTypesEnumValues, LocalesEnum } from '@src/types/db.js'
 +import i18n from '@src/utils/i18n.js'
- 
+
  export const RoomKitchenSummarySerializer = (kitchen: Kitchen) =>
    RoomSummarySerializer(Kitchen, kitchen)
 @@ -7,3 +10,15 @@ export const RoomKitchenSummarySerializer = (kitchen: Kitchen) =>
@@ -526,10 +526,10 @@ index 473d39b..a5b91f4 100644
  import LivingRoom from '@models/Room/LivingRoom.js'
 +import { RoomForGuestsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 +import { LocalesEnum } from '@src/types/db.js'
- 
+
  export const RoomLivingRoomSummarySerializer = (livingRoom: LivingRoom) =>
    RoomSummarySerializer(LivingRoom, livingRoom)
- 
+
  export const RoomLivingRoomSerializer = (livingRoom: LivingRoom) =>
    RoomSerializer(LivingRoom, livingRoom)
 +
@@ -546,7 +546,7 @@ index 7a26a36..ba2237c 100644
  import { DreamSerializer } from '@rvoh/dream'
 +import { LocalesEnum } from '@src/types/db.js'
 +import i18n from '@src/utils/i18n.js'
- 
+
  export const RoomSummarySerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
    DreamSerializer(StiChildClass ?? Room, room)
 @@ -10,3 +12,16 @@ export const RoomSummarySerializer = <T extends Room>(StiChildClass: typeof Room
@@ -689,7 +689,7 @@ index b798cf2..82b076e 100644
 @@ -1,5 +1,7 @@
  import en from '@conf/locales/en.js'
 +import es from '@conf/locales/es.js'
- 
+
  export default {
    en,
 +  es,
@@ -699,7 +699,7 @@ index 054e588..e41a5dc 100644
 --- a/api/src/conf/routes.ts
 +++ b/api/src/conf/routes.ts
 @@ -4,14 +4,19 @@ import { PsychicRouter } from '@rvoh/psychic'
- 
+
  export default function routes(r: PsychicRouter) {
    r.namespace('v1', r => {
 +    r.namespace('guest', r => {
@@ -711,7 +711,7 @@ index 054e588..e41a5dc 100644
 +
      r.namespace('host', r => {
        r.resources('localized-texts', { only: ['update', 'destroy'] })
- 
+
        r.resources('places', r => {
          r.resources('rooms')
 -
@@ -719,7 +719,7 @@ index 054e588..e41a5dc 100644
 -
      })
    })
- 
+
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
 index f4e9077..00455ae 100644
 --- a/api/src/openapi/mobile.openapi.json
@@ -2483,12 +2483,12 @@ index c99a20e..b5ec778 100644
  import locales from '@conf/locales/index.js'
  import { I18nProvider } from '@rvoh/psychic/system'
 +import { LocalesEnumValues } from '@src/types/db.js'
- 
+
 -const SUPPORTED_LOCALES = ['en-US']
  export function supportedLocales() {
 -  return SUPPORTED_LOCALES
 +  return LocalesEnumValues
  }
- 
+
  export default I18nProvider.provide(locales, 'en')
-``````
+```
