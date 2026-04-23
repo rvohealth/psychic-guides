@@ -1,0 +1,211 @@
+---
+sidebar_position: 1
+title: Rate Limiting
+ai_summary: "Psychic's framework posture on rate-limiting: edge-tier protection first, app-layer middleware second, using `rate-limiter-flexible` for Koa HTTP and socket.io WebSocket. Plus a note on socket.io CORS not applying to WebSocket transport."
+---
+
+# Rate Limiting
+
+Psychic does not bundle rate-limiting. Neither does [Koa](https://koajs.com/) ("Koa does not bundle any middleware within its core") nor [socket.io](https://socket.io/). This is a deliberate choice. Rate-limiting has strong dependencies on deployment topology — multi-node Redis versus single-process memory versus an upstream edge — and shipping a specific implementation inside the framework would either constrain those choices or be the first thing every serious deployment replaces. The right mental model is defense in depth at multiple layers.
+
+This guide covers both layers: the edge-tier protection almost every production app should put first, and the app-tier middleware pattern for per-route and per-user limits that edge devices cannot express.
+
+## Layer 1: Edge and infrastructure (primary defense)
+
+This is where almost every production app should put its first line of defense. Traffic you reject at the edge never reaches your Node process. Connection-exhaustion attacks (SlowLoris, SYN floods, opportunistic bot sweeps) can only be solved at the edge — by the time packets reach Node the damage is already done.
+
+The categories, in the order most teams encounter them:
+
+- **Reverse proxy.** nginx `limit_req_zone` and `limit_conn_zone` directives cap requests-per-second and concurrent connections per client IP. HAProxy has `stick-table` with equivalent semantics. This is the default tool if you terminate TLS yourself.
+- **CDN-tier rate limits.** [Cloudflare Rate Limiting](https://developers.cloudflare.com/waf/rate-limiting-rules/), [Fastly Rate Limiting](https://docs.fastly.com/en/ngwaf/rate-limit-rules), and Vercel Edge Config rules reject abusive traffic before it hits your origin. If you are already behind one of these, configure the rules — you are paying for this capability.
+- **Cloud WAF.** [AWS WAF rate-based rules](https://docs.aws.amazon.com/waf/latest/developerguide/waf-rule-statement-type-rate-based.html), [Google Cloud Armor](https://cloud.google.com/armor/docs/rate-limiting-overview), and Azure WAF let you write per-path, per-method, per-header rules at L7 without touching your app.
+- **API gateway throttling.** [AWS API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-request-throttling.html) throttling, Kong's rate-limiting plugin, and similar gateway tools express per-API-key quotas and burst caps. Useful when you are fronting a public API with plan tiers.
+
+```nginx
+# nginx example: 10 req/s per IP with a 20-request burst, plus 50 concurrent connections per IP.
+limit_req_zone  $binary_remote_addr zone=api_rps:10m rate=10r/s;
+limit_conn_zone $binary_remote_addr zone=api_conn:10m;
+
+server {
+  location / {
+    limit_req  zone=api_rps burst=20 nodelay;
+    limit_conn api_conn 50;
+    proxy_pass http://psychic_upstream;
+  }
+}
+```
+
+Be honest about your deployment. Apps behind Cloudflare or Fastly get a lot of this for free and just need the rules turned on. Apps running on a bare ALB + ECS or an equivalent cloud-VM-plus-load-balancer setup with no WAF get none of it; consider the WAF add-on before relying on app-layer middleware alone.
+
+## Layer 2: App-tier middleware (fine-grained limits)
+
+App-tier rate limits are for the rules that need application knowledge: "login: 5 attempts per 15 minutes per IP, 20 per account", "send-verification-email: 1 per 60 seconds per user", "bulk-export: 3 per hour per account". Edge layers cannot express these without leaking app logic upstream.
+
+### Recommended package: `rate-limiter-flexible`
+
+The recommended package is [`rate-limiter-flexible`](https://www.npmjs.com/package/rate-limiter-flexible). Reasons:
+
+- **Backends for every topology.** Memory, Cluster, Redis, MongoDB, and others. Single-node dev uses Memory; multi-node production uses Redis (essential — in-process counters do not coordinate across pods).
+- **Same package covers HTTP and WebSocket.** It ships Koa middleware for Psychic's HTTP layer and works inside socket.io's `io.engine.use()` hook on the WebSocket upgrade path, so you do not have to juggle two different rate-limiters.
+- **Documents the patterns you actually need.** DDoS, brute-force, per-user, per-route, cost-based, and block-after-N-failures are all in their README with runnable examples.
+
+Alternative packages worth knowing about from the Koa middleware wiki: [`koa-ratelimit`](https://www.npmjs.com/package/koa-ratelimit) and [`koa-better-ratelimit`](https://www.npmjs.com/package/koa-better-ratelimit). Simpler, Redis-backed via ioredis, fine if your needs are a single global limit on a single-node deployment. Pick them if you truly only want one knob; pick `rate-limiter-flexible` the moment you need cost-weighted consume, multiple backends, or WebSocket coverage.
+
+### Wiring `rate-limiter-flexible` into Psychic
+
+Install:
+
+```sh
+pnpm add rate-limiter-flexible
+```
+
+A thin wrapper middleware that keys on `ctx.ip`, consumes a token, and throws Psychic's 429 on limit-reached. Reuse the Redis client the app already has (the one already used for sessions or background workers), do not create a second one. `HttpStatusTooManyRequests` lives in the `@rvoh/psychic/errors` subpath import:
+
+```ts
+import type Koa from 'koa'
+import { HttpStatusTooManyRequests } from '@rvoh/psychic/errors'
+import { RateLimiterRedis } from 'rate-limiter-flexible'
+import redis from '../config/redis.js'
+
+const httpLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  keyPrefix: 'rl:http',
+  points: 60, // requests
+  duration: 60, // per 60 seconds
+})
+
+export const rateLimit: Koa.Middleware = async (ctx, next) => {
+  try {
+    await httpLimiter.consume(ctx.ip)
+  } catch (res) {
+    const retryAfter = Math.ceil(((res as { msBeforeNext?: number }).msBeforeNext ?? 1000) / 1000)
+    ctx.set('Retry-After', String(retryAfter))
+    // The argument becomes the response body (JSON-stringified); the 429 status
+    // comes from the HttpStatusTooManyRequests class itself.
+    throw new HttpStatusTooManyRequests({ error: 'rate limit exceeded', retryAfter })
+  }
+  await next()
+}
+```
+
+Mount it app-wide through `psy.use(...)` for a baseline per-IP cap, typically in a Psychic initializer:
+
+```ts
+import { PsychicApp } from '@rvoh/psychic'
+import { rateLimit } from './middleware/rateLimit.js'
+
+export default (psy: PsychicApp) => {
+  psy.use(rateLimit)
+}
+```
+
+Or apply it per-endpoint with a `@BeforeAction` on a specific controller when you need a tighter rule. `AuthedController` here is the scaffold-local base class generated by `create-psychic`, not a framework export — import it from your own controllers directory:
+
+```ts
+import { BeforeAction } from '@rvoh/psychic'
+import { HttpStatusTooManyRequests } from '@rvoh/psychic/errors'
+import AuthedController from './AuthedController.js'
+import { RateLimiterRedis } from 'rate-limiter-flexible'
+import redis from '../../config/redis.js'
+
+const loginLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  keyPrefix: 'rl:login',
+  points: 5,
+  duration: 15 * 60, // 15 minutes
+  blockDuration: 15 * 60,
+})
+
+export default class SessionsController extends AuthedController {
+  @BeforeAction({ only: ['create'] })
+  public async throttleLogin() {
+    try {
+      await loginLimiter.consume(`${this.ctx.ip}:${this.castParam('email', 'string')}`)
+    } catch (res) {
+      const retryAfter = Math.ceil(((res as { msBeforeNext?: number }).msBeforeNext ?? 1000) / 1000)
+      this.ctx.set('Retry-After', String(retryAfter))
+      throw new HttpStatusTooManyRequests({ error: 'too many login attempts', retryAfter })
+    }
+  }
+
+  public async create() {
+    // ... normal login flow
+  }
+}
+```
+
+The key in the login limiter is the `ip:email` tuple so a single attacker cannot burn through one account's budget and then pivot to the next, and a single shared-NAT user cannot lock out their neighbors. Pair with a separate per-account limiter if you need stronger account-targeted protection.
+
+## Rate-limiting WebSockets
+
+socket.io exposes two middleware hook points, and `rate-limiter-flexible` works at both:
+
+- **`io.engine.use(middleware)`** — standard Express-style middleware on the HTTP upgrade request. This is the right place to rate-limit handshakes per IP, before a WebSocket connection is ever established.
+- **`namespace.use((socket, next) => ...)`** — per-connection middleware that runs after the transport is live. Use it to rate-limit message dispatch or to tag a socket with a per-user limiter.
+
+A handshake-layer cap using `rate-limiter-flexible`, mounted via `io.engine.use()`:
+
+```ts
+import { RateLimiterRedis } from 'rate-limiter-flexible'
+import redis from '../config/redis.js'
+
+const handshakeLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  keyPrefix: 'rl:ws:handshake',
+  points: 30,
+  duration: 60,
+})
+
+io.engine.use(async (req, res, next) => {
+  const ip = req.socket.remoteAddress ?? 'unknown'
+  try {
+    await handshakeLimiter.consume(ip)
+    next()
+  } catch {
+    res.writeHead(429)
+    res.end('rate limit exceeded')
+  }
+})
+```
+
+For per-message limits, attach a limiter on the namespace middleware and consume inside the event handler:
+
+```ts
+io.of('/').use((socket, next) => {
+  socket.data.msgLimiter = new RateLimiterRedis({
+    storeClient: redis,
+    keyPrefix: `rl:ws:msg:${socket.data.userId}`,
+    points: 20,
+    duration: 10,
+  })
+  next()
+})
+```
+
+### socket.io CORS caveat
+
+Adjacent but distinct from rate-limiting, and worth flagging because readers looking for "WebSocket abuse prevention" often land here: socket.io's `cors.origin` option **only applies to HTTP long-polling**. Native WebSocket upgrade requests are not subject to browser CORS and `cors.origin` does not block them. Cross-transport origin rejection happens in socket.io's [`allowRequest`](https://socket.io/docs/v4/server-options/#allowrequest) hook, where you inspect `req.headers.origin` and decide whether to accept the handshake. If you only configured `cors.origin` and expected it to cover WebSocket traffic, you are not getting what you thought you were getting.
+
+## What signals to rate-limit
+
+- **IP address.** Cheap default. Weak against NAT and CGNAT (mobile carriers often share a single egress IP across thousands of users), and trivially bypassed by an attacker with a proxy pool. Still worth having as a baseline.
+- **Authenticated user identity.** Stronger for post-login abuse — "one user cannot call this endpoint more than X times". Combine with IP for defense in depth.
+- **Route + method + identity tuple.** Best blast-radius scoping for sensitive endpoints: login, password reset, 2FA verify, payment, outbound email, invite sending.
+- **Cost-based limits.** Some endpoints deserve higher weights — pagination with a large `limit` costs more than a point GET, a bulk export costs more than a single write. `rate-limiter-flexible` supports this via the `consume(key, points)` signature, so one heavy request can consume 10 tokens from the same budget a cheap request consumes 1 from.
+
+## What NOT to try to solve at the app layer
+
+- **Connection-exhaustion DoS, SlowLoris, amplification, packet-level floods.** By the time these reach the Node event loop the damage is done. Edge and L4 are the only answers.
+- **Rate-limiting the health-check endpoint.** Let your orchestrator (ECS, Kubernetes, Nomad) and monitoring hit `/health_check` freely. Excluding specific routes from app-tier limits is a normal and expected pattern — the limiter should be opt-in per route or wrapped in a skip list.
+
+## Deployment checklist
+
+- [ ] Edge-tier rate limit configured (WAF, CDN, or reverse proxy)?
+- [ ] Login, password-reset, and 2FA endpoints protected at the app tier with per-IP **and** per-account limits?
+- [ ] Heavy or costly endpoints (bulk operations, large pagination, outbound email) covered with cost-weighted `consume()` calls?
+- [ ] `rate-limiter-flexible` using a Redis backend for multi-node deployments (not Memory)?
+- [ ] Health-check endpoint excluded from app-tier limits?
+- [ ] `/ws` (or wherever socket.io is mounted) handshake rate-limited separately from HTTP routes via `io.engine.use()`?
+- [ ] socket.io `allowRequest` configured if you need cross-transport origin enforcement (see the CORS caveat above)?
+
+For related configuration context, see [psychic config](../config/psychic.mdx) and the [deployment guides](../deployment/server/aws.mdx).
