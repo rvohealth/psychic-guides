@@ -1,0 +1,227 @@
+---
+sidebar_position: 0
+title: Security Overview
+ai_summary: "App-developer security guide for Psychic + Dream. Index for the per-topic guides (rate limiting, output encoding, workers and Redis, supply chain) plus a single-page checklist of every security knob the framework exposes — params, redirects, sessions, encryption, file uploads, websockets, OpenAPI, and the application-layer auth patterns the framework expects you to provide."
+---
+
+# Security Overview
+
+Psychic gives you the request-handling skeleton; the security posture of your deployed app is the union of the framework defaults and the choices you make on top of them. This page is the single-page index of every security knob the framework exposes — what it defaults to, how to change it, and where to read more.
+
+For framework-internal audit history, see `SECURITY_AUDIT_TRACKER.md`, `SECURITY_CVE_CHECKLIST.md`, and `docs/THREAT_MODEL.md` in the monorepo. For app-developer guidance, this page and the per-topic guides in this section are the source of truth.
+
+## What Psychic defends by default
+
+Out of the box, a generated app gets:
+
+- **`SameSite=Strict` session cookies.** Cookies do not ride along with cross-site requests; classical CSRF is blocked in modern browsers without a token primitive.
+- **AEAD-encrypted cookie payload.** Session cookies are AES-GCM encrypted with a per-encryption IV; tampering fails decryption.
+- **Weak-key boot rejection.** A missing or short cookie encryption key throws at production boot rather than at the first encryption call.
+- **Open-redirect protection.** Every framework redirect helper funnels through a validator; absolute URLs fail closed unless the destination host appears in your `redirectAllowedHosts` allowlist.
+- **Mass-assignment safety.** `extractParams(Model, [...])` is a type-checked, runtime-intersected primitive; the legacy `paramsFor` is `@deprecated` to nudge migration.
+- **Prototype-pollution-safe param parsing.** The merge target is `Object.create(null)`; `__proto__` / `constructor` / `prototype` arriving as own keys cannot pollute `Object.prototype`.
+- **Content-type-agnostic security headers.** `X-Content-Type-Options: nosniff`, `Cross-Origin-Resource-Policy`, and HSTS in production are defaults. Document-scoped headers (CSP, XFO, COOP, Permissions-Policy, Referrer-Policy) are deliberately not shipped — Psychic emits JSON, not HTML, so those headers are no-ops on framework responses. See [Output Encoding & i18n](/docs/security/output-encoding) for the boundary.
+- **CORS off by default.** `@koa/cors` is not mounted unless you call `psy.set('cors', ...)`. Apps that need cross-origin opt in.
+- **WebSocket origin allowlist + first-connection auth.** New scaffolds wire `allowRequestForOrigins(allowedCorsOrigins())` across all socket.io transports; the boilerplate `resolveWebsocketUser` rejects unauth handshakes.
+- **Run-time-safe shell spawn.** Framework `sspawn` retains shell semantics for legitimate dev-CLI glue; argv-form `sspawnArgs` is the secure default for new code.
+- **Body limits.** `koa-bodyparser` defaults (1 MB JSON, 56 KB form) are passed through as-is and tunable via `psy.set('json', { jsonLimit: '...' })`.
+- **Failed-job retention.** BullMQ's failed-set is the dead-letter queue; the boilerplate ships `removeOnFail: 20000` + `attempts: 20` + exponential backoff.
+
+## Application-layer responsibilities
+
+Things the framework cannot do for you, listed here so you do not assume any of them are framework-handled:
+
+- **Authentication / session establishment.** The framework provides the encrypted-session primitive; verifying credentials, issuing the session, and resolving the current user are app code (`resolveCurrentUser`, `resolveWebsocketUser`).
+- **Per-action authorization.** No framework hook stops a logged-in user from acting on resources they should not see; controller code checks ownership.
+- **Password hashing.** Use `bcrypt` (cost ≥ 12) or `argon2` (default `argon2id`); store the hash in an encrypted column via `@Encrypted` or as a plain `text` column with a long, random salt the library handles for you. Compare with the library's verify function, never with `===`.
+- **JWT verification with pinned algorithms.** If you adopt JWT bearer auth, **always pass `algorithms: ['RS256']`** (or your specific algorithm) to `jwt.verify`. Default-allow-any-alg is the classic JWT confusion vulnerability.
+- **Reset / verification token generation.** Use `crypto.randomBytes(32).toString('base64url')` for tokens; compare with `crypto.timingSafeEqual` after decoding.
+- **Rate limiting.** Edge tier first (WAF / CDN / nginx); app tier with `rate-limiter-flexible` for per-route / per-user / cost-based limits. See [Rate Limiting](/docs/security/rate-limiting).
+- **OpenAPI exposure gating.** `OpenapiAppRenderer.sync()` writes a build artifact; if you serve the resulting JSON, you own the auth decision on that route.
+- **Database TLS.** Configure your Postgres connection string to require TLS; Dream connects to whatever URL you give it.
+- **Redis credentials & TLS.** See [Workers & Redis](/docs/security/workers-and-redis); `tls: {}` in ioredis enables verified TLS by default — never set `rejectUnauthorized: false` in production.
+
+## Per-topic guides
+
+Each link below goes deeper on one piece of the security posture.
+
+- [**Output Encoding & i18n**](/docs/security/output-encoding) — why server-side HTML escaping is wrong-layer for a JSON API; the structured-translations pattern for rich text.
+- [**Rate Limiting**](/docs/security/rate-limiting) — edge-tier first, app-tier with `rate-limiter-flexible`; the `io.engine.use()` hook for socket.io.
+- [**Workers & Redis**](/docs/security/workers-and-redis) — what `tls: {}` actually does; why BullMQ's failed-set is the DLQ; optional cert pinning and dedicated-DLQ recipes.
+- [**Supply Chain & Audit**](/docs/security/supply-chain) — how to read `npm audit` output for a Psychic app; runtime vs dev/build-time triage; per-PM override recipes.
+
+## The framework knobs (one-line each)
+
+| Concern | Knob | Default | See |
+|---|---|---|---|
+| Session cookie scope | `psy.set('cookie', { sameSite, maxAge, domain, path })` | `sameSite: 'strict'`, 31-day `maxAge` | [Session config below](#session-cookie-config) |
+| Cookie encryption key | `psy.set('encryption', { cookies: { current, legacy } })` | none — boot throws in production | [Encryption rotation below](#encryption-key-rotation) |
+| Redirect allowlist | `psy.set('redirectAllowedHosts', [...])` | empty (relative redirects only) | [Redirect allowlist below](#redirect-allowlist) |
+| Mass assignment | `extractParams(Model, [allowed])` / `extractImplicitParams(Model)` | required for new generators | [Mass assignment below](#mass-assignment) |
+| LIKE / ILIKE escaping | `escapeLikePattern(value)` | manual opt-in | [LIKE / ILIKE below](#like--ilike-with-user-input) |
+| Default response headers | `psy.set('defaultResponseHeaders', {...})` | content-type-agnostic baseline | [Headers below](#default-response-headers) |
+| CORS | `psy.set('cors', {...})` | not mounted | [CORS below](#cors) |
+| Body size | `psy.set('json', { jsonLimit, formLimit, ... })` | `1mb` / `56kb` | [Body limits below](#body-size-limits) |
+| File uploads | (app concern) | n/a | [File Uploads tutorial](/docs/tutorials/file-uploads) |
+| WebSocket auth | `resolveWebsocketUser` (scaffold) + `allowRequestForOrigins` | scaffold rejects unauth, allowlist enforced | [WebSocket auth below](#websocket-auth--origin) |
+| Worker connections | `defaultQueueConnection` / `defaultWorkerConnection` | TLS via `tls: {}` in production boilerplate | [Workers & Redis](/docs/security/workers-and-redis) |
+| Logger redaction | `psy.set('logger', logger)` + `requestLogger` `headerBlocklist` / `bodyBlocklist` | scaffold ships `authorization` / `cookie` / `password` / `token` redaction | [Logging below](#logging--error-disclosure) |
+| Unhandled-error logging | `psy.on('server:error', handler)` | logs via the registered logger | [Logging below](#logging--error-disclosure) |
+| `path-to-regexp` pin | `overrides` / `resolutions` / `pnpm.overrides` | scaffolded with `>=8.4.0` pin | [Supply Chain & Audit](/docs/security/supply-chain) |
+
+## Detail sections
+
+### Session cookie config
+
+```ts
+psy.set('cookie', {
+  sameSite: 'strict',          // do not relax to 'lax' without re-running the threat model
+  maxAge: { days: 14 },        // shorter than the default 31 if your auth flow allows
+  domain: 'app.example.com',   // pin to your app's host
+  path: '/',
+})
+```
+
+`SameSite=Strict` is the framework's CSRF defense. Relaxing it to `'lax'` re-introduces the classical CSRF surface and is rarely the right call for a JSON API — link-click navigations to a JSON endpoint do nothing useful.
+
+### Encryption key rotation
+
+Cookies are AEAD-encrypted via Dream's `Encrypt`. The rotation primitive is a `current` / `legacy` pair:
+
+```ts
+psy.set('encryption', {
+  cookies: {
+    current: AppEnv.string('COOKIE_KEY_CURRENT'),
+    legacy:  AppEnv.string('COOKIE_KEY_LEGACY', { optional: true }),
+  },
+})
+```
+
+Rotation workflow:
+
+1. Generate a new key: `Encrypt.generateKey('aes-256-gcm')`.
+2. Set `current` to the new key, `legacy` to the previously-current key. Deploy.
+3. Wait for `maxAge` to elapse so all in-the-wild cookies have rolled.
+4. Drop `legacy`. Deploy.
+
+Two-key rotation is sufficient for any sensible cookie TTL. The framework throws on a missing or undersized key in production at boot — use `Encrypt.generateKey` to produce keys, never hand-typed strings.
+
+### Redirect allowlist
+
+```ts
+psy.set('redirectAllowedHosts', ['app.example.com', 'login.example.com'])
+```
+
+Every framework-level redirect (`controller.redirect(path)`, the variants returning specific status codes) funnels through `isSafeRedirectTarget`. Relative paths always succeed; absolute URLs require a host match. Scheme-relative URLs (`//evil.com`), backslash variants, non-http schemes, userinfo segments, CRLF, and control characters all fail closed. Twenty-five regression specs in `psychic/spec/unit/security/redirect-helper.security.spec.ts` cover the cases.
+
+### Mass assignment
+
+```ts
+import { extractParams } from '@rvoh/psychic'
+import User from '../models/User'
+
+class UsersController extends AuthedController {
+  async update() {
+    const allowed = extractParams(User, ['email', 'name', 'avatarUrl'], { params: this.params })
+    await this.user.update(allowed)
+    this.ok(this.user)
+  }
+}
+```
+
+Generators emit this scaffold for non-admin namespaces. Admin-namespace generators emit `extractImplicitParams(Model)` because the model-level `paramSafeColumns` declaration is the canonical allowlist. Override at scaffold time with `--with-extract-params` / `--with-extract-implicit-params`. The legacy `paramsFor` still works but is `@deprecated` — IDEs strike through every call site.
+
+The allowed array is typed as `readonly DreamParamSafeColumnNames<...>[]`, so passing a protected column produces a compile error. The runtime intersection against `paramSafeColumnsOrFallback()` strips anything that slipped past TypeScript.
+
+### LIKE / ILIKE with user input
+
+```ts
+import { escapeLikePattern } from '@rvoh/dream'
+
+const pattern = `%${escapeLikePattern(userInput)}%`
+await User.where({ email: ops.ilike(pattern) }).all()
+```
+
+LIKE / ILIKE values are bound parameters in Kysely, so there is no SQL injection. The semantic-correctness concern is `%` and `_` in the user input acting as wildcards. `escapeLikePattern` escapes those (and the `\` escape character itself) so the pattern matches the literal characters the user typed.
+
+`ops.match` (regex) does not have an escape helper — regex DoS via attacker-supplied patterns is up to the caller to bound (length cap, timeout, or pre-validation).
+
+### Default response headers
+
+```ts
+psy.set('defaultResponseHeaders', {
+  'Content-Security-Policy': "default-src 'self'",   // only meaningful if you serve HTML
+  'Permissions-Policy':      'geolocation=()',       // ditto
+})
+```
+
+The framework's content-type-agnostic baseline (`X-Content-Type-Options: nosniff`, `Cross-Origin-Resource-Policy`, HSTS in production) is always shipped. Document-scoped headers are not shipped by default because they are no-ops on JSON. Apps that emit HTML opt in via the example above.
+
+### CORS
+
+```ts
+psy.set('cors', {
+  origin: ['https://app.example.com'],
+  credentials: true,
+})
+```
+
+`@koa/cors` is not mounted unless you set this. The framework deliberately declines to mount a wrapper the developer has not opted into — this is the principled fix for `@koa/cors`'s upstream `origin: '*'` default. Once you opt in, the developer-passed options reach `@koa/cors` unchanged; refer to that package's docs for option semantics.
+
+### Body size limits
+
+```ts
+psy.set('json', {
+  jsonLimit: '256kb',          // default '1mb'
+  formLimit: '32kb',            // default '56kb'
+  enableTypes: ['json'],
+})
+```
+
+Spread-merged into the existing options, so partial configs do not unset the upstream defaults. `koa-bodyparser` enforces these at parse time; the framework does not re-cap.
+
+### File uploads
+
+The framework does not bundle multipart parsing. The 2026-default pattern is **presigned PUT to S3 / R2 / GCS** — bytes never reach the app server, so traversal is structurally impossible. See the [File Uploads tutorial](/docs/tutorials/file-uploads) for the recommended flow plus a fallback recipe for local handling.
+
+### WebSocket auth & origin
+
+```ts
+// boilerplate websockets initializer
+io.engine.use(allowRequestForOrigins(allowedCorsOrigins()))
+
+io.on('connection', async (socket) => {
+  const user = await resolveWebsocketUser(socket)
+  if (!user) { socket.disconnect(true); return }
+  await Ws.register(socket, user)
+})
+```
+
+`allowRequestForOrigins` wraps socket.io's `allowRequest` hook so the origin allowlist applies across **all** transports (long-polling and native WebSocket). socket.io's built-in `cors.origin` only covers long-polling — the native-WS-bypasses-CORS gap is the reason `allowRequestForOrigins` exists. The scaffolded `resolveWebsocketUser` uses `Encrypt.decrypt` against `socket.handshake.auth.token` in test, and throws in non-test envs until you wire it to your production auth.
+
+### Logging & error disclosure
+
+```ts
+// scaffold ships in api/src/conf/app.ts
+psy.set('logger', winstonLogger)
+psy.use(requestLogger({
+  headerBlocklist: ['authorization', 'cookie', 'x-api-key'],
+  bodyBlocklist:   ['password', 'token', 'authentication', 'authorization', 'secret'],
+  ignoredRoutes:   ['/health_check'],
+}))
+
+psy.on('server:error', (err, ctx) => {
+  // custom redaction or routing for unhandled errors
+  // — pg errors carry `.parameters`; library errors may attach the request.
+  // this is the seam to scrub before the logger sees the value.
+})
+```
+
+`PsychicApp.log` / `logWithLevel` are a logger facade; the framework does not redact what developers explicitly log. Request logging redaction is at the app layer (boilerplate ships sensible defaults). The `server:error` hook is the seam for customizing unhandled-error logging — useful when a `pg` error walks into `.parameters` containing user data, or when a third-party library attaches the original request to its error.
+
+## Cadence
+
+- **Every release.** Re-run `pnpm audit` and triage per the [Supply Chain](/docs/security/supply-chain) guide.
+- **Every quarter.** Review `extractParams` allowlists across controllers; nothing forces them to stay narrow over time.
+- **Every key rotation.** Generate a new cookie encryption key with `Encrypt.generateKey`; rotate via the `current` / `legacy` pair.
+- **Whenever you touch auth or session logic.** Re-read this page; the defaults are not a substitute for reading the boundaries you are crossing.
