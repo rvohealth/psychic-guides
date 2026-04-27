@@ -1,0 +1,123 @@
+---
+sidebar_position: 4
+title: Supply Chain & Audit
+ai_summary: "Psychic's posture on transitive-dependency advisories: distinguish runtime (in your published bundle) from dev/build-time (test runner, linters, codegen, scaffolding tools), and only the first category is a real production risk. Includes the override recipes for npm / yarn / pnpm and the current snapshot of advisories worth pinning."
+---
+
+# Supply Chain & Audit
+
+Running `npm audit` (or the pnpm / yarn equivalent) on a fresh Psychic app produces a long list of advisories. Most of them are not production risks. The audit tools do not distinguish between code that runs in your published process and code that only runs on a developer's laptop or in CI, so a clean read of the report requires you to do that classification yourself.
+
+## What "runtime" means here
+
+A dependency is **runtime** if it executes inside your deployed Node process serving real traffic. A vulnerability there is a real production risk: it can be triggered by attacker-controlled input.
+
+A dependency is **dev/build-time** if it only runs while you are developing, testing, building, or scaffolding. Vulnerabilities there matter for developer-laptop and CI-runner safety, but they cannot be triggered by your production traffic. They are still worth fixing, but the priority is lower and the threat model is different.
+
+For a Psychic app, the two categories typically break down like this:
+
+| Category | Examples | Where it runs |
+|---|---|---|
+| **Runtime** | `koa`, `@koa/router`, `@koa/cors`, `koa-bodyparser`, `koa-conditional-get`, `koa-etag`, `ioredis`, `bullmq`, `socket.io`, `pg`, `kysely`, `winston`, `@rvoh/dream`, `@rvoh/psychic`, `@rvoh/psychic-workers`, `@rvoh/psychic-websockets` | Your deployed process |
+| **Dev / build / test** | `vite`, `vitest`, `rollup`, `eslint`, `typescript-eslint`, `prettier`, `tsx`, `tsc-alias`, `nodemon`, `puppeteer`, `cross-env`, `supertest`, `kysely-codegen`, `openapi-typescript`, `@pollyjs/*`, `@rvoh/dream-spec-helpers`, `@rvoh/psychic-spec-helpers` | Developer machine + CI; never deployed |
+| **Scaffolding only** | `create-psychic` and its transitives | Once, when generating an app |
+
+The `dependencies` vs `devDependencies` split in your `api/package.json` mirrors this distinction, but it is not perfect — `puppeteer` for example appears in `dependencies` of some Psychic templates because spec helpers reach for it at runtime *during specs*, which is still test-only. Walk the path, not the section header.
+
+## Reading an audit report
+
+Take the advisory output one row at a time and check three things:
+
+1. **Which top-level dependency pulls it in?** Run `npm why <package>` / `pnpm why <package>` / `yarn why <package>` to see the path.
+2. **Does that top-level dep run in production?** Check the table above.
+3. **Is the vulnerability triggerable by attacker input?** Many advisories require a specific call signature that the wrapping library does not expose.
+
+Most rows will fall out as dev-only. The ones that survive all three checks are the ones to act on.
+
+## Current snapshot (audit run 2026-04-27)
+
+This is the disposition of every advisory that surfaces against the framework packages right now. Refresh this list when you run your own audit.
+
+| Advisory | Path | Disposition |
+|---|---|---|
+| **`path-to-regexp` < 8.4.0 — DoS via sequential optional groups** ([GHSA-j3q9-mxjg-w52f](https://github.com/advisories/GHSA-j3q9-mxjg-w52f)) | `@koa/router` → `path-to-regexp` | **Runtime — pin via override.** See recipe below. |
+| `vite` 7.0.0–7.3.1 — `server.fs.deny` bypass / WebSocket file read | `vitest` → `vite` | Dev only; `vitest` is not in your published bundle. Bump `vitest` if you want a clean audit, but no production risk. |
+| `rollup` < 4.59.0 — arbitrary file write via path traversal | `vitest` → `vite` → `rollup` | Dev only; same as above. |
+| `picomatch` ReDoS | `kysely-codegen` → `micromatch` → `picomatch`; `@typescript-eslint/parser` → `tinyglobby` → `picomatch` | Dev only; codegen and linter both run on developer-controlled input. |
+| `minimatch` ReDoS | `eslint` / `openapi-typescript` / `@typescript-eslint` transitives | Dev only. |
+| `brace-expansion` < 1.1.13 | `dream` → `kysely-codegen` → `git-diff` → `shelljs` → `glob` → `minimatch` → `brace-expansion`; `eslint` → `minimatch` → `brace-expansion` | Dev only; `kysely-codegen` runs at developer migration time, not in production. |
+| `basic-ftp` path traversal / CRLF injection | `puppeteer` → `proxy-agent` → `pac-proxy-agent` → `get-uri` → `basic-ftp` | Dev/test only; `puppeteer` runs feature specs and never ships. |
+
+Refresh cadence: run `npm audit` (or `pnpm audit`) on a quiet schedule — weekly is plenty for most teams, monthly is the minimum. New advisories that move into the "runtime" category should be pinned via override on the same day they are published.
+
+## Override recipes
+
+Overriding a transitive dependency forces npm / yarn / pnpm to install the version you specify, regardless of what the intermediate packages declare. This is the standard tool for handling a transitive vulnerability when the direct dependency has not yet bumped its range.
+
+### npm
+
+```jsonc
+// package.json
+{
+  "overrides": {
+    "path-to-regexp": ">=8.4.0"
+  }
+}
+```
+
+### yarn
+
+```jsonc
+// package.json
+{
+  "resolutions": {
+    "path-to-regexp": ">=8.4.0"
+  }
+}
+```
+
+### pnpm
+
+```jsonc
+// package.json
+{
+  "pnpm": {
+    "overrides": {
+      "path-to-regexp": ">=8.4.0"
+    }
+  }
+}
+```
+
+After adding the override, delete `node_modules` and your lockfile-ignoring caches, reinstall, and re-run audit to confirm the advisory has cleared.
+
+### Caveats
+
+- **Overrides apply to your own install only.** They do not propagate to consumers if your project is itself a published library. For Psychic apps (which are deployed services, not libraries), this is not a concern.
+- **Re-evaluate when the intermediate dep updates.** Once `@koa/router` (or whatever direct dependency) ships a release that pulls the patched range natively, you can remove the override. Stale overrides accumulate and become harder to reason about.
+- **Pin to a range, not an exact version.** `">=8.4.0"` lets npm pick up patch releases automatically. `"8.4.0"` would freeze you to that specific release.
+
+## Why `npm audit` is noisy by default
+
+Two reasons. First, the audit database does not annotate "this advisory is dev-only" — it annotates the package and version, and leaves it to you to figure out where the package sits in your dep graph. Second, modern toolchain packages (`vite`, `vitest`, `rollup`, `eslint`, `typescript-eslint`, `puppeteer`) pull in large transitive trees, and any advisory anywhere in that tree shows up against your app even though those packages never run in production.
+
+The framework's posture: do not fight the noise by suppressing audits. Read the report, classify each row by where it actually runs, and act on the runtime ones. The dev-only rows are still worth fixing on a slower cadence (developer-laptop hardening, CI-runner hardening), but they are not what is putting your production users at risk.
+
+## What the framework ships by default
+
+The `create-psychic` boilerplate `api/package.json` (the source-controlled file in the framework repo, not the generated app) carries the override under all three keys at once:
+
+```jsonc
+"overrides":   { "path-to-regexp": ">=8.4.0" },             // npm reads this
+"resolutions": { "path-to-regexp": ">=8.4.0" },             // yarn reads this
+"pnpm": { "overrides": { "path-to-regexp": ">=8.4.0" } }    // pnpm reads this
+```
+
+When you generate a new app, the scaffolder prunes this down to **only the block your chosen package manager will read** — so the resulting `api/package.json` has one override location, not three. (npm, yarn, and pnpm all ignore foreign top-level keys per the package.json spec, so shipping all three would be safe in the moment, but keeping three values in sync over time is a maintenance hazard. Pruning at scaffold time avoids that drift.)
+
+The boilerplate intentionally keeps this list short and curated to **runtime** advisories only. Two reasons:
+
+- The set of advisories worth pinning rotates monthly. The boilerplate cannot keep up with the audit feed; the goal is to ship the small, durable subset that addresses the runtime risks of the day, not a comprehensive list.
+- Pinning a transitive dep that you do not actually understand is its own footgun. Each entry should be justified by a runtime advisory you have read.
+
+When you generate a new app, audit your dependencies and add to (or remove from) the override blocks based on what surfaces. Revisit on the cadence that matches your security posture (weekly is plenty for most teams). When the upstream direct dep ships a release that pulls the patched range natively, remove the override so it does not go stale.
