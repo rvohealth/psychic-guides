@@ -38,7 +38,7 @@ Things the framework cannot do for you, listed here so you do not assume any of 
 - **Reset / verification token generation.** Use `crypto.randomBytes(32).toString('base64url')` for tokens; compare with `crypto.timingSafeEqual` after decoding.
 - **Rate limiting.** Edge tier first (WAF / CDN / nginx); app tier with `rate-limiter-flexible` for per-route / per-user / cost-based limits. See [Rate Limiting](/docs/security/rate-limiting).
 - **OpenAPI exposure gating.** `OpenapiAppRenderer.sync()` writes a build artifact; if you serve the resulting JSON, you own the auth decision on that route.
-- **Database TLS.** Configure your Postgres connection string to require TLS; Dream connects to whatever URL you give it.
+- **Database TLS.** Set `useSsl: true` in your Dream config to enable Postgres TLS. **Caveat (tracker R-027):** today the framework's built-in TLS config sets `rejectUnauthorized: false`, so the connection is encrypted but the server certificate is *not* validated against the system CA store. This is opportunistic TLS, not authenticated TLS — fine on a private VPC where the network is the trust boundary, not fine over the public internet. A future Dream release will accept a full TLS config (CA bundle + `rejectUnauthorized`) on `SingleDbCredential`; until then, deployments needing verified Postgres TLS should run on a network where MITM is not in the threat model.
 - **Redis credentials & TLS.** See [Workers & Redis](/docs/security/workers-and-redis); `tls: {}` in ioredis enables verified TLS by default — never set `rejectUnauthorized: false` in production.
 
 ## Per-topic guides
