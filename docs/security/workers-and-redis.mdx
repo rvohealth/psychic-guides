@@ -1,0 +1,173 @@
+---
+sidebar_position: 2
+title: Workers & Redis
+ai_summary: "Psychic's framework posture on background-worker hardening: ioredis `tls: {}` already verifies the server cert against the system CA store (it is not 'unverified TLS'), `rejectUnauthorized: false` is never an acceptable production setting, BullMQ's failed-set is the dead-letter queue and `removeOnFail` is its retention knob. Plus optional cert pinning and a dedicated-DLQ recipe."
+---
+
+# Workers & Redis
+
+`@rvoh/psychic-workers` is a thin layer over [BullMQ](https://docs.bullmq.io/) running on top of [ioredis](https://github.com/redis/ioredis). The framework does not redefine the upstream defaults of either package; it wires them into Psychic's app lifecycle and exposes the BullMQ option surface unchanged. This guide covers the two production-hardening questions that come up most often in security review.
+
+## TLS to Redis: what `tls: {}` actually does
+
+The `create-psychic` boilerplate ships a production worker connection that looks like this:
+
+```ts
+new Cluster(
+  [{ host: 'redis-host', port: 6379 }],
+  {
+    redisOptions: {
+      username: process.env.BG_JOBS_REDIS_USERNAME,
+      password: process.env.BG_JOBS_REDIS_PASSWORD,
+      tls: {},
+    },
+    // ...
+  },
+)
+```
+
+The `tls: {}` is the part security review typically flags. It is correct as-is.
+
+`tls: {}` is the ioredis idiom for "open this connection over TLS using the default options". Those options come from Node's [`tls.connect()`](https://nodejs.org/api/tls.html#tlsconnectoptions-callback), which defaults to:
+
+- `rejectUnauthorized: true` — verify the server's certificate chain against the system CA store and reject the connection if it does not validate.
+- `checkServerIdentity` — verify the certificate's CN/SAN matches the host you connected to.
+
+So `tls: {}` is not "unverified TLS". It is mutually-authenticated (server-side) TLS using the platform's CA roots, which is the same trust posture your app already uses for HTTPS to any third-party API. Do not interpret the empty object as a security smell — it is the canonical idiom for "use the secure defaults".
+
+What you should never do:
+
+- **Do not set `rejectUnauthorized: false` in production.** This is the only setting that turns the connection into unverified TLS, and there is no managed Redis (ElastiCache, MemoryDB, Upstash, Redis Cloud, Aiven, etc.) that requires it. If you hit a cert error, the right fix is to provide the missing CA — see the next subsection.
+
+### Custom CA bundle (private/internal Redis)
+
+If you run Redis behind a private CA (your own internal PKI, an enterprise proxy, a self-signed cert in a non-public environment), pass the CA bundle explicitly so the system trust store is augmented rather than disabled:
+
+```ts
+import { readFileSync } from 'node:fs'
+
+new Redis({
+  host: 'redis.internal',
+  port: 6379,
+  tls: {
+    ca: [readFileSync('/etc/ssl/redis-private-ca.pem')],
+  },
+})
+```
+
+This keeps `rejectUnauthorized: true` in effect; the connection still fails closed if the cert does not match.
+
+### Optional: certificate pinning
+
+Pinning is a stricter posture than CA verification: you require the server to present a specific certificate (or a certificate signed by a specific intermediate), and reject anything else even if it chains to a public CA. Useful when you want the connection to fail closed on a certificate change you did not authorize, even if an attacker could obtain a misissued public cert.
+
+ioredis exposes Node's `checkServerIdentity` hook for this:
+
+```ts
+import { createHash } from 'node:crypto'
+import type { PeerCertificate } from 'node:tls'
+
+const EXPECTED_FINGERPRINT_SHA256 =
+  'AB:CD:EF:...' // run: openssl x509 -in cert.pem -noout -fingerprint -sha256
+
+new Redis({
+  host: 'redis.example.com',
+  port: 6379,
+  tls: {
+    checkServerIdentity: (host, cert: PeerCertificate) => {
+      const got = createHash('sha256')
+        .update(cert.raw)
+        .digest('hex')
+        .toUpperCase()
+        .match(/.{2}/g)!
+        .join(':')
+      if (got !== EXPECTED_FINGERPRINT_SHA256) {
+        return new Error(`Redis cert pin mismatch: got ${got}`)
+      }
+      return undefined // also delegate to default identity check if you want both
+    },
+  },
+})
+```
+
+This is **not** a framework default. Pinning is environment-specific: you are committing to rotate the pinned fingerprint every time the cert is reissued, and getting that rotation wrong takes the worker fleet offline. Most apps should not pin. The few that should, know they should.
+
+## Dead-letter handling for failed jobs
+
+Security review sometimes asks "where is the DLQ default?" The answer is: BullMQ's failed-set is the dead-letter queue, and the boilerplate already configures it.
+
+```ts
+defaultBullMQQueueOptions: {
+  defaultJobOptions: {
+    removeOnComplete: 1000,
+    removeOnFail: 20000,
+    attempts: 20,
+    backoff: { type: 'exponential', delay: 1000 },
+  },
+},
+```
+
+What that means in practice:
+
+- A job that throws is retried up to **20 times** with exponential backoff (`2 ^ (n-1) * 1000ms`), totaling roughly 6.1 days of retry surface for a single job.
+- After the final attempt, the job moves to the queue's `failed` set, where it remains for inspection until evicted by the retention cap (`removeOnFail: 20000` keeps the most recent 20,000 failed jobs).
+- BullMQ exposes the failed set via `Queue.getFailed()` / `Queue.getFailedCount()` and the [bull-board](https://github.com/felixmosh/bull-board) UI, so terminally-poisoned jobs are visible to oncall.
+
+This is the dead-letter queue. There is no separate "DLQ" abstraction in BullMQ because the failed-set already plays that role.
+
+### Tuning `removeOnFail`
+
+The `20000` default is a starting point. Tune it to match how long you want failed jobs to be inspectable before they roll off:
+
+- **Higher (e.g., `50000` or `{ count: 50000 }`)** — long debugging window, more Redis memory.
+- **Lower (e.g., `1000`)** — shorter window, less memory; appropriate when failed jobs are also forwarded to a log aggregator or alerting pipeline and the in-Redis copy is only for immediate triage.
+- **Time-based** — `{ age: 7 * 24 * 60 * 60 }` keeps failures for 7 days regardless of count. Combine with `count` for a hybrid cap.
+
+Whatever you pick, make it explicit and document the choice. A retention cap that nobody owns drifts.
+
+### Optional: dedicated dead-letter queue
+
+Some teams want terminally-failed jobs in a separate, manually-drained queue for review, retry-by-hand, or fan-out to incident channels. This is straightforward with BullMQ's [QueueEvents](https://docs.bullmq.io/guide/queueevents) `failed` event:
+
+```ts
+import { Queue, QueueEvents } from 'bullmq'
+
+const deadLetter = new Queue('dead-letter', { connection })
+const events = new QueueEvents('default', { connection })
+
+events.on('failed', async ({ jobId, failedReason, prev }) => {
+  if (prev !== 'active') return // only on terminal failure, not intermediate retries
+  const sourceQueue = new Queue('default', { connection })
+  const job = await sourceQueue.getJob(jobId)
+  if (!job) return
+  if (job.attemptsMade < (job.opts.attempts ?? 1)) return // still retrying
+
+  await deadLetter.add(
+    'review',
+    { sourceJobId: jobId, name: job.name, data: job.data, failedReason },
+    { removeOnComplete: false, removeOnFail: false },
+  )
+})
+```
+
+This is a recipe, not a framework primitive. If your app needs it, write the few lines above; if it does not, the failed-set inspection workflow already covers terminal failures.
+
+## Other connection-hardening defaults the boilerplate ships
+
+The `create-psychic` workers boilerplate already sets the production-correct values for the easy-to-get-wrong knobs. Worth knowing they are there:
+
+- **`enableOfflineQueue: false`** on the queue connection — when Redis is unreachable, `queue.add()` fails fast instead of buffering jobs in process memory that vanish on restart. Surfaces outages immediately.
+- **`maxRetriesPerRequest: null`** on the worker connection — required by BullMQ for blocking commands (`BLPOP`, `BRPOPLPUSH`). The boilerplate sets it for you; do not change it.
+- **Cluster `dnsLookup: (address, callback) => callback(null, address)`** — required for AWS ElastiCache cluster mode where node IPs are returned in `CLUSTER SLOTS` and ioredis must not re-resolve them. The boilerplate sets it for you when you opt into Cluster.
+- **`clusterRetryStrategy` / `retryStrategy`** — bounded exponential backoff on connection retries (1s floor, 20s ceiling). Tunable but rarely needs to change.
+
+## Production checklist
+
+- ✅ Redis credentials come from your secrets manager (the boilerplate uses `AppEnv` env vars; wire those to AWS Secrets Manager, GCP Secret Manager, Vault, etc.).
+- ✅ Production connections use TLS (`tls: {}` for managed Redis on a public CA; `tls: { ca: [...] }` for private CA).
+- ❌ `rejectUnauthorized: false` is never present in production code.
+- ✅ `removeOnFail` is set to a value you have justified (count, age, or both) and documented.
+- ✅ Failed-set inspection has an owner — bull-board access, an alert that fires when failed-count exceeds threshold, or a daily review job.
+- ✅ Workers run on instances with `WORKER_SERVICE=true`; web instances do not establish worker connections (`defaultWorkerConnection: undefined` when `WORKER_SERVICE` is unset, per boilerplate).
+
+There is no framework switch to flip for any of this. The boilerplate sets the right defaults, ioredis and BullMQ do the right things by default, and the residual decisions (CA bundle, retention tuning, optional pinning, optional dedicated DLQ) are environment-specific by nature.
