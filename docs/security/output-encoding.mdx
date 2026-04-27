@@ -1,0 +1,81 @@
+---
+sidebar_position: 3
+title: Output Encoding & i18n
+ai_summary: "Psychic is a JSON-only API; HTML escaping is the client renderer's job, not the server's. i18n interpolation does not HTML-escape values, and that is correct. The boundary: the framework guarantees JSON-safe transport; the consuming UI is responsible for context-appropriate escaping (HTML, attribute, URL, JS) when it renders translated strings into a document."
+---
+
+# Output Encoding & i18n
+
+Psychic is a JSON API. Its responses are consumed by fetch/XHR clients, not rendered by browsers as documents. That single fact decides where output encoding belongs in this stack.
+
+## Where the boundary is
+
+There are two output-encoding boundaries to keep separate in your head:
+
+1. **JSON encoding (server-side, framework's job).** Every response goes through `JSON.stringify`, which escapes the characters that would break the JSON envelope (`"`, `\`, control chars). This guarantees a translated string containing `<script>alert(1)</script>` arrives at the client as the literal seven-character substring `<script>` followed by the rest — not as an executable HTML tag in transit, not as a JSON-injection vector. **You get this for free; do nothing.**
+
+2. **HTML / attribute / URL / JavaScript encoding (client-side, the renderer's job).** When the client takes that JSON string and inserts it into a DOM, the framework doing the rendering decides how to encode it. React's `{value}` interpolation HTML-escapes by default. Vue's `{{ value }}` HTML-escapes by default. Svelte's `{value}` HTML-escapes by default. The encoding that actually prevents XSS happens at the moment the string becomes part of a document, in the framework that owns that document.
+
+Server-side HTML escaping cannot replace client-side context-aware escaping. A string escaped for HTML body context is still wrong for an `href` attribute (URL context) or an `onclick` handler (JS context). Trying to pre-escape on the server commits to one context and mis-encodes for every other context the client might use.
+
+## i18n interpolation does not HTML-escape — and shouldn't
+
+Psychic's `I18nProvider` performs literal-substring substitution on `%{name}` placeholders:
+
+```ts
+// dictionary
+{ greeting: 'Hello, %{name}!' }
+
+// call
+i18n('en-US', 'greeting', { name: '<script>alert(1)</script>' })
+// => "Hello, <script>alert(1)</script>!"
+```
+
+The interpolated value is passed through verbatim. `JSON.stringify` then encodes it for the wire as `"Hello, <script>alert(1)<\/script>!"` (or similar, depending on Node version and serializer flags), which is JSON-safe. The string that arrives at the client still contains the literal characters `<script>...`, and **the client renderer escapes them when it inserts them into the DOM**.
+
+This is the correct layer to do the work. If the framework HTML-escaped on the way out:
+
+- Clients that render into non-HTML contexts (a React Native `<Text>`, a CLI, a PDF generator, a server-to-server downstream API consumer) would receive `&lt;script&gt;` and have to *un-escape* before re-encoding for their context.
+- Clients that render into a JS-string context (`<script>const greeting = "...";</script>`) would still be vulnerable to JS-context injection through different characters (`</script>`, backtick, `${`) that HTML-escaping does not address.
+- Clients that render into a URL context (`<a href="...">`) would still be vulnerable to URL-context issues that HTML-escaping does not address.
+
+The framework cannot know which context the client will use, so the correct answer is to not encode and let the renderer decide. This is the same posture taken by every JSON API.
+
+## What the consuming UI is responsible for
+
+If you control the client too (typical for a Psychic + React/Vue/Svelte app), the rule is straightforward: do not bypass your renderer's default escaping. Specifically, do not pass translated strings into:
+
+- React's `dangerouslySetInnerHTML`
+- Vue's `v-html`
+- Svelte's `{@html ...}`
+- jQuery's `$.html()` / `.html()` / `innerHTML =`
+
+The default interpolation in every one of those frameworks is safe. The escape hatches are not, and a translated string is exactly the kind of "user-influenced data flowing through a translator dictionary" you should not pipe into them.
+
+If you genuinely need rich-text translations (a translated string that should render as bold, with a link, etc.), the right pattern is structured translations, not HTML strings:
+
+```ts
+// dictionary
+{ termsBlurb: { prefix: 'I agree to the ', linkText: 'Terms of Service', suffix: '.' } }
+
+// React
+<>
+  {t('termsBlurb.prefix')}
+  <a href="/terms">{t('termsBlurb.linkText')}</a>
+  {t('termsBlurb.suffix')}
+</>
+```
+
+The renderer escapes each segment by its default rule. No HTML in the dictionary, no `dangerouslySetInnerHTML`, no XSS surface.
+
+## What about non-JSON responses?
+
+Psychic responses are JSON in the overwhelming majority of cases; XML or another structured format is the rare exception. Neither serializer renders a browsable HTML document, so neither makes HTML escaping the framework's job. If your application has somehow grown a code path that returns `Content-Type: text/html`, that path is doing something Psychic does not target — the encoding burden falls on whatever you used to assemble that document, which is by definition outside framework scope.
+
+## Summary
+
+- ✅ Server emits JSON-encoded strings. `JSON.stringify` handles JSON-context safety.
+- ✅ i18n interpolation passes values through verbatim. This is correct, not a bug.
+- ✅ Client renderer (React / Vue / Svelte / etc.) HTML-escapes by default at the moment the string enters the DOM.
+- ❌ Do not bypass client-side escaping (`dangerouslySetInnerHTML`, `v-html`, `{@html}`, `innerHTML =`) for user-influenced data, including translated strings with interpolations.
+- 🧱 For rich-text translations, use structured dictionaries and let the renderer compose the markup, not HTML strings inside translation values.
