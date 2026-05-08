@@ -365,7 +365,7 @@ index 3fdec77..bf6c9f2 100644
 +      /**
 +       * `type` is normally a protected attribute, but when creating a room, we do want the user
 +       * to be able to select room type, we just have to handle it explicitly since it won't be
-+       * returned by `paramsFor` (and we don't want it to be since simply setting the type would
++       * returned by `extractParams` (and we don't want it to be since simply setting the type would
 +       * not be operating on the correct model, even though the correct model would be hydrated
 +       * when loading from the database)
 +       */
@@ -373,16 +373,18 @@ index 3fdec77..bf6c9f2 100644
 +    },
    })
    public async create() {
--    // let room = await this.currentPlace.createAssociation('rooms', this.paramsFor(Room))
+-    // let room = await this.currentPlace.createAssociation('rooms', this.extractParams(Room,
+-    //   ['position'],
+-    // ))
 -    // if (room.isPersisted) room = await room.loadFor('default').execute()
 -    // this.created(room)
 +    let room: Room
 +    const roomType = this.castParam('type', 'string', { enum: RoomTypesEnumValues })
 +
-+    // paramsFor is based on the table (even virtual attributes are associated with
-+    // the table at the type level), so passing the STI children to paramsFor
++    // extractParams is based on the table (even virtual attributes are associated with
++    // the table at the type level), so passing the STI children to extractParams
 +    // would not alter the results
-+    const roomParams = this.paramsFor(Room)
++    const roomParams = this.extractParams(Room, ['position'])
 +
 +    switch (roomType) {
 +      case 'Bathroom':
@@ -425,10 +427,12 @@ index 3fdec77..bf6c9f2 100644
    })
    public async update() {
 -    // const room = await this.room()
--    // await room.update(this.paramsFor(Room))
+-    // await room.update(this.extractParams(Room,
+-    //   ['position'],
+-    // ))
 -    // this.noContent()
 +    const room = await this.room()
-+    await room.update(this.paramsFor(Room))
++    await room.update(this.extractParams(Room, ['position']))
 +    this.noContent()
    }
  

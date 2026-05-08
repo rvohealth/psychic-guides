@@ -195,7 +195,7 @@ export default class UsersController extends PsychicController {
     status: 204,
   })
   public async create() {
-    await User.create(this.paramsFor(User))
+    await User.create(this.extractImplicitParams(User))
     this.noContent()
   }
 }
@@ -215,7 +215,7 @@ export default class UsersController extends PsychicController {
     },
   })
   public async create() {
-    await User.create(this.paramsFor(User, { only: ['email'] }))
+    await User.create(this.extractParams(User, ['email']))
     this.noContent()
   }
 }
@@ -232,7 +232,7 @@ export default class UsersController extends PsychicController {
     },
   })
   public async create() {
-    await User.create(this.paramsFor(User, { only: ['email'] }))
+    await User.create(this.extractParams(User, ['email']))
     this.noContent()
   }
 }
@@ -251,7 +251,7 @@ export default class UsersController extends PsychicController {
     },
   })
   public async create() {
-    await User.create(this.paramsFor(User, { only: ['email'] }))
+    await User.create(this.extractParams(User, ['email']))
     this.noContent()
   }
 }

@@ -185,7 +185,10 @@ export default class V1HostPlacesController extends V1HostBaseController {
     pathParams: [{ name: 'id', required: true }],
   })
   public async create() {
-    let place = await this.currentHost.createAssociation('places', this.paramsFor(Place))
+    let place = await this.currentHost.createAssociation(
+      'places',
+      this.extractParams(Place, ['name', 'description']),
+    )
     if (place.isPersisted) place = await place.loadFor('default').execute()
     this.created(place)
   }

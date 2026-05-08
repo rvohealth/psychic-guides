@@ -290,7 +290,9 @@ index 0000000..3fdec77
 +    fastJsonStringify: true,
 +  })
 +  public async create() {
-+    // let room = await this.currentPlace.createAssociation('rooms', this.paramsFor(Room))
++    // let room = await this.currentPlace.createAssociation('rooms', this.extractParams(Room,
++    //   ['position'],
++    // ))
 +    // if (room.isPersisted) room = await room.loadFor('default').execute()
 +    // this.created(room)
 +  }
@@ -303,7 +305,9 @@ index 0000000..3fdec77
 +  })
 +  public async update() {
 +    // const room = await this.room()
-+    // await room.update(this.paramsFor(Room))
++    // await room.update(this.extractParams(Room,
++    //   ['position'],
++    // ))
 +    // this.noContent()
 +  }
 +

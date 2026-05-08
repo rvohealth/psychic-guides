@@ -193,11 +193,13 @@ index f6b0e42..ee34669 100644
      fastJsonStringify: true,
    })
    public async create() {
--    // let place = await this.currentHost.createAssociation('places', this.paramsFor(Place))
+-    // let place = await this.currentHost.createAssociation('places', this.extractParams(Place,
+-    //   ['name', 'style', 'sleeps'],
+-    // ))
 -    // if (place.isPersisted) place = await place.loadFor('default').execute()
 -    // this.created(place)
 +    let place = await ApplicationModel.transaction(async txn => {
-+      const place = await Place.txn(txn).create(this.paramsFor(Place))
++      const place = await Place.txn(txn).create(this.extractParams(Place, ['name', 'style', 'sleeps']))
 +      await HostPlace.txn(txn).create({ host: this.currentHost, place })
 +      return place
 +    })
@@ -212,10 +214,12 @@ index f6b0e42..ee34669 100644
    })
    public async update() {
 -    // const place = await this.place()
--    // await place.update(this.paramsFor(Place))
+-    // await place.update(this.extractParams(Place,
+-    //   ['name', 'style', 'sleeps'],
+-    // ))
 -    // this.noContent()
 +    const place = await this.place()
-+    await place.update(this.paramsFor(Place))
++    await place.update(this.extractParams(Place, ['name', 'style', 'sleeps']))
 +    this.noContent()
    }
  
