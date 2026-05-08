@@ -1749,7 +1749,9 @@ export default class ApiV1PostsController extends ApiV1BaseController {
     description: 'Create a Post',
   })
   public async create() {
-    // let post = await this.currentUser.createAssociation('posts', this.paramsFor(Post))
+    // let post = await this.currentUser.createAssociation('posts', this.extractParams(Post,
+    //   ['title', 'body'],
+    // ))
     // if (post.isPersisted) post = await post.loadFor('default').execute()
     // this.created(post)
   }
@@ -1761,7 +1763,9 @@ export default class ApiV1PostsController extends ApiV1BaseController {
   })
   public async update() {
     // const post = await this.post()
-    // await post.update(this.paramsFor(Post))
+    // await post.update(this.extractParams(Post,
+    //   ['title', 'body'],
+    // ))
     // this.noContent()
   }
 
@@ -1827,7 +1831,7 @@ export default class ApiV1PostsController extends ApiV1BaseController {
     description: 'Create a Post',
   })
   public async create() {
-    let post = await this.currentUser.createAssociation('posts', this.paramsFor(Post))
+    let post = await this.currentUser.createAssociation('posts', this.extractParams(Post, ['title', 'body']))
     if (post.isPersisted) post = await post.loadFor('default').execute()
     this.created(post)
   }
@@ -1839,7 +1843,7 @@ export default class ApiV1PostsController extends ApiV1BaseController {
   })
   public async update() {
     const post = await this.post()
-    await post.update(this.paramsFor(Post))
+    await post.update(this.extractParams(Post, ['title', 'body']))
     this.noContent()
   }
 

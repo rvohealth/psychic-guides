@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-ai_summary: "Controller parameter handling with castParam for individual parameter validation and paramsFor for automatic extraction of model-safe parameters. Supports type casting, OpenAPI shape validation, and parameter filtering with only and including options."
+ai_summary: "Controller parameter handling with castParam for individual parameter validation and extractParams / extractImplicitParams for type-checked, runtime-intersected extraction of model-safe parameters. Supports type casting, OpenAPI shape validation, and explicit or implicit allowlists."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -91,9 +91,9 @@ data.b // string | number | undefined
 
 When using `castParam` with OpenAPI shapes, params will automatically be coerced by the Ajv library.
 
-## paramsFor
+## extractParams
 
-In addition to individual param casting, Psychic also provides the ability to automatically ingest all params for a given Dream model. The `paramsFor` method enables developers to easily bring in params for a model without having to specify their types manually:
+In addition to individual param casting, Psychic provides the ability to ingest a typed, allowlisted set of params for a given Dream model. `extractParams` takes the model class and an explicit list of permitted columns; the columns are visible at the call site so reviewers can see exactly which fields the action accepts from the request:
 
 ```ts
 export default class V1HostPlacesController extends V1HostBaseController {
@@ -103,18 +103,40 @@ export default class V1HostPlacesController extends V1HostBaseController {
     description: 'Create a Place',
   })
   public async create() {
-    let place = await this.currentHost.createAssociation('places', this.paramsFor(Place))
+    let place = await this.currentHost.createAssociation(
+      'places',
+      this.extractParams(Place, ['name', 'description', 'style', 'sleeps']),
+    )
     if (place.isPersisted) place = await place.loadFor('default').execute()
     this.created(place)
   }
 }
 ```
 
-This will automatically bring in all params for the `Place` model, barring generated fields like `id`, `createdAt`, `updatedAt`, `deletedAt`, or any belongs-to foreign keys or foreign key types.
+The `allowed` array is compile-time constrained to the model's param-safe column names, so passing a protected column (primary key, timestamps, `deletedAt`, STI `type`, belongs-to foreign keys, polymorphic type fields, or any column declared in `paramUnsafeColumns`) is a TypeScript error. At runtime, the array is intersected against the model's `paramSafeColumnsOrFallback()` set, so anything that bypasses the type system still fails closed.
+
+`extractParams` is the recommended primitive for controllers handling user-editable models. The generator emits it for non-admin namespaces.
+
+## extractImplicitParams
+
+When the model's declared `paramSafeColumns` is the canonical allowlist and duplicating it at every call site would create drift, use `extractImplicitParams`. It pulls the allowlist from the model itself:
+
+```ts
+export default class AdminBalloonsController extends AdminBaseController {
+  public async create() {
+    const balloon = await Balloon.create(this.extractImplicitParams(Balloon))
+    this.created(balloon)
+  }
+}
+```
+
+When the model does not declare `paramSafeColumns`, `extractImplicitParams` falls back to the framework's default-safe set (every column except the protected ones listed above).
+
+The generator emits `extractImplicitParams` for admin-namespace scaffolds. Either default can be overridden at scaffold time with `--with-extract-params` or `--with-extract-implicit-params`.
 
 ## paramSafeColumns
 
-The attributes that can be updated via params can be further restricted by providing a `paramSafeColumns` getter in any Dream model (see [paramSafeColumns](/docs/models/paramSafeColumns)):
+The attributes that may be updated via params can be further restricted by providing a `paramSafeColumns` getter on any Dream model (see [paramSafeColumns](/docs/models/paramSafeColumns)):
 
 ```ts
 export default class User extends ApplicationModel {
@@ -124,19 +146,16 @@ export default class User extends ApplicationModel {
 }
 ```
 
-## paramsFor with only
+`extractImplicitParams(User)` returns only the declared columns; `extractParams(User, ['email'])` continues to require the explicit allowlist and intersects it with the declared safe columns.
 
-The `paramsFor` method also accepts the ability to customize which params should be allowed, enabling you to only bring in specific params without needing to cast their types:
+## Options
+
+Both methods accept an optional second/third argument:
 
 ```ts
-export default class V1HostPlacesController extends V1HostBaseController {
-  public async create() {
-    let place = await this.currentHost.createAssociation(
-      'places',
-      this.paramsFor(Place, { only: ['name', 'description'] })
-    )
-    if (place.isPersisted) place = await place.loadFor('default').execute()
-    this.created(place)
-  }
-}
+// Extract from a nested key (e.g. `{ place: { name: '...' } }`)
+this.extractParams(Place, ['name'], { key: 'place' })
+
+// Extract an array of param objects
+this.extractParams(Place, ['name'], { array: true })
 ```

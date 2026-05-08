@@ -48,7 +48,7 @@ export default class V1HostPlacesController extends V1HostBaseController {
   public async create() {
     let place = await this.currentHost.createAssociation(
       'places',
-      this.paramsFor(Place)
+      this.extractParams(Place, ['name', 'description', 'style', 'sleeps'])
     )
     if (place.isPersisted) place = await place.loadFor('default').execute()
     this.created(place)
@@ -56,7 +56,7 @@ export default class V1HostPlacesController extends V1HostBaseController {
 
   public async update() {
     const place = await this.place()
-    await place.update(this.paramsFor(Place))
+    await place.update(this.extractParams(Place, ['name', 'description', 'style', 'sleeps']))
     this.noContent()
   }
 }

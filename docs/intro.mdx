@@ -197,7 +197,7 @@ With routes defined, you can build matching controllers to add functionality to 
 
 export default class V1HostPlacesController extends AuthedController {
   public async create() {
-    const place = await Place.create(this.paramsFor(Place))
+    const place = await Place.create(this.extractParams(Place, ['name', 'style', 'sleeps']))
     this.created(place)
   }
 
@@ -214,7 +214,7 @@ export default class V1HostPlacesController extends AuthedController {
 
   public async update() {
     const place = await Place.findOrFail(this.castParam('id', 'bigint'))
-    await place.update(this.paramsFor(Place))
+    await place.update(this.extractParams(Place, ['name', 'style', 'sleeps']))
     this.noContent()
   }
 
@@ -255,7 +255,7 @@ export default class V1HostPlacesController extends AuthedController {
   })
   public async create() {
     const place = await ApplicationModel.transaction(async txn => {
-      const place = await Place.txn(txn).create(this.paramsFor(Place))
+      const place = await Place.txn(txn).create(this.extractParams(Place, ['name', 'style', 'sleeps']))
       await HostPlace.txn(txn).create({ host: this.currentHost, place })
       return place
     })
@@ -338,7 +338,7 @@ Dream automatically converts database `timestamp` fields to `DateTime` objects a
 - powerful decorators like `@SoftDelete`, `@Sortable`, and `@ReplicaSafe` that automatically and universally handle common use cases which would otherwise introduce complexity into your application
 - cli code generators that set up models, serializers, and controllers using best practice conventions, such as controllers inheriting from an authenticated ancestor right from the start
 - advanced association patterns such as has-many-through, single table inheritance (STI), and polymorphism
-- utilities like paramsFor and preloadFor, which help you stay DRY when defining new associations on your serializers, or add or edit columns on your table.
+- utilities like `extractParams` and `preloadFor`, which help you stay DRY when defining new associations on your serializers, or add or edit columns on your table.
 
 ### Use familiar technologies
 

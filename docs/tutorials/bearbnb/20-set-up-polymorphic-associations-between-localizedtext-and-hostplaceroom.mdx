@@ -517,10 +517,12 @@ index 12f4ab2..1cddd7a 100644
    })
    public async update() {
 -    // const localizedText = await this.localizedText()
--    // await localizedText.update(this.paramsFor(LocalizedText))
+-    // await localizedText.update(this.extractParams(LocalizedText,
+-    //   ['locale', 'title', 'markdown'],
+-    // ))
 -    // this.noContent()
 +    const localizedText = await this.localizedText()
-+    await localizedText.update(this.paramsFor(LocalizedText))
++    await localizedText.update(this.extractParams(LocalizedText, ['locale', 'title', 'markdown']))
 +    this.noContent()
    }
  
