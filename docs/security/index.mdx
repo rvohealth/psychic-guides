@@ -18,7 +18,7 @@ Out of the box, a generated app gets:
 - **AEAD-encrypted cookie payload.** Session cookies are AES-GCM encrypted with a per-encryption IV; tampering fails decryption.
 - **Weak-key boot rejection.** A missing or short cookie encryption key throws at production boot rather than at the first encryption call.
 - **Open-redirect protection.** Every framework redirect helper funnels through a validator; absolute URLs fail closed unless the destination host appears in your `redirectAllowedHosts` allowlist.
-- **Mass-assignment safety.** `this.extractParams(Model, [...])` is a type-checked, runtime-intersected primitive; `this.extractImplicitParams(Model)` is its model-driven counterpart for namespaces where `paramSafeColumns` is the canonical allowlist.
+- **Mass-assignment safety.** `this.extractParams(Model, [...])` is a type-checked, runtime-intersected primitive; the explicit allowlist is required at every call site and is the framework's canonical mass-assignment defense.
 - **Prototype-pollution-safe param parsing.** The merge target is `Object.create(null)`; `__proto__` / `constructor` / `prototype` arriving as own keys cannot pollute `Object.prototype`.
 - **Content-type-agnostic security headers.** `X-Content-Type-Options: nosniff`, `Cross-Origin-Resource-Policy`, and HSTS in production are defaults. Document-scoped headers (CSP, XFO, COOP, Permissions-Policy, Referrer-Policy) are deliberately not shipped — Psychic emits JSON, not HTML, so those headers are no-ops on framework responses. See [Output Encoding & i18n](/docs/security/output-encoding) for the boundary.
 - **CORS off by default.** `@koa/cors` is not mounted unless you call `psy.set('cors', ...)`. Apps that need cross-origin opt in.
@@ -57,7 +57,7 @@ Each link below goes deeper on one piece of the security posture.
 | Session cookie scope | `psy.set('cookie', { sameSite, maxAge, domain, path })` | `sameSite: 'strict'`, 31-day `maxAge` | [Session config below](#session-cookie-config) |
 | Cookie encryption key | `psy.set('encryption', { cookies: { current, legacy } })` | none — boot throws in production | [Encryption rotation below](#encryption-key-rotation) |
 | Redirect allowlist | `psy.set('redirectAllowedHosts', [...])` | empty (relative redirects only) | [Redirect allowlist below](#redirect-allowlist) |
-| Mass assignment | `this.extractParams(Model, [allowed])` / `this.extractImplicitParams(Model)` | emitted by the generator | [Mass assignment below](#mass-assignment) |
+| Mass assignment | `this.extractParams(Model, [allowed])` | emitted by the generator | [Mass assignment below](#mass-assignment) |
 | LIKE / ILIKE escaping | `escapeLikePattern(value)` | manual opt-in | [LIKE / ILIKE below](#like--ilike-with-user-input) |
 | Default response headers | `psy.set('defaultResponseHeaders', {...})` | content-type-agnostic baseline | [Headers below](#default-response-headers) |
 | CORS | `psy.set('cors', {...})` | not mounted | [CORS below](#cors) |
@@ -128,7 +128,7 @@ class UsersController extends AuthedController {
 }
 ```
 
-Generators emit this scaffold for non-admin namespaces. Admin-namespace generators emit `this.extractImplicitParams(Model)` because the model-level `paramSafeColumns` declaration is the canonical allowlist. Override at scaffold time with `--with-extract-params` / `--with-extract-implicit-params`.
+Generators emit this scaffold for every create / update action in every namespace (including admin). The same shared `paramSafeColumns` const at the top of the controller is reused at each call site.
 
 The allowed array is typed as `readonly DreamParamSafeColumnNames<...>[]`, so passing a protected column produces a compile error. The runtime intersection against `paramSafeColumnsOrFallback()` strips anything that slipped past TypeScript.
 
@@ -221,6 +221,6 @@ psy.on('server:error', (err, ctx) => {
 ## Cadence
 
 - **Every release.** Re-run `pnpm audit` and triage per the [Supply Chain](/docs/security/supply-chain) guide.
-- **Every quarter.** Review `extractParams` / `extractImplicitParams` allowlists across controllers; nothing forces them to stay narrow over time.
+- **Every quarter.** Review `extractParams` allowlists across controllers; nothing forces them to stay narrow over time.
 - **Every key rotation.** Generate a new cookie encryption key with `Encrypt.generateKey`; rotate via the `current` / `legacy` pair.
 - **Whenever you touch auth or session logic.** Re-read this page; the defaults are not a substitute for reading the boundaries you are crossing.

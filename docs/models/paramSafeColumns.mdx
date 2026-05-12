@@ -1,13 +1,13 @@
 ---
 title: paramSafeColumns
 pagination_next: null
-ai_summary: "paramSafeColumns and paramUnsafeColumns work with extractParams / extractImplicitParams to limit allowed attributes. Default protection excludes primary key, timestamps, deleted_at, STI type, foreign keys. paramSafeColumns restricts to only specified columns. paramUnsafeColumns disallows specific columns. Restricted params automatically omitted from OpenAPI request body."
+ai_summary: "paramSafeColumns and paramUnsafeColumns work with extractParams to limit allowed attributes. Default protection excludes primary key, timestamps, deleted_at, STI type, foreign keys. paramSafeColumns restricts to only specified columns. paramUnsafeColumns disallows specific columns. Restricted params automatically omitted from OpenAPI request body."
 ---
 
 # paramSafeColumns / paramUnsafeColumns
 
 :::caution
-`paramSafeColumns` and `paramUnsafeColumns` _only_ provide protection when used with `PsychicController#extractParams` or `PsychicController#extractImplicitParams`.
+`paramSafeColumns` and `paramUnsafeColumns` _only_ provide protection when used with `PsychicController#extractParams`.
 
 ```ts
 export default class HostPlacesController extends HostBaseController {
@@ -36,11 +36,11 @@ export default class HostPlacesController extends HostBaseController {
 
 :::
 
-The `paramSafeColumns`/`paramUnsafeColumns` methods work in conjunction with `PsychicController#extractParams` and `PsychicController#extractImplicitParams` to limit what attributes are allowed to be set from params. This concept is similar to Rails' "strong params", but implemented at the model level and with different defaults.
+The `paramSafeColumns`/`paramUnsafeColumns` methods work in conjunction with `PsychicController#extractParams` to limit what attributes are allowed to be set from params. This concept is similar to Rails' "strong params", but implemented at the model level and with different defaults.
 
 ## Default protection
 
-Default protection is provided automatically: neither `extractParams` nor `extractImplicitParams` will ever include the following attributes (this cannot be overridden by `paramSafeColumns` or `paramUnsafeColumns`):
+Default protection is provided automatically: `extractParams` will never include the following attributes (this cannot be overridden by `paramSafeColumns` or `paramUnsafeColumns`):
 
 - the primary key (defaults to `id`)
 - the created at field (defaults to `createdAt`)
@@ -91,15 +91,15 @@ export default class HostPlacesRoomsController extends HostPlacesBaseController 
     const room = await this.room()
     /**
     /* `id`, `createdAt`, `updatedAt`, `deletedAt`, and `type` (since Room is an STI model)
-    /* will not be included in the object returned by `this.extractImplicitParams(Room)`
+    /* will not be included in the object returned by `this.extractParams(Room, [...])`
     */
-    await room.update(this.extractImplicitParams(Room))
+    await room.update(this.extractParams(Room, ['name', 'capacity']))
     this.noContent()
   }
 }
 ```
 
-Restricted params can be added to the OpenAPI request body by specifying an `including` array. Note that this does _not_ alter the behavior of `extractParams` / `extractImplicitParams`, only the OpenAPI shape, so that requests may be allowed that include protected attributes; but these attributes will need to be handled explicitly:
+Restricted params can be added to the OpenAPI request body by specifying an `including` array. Note that this does _not_ alter the behavior of `extractParams`, only the OpenAPI shape, so that requests may be allowed that include protected attributes; but these attributes will need to be handled explicitly:
 
 ```ts
 export default class HostPlacesRoomsController extends HostPlacesBaseController {
@@ -111,12 +111,12 @@ export default class HostPlacesRoomsController extends HostPlacesBaseController 
       /**
        * `type` is normally a protected attribute, but when creating a room, we do want the user
        * to be able to select room type, we just have to handle it explicitly since it won't be
-       * returned by `extractParams` / `extractImplicitParams` (and we don't want it to be since simply setting the type would
+       * returned by `extractParams` (and we don't want it to be since simply setting the type would
        * not be operating on the correct model, even though the correct model would be hydrated
        * when loading from the database)
        */
       including: ['type'],
-      // `extractParams` / `extractImplicitParams` will still strip `type` at runtime —
+      // `extractParams` will still strip `type` at runtime —
       // so the controller has to read it explicitly via `castParam` and act on it.
     },
   })
