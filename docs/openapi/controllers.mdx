@@ -195,7 +195,7 @@ export default class UsersController extends PsychicController {
     status: 204,
   })
   public async create() {
-    await User.create(this.extractImplicitParams(User))
+    await User.create(this.extractParams(User, ['email', 'name']))
     this.noContent()
   }
 }

@@ -1,6 +1,6 @@
 ---
 sidebar_position: 4
-ai_summary: "Psychic automatically handles certain errors with intuitive response codes. castParam raises 400 for invalid params. extractParams / extractImplicitParams raise 400 for invalid model attributes. Failable lookups (findOrFail, firstOrFail) raise 404 for not found. Validation errors raise 422."
+ai_summary: "Psychic automatically handles certain errors with intuitive response codes. castParam raises 400 for invalid params. extractParams raises 400 for invalid model attributes. Failable lookups (findOrFail, firstOrFail) raise 404 for not found. Validation errors raise 422."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -38,7 +38,7 @@ export default class V1HostPlacesController extends V1HostBaseController {
 
 ## extractParams
 
-Similar to `castParam`, `extractParams` (and `extractImplicitParams`) will raise a 400 exception if any of the params provided matching one of the model attributes fails type validation:
+Similar to `castParam`, `extractParams` will raise a 400 exception if any of the params provided matching one of the model attributes fails type validation:
 
 ```ts
 export default class V1HostPlacesController extends V1HostBaseController {
