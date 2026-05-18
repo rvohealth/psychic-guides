@@ -11,6 +11,15 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 Unit specs are meant for testing strictly your backend components in isolation. Unlike your feature specs, in your unit specs you are not driving a headless browser through your front end. Instead, you are testing individual units of code in your backend to make sure they behave correctly. This could mean testing the behavior of a single helper function, as well as for testing models, services, and controllers within your app.
 
+## Type checking
+
+Use `pnpm build:spec` (not `npx tsc --noEmit`) to check for type errors across both `src/` and `spec/` directories. The bare `tsc --noEmit` fails with spurious errors because the base `tsconfig` references spec types that aren't resolvable without the full project context:
+
+```bash
+pnpm build:spec   # type-checks src and spec (correct)
+pnpm build        # type-checks src only (for production builds)
+```
+
 ## Configuration
 
 The configuration for your unit specs is located in `spec/unit/vite.config.ts`. Composing unit specs, one is enabled to test all components of their app. Since this is all done using `vitest` under the hood, this will likely be familiar to you already, with the one caviat that we also provide special unit spec helpers for spec'ing your endpoints. Here is a sample config that could enable one to, for example, integrate with `pollyjs`:

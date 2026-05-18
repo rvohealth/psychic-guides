@@ -15,31 +15,49 @@ A configuration file is used to configure Dream, and can be found at the `conf/d
 
 ### database connection
 
-In order for Dream to connect to your database, you need to provide it with explicit credentials. Dream supports both primary and replica DB connections, and configuration for both can be provided. While this example taps into env vars, we recommend that in production, you switch to something more secure, like [AWS Secrets Manager](https://aws.amazon.com/secrets-manager):
+In order for Dream to connect to your database, you need to provide it with explicit credentials. Dream supports both primary and replica DB connections, and configuration for both can be provided.
+
+:::tip
+Always use `AppEnv` (defined in `src/conf/AppEnv.ts`) to access environment variables — never `process.env` directly. `AppEnv` validates that required variables are present at boot time and produces a clear error message when one is missing. For variables that are only present in some environments, use `AppEnv.string(name, { optional: true })`, which returns `string | undefined` instead of throwing.
+:::
 
 ```ts
 export default async function (dreamApp: DreamApp) {
+  // Use verified TLS by default; set DB_NO_SSL=true to disable (local dev only)
+  const dbSsl: { rejectUnauthorized: true } | false = AppEnv.boolean('DB_NO_SSL')
+    ? false
+    : { rejectUnauthorized: true }
+
   dreamApp.set('db', {
     primary: {
       user: AppEnv.string('DB_USER'),
       password: AppEnv.string('DB_PASSWORD'),
       host: AppEnv.string('PRIMARY_DB_HOST'),
       name: AppEnv.string('PRIMARY_DB_NAME'),
-      port: parseInt(AppEnv.integer('DB_PORT')),
-      // only connect to replica db insecurely if `DB_NO_SSL` is explicitly set
-      useSsl: !AppEnv.boolean('DB_NO_SSL'),
+      port: AppEnv.integer('DB_PORT'),
+      ssl: dbSsl,
     },
     replica: {
       user: AppEnv.string('DB_USER'),
       password: AppEnv.string('DB_PASSWORD'),
       host: AppEnv.string('REPLICA_DB_HOST'),
       name: AppEnv.string('REPLICA_DB_NAME'),
-      port: parseInt(AppEnv.integer('DB_PORT')),
-      // only connect to replica db insecurely if `DB_NO_SSL` is explicitly set
-      useSsl: !AppEnv.boolean('DB_NO_SSL'),
+      port: AppEnv.integer('DB_PORT'),
+      ssl: dbSsl,
     },
   }),
   ...
+}
+```
+
+The `ssl` field accepts `{ rejectUnauthorized: true }` (verified TLS, the default), `{ rejectUnauthorized: false }` (unverified TLS, for providers that don't serve a public-CA-signed certificate), or `false` (TLS off, for local development without TLS). The bare `useSsl` boolean shorthand is deprecated — use an explicit `ssl` value instead.
+
+Most managed Postgres providers (Supabase, Neon, Render, Azure Database for PostgreSQL Flexible Server) present a public-CA-signed certificate and work with the default. Providers that require a pinned CA certificate (AWS RDS, GCP Cloud SQL) need an additional `ca` field:
+
+```ts
+ssl: {
+  rejectUnauthorized: true,
+  ca: AppEnv.string('PG_CA_CERT'),
 }
 ```
 
@@ -186,7 +204,7 @@ export default async function (dreamApp: DreamApp) {
 
 ### application logging
 
-Dream accepts a custom logger so you can integrate with your preferred logging solution. If no logger is provided, dream will fall back to `console.log`.
+Dream accepts a custom logger so you can integrate with your preferred logging solution. Configure it in `conf/dream.ts`:
 
 ```ts
 // conf/dream.ts
@@ -198,10 +216,6 @@ export default async function (dreamApp: DreamApp) {
       format: winston.format.json(),
       defaultMeta: { service: 'user-service' },
       transports: [
-        //
-        // - Write all logs with importance level of `error` or less to `error.log`
-        // - Write all logs with importance level of `info` or less to `combined.log`
-        //
         new winston.transports.File({ filename: 'error.log', level: 'error' }),
         new winston.transports.File({ filename: 'combined.log' }),
       ],
@@ -213,7 +227,7 @@ export default async function (dreamApp: DreamApp) {
 ```
 
 :::warning
-If no logger is provided, dream will log using `console.log`, which is not recommended, since `console.log` is blocking.
+Never use `console.log` in application code. `console.log` is blocking, bypasses the configured logger, and pollutes production logs with unstructured strings. Use `PsychicApp.log(message, ...meta)` for general output and `PsychicApp.logWithLevel(level, message, ...meta)` when you need a specific level (`'debug' | 'info' | 'warn' | 'error'`). These route through the configured logger so output respects log level, transports, and structured format. REPL / `psy console` sessions are exempt — interactive output to stdout is the point. If no logger is configured, Dream falls back to `console.log`, which is why configuring one is recommended.
 :::
 
 ### paths

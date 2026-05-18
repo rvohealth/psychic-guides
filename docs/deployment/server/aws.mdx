@@ -32,7 +32,6 @@ USER node
 FROM $NODE_IMAGE AS base
 ENV NODE_ENV=production
 ENV NODE_DEBUG=bull
-ENV DB_USE_SSL=1
 ENV PSYCHIC_LOG_PATH=/dev/shm
 ENV PSYCHIC_SSL_CERT_PATH=/home/node/app/cert/psychic-selfsigned.crt
 ENV PSYCHIC_SSL_KEY_PATH=/home/node/app/cert/psychic-selfsigned.key
@@ -136,12 +135,14 @@ This will provision whatever server pulls from this image to prepare it for use 
 
 With the Dockerfile in place, we will need the corresponding `migrate_and_serve.sh` file, which is used to further initialize your instance. Add this next to your Dockerfile with the following contents:
 
-<PackageManagerTabs
-code={`#!/bin/sh
+```sh
+#!/bin/sh
 # migrate_and_serve.sh
 
 if [ $WEB_SERVICE ]; then
-  TMP=/dev/shm NODE_ENV=production pnpm psy:js db:migrate --skip-sync && TMP=/dev/shm NODE_ENV=production pnpm psy:js db:seed && ./node_modules/.bin/pm2-runtime start ./api.ecosystem.config.cjs --env production
+  TMP=/dev/shm NODE_ENV=production node ./dist/src/conf/system/cli.js db:migrate --skip-sync && \
+  TMP=/dev/shm NODE_ENV=production node ./dist/src/conf/system/cli.js db:seed && \
+  ./node_modules/.bin/pm2-runtime start ./api.ecosystem.config.cjs --env production
 elif [ $WORKER_SERVICE ]; then
   ./node_modules/.bin/pm2-runtime start ./worker.ecosystem.config.cjs --env production
 elif [ $CONSOLE_SERVICE ]; then
@@ -151,8 +152,7 @@ elif [ $CONSOLE_SERVICE ]; then
   fi
   sleep infinity
 fi
-`}
-/>
+```
 
 And the pm2 ecosystem files as well:
 

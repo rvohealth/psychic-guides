@@ -1,7 +1,7 @@
 ---
 sidebar_position: 0
 pagination_prev: null
-ai_summary: "Psychic controllers extend PsychicController and handle HTTP requests. They work with routes, provide status code response methods (ok, created, noContent, etc.), support OpenAPI decorator for automatic spec generation, and include helpers for params, cookies, serialization, and exception handling."
+ai_summary: "Psychic controllers extend PsychicController and handle HTTP requests. The directory structure IS the authentication architecture — each branch has its own auth base controller and authentication flows downhill, never weaker deeper in the hierarchy. Provides status code response methods, OpenAPI decorator, params, cookies, serialization, and exception handling."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -12,6 +12,58 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 In a standard MVC (Model, View, Controller) paradigm, a controller represents the entity which responds to an HTTP request. Controllers in Psychic are classes which inherit from the base `PsychicController` class, which can be imported from Psychic. They will inherit many useful methods for responding to requests, as well as many useful helpers for setting and reading cookies, accessing request parameters, and much more.
 
 In order for a controller's methods to be reached, a corresponding route entry must be established to point to those methods, so the controllers and routes work hand-in-hand. You should never have a route that points to a controller method that doesn't exist, nor should you ever have a controller method with no corresponding route entry.
+
+## Authentication architecture
+
+The controller directory structure **is** the authentication and authorization architecture. Each directory branch has its own `AuthedController` (and optionally `UnauthedController`, `MaybeAuthedController`) at its root. Every controller in that branch extends downward from it — looking at the `@BeforeAction` methods in any directory's base controller tells you exactly what auth rules are in force for the entire subtree.
+
+**Cardinal rule: authentication flows downhill — it gets stricter, never weaker.** Never introduce a looser authentication pattern deeper in a directory hierarchy.
+
+Each application surface (client-facing, admin, internal) gets its own directory branch with its own auth base controllers:
+
+```
+controllers/
+├── ApplicationController.ts       (base — universal methods, openapi namespaces)
+├── AuthedController.ts            (client auth — @BeforeAction, 401 if no user)
+├── MaybeAuthedController.ts       (client auth — currentUser null if absent)
+├── UnauthedController.ts          (no auth)
+│
+├── V1/
+│   ├── SignInController.ts        (extends UnauthedController)
+│   ├── Visitor/                   (public browse with optional auth)
+│   │   ├── BaseController.ts      (extends MaybeAuthedController)
+│   │   └── PlacesController.ts    (extends Visitor/BaseController)
+│   ├── Guest/                     (authed Guest endpoints)
+│   │   ├── BaseController.ts      (extends AuthedController, loads currentGuest)
+│   │   └── PlacesController.ts    (extends Guest/BaseController)
+│   └── Host/                      (authed Host endpoints)
+│       ├── BaseController.ts      (extends AuthedController, loads currentHost)
+│       ├── PlacesController.ts    (extends Host/BaseController)
+│       └── Places/
+│           ├── BaseController.ts  (extends Host/BaseController, loads currentPlace)
+│           └── RoomsController.ts (extends Host/Places/BaseController)
+│
+├── Admin/                         (admin surface — separate auth chain)
+│   ├── AuthedController.ts        (admin auth — validates admin user)
+│   ├── UnauthedController.ts
+│   └── UsersController.ts         (extends Admin/AuthedController)
+```
+
+Key principles:
+
+- **`Admin/AuthedController` does NOT extend the client `AuthedController`.** Each surface authenticates its own user type independently.
+- **Every controller extends the base controller in its own directory** (or the authed/unauthed controller at the top of its branch). Controllers never reach across branches or skip levels.
+- **Use generators** to create controllers. `pnpm psy g:resource` and `pnpm psy g:controller` set up the correct inheritance chain automatically.
+
+### Routing when directory names shouldn't appear in URLs
+
+Controller directory names reflect the auth architecture, not URL structure. When the directory name shouldn't appear in the URL (e.g. `Visitor/` is the auth context, but `/v1/visitor/places` isn't a natural public URL), use an explicit `controller` reference:
+
+```typescript
+// GOOD — clean URL: /v1/places, controller in Visitor/ directory for auth
+import V1VisitorPlacesController from '@controllers/V1/Visitor/PlacesController.js'
+r.resources('places', { only: ['index', 'show'], controller: V1VisitorPlacesController })
+```
 
 ## Routes and Controllers
 

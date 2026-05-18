@@ -1,0 +1,85 @@
+---
+ai_summary: "The leftJoin method joins associations using SQL LEFT JOIN for filtering and conditions. Unlike leftJoinPreload, it does not sideload associations — it is used to constrain or filter results based on joined table data. Supports and, andNot, andAny clauses and association chains."
+---
+import RoutesOutput from '@site/src/components/ui/routes-output'
+
+# leftJoin
+
+The `leftJoin` method joins associations using a SQL `LEFT JOIN`. Unlike [`leftJoinPreload`](/docs/models/querying/leftJoinPreload), it does **not** sideload associations onto results — its purpose is to constrain or filter results based on joined table data, or to make joined columns available in `where` conditions.
+
+A common use case is filtering for records that have no matching association:
+
+```ts
+// Places that have no photos
+const places = await Place.leftJoin('placePhotos').where({ 'placePhotos.id': null }).all()
+```
+
+<RoutesOutput>
+  <pre style={{ backgroundColor: 'transparent' }}>
+    {`
+select "places".* from "places"
+left join "place_photos" on "places"."id" = "place_photos"."place_id"
+where "place_photos"."id" is null
+`}
+  </pre>
+</RoutesOutput>
+
+## Join conditions
+
+Attach `and`, `andNot`, and `andAny` condition objects to the join:
+
+```ts
+const hosts = await Host.leftJoin('places', {
+  and: { style: 'cabin' },
+}).all()
+```
+
+Chain multiple associations and conditions in a single call:
+
+```ts
+const hosts = await Host.leftJoin(
+  'places', { and: { style: 'cabin' } },
+  'rooms', { and: { type: 'Bedroom' } },
+).all()
+```
+
+## Conditional query building with leftJoin
+
+TypeScript infers a more specific type for each join, which prevents reassigning the result back to a `let` variable of the original type. Cast back using `as unknown as typeof query`:
+
+```ts
+let query = Place.preloadFor('summary')
+
+if (withoutPhoto)
+  query = query
+    .leftJoin('placePhotos')
+    .where({ 'placePhotos.id': null }) as unknown as typeof query
+
+const results = await query.cursorPaginate({ cursor })
+```
+
+For helper functions that accept queries with varying join states, type the parameter as `Query<Model, any>`:
+
+```ts
+import { Query } from '@rvoh/dream'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyFilters(query: Query<Place, any>, params: FilterParams): Query<Place, any> {
+  if (params.withoutPhoto)
+    query = query.leftJoin('placePhotos').where({ 'placePhotos.id': null })
+  return query
+}
+```
+
+**What you lose at the cast site:** joined column name validation in subsequent `where` calls. `leftJoin` itself still validates the association name.
+
+## leftJoin vs leftJoinPreload
+
+| | `leftJoin` | `leftJoinPreload` |
+|--|--|--|
+| SQL | `LEFT JOIN` | `LEFT JOIN` |
+| Purpose | Filter/constrain results | Sideload associations onto results |
+| Associations attached to results? | No | Yes |
+| Can mix with `preload`? | Yes | No |
+
+Use `leftJoin` when you need the join for conditions. Use [`leftJoinPreload`](/docs/models/querying/leftJoinPreload) when you want associations hydrated on the returned records.

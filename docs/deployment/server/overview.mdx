@@ -3,36 +3,134 @@ sidebar_position: 0
 title: overview
 pagination_prev: null
 ai_summary: >-
-  Deployment requirements: PostgreSQL database, Node.js server instance, load
-  balancer, secure secret provisioning. Additional: Redis for
-  websockets/workers, worker instances for background jobs, console instance for
-  console access. See AWS guides for provisioning details.
+  Deployment overview: runtime roles (web, websocket, worker, console/migrator),
+  environment variables via AppEnv, TLS configuration, Postgres TLS provider
+  matrix, health checks (API vs WebSocket differences), running migrations in
+  production, and debugging a deployed service.
 ---
 
-Every web application has different deployment needs, so planning for everyone is quite a meticulous task. As an overview, wherever you decide to deploy to, you will need the following, at minimum:
+# deployment overview
 
-- a postgres database
-- a server instance with a modern nodejs version running on it
+A Psychic application runs multiple process roles from a single built image. Each role has its own entrypoint:
+
+| Role | Entrypoint | Purpose |
+|------|-----------|---------|
+| **web** | `node ./dist/src/main.js` | HTTP API server |
+| **websocket** | `node ./dist/src/ws.js` | WebSocket server (if using `@rvoh/psychic-websockets`) |
+| **worker** | `node ./dist/src/worker.js` | Background job processor (if using `@rvoh/psychic-workers`) |
+| **console / migrator** | `node ./dist/src/conf/system/cli.js db:migrate` | Database migrations and CLI tasks |
+
+:::warning
+Do not rely on `pnpm` (or any package manager runner) in production containers. Use direct `node ./dist/...` commands in your deployment configuration (task definitions, Procfiles, Docker CMD, etc.).
+:::
+
+## Infrastructure requirements
+
+At minimum, you need:
+
+- a Postgres database
+- a server instance running Node.js 20.9.0 or later
 - a load balancer
-- a way to provision and deploy secrets into your environment securely.
+- a way to provision and rotate secrets securely (e.g. [AWS Secrets Manager](https://aws.amazon.com/secrets-manager))
 
-If you are using websockets, you will also need:
+If using websockets or background workers:
 
-- a redis instance
+- a Redis 7.2.0+ instance
 
-And if you are using background workers, you will additionally also need:
+If using background workers:
 
-- a redis instance
-- worker instances with a modern nodejs version
+- worker instances running Node.js
 
-Additionally, if you would like a console to be able to interface with your application, you will need:
+## Environment variables
 
-- a console instance running with a modern nodejs version
+Always use `AppEnv` (defined in `src/conf/AppEnv.ts`) to access environment variables — never `process.env` directly. `AppEnv` validates that required variables are present at boot time and provides a clear error when one is missing. This also decouples the application from the container environment: secrets can be loaded from AWS Secrets Manager or AWS SSM Parameter Store at boot time and injected into `AppEnv` before anything else runs.
 
-Not all of these things are necessarily the responsibility of these guides to explain, so these guides will instead focus narrowly on how to provision instances in a given environment, and how to launch respective processes, but in general, if you just follow tutorials for setting up a Koa server with postgres, it will get you most of the way there.
+For variables that are only present in some environments, use `AppEnv.string(name, { optional: true })`, which returns `string | undefined` instead of throwing.
+
+## Build output
+
+If the project uses TypeScript path aliases (e.g. `@app/*`), the production build **must** run `tsc-alias` after `tsc`. Without this step, compiled JS will contain unresolved path alias imports and fail at runtime.
+
+## TLS
+
+### TLS behind a reverse proxy
+
+If your reverse proxy (load balancer, ingress controller) terminates TLS and re-encrypts traffic to the container, the Psychic app must speak TLS on its container port. Baking a self-signed certificate into the image is more reliable than generating one dynamically at runtime.
+
+If the proxy terminates TLS and forwards plain HTTP to the container, no additional TLS configuration is needed in the app.
+
+### Postgres TLS
+
+Configure TLS posture explicitly in `conf/dream.ts` via the `ssl` field on each credential. The bare `useSsl` boolean is deprecated. The scaffolded boilerplate uses verified TLS by default:
+
+```ts
+const dbSsl: { rejectUnauthorized: true } | false = AppEnv.boolean('DB_NO_SSL')
+  ? false
+  : { rejectUnauthorized: true }
+```
+
+Provider reference:
+
+| Provider | Required `ssl` value |
+|---|---|
+| Supabase, Neon, Render, Azure Database for PostgreSQL Flexible Server | `{ rejectUnauthorized: true }` (default) |
+| AWS RDS | `{ rejectUnauthorized: true, ca: readFileSync('rds-ca.pem') }` |
+| GCP Cloud SQL | `{ rejectUnauthorized: true, ca: readFileSync('server-ca.pem') }` |
+| Heroku Hobby, some local Docker images | `{ rejectUnauthorized: false }` |
+| Local dev with no TLS | `ssl: false` or `DB_NO_SSL=true` |
+
+## Health checks
+
+Register an explicit health check route in `conf/routes.ts`:
+
+```typescript
+r.get('health_check', HealthCheckController, 'index')
+```
+
+The `@rvoh/psychic-websockets` package has a **built-in** health check, but note two important differences from the API health check:
+
+| | API | WebSocket |
+|--|-----|-----------|
+| Default path | `/health_check` (you define it) | `/healthcheck` (built-in) |
+| HTTP methods | Responds to `GET` and `HEAD` | Responds to `GET` only |
+
+`curl -I` (which sends `HEAD`) works against the API health check but returns `404` from the WebSocket service. When verifying WebSocket health externally, use `curl -X GET` instead.
+
+## Running migrations in production
+
+### The migrate task is the boot smoke test
+
+Running `node ./dist/src/conf/system/cli.js db:migrate` exercises the full Psychic boot chain before applying any migrations:
+
+1. Node boot on the deployed image.
+2. `loadEnv` resolves the environment, including any external-secret injection wired through `AppEnv`.
+3. `AppEnv` materializes — every required env var is validated; the application halts with a clear error if anything is missing.
+4. The Psychic registry initializes — every module that registers on import (models, serializers, controllers, routes, workers, websocket channels) runs its top-level side effects.
+5. A database connection is established using the configured credentials, including TLS negotiation.
+
+Only then does Kysely start applying pending migrations. Any failure in steps 1–5 fails the migrate task before the schema changes — meaning a separate container "boot smoke" task is redundant. The migrate task itself is the smoke test, and it covers strictly more: missing env vars, registry-time import errors, malformed DB credentials, TLS handshake failures, and network reachability all surface here.
+
+### Combine `db:migrate` and `db:seed` in one invocation
+
+Migrate and seed share the same image, execution role, env, and DB credentials. On serverless container platforms where each one-off task pays a fixed scheduling and image-pull overhead, invoking them as two separate tasks pays the per-task lifecycle twice for no reason. Combine them in a single container invocation:
+
+```bash
+sh -c "node ./dist/src/conf/system/cli.js db:migrate && node ./dist/src/conf/system/cli.js db:seed"
+```
+
+If migrate fails, seed never runs and the task exits non-zero. If migrate succeeds and seed fails, the task exits non-zero with seed's error.
+
+## Debugging a deployed service
+
+When a deployed Psychic service is not responding correctly:
+
+1. **Check the public endpoint** — is it returning the expected status code?
+2. **Check health check status** — is the target healthy from the load balancer/ingress perspective?
+3. **Check orchestrator events** — container restarts, OOM kills, failed deployments.
+4. **Check the running configuration** — correct image, correct command, correct environment variables, correct log destination.
+5. **Check application logs** — look for startup errors, missing env vars, failed migrations.
+6. **Verify HTTP method** — if health checks pass but manual verification fails, confirm you're using `GET` (not `HEAD`) for WebSocket endpoints.
 
 :::tip
-
-- see the [aws](/docs/deployment/server/aws) guides to learn how to provision your application for aws.
-
-  :::
+See the [AWS guide](/docs/deployment/server/aws) for a complete example of provisioning a Psychic application on AWS Fargate.
+:::

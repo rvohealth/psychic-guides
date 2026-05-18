@@ -6,32 +6,42 @@ ai_summary: "The @deco.Virtual decorator enables setting fields as if they corre
 
 The `@deco.Virtual` decorator enables setting of fields as if they corresponded to columns in the model's table so they can be passed to [`new`](../creating#new-and-save), [`create`](../creating#create), and [`update`](../updating). It requires an OpenAPI type argument that defines both the serializer OpenAPI shape and the request body OpenAPI shape (in Psychic).
 
+## Rules
+
+**Getters and setters must be synchronous.** Dream calls them inline during attribute access and assignment — an `async` getter will return a `Promise` instead of the value, and Dream has no mechanism to await it.
+
+**The decorator goes on whichever accessor is declared first.** If you declare the getter before the setter, the decorator goes on the getter. If you declare a simple field (no getter/setter), the decorator goes on the field.
+
+**Use `DreamColumn<Model, 'columnName'>` for the getter return type and setter parameter type** when the virtual value is derived from (or stored into) an existing database column. The column type is the source of truth — don't use a hand-written `number | null` when `DreamColumn<BodyMeasurement, 'grams'>` already resolves to the correct type and will update automatically if the schema changes.
+
 For example, in the first example below, one could call `await bodyMeasurement.update({ lbs: 180.1 })`, and `180.1` will be passed into the `lbs` setter, which then translates lbs to grams to be stored in the `grams` column in the metrics table.
 
 And in the second example below, one could call `await user.update({ password })`, and, in the `BeforeSave` lifecycle hook, the password would be hashed into `hashedPassword`. (This is just an example to illustrate using the Virtual decorator on a simple field; it might be better design to use the getter/setter pattern for password, with the getter simply returning `undefined`.)
 
 ```ts
+import { DreamColumn } from '@rvoh/dream/types'
+
 class BodyMeasurement extends ApplicationModel {
-  @deco.Virtual('number')
-  public get lbs() {
-    const self: BodyMeasurement = this
-    return gramsToLbs(self.getAttribute('grams') ?? 0)
+  // Decorator on the getter (declared first). Return type uses DreamColumn so
+  // it stays in sync with the schema automatically.
+  @deco.Virtual(['number', 'null'])
+  public get lbs(): DreamColumn<BodyMeasurement, 'grams'> {
+    const grams = this.getAttribute('grams')
+    return grams === null ? null : gramsToLbs(grams)
   }
 
-  public set lbs(lbs: number) {
-    const self: BodyMeasurement = this
-    self.setAttribute('grams', lbsToGrams(lbs))
+  public set lbs(lbs: DreamColumn<BodyMeasurement, 'grams'>) {
+    this.setAttribute('grams', lbs === null ? null : lbsToGrams(lbs))
   }
 
-  @deco.Virtual('number')
-  public get kilograms() {
-    const self: BodyMeasurement = this
-    return gramsToKilograms(self.getAttribute('grams') ?? 0)
+  @deco.Virtual(['number', 'null'])
+  public get kilograms(): DreamColumn<BodyMeasurement, 'grams'> {
+    const grams = this.getAttribute('grams')
+    return grams === null ? null : gramsToKilograms(grams)
   }
 
-  public set kilograms(kg: number) {
-    const self: BodyMeasurement = this
-    self.setAttribute('grams', kilogramsToGrams(kg))
+  public set kilograms(kg: DreamColumn<BodyMeasurement, 'grams'>) {
+    this.setAttribute('grams', kg === null ? null : kilogramsToGrams(kg))
   }
 }
 ```

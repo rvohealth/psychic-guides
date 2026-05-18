@@ -94,3 +94,30 @@ There are many failable lookup methods within dream, and taking advantage of the
 ## validation failures
 
 Setting up [validations](/docs/models/validations/overview) on your models will automatically cause 422 errors to be thrown if any of the validations fails.
+
+## try/catch in controllers
+
+Because Psychic converts common errors to appropriate HTTP responses automatically, adding `try/catch` to controller actions is usually wrong and actively harmful:
+
+- If the caller is an HTTP handler, catching the error causes the user to receive a `200` instead of the correct error status.
+- An unhandled exception with a stack trace is far more useful for diagnosis than a program that silently swallows the error and continues.
+
+**Only catch a specific, expected error — and re-throw everything else.** Never wrap large blocks of controller code in a catch-all `try/catch`. Logging the error and swallowing it is not equivalent to letting it propagate: the log is for humans reading after the fact; the HTTP client still gets a wrong status code.
+
+```ts
+// BAD — swallows all errors, user gets 200 on failure
+public async show() {
+  try {
+    const place = await this.place()
+    this.ok(place)
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+// GOOD — let Psychic convert the RecordNotFound to a 404 automatically
+public async show() {
+  const place = await this.place()
+  this.ok(place)
+}
+```

@@ -52,6 +52,12 @@ Use the built-in CLI command for generating migrations to easily get up and runn
   - `belongs_to`: adds a foreign key to migration
     - Include the fully qualified model name, e.g., if the Coach model is in `src/app/models/Health/Coach`:
       `Health/Coach:belongs_to`
+    - **Aliased FK shorthand** — append `@alias` to generate a foreign key with a custom column name. This is the canonical pattern for `_by` columns (e.g. `canceled_by_id`) and for multiple foreign keys to the same model:
+      `InternalUser@canceled_by:belongs_to:optional`
+      produces a `canceled_by_id` column, a `canceledById` model property, and a `canceledBy` association — all from one token. Examples:
+      - `User@created_by:belongs_to` — `created_by_id` FK, `createdBy` association
+      - `Message@last_inbound:belongs_to:optional` — `last_inbound_id` FK, `lastInbound` association
+      - `Message@last_outbound:belongs_to:optional` — `last_outbound_id` FK, `lastOutbound` association
 
 ### Options
 
