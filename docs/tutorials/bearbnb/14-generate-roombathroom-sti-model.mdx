@@ -46,15 +46,17 @@ index 0000000..25a6823
 +})
 diff --git a/api/src/app/models/Room/Bathroom.ts b/api/src/app/models/Room/Bathroom.ts
 new file mode 100644
-index 0000000..70f5f61
+index 0000000..ae1bc18
 --- /dev/null
 +++ b/api/src/app/models/Room/Bathroom.ts
-@@ -0,0 +1,17 @@
-+import { Decorators, STI } from '@rvoh/dream'
+@@ -0,0 +1,19 @@
++import { STI } from '@rvoh/dream'
 +import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 +import Room from '@models/Room.js'
 +
-+const deco = new Decorators<typeof Bathroom>()
++// Uncomment when adding decorators (@deco.BelongsTo, @deco.Validates, etc.):
++// import { Decorators } from '@rvoh/dream'
++// const deco = new Decorators<typeof Bathroom>()
 +
 +@STI(Room)
 +export default class Bathroom extends Room {
@@ -82,11 +84,11 @@ index 0000000..a80452b
 +export const RoomBathroomSerializer = (bathroom: Bathroom) =>
 +  RoomSerializer(Bathroom, bathroom)
 +    .attribute('bathOrShowerStyle')
-diff --git a/api/src/db/migrations/1773153040118-create-room-bathroom.ts b/api/src/db/migrations/1773153040118-create-room-bathroom.ts
+diff --git a/api/src/db/migrations/1779136762080-create-room-bathroom.ts b/api/src/db/migrations/1779136762080-create-room-bathroom.ts
 new file mode 100644
 index 0000000..3c845b2
 --- /dev/null
-+++ b/api/src/db/migrations/1773153040118-create-room-bathroom.ts
++++ b/api/src/db/migrations/1779136762080-create-room-bathroom.ts
 @@ -0,0 +1,37 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -127,7 +129,7 @@ index 0000000..3c845b2
 +}
 \ No newline at end of file
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index f608642..011167c 100644
+index 0aafbae..0b375d2 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -343,7 +343,7 @@
@@ -139,41 +141,7 @@ index f608642..011167c 100644
                        }
                      }
                    }
-@@ -386,20 +386,23 @@
-               "schema": {
-                 "type": "object",
-                 "properties": {
--                  "position": {
-+                  "bathOrShowerStyle": {
-                     "type": [
--                      "integer",
-+                      "string",
-                       "null"
-+                    ],
-+                    "enum": [
-+                      "bath",
-+                      "bath_and_shower",
-+                      "none",
-+                      "shower",
-+                      null
-                     ]
-                   },
--                  "type": {
--                    "type": "string",
--                    "enum": [
--                      "Bathroom",
--                      "Bedroom",
--                      "Den",
--                      "Kitchen",
--                      "LivingRoom"
-+                  "position": {
-+                    "type": [
-+                      "integer",
-+                      "null"
-                     ]
-                   }
-                 }
-@@ -412,7 +415,7 @@
+@@ -402,7 +402,7 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -182,7 +150,7 @@ index f608642..011167c 100644
                  }
                }
              },
-@@ -471,7 +474,7 @@
+@@ -461,7 +461,7 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -191,51 +159,15 @@ index f608642..011167c 100644
                  }
                }
              },
-@@ -511,20 +514,23 @@
-               "schema": {
-                 "type": "object",
-                 "properties": {
--                  "position": {
-+                  "bathOrShowerStyle": {
-                     "type": [
--                      "integer",
-+                      "string",
-                       "null"
-+                    ],
-+                    "enum": [
-+                      "bath",
-+                      "bath_and_shower",
-+                      "none",
-+                      "shower",
-+                      null
-                     ]
-                   },
--                  "type": {
--                    "type": "string",
--                    "enum": [
--                      "Bathroom",
--                      "Bedroom",
--                      "Den",
--                      "Kitchen",
--                      "LivingRoom"
-+                  "position": {
-+                    "type": [
-+                      "integer",
-+                      "null"
-                     ]
-                   }
-                 }
-@@ -701,16 +707,24 @@
+@@ -671,14 +671,22 @@
            }
          }
        },
 -      "Room": {
 +      "RoomBathroom": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 +          "bathOrShowerStyle",
-           "deletedAt",
            "id",
            "position",
            "type"
@@ -248,10 +180,10 @@ index f608642..011167c 100644
 +            ],
 +            "description": "The following values will be allowed:\n  bath,\n  bath_and_shower,\n  none,\n  shower"
 +          },
-           "deletedAt": {
-             "type": [
-               "string",
-@@ -729,11 +743,11 @@
+           "id": {
+             "type": "string"
+           },
+@@ -690,11 +698,11 @@
            },
            "type": {
              "type": "string",
@@ -263,10 +195,10 @@ index f608642..011167c 100644
 -      "RoomSummary": {
 +      "RoomBathroomSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
+           "id"
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index fe1bfc1..c741d69 100644
+index 20583ce..b4e6930 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -343,7 +343,7 @@
@@ -278,41 +210,7 @@ index fe1bfc1..c741d69 100644
                        }
                      }
                    }
-@@ -386,20 +386,23 @@
-               "schema": {
-                 "type": "object",
-                 "properties": {
--                  "position": {
-+                  "bathOrShowerStyle": {
-                     "type": [
--                      "integer",
-+                      "string",
-                       "null"
-+                    ],
-+                    "enum": [
-+                      "bath",
-+                      "bath_and_shower",
-+                      "none",
-+                      "shower",
-+                      null
-                     ]
-                   },
--                  "type": {
--                    "type": "string",
--                    "enum": [
--                      "Bathroom",
--                      "Bedroom",
--                      "Den",
--                      "Kitchen",
--                      "LivingRoom"
-+                  "position": {
-+                    "type": [
-+                      "integer",
-+                      "null"
-                     ]
-                   }
-                 }
-@@ -412,7 +415,7 @@
+@@ -402,7 +402,7 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -321,7 +219,7 @@ index fe1bfc1..c741d69 100644
                  }
                }
              },
-@@ -471,7 +474,7 @@
+@@ -461,7 +461,7 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -330,51 +228,15 @@ index fe1bfc1..c741d69 100644
                  }
                }
              },
-@@ -511,20 +514,23 @@
-               "schema": {
-                 "type": "object",
-                 "properties": {
--                  "position": {
-+                  "bathOrShowerStyle": {
-                     "type": [
--                      "integer",
-+                      "string",
-                       "null"
-+                    ],
-+                    "enum": [
-+                      "bath",
-+                      "bath_and_shower",
-+                      "none",
-+                      "shower",
-+                      null
-                     ]
-                   },
--                  "type": {
--                    "type": "string",
--                    "enum": [
--                      "Bathroom",
--                      "Bedroom",
--                      "Den",
--                      "Kitchen",
--                      "LivingRoom"
-+                  "position": {
-+                    "type": [
-+                      "integer",
-+                      "null"
-                     ]
-                   }
-                 }
-@@ -709,16 +715,30 @@
+@@ -679,14 +679,28 @@
            }
          }
        },
 -      "Room": {
 +      "RoomBathroom": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 +          "bathOrShowerStyle",
-           "deletedAt",
            "id",
            "position",
            "type"
@@ -393,10 +255,10 @@ index fe1bfc1..c741d69 100644
 +              null
 +            ]
 +          },
-           "deletedAt": {
-             "type": [
-               "string",
-@@ -738,12 +758,12 @@
+           "id": {
+             "type": "string"
+           },
+@@ -699,12 +713,12 @@
            "type": {
              "type": "string",
              "enum": [
@@ -409,10 +271,10 @@ index fe1bfc1..c741d69 100644
 -      "RoomSummary": {
 +      "RoomBathroomSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
+           "id"
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index f18af13..ca33fa0 100644
+index 16ea710..6c559c8 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -343,7 +343,7 @@
@@ -424,41 +286,7 @@ index f18af13..ca33fa0 100644
                        }
                      }
                    }
-@@ -386,20 +386,23 @@
-               "schema": {
-                 "type": "object",
-                 "properties": {
--                  "position": {
-+                  "bathOrShowerStyle": {
-                     "type": [
--                      "integer",
-+                      "string",
-                       "null"
-+                    ],
-+                    "enum": [
-+                      "bath",
-+                      "bath_and_shower",
-+                      "none",
-+                      "shower",
-+                      null
-                     ]
-                   },
--                  "type": {
--                    "type": "string",
--                    "enum": [
--                      "Bathroom",
--                      "Bedroom",
--                      "Den",
--                      "Kitchen",
--                      "LivingRoom"
-+                  "position": {
-+                    "type": [
-+                      "integer",
-+                      "null"
-                     ]
-                   }
-                 }
-@@ -412,7 +415,7 @@
+@@ -402,7 +402,7 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -467,7 +295,7 @@ index f18af13..ca33fa0 100644
                  }
                }
              },
-@@ -471,7 +474,7 @@
+@@ -461,7 +461,7 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -476,51 +304,15 @@ index f18af13..ca33fa0 100644
                  }
                }
              },
-@@ -511,20 +514,23 @@
-               "schema": {
-                 "type": "object",
-                 "properties": {
--                  "position": {
-+                  "bathOrShowerStyle": {
-                     "type": [
--                      "integer",
-+                      "string",
-                       "null"
-+                    ],
-+                    "enum": [
-+                      "bath",
-+                      "bath_and_shower",
-+                      "none",
-+                      "shower",
-+                      null
-                     ]
-                   },
--                  "type": {
--                    "type": "string",
--                    "enum": [
--                      "Bathroom",
--                      "Bedroom",
--                      "Den",
--                      "Kitchen",
--                      "LivingRoom"
-+                  "position": {
-+                    "type": [
-+                      "integer",
-+                      "null"
-                     ]
-                   }
-                 }
-@@ -709,16 +715,30 @@
+@@ -679,14 +679,28 @@
            }
          }
        },
 -      "Room": {
 +      "RoomBathroom": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 +          "bathOrShowerStyle",
-           "deletedAt",
            "id",
            "position",
            "type"
@@ -539,10 +331,10 @@ index f18af13..ca33fa0 100644
 +              null
 +            ]
 +          },
-           "deletedAt": {
-             "type": [
-               "string",
-@@ -738,12 +758,12 @@
+           "id": {
+             "type": "string"
+           },
+@@ -699,12 +713,12 @@
            "type": {
              "type": "string",
              "enum": [
@@ -555,10 +347,10 @@ index f18af13..ca33fa0 100644
 -      "RoomSummary": {
 +      "RoomBathroomSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
+           "id"
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 4586d5f..f2fd5c5 100644
+index 91dba44..e6aa3bd 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
 @@ -68,6 +68,19 @@ import {
@@ -581,7 +373,7 @@ index 4586d5f..f2fd5c5 100644
  export type Generated<T> =
    T extends ColumnType<infer S, infer I, infer U>
      ? ColumnType<S, I | undefined, U>
-@@ -143,6 +156,7 @@ export interface Places {
+@@ -145,6 +158,7 @@ export interface Places {
  }
  
  export interface Rooms {
@@ -603,7 +395,7 @@ index a55e48c..b4348f8 100644
      'RoomSummarySerializer',
    ],
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 4961f68..3121dfe 100644
+index 4332741..e450fe4 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
 @@ -63,8 +63,10 @@ import {
@@ -617,12 +409,12 @@ index 4961f68..3121dfe 100644
    PlaceStylesEnumValues,
    RoomTypesEnumValues,
  } from './db.js'
-@@ -401,10 +403,11 @@ export const schema = {
+@@ -419,10 +421,11 @@ export const schema = {
    rooms: {
      serializerKeys: ['default', 'summary'],
      scopes: {
--      default: [],
-+      default: ['dream:STI'],
+-      default: ['dream:SoftDelete'],
++      default: ['dream:STI', 'dream:SoftDelete'],
        named: [],
      },
      nonJsonColumnNames: [
@@ -630,7 +422,7 @@ index 4961f68..3121dfe 100644
        'createdAt',
        'deletedAt',
        'id',
-@@ -414,6 +417,15 @@ export const schema = {
+@@ -432,6 +435,15 @@ export const schema = {
        'updatedAt',
      ],
      columns: {
@@ -646,16 +438,16 @@ index 4961f68..3121dfe 100644
        createdAt: {
          coercedType: {} as DateTime,
          enumType: null,
-@@ -577,7 +589,7 @@ export const schema = {
+@@ -605,7 +617,7 @@ export const schema = {
  
  export const connectionTypeConfig = {
    passthroughColumns: [],
--  allDefaultScopeNames: [],
-+  allDefaultScopeNames: ['dream:STI'],
+-  allDefaultScopeNames: ['dream:SoftDelete'],
++  allDefaultScopeNames: ['dream:STI', 'dream:SoftDelete'],
    globalNames: {
      models: {
        Guest: 'guests',
-@@ -585,6 +597,7 @@ export const connectionTypeConfig = {
+@@ -613,6 +625,7 @@ export const connectionTypeConfig = {
        HostPlace: 'host_places',
        Place: 'places',
        Room: 'rooms',
@@ -664,7 +456,7 @@ index 4961f68..3121dfe 100644
      },
    },
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index 2208354..603ae3d 100644
+index 0e726f4..8f52785 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
 @@ -225,7 +225,7 @@ export interface paths {
@@ -676,19 +468,7 @@ index 2208354..603ae3d 100644
                          };
                      };
                  };
-@@ -255,9 +255,9 @@ export interface paths {
-             requestBody?: {
-                 content: {
-                     "application/json": {
-+                        /** @enum {string|null} */
-+                        bathOrShowerStyle?: "bath" | "bath_and_shower" | "none" | "shower" | null;
-                         position?: number | null;
--                        /** @enum {string} */
--                        type?: "Bathroom" | "Bedroom" | "Den" | "Kitchen" | "LivingRoom";
-                     };
-                 };
-             };
-@@ -268,7 +268,7 @@ export interface paths {
+@@ -266,7 +266,7 @@ export interface paths {
                          [name: string]: unknown;
                      };
                      content: {
@@ -697,7 +477,7 @@ index 2208354..603ae3d 100644
                      };
                  };
                  400: components["responses"]["BadRequest"];
-@@ -315,7 +315,7 @@ export interface paths {
+@@ -313,7 +313,7 @@ export interface paths {
                          [name: string]: unknown;
                      };
                      content: {
@@ -706,19 +486,7 @@ index 2208354..603ae3d 100644
                      };
                  };
                  400: components["responses"]["BadRequest"];
-@@ -369,9 +369,9 @@ export interface paths {
-             requestBody?: {
-                 content: {
-                     "application/json": {
-+                        /** @enum {string|null} */
-+                        bathOrShowerStyle?: "bath" | "bath_and_shower" | "none" | "shower" | null;
-                         position?: number | null;
--                        /** @enum {string} */
--                        type?: "Bathroom" | "Bedroom" | "Den" | "Kitchen" | "LivingRoom";
-                     };
-                 };
-             };
-@@ -419,15 +419,17 @@ export interface components {
+@@ -413,13 +413,15 @@ export interface components {
              id: string;
              name: string;
          };
@@ -726,8 +494,6 @@ index 2208354..603ae3d 100644
 +        RoomBathroom: {
 +            /** @enum {string|null} */
 +            bathOrShowerStyle: "bath" | "bath_and_shower" | "none" | "shower" | null;
-             /** Format: date-time */
-             deletedAt: string | null;
              id: string;
              position: number | null;
              /** @enum {string} */

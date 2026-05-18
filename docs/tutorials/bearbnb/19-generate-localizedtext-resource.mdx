@@ -11,10 +11,11 @@ id: bearbnb-19-generate-localizedtext-resource
 Generate LocalizedText resource
 
 ```console
-pnpm psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText localizable_type:enum:localized_types:Host,Place,Room localizable_id:uuid locale:enum:locales:en-US,es-ES title:string markdown:text deleted_at:datetime:optional
+pnpm psy g:resource --help
+pnpm psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText localizable_type:enum:localized_types:Host,Place,Room localizable_id:uuid locale:enum:locales:en-US,es-ES title:string markdown:text
 ```
 
-Leverages `--only=update,destroy` to only generate the show, update, and destroy actions. Each polymorphically associated model's controller will have an action for creating an associated LocalizedText model, and Host-facing serializer can display its LocalizedTexts, but the actions for maintaining all LocalizedText will be centralized in the LocalizedText controller.
+Leverages `--only=update,destroy` to only generate the update and destroy actions. Each polymorphically associated model's controller will have an action for creating an associated LocalizedText model, and Host-facing serializers can display LocalizedTexts, but the actions for maintaining all LocalizedText will be centralized in the LocalizedText controller.
 ``````
 
 ## Changes
@@ -145,15 +146,18 @@ index 0000000..132b046
 +})
 diff --git a/api/src/app/controllers/V1/Host/LocalizedTextsController.ts b/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
 new file mode 100644
-index 0000000..12f4ab2
+index 0000000..af12ce7
 --- /dev/null
 +++ b/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
-@@ -0,0 +1,37 @@
+@@ -0,0 +1,43 @@
 +import { OpenAPI } from '@rvoh/psychic'
++import { DreamParamSafeColumnNames } from '@rvoh/dream/types'
 +import V1HostBaseController from './BaseController.js'
 +import LocalizedText from '@models/LocalizedText.js'
 +
 +const openApiTags = ['localized-texts']
++
++const paramSafeColumns: DreamParamSafeColumnNames<LocalizedText>[] = ['locale', 'title', 'markdown']
 +
 +export default class V1HostLocalizedTextsController extends V1HostBaseController {
 +  @OpenAPI(LocalizedText, {
@@ -161,12 +165,13 @@ index 0000000..12f4ab2
 +    tags: openApiTags,
 +    description: 'Update a LocalizedText',
 +    fastJsonStringify: true,
++    requestBody: {
++      only: paramSafeColumns,
++    },
 +  })
 +  public async update() {
 +    // const localizedText = await this.localizedText()
-+    // await localizedText.update(this.extractParams(LocalizedText,
-+    //   ['locale', 'title', 'markdown'],
-+    // ))
++    // await localizedText.update(this.extractParams(LocalizedText, paramSafeColumns))
 +    // this.noContent()
 +  }
 +
@@ -190,16 +195,19 @@ index 0000000..12f4ab2
 +}
 diff --git a/api/src/app/models/LocalizedText.ts b/api/src/app/models/LocalizedText.ts
 new file mode 100644
-index 0000000..d73684f
+index 0000000..e0d99f2
 --- /dev/null
 +++ b/api/src/app/models/LocalizedText.ts
-@@ -0,0 +1,28 @@
-+import { Decorators } from '@rvoh/dream'
+@@ -0,0 +1,31 @@
++import { SoftDelete } from '@rvoh/dream'
 +import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 +import ApplicationModel from '@models/ApplicationModel.js'
 +
-+const deco = new Decorators<typeof LocalizedText>()
++// Uncomment when adding decorators (@deco.BelongsTo, @deco.Validates, etc.):
++// import { Decorators } from '@rvoh/dream'
++// const deco = new Decorators<typeof LocalizedText>()
 +
++@SoftDelete()
 +export default class LocalizedText extends ApplicationModel {
 +  public override get table() {
 +    return 'localized_texts' as const
@@ -218,16 +226,16 @@ index 0000000..d73684f
 +  public locale: DreamColumn<LocalizedText, 'locale'>
 +  public title: DreamColumn<LocalizedText, 'title'>
 +  public markdown: DreamColumn<LocalizedText, 'markdown'>
-+  public deletedAt: DreamColumn<LocalizedText, 'deletedAt'>
 +  public createdAt: DreamColumn<LocalizedText, 'createdAt'>
 +  public updatedAt: DreamColumn<LocalizedText, 'updatedAt'>
++  public deletedAt: DreamColumn<LocalizedText, 'deletedAt'>
 +}
 diff --git a/api/src/app/serializers/LocalizedTextSerializer.ts b/api/src/app/serializers/LocalizedTextSerializer.ts
 new file mode 100644
-index 0000000..1351f86
+index 0000000..f8969ab
 --- /dev/null
 +++ b/api/src/app/serializers/LocalizedTextSerializer.ts
-@@ -0,0 +1,15 @@
+@@ -0,0 +1,14 @@
 +import { DreamSerializer } from '@rvoh/dream'
 +import LocalizedText from '@models/LocalizedText.js'
 +
@@ -242,9 +250,8 @@ index 0000000..1351f86
 +    .attribute('locale')
 +    .attribute('title')
 +    .attribute('markdown')
-+    .attribute('deletedAt')
 diff --git a/api/src/conf/routes.ts b/api/src/conf/routes.ts
-index d45c7d4..054e588 100644
+index 0c5dc6a..ff6749b 100644
 --- a/api/src/conf/routes.ts
 +++ b/api/src/conf/routes.ts
 @@ -5,6 +5,8 @@ import { PsychicRouter } from '@rvoh/psychic'
@@ -256,11 +263,11 @@ index d45c7d4..054e588 100644
        r.resources('places', r => {
          r.resources('rooms')
  
-diff --git a/api/src/db/migrations/1773154136747-create-localized-text.ts b/api/src/db/migrations/1773154136747-create-localized-text.ts
+diff --git a/api/src/db/migrations/1779137085545-create-localized-text.ts b/api/src/db/migrations/1779137085545-create-localized-text.ts
 new file mode 100644
-index 0000000..58549f0
+index 0000000..978878c
 --- /dev/null
-+++ b/api/src/db/migrations/1773154136747-create-localized-text.ts
++++ b/api/src/db/migrations/1779137085545-create-localized-text.ts
 @@ -0,0 +1,46 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -295,9 +302,9 @@ index 0000000..58549f0
 +    .addColumn('locale', sql`locales_enum`, col => col.notNull())
 +    .addColumn('title', 'varchar(255)', col => col.notNull())
 +    .addColumn('markdown', 'text', col => col.notNull())
-+    .addColumn('deleted_at', 'timestamp')
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
++    .addColumn('deleted_at', 'timestamp')
 +    .execute()
 +}
 +

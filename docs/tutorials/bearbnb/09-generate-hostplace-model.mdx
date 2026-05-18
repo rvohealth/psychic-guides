@@ -11,7 +11,8 @@ id: bearbnb-09-generate-hostplace-model
 Generate HostPlace model
 
 ```console
-pnpm psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to deleted_at:datetime:optional
+pnpm psy g:model --help
+pnpm psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to
 ```
 ``````
 
@@ -47,11 +48,11 @@ index 0000000..0c03533
 +})
 diff --git a/api/src/app/models/HostPlace.ts b/api/src/app/models/HostPlace.ts
 new file mode 100644
-index 0000000..baf74e2
+index 0000000..6fe540e
 --- /dev/null
 +++ b/api/src/app/models/HostPlace.ts
-@@ -0,0 +1,26 @@
-+import { Decorators } from '@rvoh/dream'
+@@ -0,0 +1,27 @@
++import { Decorators, SoftDelete } from '@rvoh/dream'
 +import { DreamColumn } from '@rvoh/dream/types'
 +import ApplicationModel from '@models/ApplicationModel.js'
 +import Host from '@models/Host.js'
@@ -59,15 +60,16 @@ index 0000000..baf74e2
 +
 +const deco = new Decorators<typeof HostPlace>()
 +
++@SoftDelete()
 +export default class HostPlace extends ApplicationModel {
 +  public override get table() {
 +    return 'host_places' as const
 +  }
 +
 +  public id: DreamColumn<HostPlace, 'id'>
-+  public deletedAt: DreamColumn<HostPlace, 'deletedAt'>
 +  public createdAt: DreamColumn<HostPlace, 'createdAt'>
 +  public updatedAt: DreamColumn<HostPlace, 'updatedAt'>
++  public deletedAt: DreamColumn<HostPlace, 'deletedAt'>
 +
 +  @deco.BelongsTo('Host', { on: 'hostId' })
 +  public host: Host
@@ -77,11 +79,11 @@ index 0000000..baf74e2
 +  public place: Place
 +  public placeId: DreamColumn<HostPlace, 'placeId'>
 +}
-diff --git a/api/src/db/migrations/1773152412417-create-host-place.ts b/api/src/db/migrations/1773152412417-create-host-place.ts
+diff --git a/api/src/db/migrations/1779136456787-create-host-place.ts b/api/src/db/migrations/1779136456787-create-host-place.ts
 new file mode 100644
-index 0000000..833a587
+index 0000000..51e2e52
 --- /dev/null
-+++ b/api/src/db/migrations/1773152412417-create-host-place.ts
++++ b/api/src/db/migrations/1779136456787-create-host-place.ts
 @@ -0,0 +1,37 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -96,9 +98,9 @@ index 0000000..833a587
 +    )
 +    .addColumn('host_id', 'uuid', col => col.references('hosts.id').onDelete('restrict').notNull())
 +    .addColumn('place_id', 'uuid', col => col.references('places.id').onDelete('restrict').notNull())
-+    .addColumn('deleted_at', 'timestamp')
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
++    .addColumn('deleted_at', 'timestamp')
 +    .execute()
 +
 +  await db.schema

@@ -11,7 +11,8 @@ id: bearbnb-15-generate-roombedroom-sti-model
 Generate Room/Bedroom STI model
 
 ```console
-pnpm psy g:sti-child --model-name=Bedroom Room/Bedroom extends Room bed_types:enum\[\]:bed_types:twin,bunk,queen,king,cot,sofabed
+pnpm psy g:sti-child --help
+pnpm psy g:sti-child --model-name=Bedroom Room/Bedroom extends Room 'bed_types:enum[]:bed_types:twin,bunk,queen,king,cot,sofabed'
 pnpm psy db:migrate
 ```
 ``````
@@ -45,15 +46,17 @@ index 0000000..89fb496
 +})
 diff --git a/api/src/app/models/Room/Bedroom.ts b/api/src/app/models/Room/Bedroom.ts
 new file mode 100644
-index 0000000..b7eabca
+index 0000000..ed0eeb4
 --- /dev/null
 +++ b/api/src/app/models/Room/Bedroom.ts
-@@ -0,0 +1,17 @@
-+import { Decorators, STI } from '@rvoh/dream'
+@@ -0,0 +1,19 @@
++import { STI } from '@rvoh/dream'
 +import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 +import Room from '@models/Room.js'
 +
-+const deco = new Decorators<typeof Bedroom>()
++// Uncomment when adding decorators (@deco.BelongsTo, @deco.Validates, etc.):
++// import { Decorators } from '@rvoh/dream'
++// const deco = new Decorators<typeof Bedroom>()
 +
 +@STI(Room)
 +export default class Bedroom extends Room {
@@ -81,11 +84,11 @@ index 0000000..f34b5b4
 +export const RoomBedroomSerializer = (bedroom: Bedroom) =>
 +  RoomSerializer(Bedroom, bedroom)
 +    .attribute('bedTypes')
-diff --git a/api/src/db/migrations/1773153070336-create-room-bedroom.ts b/api/src/db/migrations/1773153070336-create-room-bedroom.ts
+diff --git a/api/src/db/migrations/1779136808507-create-room-bedroom.ts b/api/src/db/migrations/1779136808507-create-room-bedroom.ts
 new file mode 100644
 index 0000000..55d5d4c
 --- /dev/null
-+++ b/api/src/db/migrations/1773153070336-create-room-bedroom.ts
++++ b/api/src/db/migrations/1779136808507-create-room-bedroom.ts
 @@ -0,0 +1,31 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -120,7 +123,7 @@ index 0000000..55d5d4c
 +}
 \ No newline at end of file
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 011167c..8cf4e91 100644
+index 0b375d2..90823b0 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -343,7 +343,14 @@
@@ -139,28 +142,7 @@ index 011167c..8cf4e91 100644
                        }
                      }
                    }
-@@ -399,6 +406,20 @@
-                       null
-                     ]
-                   },
-+                  "bedTypes": {
-+                    "type": "array",
-+                    "items": {
-+                      "type": "string",
-+                      "enum": [
-+                        "bunk",
-+                        "cot",
-+                        "king",
-+                        "queen",
-+                        "sofabed",
-+                        "twin"
-+                      ]
-+                    }
-+                  },
-                   "position": {
-                     "type": [
-                       "integer",
-@@ -415,7 +436,14 @@
+@@ -402,7 +409,14 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -176,7 +158,7 @@ index 011167c..8cf4e91 100644
                  }
                }
              },
-@@ -474,7 +502,14 @@
+@@ -461,7 +475,14 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -192,37 +174,14 @@ index 011167c..8cf4e91 100644
                  }
                }
              },
-@@ -527,6 +562,20 @@
-                       null
-                     ]
-                   },
-+                  "bedTypes": {
-+                    "type": "array",
-+                    "items": {
-+                      "type": "string",
-+                      "enum": [
-+                        "bunk",
-+                        "cot",
-+                        "king",
-+                        "queen",
-+                        "sofabed",
-+                        "twin"
-+                      ]
-+                    }
-+                  },
-                   "position": {
-                     "type": [
-                       "integer",
-@@ -759,6 +808,58 @@
+@@ -713,6 +734,48 @@
            }
          }
        },
 +      "RoomBedroom": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "bedTypes",
-+          "deletedAt",
 +          "id",
 +          "position",
 +          "type"
@@ -234,13 +193,6 @@ index 011167c..8cf4e91 100644
 +              "type": "string",
 +              "description": "The following values will be allowed:\n  bunk,\n  cot,\n  king,\n  queen,\n  sofabed,\n  twin"
 +            }
-+          },
-+          "deletedAt": {
-+            "type": [
-+              "string",
-+              "null"
-+            ],
-+            "format": "date-time"
 +          },
 +          "id": {
 +            "type": "string"
@@ -259,7 +211,6 @@ index 011167c..8cf4e91 100644
 +      },
 +      "RoomBedroomSummary": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -273,7 +224,7 @@ index 011167c..8cf4e91 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index c741d69..e5027c7 100644
+index b4e6930..2b7a39c 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -343,7 +343,14 @@
@@ -292,28 +243,7 @@ index c741d69..e5027c7 100644
                        }
                      }
                    }
-@@ -399,6 +406,20 @@
-                       null
-                     ]
-                   },
-+                  "bedTypes": {
-+                    "type": "array",
-+                    "items": {
-+                      "type": "string",
-+                      "enum": [
-+                        "bunk",
-+                        "cot",
-+                        "king",
-+                        "queen",
-+                        "sofabed",
-+                        "twin"
-+                      ]
-+                    }
-+                  },
-                   "position": {
-                     "type": [
-                       "integer",
-@@ -415,7 +436,14 @@
+@@ -402,7 +409,14 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -329,7 +259,7 @@ index c741d69..e5027c7 100644
                  }
                }
              },
-@@ -474,7 +502,14 @@
+@@ -461,7 +475,14 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -345,37 +275,14 @@ index c741d69..e5027c7 100644
                  }
                }
              },
-@@ -527,6 +562,20 @@
-                       null
-                     ]
-                   },
-+                  "bedTypes": {
-+                    "type": "array",
-+                    "items": {
-+                      "type": "string",
-+                      "enum": [
-+                        "bunk",
-+                        "cot",
-+                        "king",
-+                        "queen",
-+                        "sofabed",
-+                        "twin"
-+                      ]
-+                    }
-+                  },
-                   "position": {
-                     "type": [
-                       "integer",
-@@ -775,6 +824,67 @@
+@@ -729,6 +750,57 @@
            }
          }
        },
 +      "RoomBedroom": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "bedTypes",
-+          "deletedAt",
 +          "id",
 +          "position",
 +          "type"
@@ -394,13 +301,6 @@ index c741d69..e5027c7 100644
 +                "twin"
 +              ]
 +            }
-+          },
-+          "deletedAt": {
-+            "type": [
-+              "string",
-+              "null"
-+            ],
-+            "format": "date-time"
 +          },
 +          "id": {
 +            "type": "string"
@@ -421,7 +321,6 @@ index c741d69..e5027c7 100644
 +      },
 +      "RoomBedroomSummary": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -435,7 +334,7 @@ index c741d69..e5027c7 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index ca33fa0..73bcb9c 100644
+index 6c559c8..12d62f8 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -343,7 +343,14 @@
@@ -454,28 +353,7 @@ index ca33fa0..73bcb9c 100644
                        }
                      }
                    }
-@@ -399,6 +406,20 @@
-                       null
-                     ]
-                   },
-+                  "bedTypes": {
-+                    "type": "array",
-+                    "items": {
-+                      "type": "string",
-+                      "enum": [
-+                        "bunk",
-+                        "cot",
-+                        "king",
-+                        "queen",
-+                        "sofabed",
-+                        "twin"
-+                      ]
-+                    }
-+                  },
-                   "position": {
-                     "type": [
-                       "integer",
-@@ -415,7 +436,14 @@
+@@ -402,7 +409,14 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -491,7 +369,7 @@ index ca33fa0..73bcb9c 100644
                  }
                }
              },
-@@ -474,7 +502,14 @@
+@@ -461,7 +475,14 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -507,37 +385,14 @@ index ca33fa0..73bcb9c 100644
                  }
                }
              },
-@@ -527,6 +562,20 @@
-                       null
-                     ]
-                   },
-+                  "bedTypes": {
-+                    "type": "array",
-+                    "items": {
-+                      "type": "string",
-+                      "enum": [
-+                        "bunk",
-+                        "cot",
-+                        "king",
-+                        "queen",
-+                        "sofabed",
-+                        "twin"
-+                      ]
-+                    }
-+                  },
-                   "position": {
-                     "type": [
-                       "integer",
-@@ -775,6 +824,67 @@
+@@ -729,6 +750,57 @@
            }
          }
        },
 +      "RoomBedroom": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "bedTypes",
-+          "deletedAt",
 +          "id",
 +          "position",
 +          "type"
@@ -556,13 +411,6 @@ index ca33fa0..73bcb9c 100644
 +                "twin"
 +              ]
 +            }
-+          },
-+          "deletedAt": {
-+            "type": [
-+              "string",
-+              "null"
-+            ],
-+            "format": "date-time"
 +          },
 +          "id": {
 +            "type": "string"
@@ -583,7 +431,6 @@ index ca33fa0..73bcb9c 100644
 +      },
 +      "RoomBedroomSummary": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -597,7 +444,7 @@ index ca33fa0..73bcb9c 100644
          "type": "object",
          "required": [
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index f2fd5c5..822576f 100644
+index e6aa3bd..03deb02 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
 @@ -68,6 +68,14 @@ import {
@@ -639,7 +486,7 @@ index f2fd5c5..822576f 100644
  export type Generated<T> =
    T extends ColumnType<infer S, infer I, infer U>
      ? ColumnType<S, I | undefined, U>
-@@ -157,6 +182,7 @@ export interface Places {
+@@ -159,6 +184,7 @@ export interface Places {
  
  export interface Rooms {
    bathOrShowerStyle: BathOrShowerStylesEnum | null
@@ -661,7 +508,7 @@ index b4348f8..6109591 100644
      'RoomSummarySerializer',
    ],
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 3121dfe..8203e1f 100644
+index e450fe4..47fd445 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
 @@ -64,9 +64,11 @@ import {
@@ -676,7 +523,7 @@ index 3121dfe..8203e1f 100644
    PlaceStylesEnumValues,
    RoomTypesEnumValues,
  } from './db.js'
-@@ -408,6 +410,7 @@ export const schema = {
+@@ -426,6 +428,7 @@ export const schema = {
      },
      nonJsonColumnNames: [
        'bathOrShowerStyle',
@@ -684,7 +531,7 @@ index 3121dfe..8203e1f 100644
        'createdAt',
        'deletedAt',
        'id',
-@@ -426,6 +429,15 @@ export const schema = {
+@@ -444,6 +447,15 @@ export const schema = {
          allowNull: true,
          isArray: false,
        },
@@ -700,7 +547,7 @@ index 3121dfe..8203e1f 100644
        createdAt: {
          coercedType: {} as DateTime,
          enumType: null,
-@@ -598,6 +610,7 @@ export const connectionTypeConfig = {
+@@ -626,6 +638,7 @@ export const connectionTypeConfig = {
        Place: 'places',
        Room: 'rooms',
        'Room/Bathroom': 'rooms',
@@ -709,7 +556,7 @@ index 3121dfe..8203e1f 100644
      },
    },
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index 603ae3d..60e921d 100644
+index 8f52785..6a81ad9 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
 @@ -225,7 +225,7 @@ export interface paths {
@@ -721,15 +568,7 @@ index 603ae3d..60e921d 100644
                          };
                      };
                  };
-@@ -257,6 +257,7 @@ export interface paths {
-                     "application/json": {
-                         /** @enum {string|null} */
-                         bathOrShowerStyle?: "bath" | "bath_and_shower" | "none" | "shower" | null;
-+                        bedTypes?: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
-                         position?: number | null;
-                     };
-                 };
-@@ -268,7 +269,7 @@ export interface paths {
+@@ -266,7 +266,7 @@ export interface paths {
                          [name: string]: unknown;
                      };
                      content: {
@@ -738,7 +577,7 @@ index 603ae3d..60e921d 100644
                      };
                  };
                  400: components["responses"]["BadRequest"];
-@@ -315,7 +316,7 @@ export interface paths {
+@@ -313,7 +313,7 @@ export interface paths {
                          [name: string]: unknown;
                      };
                      content: {
@@ -747,22 +586,12 @@ index 603ae3d..60e921d 100644
                      };
                  };
                  400: components["responses"]["BadRequest"];
-@@ -371,6 +372,7 @@ export interface paths {
-                     "application/json": {
-                         /** @enum {string|null} */
-                         bathOrShowerStyle?: "bath" | "bath_and_shower" | "none" | "shower" | null;
-+                        bedTypes?: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
-                         position?: number | null;
-                     };
-                 };
-@@ -432,6 +434,18 @@ export interface components {
+@@ -424,6 +424,16 @@ export interface components {
          RoomBathroomSummary: {
              id: string;
          };
 +        RoomBedroom: {
 +            bedTypes: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
-+            /** Format: date-time */
-+            deletedAt: string | null;
 +            id: string;
 +            position: number | null;
 +            /** @enum {string} */

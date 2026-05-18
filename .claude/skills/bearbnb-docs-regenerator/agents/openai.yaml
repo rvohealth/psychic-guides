@@ -1,0 +1,3 @@
+display_name: BearBnB Docs Regenerator
+short_description: Regenerate Psychic Guides BearBnB tutorial pages from a BearBnB git history.
+default_prompt: Regenerate the BearBnB tutorial docs from a BearBnB project root.

@@ -9,6 +9,7 @@ id: bearbnb-20-set-up-polymorphic-associations-between-localizedtext-and-hostpla
 
 ``````
 Set up polymorphic associations between LocalizedText and Host/Place/Room
+
 Create a default LocalizedText for each Host/Place/Room
 
 ```console
@@ -16,7 +17,7 @@ pnpm psy db:migrate
 pnpm uspec spec/unit/models
 ```
 
-Also flesh out the LocalizedText controller. Since LocalizedText belongs to different types (Host/Place/Room), restricting the controller to only allow access to owned LocalizedText requires a different strategy. The switch statement used is future proofed so that if LocalizedText is added to another model in the future, access will automatically be restricted until it is explicitly added to the controller. Note that not-found (404) is a design choice that aligns with the not-found response returned when `user.associationQuery('<some-association').findOrFail(this.castParam('id', 'bigint'))` is used to limit access to owned resources; however, forbidden (403) could have been used instead.
+Also flesh out the LocalizedText controller. Since LocalizedText belongs to different types (Host/Place/Room), restricting the controller to only allow access to owned LocalizedText requires a different strategy. The switch statement used is future proofed so that if LocalizedText is added to another model in the future, access will automatically be restricted until it is explicitly added to the controller. Note that not-found (404) is a design choice that aligns with the not-found response returned when associationQuery(...).findOrFail(...) is used to limit access to owned resources; however, forbidden (403) could have been used instead.
 
 ```console
 pnpm uspec spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
@@ -33,13 +34,13 @@ pnpm uspec
 
 ``````
 diff --git a/api/spec/factories/LocalizedTextFactory.ts b/api/spec/factories/LocalizedTextFactory.ts
-index 0df341b..9a2923b 100644
+index 0df341b..163e3ff 100644
 --- a/api/spec/factories/LocalizedTextFactory.ts
 +++ b/api/spec/factories/LocalizedTextFactory.ts
-@@ -1,10 +1,11 @@
--import { UpdateableProperties } from '@rvoh/dream/types'
+@@ -1,10 +1,12 @@
+ import { UpdateableProperties } from '@rvoh/dream/types'
  import LocalizedText from '@models/LocalizedText.js'
-+import { UpdateableProperties } from '@rvoh/dream/types'
++import createPlace from '@spec/factories/PlaceFactory.js'
  
  let counter = 0
  
@@ -50,7 +51,7 @@ index 0df341b..9a2923b 100644
      title: `LocalizedText title ${++counter}`,
      markdown: `LocalizedText markdown ${counter}`,
 diff --git a/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts b/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
-index c550e8f..2dda12a 100644
+index c550e8f..0eecf7a 100644
 --- a/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
 +++ b/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
 @@ -1,6 +1,9 @@
@@ -64,7 +65,7 @@ index c550e8f..2dda12a 100644
  import createUser from '@spec/factories/UserFactory.js'
  import { RequestBody, session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
  
-@@ -13,76 +16,283 @@ describe('V1/Host/LocalizedTextsController', () => {
+@@ -13,72 +16,229 @@ describe('V1/Host/LocalizedTextsController', () => {
      request = await session(user)
    })
  
@@ -77,215 +78,107 @@ index c550e8f..2dda12a 100644
 -      return request.patch('/v1/host/localized-texts/{id}', expectedStatus, {
 -        id: localizedText.id,
 -        data,
-+  context('belonging to a Host', () => {
-+    let localizedText: LocalizedText
-+
-+    beforeEach(async () => {
-+      const host = await createHost({ user })
-+      localizedText = await host.associationQuery('localizedTexts').firstOrFail()
-+    })
-+
-+    describe('PATCH update', () => {
-+      const updateLocalizedText = async <StatusCode extends 204 | 400 | 404>(
-+        localizedText: LocalizedText,
-+        data: RequestBody<'patch', '/v1/host/localized-texts/{id}'>,
-+        expectedStatus: StatusCode,
-+      ) => {
-+        return request.patch('/v1/host/localized-texts/{id}', expectedStatus, {
-+          id: localizedText.id,
-+          data,
-+        })
-+      }
-+
-+      it('updates the LocalizedText', async () => {
-+        await updateLocalizedText(
-+          localizedText,
-+          {
-+            locale: 'es-ES',
-+            title: 'Updated LocalizedText title',
-+            markdown: 'Updated LocalizedText markdown',
-+          },
-+          204,
-+        )
-+
-+        await localizedText.reload()
-+        expect(localizedText.locale).toEqual('es-ES')
-+        expect(localizedText.title).toEqual('Updated LocalizedText title')
-+        expect(localizedText.markdown).toEqual('Updated LocalizedText markdown')
-+      })
-+
-+      context('a LocalizedText created by another Host', () => {
-+        it('is not updated', async () => {
-+          const otherHost = await createHost()
-+          localizedText = await otherHost.associationQuery('localizedTexts').firstOrFail()
-+          const originalLocale = localizedText.locale
-+          const originalTitle = localizedText.title
-+          const originalMarkdown = localizedText.markdown
-+
-+          await updateLocalizedText(
-+            localizedText,
-+            {
-+              locale: 'es-ES',
-+              title: 'Updated LocalizedText title',
-+              markdown: 'Updated LocalizedText markdown',
-+            },
-+            404,
-+          )
-+
-+          await localizedText.reload()
-+          expect(localizedText.locale).toEqual(originalLocale)
-+          expect(localizedText.title).toEqual(originalTitle)
-+          expect(localizedText.markdown).toEqual(originalMarkdown)
-+        })
-+      })
-+    })
-+
-+    describe('DELETE destroy', () => {
-+      const destroyLocalizedText = async <StatusCode extends 204 | 400 | 404>(
-+        localizedText: LocalizedText,
-+        expectedStatus: StatusCode,
-+      ) => {
-+        return request.delete('/v1/host/localized-texts/{id}', expectedStatus, {
-+          id: localizedText.id,
-+        })
-+      }
-+
-+      it('deletes the LocalizedText', async () => {
-+        await destroyLocalizedText(localizedText, 204)
-+
-+        expect(await LocalizedText.find(localizedText.id)).toBeNull()
-       })
+-      })
 -    }
++  const update = async <StatusCode extends 204 | 400 | 404>(
++    localizedText: LocalizedText,
++    data: RequestBody<'patch', '/v1/host/localized-texts/{id}'>,
++    expectedStatus: StatusCode,
++  ) => {
++    return request.patch('/v1/host/localized-texts/{id}', expectedStatus, {
++      id: localizedText.id,
++      data,
++    })
++  }
++
++  const destroy = async <StatusCode extends 204 | 400 | 404>(
++    localizedText: LocalizedText,
++    expectedStatus: StatusCode,
++  ) => {
++    return request.delete('/v1/host/localized-texts/{id}', expectedStatus, {
++      id: localizedText.id,
++    })
++  }
  
--    it('updates the LocalizedText', async () => {
++  context('a LocalizedText belonging to the current Host', () => {
+     it('updates the LocalizedText', async () => {
 -      const localizedText = await createLocalizedText({ user })
-+      context('a LocalizedText created by another Host', () => {
-+        it('is not deleted', async () => {
-+          const otherHost = await createHost()
-+          localizedText = await otherHost.associationQuery('localizedTexts').firstOrFail()
++      const host = await createHost({ user })
++      const localizedText = await host.associationQuery('localizedTexts').firstOrFail()
  
 -      await update(localizedText, {
 -        locale: 'es-ES',
 -        title: 'Updated LocalizedText title',
 -        markdown: 'Updated LocalizedText markdown',
 -      }, 204)
-+          await destroyLocalizedText(localizedText, 404)
++      await update(
++        localizedText,
++        {
++          locale: 'es-ES',
++          title: 'Updated Host title',
++          markdown: 'Updated Host markdown',
++        },
++        204,
++      )
  
--      await localizedText.reload()
--      expect(localizedText.locale).toEqual('es-ES')
+       await localizedText.reload()
+       expect(localizedText.locale).toEqual('es-ES')
 -      expect(localizedText.title).toEqual('Updated LocalizedText title')
 -      expect(localizedText.markdown).toEqual('Updated LocalizedText markdown')
-+          expect(await LocalizedText.find(localizedText.id)).toMatchDreamModel(localizedText)
-+        })
-+      })
++      expect(localizedText.title).toEqual('Updated Host title')
++      expect(localizedText.markdown).toEqual('Updated Host markdown')
++    })
++
++    it('deletes the LocalizedText', async () => {
++      const host = await createHost({ user })
++      const localizedText = await host.associationQuery('localizedTexts').firstOrFail()
++
++      await destroy(localizedText, 204)
++
++      expect(await LocalizedText.find(localizedText.id)).toBeNull()
      })
-+  })
  
 -    context('a LocalizedText created by another User', () => {
--      it('is not updated', async () => {
++    context('a LocalizedText belonging to another Host', () => {
+       it('is not updated', async () => {
 -        const localizedText = await createLocalizedText()
--        const originalLocale = localizedText.locale
--        const originalTitle = localizedText.title
--        const originalMarkdown = localizedText.markdown
-+  context('belonging to a Place', () => {
-+    let localizedText: LocalizedText
++        await createHost({ user })
++        const host = await createHost()
++        const localizedText = await host.associationQuery('localizedTexts').firstOrFail()
+         const originalLocale = localizedText.locale
+         const originalTitle = localizedText.title
+         const originalMarkdown = localizedText.markdown
  
 -        await update(localizedText, {
 -          locale: 'es-ES',
 -          title: 'Updated LocalizedText title',
 -          markdown: 'Updated LocalizedText markdown',
 -        }, 404)
-+    beforeEach(async () => {
-+      const host = await createHost({ user })
-+      const place = await createPlace()
-+      await createHostPlace({ host, place })
-+      localizedText = await place.associationQuery('localizedTexts').firstOrFail()
-+    })
-+
-+    describe('PATCH update', () => {
-+      const updateLocalizedText = async <StatusCode extends 204 | 400 | 404>(
-+        localizedText: LocalizedText,
-+        data: RequestBody<'patch', '/v1/host/localized-texts/{id}'>,
-+        expectedStatus: StatusCode,
-+      ) => {
-+        return request.patch('/v1/host/localized-texts/{id}', expectedStatus, {
-+          id: localizedText.id,
-+          data,
-+        })
-+      }
-+
-+      it('updates the LocalizedText', async () => {
-+        await updateLocalizedText(
++        await update(
 +          localizedText,
 +          {
 +            locale: 'es-ES',
-+            title: 'Updated LocalizedText title',
-+            markdown: 'Updated LocalizedText markdown',
++            title: 'Updated Host title',
++            markdown: 'Updated Host markdown',
 +          },
-+          204,
++          404,
 +        )
  
          await localizedText.reload()
--        expect(localizedText.locale).toEqual(originalLocale)
--        expect(localizedText.title).toEqual(originalTitle)
--        expect(localizedText.markdown).toEqual(originalMarkdown)
-+        expect(localizedText.locale).toEqual('es-ES')
-+        expect(localizedText.title).toEqual('Updated LocalizedText title')
-+        expect(localizedText.markdown).toEqual('Updated LocalizedText markdown')
-+      })
-+
-+      context('a LocalizedText associated with a Place belonging to a different Host', () => {
-+        it('is not updated', async () => {
-+          const otherPlace = await createPlace()
-+          localizedText = await otherPlace.associationQuery('localizedTexts').firstOrFail()
-+          const originalLocale = localizedText.locale
-+          const originalTitle = localizedText.title
-+          const originalMarkdown = localizedText.markdown
-+
-+          await updateLocalizedText(
-+            localizedText,
-+            {
-+              locale: 'es-ES',
-+              title: 'Updated LocalizedText title',
-+              markdown: 'Updated LocalizedText markdown',
-+            },
-+            404,
-+          )
-+
-+          await localizedText.reload()
-+          expect(localizedText.locale).toEqual(originalLocale)
-+          expect(localizedText.title).toEqual(originalTitle)
-+          expect(localizedText.markdown).toEqual(originalMarkdown)
-+        })
-+      })
-+    })
-+
-+    describe('DELETE destroy', () => {
-+      const destroyLocalizedText = async <StatusCode extends 204 | 400 | 404>(
-+        localizedText: LocalizedText,
-+        expectedStatus: StatusCode,
-+      ) => {
-+        return request.delete('/v1/host/localized-texts/{id}', expectedStatus, {
-+          id: localizedText.id,
-+        })
-+      }
-+
-+      it('deletes the LocalizedText', async () => {
-+        await destroyLocalizedText(localizedText, 204)
-+
-+        expect(await LocalizedText.find(localizedText.id)).toBeNull()
-+      })
-+
-+      context('a LocalizedText associated with a Place belonging to a different Host', () => {
-+        it('is not deleted', async () => {
-+          const otherPlace = await createPlace()
-+          localizedText = await otherPlace.associationQuery('localizedTexts').firstOrFail()
-+
-+          await destroyLocalizedText(localizedText, 404)
-+
-+          expect(await LocalizedText.find(localizedText.id)).toMatchDreamModel(localizedText)
-+        })
+         expect(localizedText.locale).toEqual(originalLocale)
+         expect(localizedText.title).toEqual(originalTitle)
+         expect(localizedText.markdown).toEqual(originalMarkdown)
        })
++
++      it('is not deleted', async () => {
++        await createHost({ user })
++        const host = await createHost()
++        const localizedText = await host.associationQuery('localizedTexts').firstOrFail()
++
++        await destroy(localizedText, 404)
++
++        expect(await LocalizedText.find(localizedText.id)).toMatchDreamModel(localizedText)
++      })
      })
    })
  
@@ -293,110 +186,149 @@ index c550e8f..2dda12a 100644
 -    const destroy = async <StatusCode extends 204 | 400 | 404>(localizedText: LocalizedText, expectedStatus: StatusCode) => {
 -      return request.delete('/v1/host/localized-texts/{id}', expectedStatus, {
 -        id: localizedText.id,
-+  context('belonging to a Room', () => {
-+    let localizedText: LocalizedText
++  context('a LocalizedText belonging to a Place for the current Host', () => {
++    it('updates the LocalizedText', async () => {
++      const host = await createHost({ user })
++      const place = await createPlace()
++      await createHostPlace({ host, place })
++      const localizedText = await place.associationQuery('localizedTexts').firstOrFail()
 +
-+    beforeEach(async () => {
++      await update(
++        localizedText,
++        {
++          locale: 'es-ES',
++          title: 'Updated Place title',
++          markdown: 'Updated Place markdown',
++        },
++        204,
++      )
++
++      await localizedText.reload()
++      expect(localizedText.locale).toEqual('es-ES')
++      expect(localizedText.title).toEqual('Updated Place title')
++      expect(localizedText.markdown).toEqual('Updated Place markdown')
++    })
++
++    it('deletes the LocalizedText', async () => {
++      const host = await createHost({ user })
++      const place = await createPlace()
++      await createHostPlace({ host, place })
++      const localizedText = await place.associationQuery('localizedTexts').firstOrFail()
++
++      await destroy(localizedText, 204)
++
++      expect(await LocalizedText.find(localizedText.id)).toBeNull()
++    })
++
++    context('a LocalizedText belonging to a Place for another Host', () => {
++      it('is not updated', async () => {
++        await createHost({ user })
++        const place = await createPlace()
++        const localizedText = await place.associationQuery('localizedTexts').firstOrFail()
++        const originalLocale = localizedText.locale
++        const originalTitle = localizedText.title
++        const originalMarkdown = localizedText.markdown
++
++        await update(
++          localizedText,
++          {
++            locale: 'es-ES',
++            title: 'Updated Place title',
++            markdown: 'Updated Place markdown',
++          },
++          404,
++        )
++
++        await localizedText.reload()
++        expect(localizedText.locale).toEqual(originalLocale)
++        expect(localizedText.title).toEqual(originalTitle)
++        expect(localizedText.markdown).toEqual(originalMarkdown)
++      })
++
++      it('is not deleted', async () => {
++        await createHost({ user })
++        const place = await createPlace()
++        const localizedText = await place.associationQuery('localizedTexts').firstOrFail()
++
++        await destroy(localizedText, 404)
++
++        expect(await LocalizedText.find(localizedText.id)).toMatchDreamModel(localizedText)
+       })
+-    }
++    })
++  })
++
++  context('a LocalizedText belonging to a Room for a Place for the current Host', () => {
++    it('updates the LocalizedText', async () => {
 +      const host = await createHost({ user })
 +      const place = await createPlace()
 +      await createHostPlace({ host, place })
 +      const room = await createDen({ place })
-+      localizedText = await room.associationQuery('localizedTexts').firstOrFail()
++      const localizedText = await room.associationQuery('localizedTexts').firstOrFail()
++
++      await update(
++        localizedText,
++        {
++          locale: 'es-ES',
++          title: 'Updated Room title',
++          markdown: 'Updated Room markdown',
++        },
++        204,
++      )
++
++      await localizedText.reload()
++      expect(localizedText.locale).toEqual('es-ES')
++      expect(localizedText.title).toEqual('Updated Room title')
++      expect(localizedText.markdown).toEqual('Updated Room markdown')
 +    })
-+
-+    describe('PATCH update', () => {
-+      const updateLocalizedText = async <StatusCode extends 204 | 400 | 404>(
-+        localizedText: LocalizedText,
-+        data: RequestBody<'patch', '/v1/host/localized-texts/{id}'>,
-+        expectedStatus: StatusCode,
-+      ) => {
-+        return request.patch('/v1/host/localized-texts/{id}', expectedStatus, {
-+          id: localizedText.id,
-+          data,
-+        })
-+      }
-+
-+      it('updates the LocalizedText', async () => {
-+        await updateLocalizedText(
-+          localizedText,
-+          {
-+            locale: 'es-ES',
-+            title: 'Updated LocalizedText title',
-+            markdown: 'Updated LocalizedText markdown',
-+          },
-+          204,
-+        )
-+
-+        await localizedText.reload()
-+        expect(localizedText.locale).toEqual('es-ES')
-+        expect(localizedText.title).toEqual('Updated LocalizedText title')
-+        expect(localizedText.markdown).toEqual('Updated LocalizedText markdown')
-       })
--    }
  
--    it('deletes the LocalizedText', async () => {
+     it('deletes the LocalizedText', async () => {
 -      const localizedText = await createLocalizedText({ user })
-+      context('a LocalizedText associated with a Room belonging to a different Host', () => {
-+        it('is not updated', async () => {
-+          const otherRoom = await createDen()
-+          localizedText = await otherRoom.associationQuery('localizedTexts').firstOrFail()
-+          const originalLocale = localizedText.locale
-+          const originalTitle = localizedText.title
-+          const originalMarkdown = localizedText.markdown
++      const host = await createHost({ user })
++      const place = await createPlace()
++      await createHostPlace({ host, place })
++      const room = await createDen({ place })
++      const localizedText = await room.associationQuery('localizedTexts').firstOrFail()
  
--      await destroy(localizedText, 204)
-+          await updateLocalizedText(
-+            localizedText,
-+            {
-+              locale: 'es-ES',
-+              title: 'Updated LocalizedText title',
-+              markdown: 'Updated LocalizedText markdown',
-+            },
-+            404,
-+          )
+       await destroy(localizedText, 204)
  
--      expect(await LocalizedText.find(localizedText.id)).toBeNull()
-+          await localizedText.reload()
-+          expect(localizedText.locale).toEqual(originalLocale)
-+          expect(localizedText.title).toEqual(originalTitle)
-+          expect(localizedText.markdown).toEqual(originalMarkdown)
-+        })
-+      })
+       expect(await LocalizedText.find(localizedText.id)).toBeNull()
      })
  
 -    context('a LocalizedText created by another User', () => {
--      it('is not deleted', async () => {
--        const localizedText = await createLocalizedText()
-+    describe('DELETE destroy', () => {
-+      const destroyLocalizedText = async <StatusCode extends 204 | 400 | 404>(
-+        localizedText: LocalizedText,
-+        expectedStatus: StatusCode,
-+      ) => {
-+        return request.delete('/v1/host/localized-texts/{id}', expectedStatus, {
-+          id: localizedText.id,
-+        })
-+      }
++    context('a LocalizedText belonging to a Room for another Host', () => {
++      it('is not updated', async () => {
++        await createHost({ user })
++        const room = await createDen()
++        const localizedText = await room.associationQuery('localizedTexts').firstOrFail()
++        const originalLocale = localizedText.locale
++        const originalTitle = localizedText.title
++        const originalMarkdown = localizedText.markdown
 +
-+      it('deletes the LocalizedText', async () => {
-+        await destroyLocalizedText(localizedText, 204)
++        await update(
++          localizedText,
++          {
++            locale: 'es-ES',
++            title: 'Updated Room title',
++            markdown: 'Updated Room markdown',
++          },
++          404,
++        )
 +
-+        expect(await LocalizedText.find(localizedText.id)).toBeNull()
++        await localizedText.reload()
++        expect(localizedText.locale).toEqual(originalLocale)
++        expect(localizedText.title).toEqual(originalTitle)
++        expect(localizedText.markdown).toEqual(originalMarkdown)
 +      })
 +
-+      context('a LocalizedText associated with a Room belonging to a different Host', () => {
-+        it('is not deleted', async () => {
-+          const otherRoom = await createDen()
-+          localizedText = await otherRoom.associationQuery('localizedTexts').firstOrFail()
+       it('is not deleted', async () => {
+-        const localizedText = await createLocalizedText()
++        await createHost({ user })
++        const room = await createDen()
++        const localizedText = await room.associationQuery('localizedTexts').firstOrFail()
  
--        await destroy(localizedText, 404)
-+          await destroyLocalizedText(localizedText, 404)
+         await destroy(localizedText, 404)
  
--        expect(await LocalizedText.find(localizedText.id)).toMatchDreamModel(localizedText)
-+          expect(await LocalizedText.find(localizedText.id)).toMatchDreamModel(localizedText)
-+        })
-       })
-     })
-   })
 diff --git a/api/spec/unit/models/Host.spec.ts b/api/spec/unit/models/Host.spec.ts
 index ef54e54..cdcb8d6 100644
 --- a/api/spec/unit/models/Host.spec.ts
@@ -465,19 +397,16 @@ index 6315065..7399652 100644
 +  })
  })
 diff --git a/api/spec/unit/models/Room.spec.ts b/api/spec/unit/models/Room.spec.ts
-index 1e8d460..3ae3183 100644
+index 1e8d460..d888641 100644
 --- a/api/spec/unit/models/Room.spec.ts
 +++ b/api/spec/unit/models/Room.spec.ts
-@@ -1,3 +1,28 @@
+@@ -1,3 +1,21 @@
 +import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
 +import createDen from '@spec/factories/Room/DenFactory.js'
 +
  describe('Room', () => {
 -  it.todo('add a test here to get started building Room')
 +  it('has many LocalizedTexts', async () => {
-+    // using Den as a stand-in for any Room since STI base models cannot be
-+    // saved to the database (enforced by intentionally omitting the base
-+    // STI model controller name from the enum values allowed for `type`)
 +    const room = await createDen()
 +    const esLocalizedText = await createLocalizedText({ localizable: room, locale: 'es-ES' })
 +
@@ -487,47 +416,41 @@ index 1e8d460..3ae3183 100644
 +
 +  context('upon creation', () => {
 +    it('creates en-US LocalizedText for the Room', async () => {
-+      // using Den as a stand-in for any Room since STI base models cannot be
-+      // saved to the database (enforced by intentionally omitting the base
-+      // STI model controller name from the enum values allowed for `type`)
 +      const room = await createDen()
 +      const localizedText = await room.associationQuery('localizedTexts').firstOrFail()
 +
 +      expect(localizedText.locale).toEqual('en-US')
-+      expect(localizedText.title).toEqual('Den')
 +    })
 +  })
  })
 diff --git a/api/src/app/controllers/V1/Host/LocalizedTextsController.ts b/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
-index 12f4ab2..1cddd7a 100644
+index af12ce7..b2404dc 100644
 --- a/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
 +++ b/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
-@@ -1,6 +1,8 @@
-+import LocalizedText from '@models/LocalizedText.js'
-+import Place from '@models/Place.js'
-+import Room from '@models/Room.js'
+@@ -1,7 +1,9 @@
  import { OpenAPI } from '@rvoh/psychic'
+ import { DreamParamSafeColumnNames } from '@rvoh/dream/types'
++import Room from '@models/Room.js'
  import V1HostBaseController from './BaseController.js'
--import LocalizedText from '@models/LocalizedText.js'
+ import LocalizedText from '@models/LocalizedText.js'
++import { type LocalizedTypesEnum } from '@src/types/db.js'
  
  const openApiTags = ['localized-texts']
  
-@@ -12,9 +14,9 @@ export default class V1HostLocalizedTextsController extends V1HostBaseController
-     fastJsonStringify: true,
+@@ -18,9 +20,9 @@ export default class V1HostLocalizedTextsController extends V1HostBaseController
+     },
    })
    public async update() {
 -    // const localizedText = await this.localizedText()
--    // await localizedText.update(this.extractParams(LocalizedText,
--    //   ['locale', 'title', 'markdown'],
--    // ))
+-    // await localizedText.update(this.extractParams(LocalizedText, paramSafeColumns))
 -    // this.noContent()
 +    const localizedText = await this.localizedText()
-+    await localizedText.update(this.extractParams(LocalizedText, ['locale', 'title', 'markdown']))
++    await localizedText.update(this.extractParams(LocalizedText, paramSafeColumns))
 +    this.noContent()
    }
  
    @OpenAPI({
-@@ -24,14 +26,53 @@ export default class V1HostLocalizedTextsController extends V1HostBaseController
+@@ -30,14 +32,34 @@ export default class V1HostLocalizedTextsController extends V1HostBaseController
      fastJsonStringify: true,
    })
    public async destroy() {
@@ -543,62 +466,44 @@ index 12f4ab2..1cddd7a 100644
 -    // return await this.currentUser.associationQuery('localizedTexts')
 -    //   .preloadFor('default')
 -    //   .findOrFail(this.castParam('id', 'string'))
-+    const localizedText = await LocalizedText.preload('localizable').findOrFail(
-+      this.castParam('id', 'string'),
-+    )
++    const id = this.castParam('id', 'uuid')
++    const localizedText = await LocalizedText.findOrFail(id)
++    const localizableType: LocalizedTypesEnum = localizedText.localizableType
 +
-+    const localizable = localizedText.localizable
-+
-+    switch (localizedText.localizableType) {
++    switch (localizableType) {
 +      case 'Host':
-+        if (!localizable.equals(this.currentHost)) this.notFound()
-+        return localizedText
-+
-+      case 'Place':
-+        // the next line safely informs typescript that localizable is a Place
-+        if (!(localizable instanceof Place)) throw new Error('unreachable')
-+
-+        if (!(await localizable.associationQuery('hosts', { and: { id: this.currentHost.id } }).exists()))
-+          this.notFound()
-+
-+        return localizedText
-+
-+      case 'Room':
-+        // the next line safely informs typescript that localizable is a Room
-+        // make sure this imports from `import Room from '@models/Room.js'`
-+        // not from `import { Room } from 'socket.io-adapter'`
-+        if (!(localizable instanceof Room)) throw new Error('unreachable')
-+
-+        if (
-+          !(await localizable
-+            .query()
-+            .innerJoin('place', 'hosts', { and: { id: this.currentHost.id } })
-+            .exists())
-+        )
-+          this.notFound()
-+
-+        return localizedText
-+
-+      default:
-+        this.notFound()
-+        // notFound already throws an exception, but Typescript doesn't know that; the following
-+        // line informs typescript that this method always returns a LocalizableText
-+        throw new Error('unreachable')
++        return await this.currentHost.associationQuery('localizedTexts').preloadFor('default').findOrFail(id)
++      case 'Place': {
++        const place = await this.currentHost
++          .associationQuery('places')
++          .findOrFail(localizedText.localizableId)
++        return await place.associationQuery('localizedTexts').preloadFor('default').findOrFail(id)
++      }
++      case 'Room': {
++        const room = await Room.findOrFail(localizedText.localizableId)
++        await this.currentHost.associationQuery('places').findOrFail(room.placeId)
++        return await room.associationQuery('localizedTexts').preloadFor('default').findOrFail(id)
++      }
++      default: {
++        const _never: never = localizableType
++        throw new Error(`Unhandled LocalizedTypesEnum: ${String(_never)}`)
++      }
 +    }
    }
  }
 diff --git a/api/src/app/models/Host.ts b/api/src/app/models/Host.ts
-index b5e8782..4fae757 100644
+index 5760f78..7e4b6b4 100644
 --- a/api/src/app/models/Host.ts
 +++ b/api/src/app/models/Host.ts
-@@ -1,5 +1,6 @@
+@@ -2,6 +2,7 @@ import { Decorators, SoftDelete } from '@rvoh/dream'
+ import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
  import ApplicationModel from '@models/ApplicationModel.js'
  import HostPlace from '@models/HostPlace.js'
 +import LocalizedText from '@models/LocalizedText.js'
  import Place from '@models/Place.js'
  import User from '@models/User.js'
- import { Decorators } from '@rvoh/dream'
-@@ -32,4 +33,12 @@ export default class Host extends ApplicationModel {
+ 
+@@ -34,4 +35,12 @@ export default class Host extends ApplicationModel {
  
    @deco.HasMany('Place', { through: 'hostPlaces' })
    public places: Place[]
@@ -612,45 +517,48 @@ index b5e8782..4fae757 100644
 +  }
  }
 diff --git a/api/src/app/models/LocalizedText.ts b/api/src/app/models/LocalizedText.ts
-index d73684f..b44ef83 100644
+index e0d99f2..1356de3 100644
 --- a/api/src/app/models/LocalizedText.ts
 +++ b/api/src/app/models/LocalizedText.ts
-@@ -1,6 +1,9 @@
-+import ApplicationModel from '@models/ApplicationModel.js'
+@@ -1,10 +1,11 @@
+-import { SoftDelete } from '@rvoh/dream'
++import { Decorators, SoftDelete } from '@rvoh/dream'
+ import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
+ import ApplicationModel from '@models/ApplicationModel.js'
 +import Host from '@models/Host.js'
 +import Place from '@models/Place.js'
 +import Room from '@models/Room.js'
- import { Decorators } from '@rvoh/dream'
- import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
--import ApplicationModel from '@models/ApplicationModel.js'
  
- const deco = new Decorators<typeof LocalizedText>()
+-// Uncomment when adding decorators (@deco.BelongsTo, @deco.Validates, etc.):
+-// import { Decorators } from '@rvoh/dream'
+-// const deco = new Decorators<typeof LocalizedText>()
++const deco = new Decorators<typeof LocalizedText>()
  
-@@ -25,4 +28,9 @@ export default class LocalizedText extends ApplicationModel {
-   public deletedAt: DreamColumn<LocalizedText, 'deletedAt'>
+ @SoftDelete()
+ export default class LocalizedText extends ApplicationModel {
+@@ -28,4 +29,7 @@ export default class LocalizedText extends ApplicationModel {
    public createdAt: DreamColumn<LocalizedText, 'createdAt'>
    public updatedAt: DreamColumn<LocalizedText, 'updatedAt'>
+   public deletedAt: DreamColumn<LocalizedText, 'deletedAt'>
 +
 +  @deco.BelongsTo(['Host', 'Place', 'Room'], { polymorphic: true, on: 'localizableId' })
-+  // make sure this imports from `import Room from '@models/Room.js'`
-+  // not from `import { Room } from 'socket.io-adapter'`
 +  public localizable: Host | Place | Room
  }
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index 9243aa1..717990e 100644
+index 1600eb3..0715f2c 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
-@@ -1,6 +1,7 @@
+@@ -3,6 +3,7 @@ import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
  import ApplicationModel from '@models/ApplicationModel.js'
  import Host from '@models/Host.js'
  import HostPlace from '@models/HostPlace.js'
 +import LocalizedText from '@models/LocalizedText.js'
  import Room from '@models/Room.js'
- import { Decorators } from '@rvoh/dream'
- import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
-@@ -37,4 +38,12 @@ export default class Place extends ApplicationModel {
-   // make sure this imports from `import Room from '@models/Room.js'`
-   // not from `import { Room } from 'socket.io-adapter'`
+ 
+ const deco = new Decorators<typeof Place>()
+@@ -36,4 +37,12 @@ export default class Place extends ApplicationModel {
+ 
+   @deco.HasMany('Room', { dependent: 'destroy' })
    public rooms: Room[]
 +
 +  @deco.HasMany('LocalizedText', { polymorphic: true, on: 'localizableId', dependent: 'destroy' })
@@ -662,16 +570,18 @@ index 9243aa1..717990e 100644
 +  }
  }
 diff --git a/api/src/app/models/Room.ts b/api/src/app/models/Room.ts
-index 7b34e52..fc0ed30 100644
+index 590f1c2..9e90a30 100644
 --- a/api/src/app/models/Room.ts
 +++ b/api/src/app/models/Room.ts
-@@ -1,4 +1,5 @@
+@@ -1,6 +1,7 @@
+ import { Decorators, SoftDelete } from '@rvoh/dream'
+ import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
  import ApplicationModel from '@models/ApplicationModel.js'
 +import LocalizedText from '@models/LocalizedText.js'
  import Place from '@models/Place.js'
- import { Decorators } from '@rvoh/dream'
- import { DreamColumn } from '@rvoh/dream/types'
-@@ -20,4 +21,12 @@ export default class Room extends ApplicationModel {
+ 
+ const deco = new Decorators<typeof Room>()
+@@ -28,4 +29,12 @@ export default class Room extends ApplicationModel {
    @deco.BelongsTo('Place', { on: 'placeId' })
    public place: Place
    public placeId: DreamColumn<Room, 'placeId'>
@@ -681,14 +591,44 @@ index 7b34e52..fc0ed30 100644
 +
 +  @deco.AfterCreate()
 +  public async createDefaultLocalizedText(this: Room) {
-+    await this.createAssociation('localizedTexts', { locale: 'en-US', title: this.type })
++    await this.createAssociation('localizedTexts', { locale: 'en-US' })
 +  }
  }
-diff --git a/api/src/db/migrations/1773154136747-create-localized-text.ts b/api/src/db/migrations/1773154136747-create-localized-text.ts
-index 58549f0..5819bd4 100644
---- a/api/src/db/migrations/1773154136747-create-localized-text.ts
-+++ b/api/src/db/migrations/1773154136747-create-localized-text.ts
-@@ -29,12 +29,19 @@ export async function up(db: Kysely<any>): Promise<void> {
+diff --git a/api/src/db/migrations/1779137085545-create-localized-text.ts b/api/src/db/migrations/1779137085545-create-localized-text.ts
+index 978878c..01402f3 100644
+--- a/api/src/db/migrations/1779137085545-create-localized-text.ts
++++ b/api/src/db/migrations/1779137085545-create-localized-text.ts
+@@ -2,39 +2,29 @@ import { Kysely, sql } from 'kysely'
+ 
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ export async function up(db: Kysely<any>): Promise<void> {
+-  await db.schema
+-    .createType('localized_types_enum')
+-    .asEnum([
+-      'Host',
+-      'Place',
+-      'Room'
+-    ])
+-    .execute()
++  await db.schema.createType('localized_types_enum').asEnum(['Host', 'Place', 'Room']).execute()
+ 
+-  await db.schema
+-    .createType('locales_enum')
+-    .asEnum([
+-      'en-US',
+-      'es-ES'
+-    ])
+-    .execute()
++  await db.schema.createType('locales_enum').asEnum(['en-US', 'es-ES']).execute()
+ 
+   await db.schema
+     .createTable('localized_texts')
+-    .addColumn('id', 'uuid', col =>
+-      col
+-        .primaryKey()
+-        .defaultTo(sql`uuidv7()`),
+-    )
++    .addColumn('id', 'uuid', col => col.primaryKey().defaultTo(sql`uuidv7()`))
      .addColumn('localizable_type', sql`localized_types_enum`, col => col.notNull())
      .addColumn('localizable_id', 'uuid', col => col.notNull())
      .addColumn('locale', sql`locales_enum`, col => col.notNull())
@@ -696,9 +636,9 @@ index 58549f0..5819bd4 100644
 -    .addColumn('markdown', 'text', col => col.notNull())
 +    .addColumn('title', 'varchar(255)')
 +    .addColumn('markdown', 'text')
-     .addColumn('deleted_at', 'timestamp')
      .addColumn('created_at', 'timestamp', col => col.notNull())
      .addColumn('updated_at', 'timestamp', col => col.notNull())
+     .addColumn('deleted_at', 'timestamp')
      .execute()
 +
 +  await db.schema
@@ -710,8 +650,15 @@ index 58549f0..5819bd4 100644
  }
  
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+@@ -43,4 +33,4 @@ export async function down(db: Kysely<any>): Promise<void> {
+ 
+   await db.schema.dropType('localized_types_enum').execute()
+   await db.schema.dropType('locales_enum').execute()
+-}
+\ No newline at end of file
++}
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index a5705ec..f4e9077 100644
+index 6191a9a..830fd35 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -6,6 +6,114 @@
@@ -830,7 +777,7 @@ index a5705ec..f4e9077 100644
        "parameters": [
          {
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index e4a969f..10bf720 100644
+index 8cc03b9..37767da 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -6,6 +6,114 @@
@@ -949,7 +896,7 @@ index e4a969f..10bf720 100644
        "parameters": [
          {
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index fcc24fe..8d6ad26 100644
+index bd6c5a3..da67510 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -6,6 +6,114 @@
@@ -1068,7 +1015,7 @@ index fcc24fe..8d6ad26 100644
        "parameters": [
          {
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index cacb7e2..0fd2b2c 100644
+index e2be8b6..af14200 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
 @@ -120,6 +120,14 @@ export type Generated<T> =
@@ -1086,7 +1033,7 @@ index cacb7e2..0fd2b2c 100644
  export type PlaceStylesEnum =
    | 'cabin'
    | 'cave'
-@@ -179,6 +187,18 @@ export interface Hosts {
+@@ -181,6 +189,18 @@ export interface Hosts {
    userId: string
  }
  
@@ -1105,7 +1052,7 @@ index cacb7e2..0fd2b2c 100644
  export interface Places {
    createdAt: Timestamp
    deletedAt: Timestamp | null
-@@ -214,6 +234,7 @@ export interface DB {
+@@ -217,6 +237,7 @@ export interface DB {
    guests: Guests
    host_places: HostPlaces
    hosts: Hosts
@@ -1113,7 +1060,7 @@ index cacb7e2..0fd2b2c 100644
    places: Places
    rooms: Rooms
    users: Users
-@@ -223,6 +244,7 @@ export class DBClass {
+@@ -226,6 +247,7 @@ export class DBClass {
    guests: Guests
    host_places: HostPlaces
    hosts: Hosts
@@ -1135,7 +1082,7 @@ index b6e5538..0f826c1 100644
      'PlaceSummarySerializer',
      'Room/BathroomSerializer',
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 9e6360b..73f17b4 100644
+index 4d7d356..188991c 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
 @@ -66,11 +66,15 @@ import {
@@ -1154,7 +1101,7 @@ index 9e6360b..73f17b4 100644
    PlaceStylesEnumValues,
    RoomTypesEnumValues,
  } from './db.js'
-@@ -282,6 +286,15 @@ export const schema = {
+@@ -300,6 +304,15 @@ export const schema = {
          requiredAndClauses: null,
          passthroughAndClauses: null,
        },
@@ -1170,14 +1117,14 @@ index 9e6360b..73f17b4 100644
        places: {
          type: 'HasMany',
          foreignKey: null,
-@@ -302,6 +315,119 @@ export const schema = {
+@@ -320,6 +333,119 @@ export const schema = {
        },
      },
    },
 +  localized_texts: {
 +    serializerKeys: ['default', 'summary'],
 +    scopes: {
-+      default: [],
++      default: ['dream:SoftDelete'],
 +      named: [],
 +    },
 +    nonJsonColumnNames: [
@@ -1290,7 +1237,7 @@ index 9e6360b..73f17b4 100644
    places: {
      serializerKeys: ['default', 'summary'],
      scopes: {
-@@ -402,6 +528,15 @@ export const schema = {
+@@ -420,6 +546,15 @@ export const schema = {
          requiredAndClauses: null,
          passthroughAndClauses: null,
        },
@@ -1306,7 +1253,7 @@ index 9e6360b..73f17b4 100644
        rooms: {
          type: 'HasMany',
          foreignKey: 'placeId',
-@@ -525,6 +660,15 @@ export const schema = {
+@@ -543,6 +678,15 @@ export const schema = {
      },
      virtualColumns: [],
      associations: {
@@ -1322,7 +1269,7 @@ index 9e6360b..73f17b4 100644
        place: {
          type: 'BelongsTo',
          foreignKey: 'placeId',
-@@ -628,6 +772,7 @@ export const connectionTypeConfig = {
+@@ -656,6 +800,7 @@ export const connectionTypeConfig = {
        Guest: 'guests',
        Host: 'hosts',
        HostPlace: 'host_places',
@@ -1331,7 +1278,7 @@ index 9e6360b..73f17b4 100644
        Room: 'rooms',
        'Room/Bathroom': 'rooms',
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index 8135272..b2bfc20 100644
+index 414bbff..dc147fa 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
 @@ -1,4 +1,75 @@

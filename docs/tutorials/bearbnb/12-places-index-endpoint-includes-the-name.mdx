@@ -9,7 +9,9 @@ id: bearbnb-12-places-index-endpoint-includes-the-name
 
 ``````
 Places index endpoint includes the name
-```cosole
+
+```console
+pnpm psy sync --help
 pnpm psy sync # to update the OpenAPI spec after updating the serializer
 pnpm uspec spec/unit/controllers/V1/Host/PlacesController.spec.ts
 ```
@@ -28,7 +30,7 @@ index dea0610..c891352 100644
  api/src/db/migrations/*.ts
 +api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 diff --git a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
-index 862bb32..fba71ea 100644
+index 830ef03..accd5e4 100644
 --- a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 +++ b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 @@ -32,6 +32,7 @@ describe('V1/Host/PlacesController', () => {
@@ -40,14 +42,10 @@ index 862bb32..fba71ea 100644
        ])
      })
 diff --git a/api/src/app/serializers/PlaceSerializer.ts b/api/src/app/serializers/PlaceSerializer.ts
-index 83fab47..ff993f0 100644
+index edbd000..bc76022 100644
 --- a/api/src/app/serializers/PlaceSerializer.ts
 +++ b/api/src/app/serializers/PlaceSerializer.ts
-@@ -1,13 +1,13 @@
--import { DreamSerializer } from '@rvoh/dream'
- import Place from '@models/Place.js'
-+import { DreamSerializer } from '@rvoh/dream'
- 
+@@ -4,9 +4,9 @@ import Place from '@models/Place.js'
  export const PlaceSummarySerializer = (place: Place) =>
    DreamSerializer(Place, place)
      .attribute('id')
@@ -58,14 +56,13 @@ index 83fab47..ff993f0 100644
 -    .attribute('name')
      .attribute('style')
      .attribute('sleeps')
-     .attribute('deletedAt')
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 4b04f2c..51b81af 100644
+index cc78be6..2dceb04 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
-@@ -389,11 +389,15 @@
+@@ -379,11 +379,15 @@
+       "PlaceSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -81,12 +78,12 @@ index 4b04f2c..51b81af 100644
          }
        },
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index b18e7cb..e015ff7 100644
+index 083e331..c1c893d 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
-@@ -397,11 +397,15 @@
+@@ -387,11 +387,15 @@
+       "PlaceSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -102,12 +99,12 @@ index b18e7cb..e015ff7 100644
          }
        },
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index 24ce955..ef08622 100644
+index 0188214..42ef46a 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
-@@ -397,11 +397,15 @@
+@@ -387,11 +387,15 @@
+       "PlaceSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -123,10 +120,10 @@ index 24ce955..ef08622 100644
          }
        },
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index ee7fc12..9818b61 100644
+index d344e67..5f5be02 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
-@@ -218,6 +218,7 @@ export interface components {
+@@ -216,6 +216,7 @@ export interface components {
          };
          PlaceSummary: {
              id: string;

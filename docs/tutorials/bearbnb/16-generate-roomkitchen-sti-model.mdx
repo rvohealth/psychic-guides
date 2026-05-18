@@ -11,7 +11,8 @@ id: bearbnb-16-generate-roomkitchen-sti-model
 Generate Room/Kitchen STI model
 
 ```console
-pnpm psy g:sti-child --model-name=Kitchen Room/Kitchen extends Room appliances:enum\[\]:appliance_types:stove,oven,microwave,dishwasher
+pnpm psy g:sti-child --help
+pnpm psy g:sti-child --model-name=Kitchen Room/Kitchen extends Room 'appliances:enum[]:appliance_types:stove,oven,microwave,dishwasher'
 pnpm psy db:migrate
 ```
 ``````
@@ -45,15 +46,17 @@ index 0000000..d5dfbf9
 +})
 diff --git a/api/src/app/models/Room/Kitchen.ts b/api/src/app/models/Room/Kitchen.ts
 new file mode 100644
-index 0000000..e6e9a80
+index 0000000..a38b947
 --- /dev/null
 +++ b/api/src/app/models/Room/Kitchen.ts
-@@ -0,0 +1,17 @@
-+import { Decorators, STI } from '@rvoh/dream'
+@@ -0,0 +1,19 @@
++import { STI } from '@rvoh/dream'
 +import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 +import Room from '@models/Room.js'
 +
-+const deco = new Decorators<typeof Kitchen>()
++// Uncomment when adding decorators (@deco.BelongsTo, @deco.Validates, etc.):
++// import { Decorators } from '@rvoh/dream'
++// const deco = new Decorators<typeof Kitchen>()
 +
 +@STI(Room)
 +export default class Kitchen extends Room {
@@ -81,11 +84,11 @@ index 0000000..633aa8f
 +export const RoomKitchenSerializer = (kitchen: Kitchen) =>
 +  RoomSerializer(Kitchen, kitchen)
 +    .attribute('appliances')
-diff --git a/api/src/db/migrations/1773153098012-create-room-kitchen.ts b/api/src/db/migrations/1773153098012-create-room-kitchen.ts
+diff --git a/api/src/db/migrations/1779136851651-create-room-kitchen.ts b/api/src/db/migrations/1779136851651-create-room-kitchen.ts
 new file mode 100644
 index 0000000..d798b22
 --- /dev/null
-+++ b/api/src/db/migrations/1773153098012-create-room-kitchen.ts
++++ b/api/src/db/migrations/1779136851651-create-room-kitchen.ts
 @@ -0,0 +1,29 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -118,7 +121,7 @@ index 0000000..d798b22
 +}
 \ No newline at end of file
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 8cf4e91..fed01ca 100644
+index 90823b0..cf4d2d1 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -349,6 +349,9 @@
@@ -131,26 +134,7 @@ index 8cf4e91..fed01ca 100644
                            }
                          ]
                        }
-@@ -393,6 +396,18 @@
-               "schema": {
-                 "type": "object",
-                 "properties": {
-+                  "appliances": {
-+                    "type": "array",
-+                    "items": {
-+                      "type": "string",
-+                      "enum": [
-+                        "dishwasher",
-+                        "microwave",
-+                        "oven",
-+                        "stove"
-+                      ]
-+                    }
-+                  },
-                   "bathOrShowerStyle": {
-                     "type": [
-                       "string",
-@@ -442,6 +457,9 @@
+@@ -415,6 +418,9 @@
                      },
                      {
                        "$ref": "#/components/schemas/RoomBedroom"
@@ -160,7 +144,7 @@ index 8cf4e91..fed01ca 100644
                      }
                    ]
                  }
-@@ -508,6 +526,9 @@
+@@ -481,6 +487,9 @@
                      },
                      {
                        "$ref": "#/components/schemas/RoomBedroom"
@@ -170,35 +154,14 @@ index 8cf4e91..fed01ca 100644
                      }
                    ]
                  }
-@@ -549,6 +570,18 @@
-               "schema": {
-                 "type": "object",
-                 "properties": {
-+                  "appliances": {
-+                    "type": "array",
-+                    "items": {
-+                      "type": "string",
-+                      "enum": [
-+                        "dishwasher",
-+                        "microwave",
-+                        "oven",
-+                        "stove"
-+                      ]
-+                    }
-+                  },
-                   "bathOrShowerStyle": {
-                     "type": [
-                       "string",
-@@ -860,6 +893,58 @@
+@@ -776,6 +785,48 @@
            }
          }
        },
 +      "RoomKitchen": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "appliances",
-+          "deletedAt",
 +          "id",
 +          "position",
 +          "type"
@@ -210,13 +173,6 @@ index 8cf4e91..fed01ca 100644
 +              "type": "string",
 +              "description": "The following values will be allowed:\n  dishwasher,\n  microwave,\n  oven,\n  stove"
 +            }
-+          },
-+          "deletedAt": {
-+            "type": [
-+              "string",
-+              "null"
-+            ],
-+            "format": "date-time"
 +          },
 +          "id": {
 +            "type": "string"
@@ -235,7 +191,6 @@ index 8cf4e91..fed01ca 100644
 +      },
 +      "RoomKitchenSummary": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -249,7 +204,7 @@ index 8cf4e91..fed01ca 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index e5027c7..9890837 100644
+index 2b7a39c..d09bfd5 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -349,6 +349,9 @@
@@ -262,26 +217,7 @@ index e5027c7..9890837 100644
                            }
                          ]
                        }
-@@ -393,6 +396,18 @@
-               "schema": {
-                 "type": "object",
-                 "properties": {
-+                  "appliances": {
-+                    "type": "array",
-+                    "items": {
-+                      "type": "string",
-+                      "enum": [
-+                        "dishwasher",
-+                        "microwave",
-+                        "oven",
-+                        "stove"
-+                      ]
-+                    }
-+                  },
-                   "bathOrShowerStyle": {
-                     "type": [
-                       "string",
-@@ -442,6 +457,9 @@
+@@ -415,6 +418,9 @@
                      },
                      {
                        "$ref": "#/components/schemas/RoomBedroom"
@@ -291,7 +227,7 @@ index e5027c7..9890837 100644
                      }
                    ]
                  }
-@@ -508,6 +526,9 @@
+@@ -481,6 +487,9 @@
                      },
                      {
                        "$ref": "#/components/schemas/RoomBedroom"
@@ -301,35 +237,14 @@ index e5027c7..9890837 100644
                      }
                    ]
                  }
-@@ -549,6 +570,18 @@
-               "schema": {
-                 "type": "object",
-                 "properties": {
-+                  "appliances": {
-+                    "type": "array",
-+                    "items": {
-+                      "type": "string",
-+                      "enum": [
-+                        "dishwasher",
-+                        "microwave",
-+                        "oven",
-+                        "stove"
-+                      ]
-+                    }
-+                  },
-                   "bathOrShowerStyle": {
-                     "type": [
-                       "string",
-@@ -885,6 +918,65 @@
+@@ -801,6 +810,55 @@
            }
          }
        },
 +      "RoomKitchen": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "appliances",
-+          "deletedAt",
 +          "id",
 +          "position",
 +          "type"
@@ -346,13 +261,6 @@ index e5027c7..9890837 100644
 +                "stove"
 +              ]
 +            }
-+          },
-+          "deletedAt": {
-+            "type": [
-+              "string",
-+              "null"
-+            ],
-+            "format": "date-time"
 +          },
 +          "id": {
 +            "type": "string"
@@ -373,7 +281,6 @@ index e5027c7..9890837 100644
 +      },
 +      "RoomKitchenSummary": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -387,7 +294,7 @@ index e5027c7..9890837 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index 73bcb9c..15038fa 100644
+index 12d62f8..7d02636 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -349,6 +349,9 @@
@@ -400,26 +307,7 @@ index 73bcb9c..15038fa 100644
                            }
                          ]
                        }
-@@ -393,6 +396,18 @@
-               "schema": {
-                 "type": "object",
-                 "properties": {
-+                  "appliances": {
-+                    "type": "array",
-+                    "items": {
-+                      "type": "string",
-+                      "enum": [
-+                        "dishwasher",
-+                        "microwave",
-+                        "oven",
-+                        "stove"
-+                      ]
-+                    }
-+                  },
-                   "bathOrShowerStyle": {
-                     "type": [
-                       "string",
-@@ -442,6 +457,9 @@
+@@ -415,6 +418,9 @@
                      },
                      {
                        "$ref": "#/components/schemas/RoomBedroom"
@@ -429,7 +317,7 @@ index 73bcb9c..15038fa 100644
                      }
                    ]
                  }
-@@ -508,6 +526,9 @@
+@@ -481,6 +487,9 @@
                      },
                      {
                        "$ref": "#/components/schemas/RoomBedroom"
@@ -439,35 +327,14 @@ index 73bcb9c..15038fa 100644
                      }
                    ]
                  }
-@@ -549,6 +570,18 @@
-               "schema": {
-                 "type": "object",
-                 "properties": {
-+                  "appliances": {
-+                    "type": "array",
-+                    "items": {
-+                      "type": "string",
-+                      "enum": [
-+                        "dishwasher",
-+                        "microwave",
-+                        "oven",
-+                        "stove"
-+                      ]
-+                    }
-+                  },
-                   "bathOrShowerStyle": {
-                     "type": [
-                       "string",
-@@ -885,6 +918,65 @@
+@@ -801,6 +810,55 @@
            }
          }
        },
 +      "RoomKitchen": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "appliances",
-+          "deletedAt",
 +          "id",
 +          "position",
 +          "type"
@@ -484,13 +351,6 @@ index 73bcb9c..15038fa 100644
 +                "stove"
 +              ]
 +            }
-+          },
-+          "deletedAt": {
-+            "type": [
-+              "string",
-+              "null"
-+            ],
-+            "format": "date-time"
 +          },
 +          "id": {
 +            "type": "string"
@@ -511,7 +371,6 @@ index 73bcb9c..15038fa 100644
 +      },
 +      "RoomKitchenSummary": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -525,7 +384,7 @@ index 73bcb9c..15038fa 100644
          "type": "object",
          "required": [
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 822576f..cacb7e2 100644
+index 03deb02..e2be8b6 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
 @@ -68,6 +68,15 @@ import {
@@ -544,7 +403,7 @@ index 822576f..cacb7e2 100644
  export type ArrayType<T> =
    ArrayTypeImpl<T> extends (infer U)[] ? U[] : ArrayTypeImpl<T>
  
-@@ -181,6 +190,7 @@ export interface Places {
+@@ -183,6 +192,7 @@ export interface Places {
  }
  
  export interface Rooms {
@@ -566,7 +425,7 @@ index 6109591..a014277 100644
      'RoomSummarySerializer',
    ],
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 8203e1f..946a014 100644
+index 47fd445..5c8ea9a 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
 @@ -63,10 +63,12 @@ import {
@@ -582,7 +441,7 @@ index 8203e1f..946a014 100644
    BathOrShowerStylesEnumValues,
    BedTypesEnumValues,
    PlaceStylesEnumValues,
-@@ -409,6 +411,7 @@ export const schema = {
+@@ -427,6 +429,7 @@ export const schema = {
        named: [],
      },
      nonJsonColumnNames: [
@@ -590,7 +449,7 @@ index 8203e1f..946a014 100644
        'bathOrShowerStyle',
        'bedTypes',
        'createdAt',
-@@ -420,6 +423,15 @@ export const schema = {
+@@ -438,6 +441,15 @@ export const schema = {
        'updatedAt',
      ],
      columns: {
@@ -606,7 +465,7 @@ index 8203e1f..946a014 100644
        bathOrShowerStyle: {
          coercedType: {} as BathOrShowerStylesEnum | null,
          enumType: {} as BathOrShowerStylesEnum,
-@@ -611,6 +623,7 @@ export const connectionTypeConfig = {
+@@ -639,6 +651,7 @@ export const connectionTypeConfig = {
        Room: 'rooms',
        'Room/Bathroom': 'rooms',
        'Room/Bedroom': 'rooms',
@@ -615,7 +474,7 @@ index 8203e1f..946a014 100644
      },
    },
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index 60e921d..6ac23ac 100644
+index 6a81ad9..1066893 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
 @@ -225,7 +225,7 @@ export interface paths {
@@ -627,15 +486,7 @@ index 60e921d..6ac23ac 100644
                          };
                      };
                  };
-@@ -255,6 +255,7 @@ export interface paths {
-             requestBody?: {
-                 content: {
-                     "application/json": {
-+                        appliances?: ("dishwasher" | "microwave" | "oven" | "stove")[];
-                         /** @enum {string|null} */
-                         bathOrShowerStyle?: "bath" | "bath_and_shower" | "none" | "shower" | null;
-                         bedTypes?: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
-@@ -269,7 +270,7 @@ export interface paths {
+@@ -266,7 +266,7 @@ export interface paths {
                          [name: string]: unknown;
                      };
                      content: {
@@ -644,7 +495,7 @@ index 60e921d..6ac23ac 100644
                      };
                  };
                  400: components["responses"]["BadRequest"];
-@@ -316,7 +317,7 @@ export interface paths {
+@@ -313,7 +313,7 @@ export interface paths {
                          [name: string]: unknown;
                      };
                      content: {
@@ -653,22 +504,12 @@ index 60e921d..6ac23ac 100644
                      };
                  };
                  400: components["responses"]["BadRequest"];
-@@ -370,6 +371,7 @@ export interface paths {
-             requestBody?: {
-                 content: {
-                     "application/json": {
-+                        appliances?: ("dishwasher" | "microwave" | "oven" | "stove")[];
-                         /** @enum {string|null} */
-                         bathOrShowerStyle?: "bath" | "bath_and_shower" | "none" | "shower" | null;
-                         bedTypes?: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
-@@ -446,6 +448,18 @@ export interface components {
+@@ -434,6 +434,16 @@ export interface components {
          RoomBedroomSummary: {
              id: string;
          };
 +        RoomKitchen: {
 +            appliances: ("dishwasher" | "microwave" | "oven" | "stove")[];
-+            /** Format: date-time */
-+            deletedAt: string | null;
 +            id: string;
 +            position: number | null;
 +            /** @enum {string} */

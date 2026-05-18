@@ -11,6 +11,7 @@ id: bearbnb-02-inspect-the-migration-for-correctness-and-run-migration
 Inspect the migration for correctness and run migration
 
 ```console
+pnpm psy db:migrate --help
 pnpm psy db:migrate
 ```
 ``````
@@ -679,10 +680,10 @@ index 0000000..e6354ae
 +}
 \ No newline at end of file
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index beca473..8a3a92a 100644
+index beca473..7c5765f 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -1,3 +1,92 @@
+@@ -1,3 +1,93 @@
 -export interface DB {}
 +/*
  
@@ -764,6 +765,7 @@ index beca473..8a3a92a 100644
 +
 +export interface Users {
 +  createdAt: Timestamp
++  deletedAt: Timestamp | null
 +  email: string
 +  encryptedPhone: string
 +  id: Generated<string>
@@ -845,10 +847,10 @@ index 0905cc1..901c67b 100644
 +  serializers: [],
 +} as const
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 63f4975..ac17a6b 100644
+index 63f4975..0cd3580 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -1,3 +1,141 @@
+@@ -1,3 +1,151 @@
 -export const schema = {} as const
 +/*
  
@@ -921,11 +923,12 @@ index 63f4975..ac17a6b 100644
 +  users: {
 +    serializerKeys: [],
 +    scopes: {
-+      default: [],
++      default: ['dream:SoftDelete'],
 +      named: [],
 +    },
 +    nonJsonColumnNames: [
 +      'createdAt',
++      'deletedAt',
 +      'email',
 +      'encryptedPhone',
 +      'id',
@@ -939,6 +942,15 @@ index 63f4975..ac17a6b 100644
 +        enumValues: null,
 +        dbType: 'timestamp without time zone',
 +        allowNull: false,
++        isArray: false,
++      },
++      deletedAt: {
++        coercedType: {} as DateTime | null,
++        enumType: null,
++        enumArrayType: null,
++        enumValues: null,
++        dbType: 'timestamp without time zone',
++        allowNull: true,
 +        isArray: false,
 +      },
 +      email: {
@@ -985,7 +997,7 @@ index 63f4975..ac17a6b 100644
 +
 +export const connectionTypeConfig = {
 +  passthroughColumns: [],
-+  allDefaultScopeNames: [],
++  allDefaultScopeNames: ['dream:SoftDelete'],
 +  globalNames: {
 +    models: {
 +      User: 'users',
@@ -1091,12 +1103,12 @@ index 0000000..36895e1
 +export type $defs = Record<string, never>;
 +export type operations = Record<string, never>;
 diff --git a/api/src/types/psychic.ts b/api/src/types/psychic.ts
-index d7bda66..a350924 100644
+index c21096f..a350924 100644
 --- a/api/src/types/psychic.ts
 +++ b/api/src/types/psychic.ts
 @@ -1,5 +1,5 @@
  const psychicTypes = {
--  openapiNames: ['default', 'admin', 'mobile', 'tests'],
+-  openapiNames: ['default', 'admin', 'internal', 'mobile', 'tests'],
 +  openapiNames: ['default', 'mobile', 'admin', 'internal', 'tests'],
  } as const
  

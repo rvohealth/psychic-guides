@@ -11,6 +11,7 @@ id: bearbnb-05-generate-host-model
 Generate Host model
 
 ```console
+pnpm psy g:model --help
 pnpm psy g:model Host User:belongs_to
 ```
 ``````
@@ -45,17 +46,18 @@ index 0000000..9255d5c
 +})
 diff --git a/api/src/app/models/Host.ts b/api/src/app/models/Host.ts
 new file mode 100644
-index 0000000..8536e0d
+index 0000000..9da07fe
 --- /dev/null
 +++ b/api/src/app/models/Host.ts
-@@ -0,0 +1,27 @@
-+import { Decorators } from '@rvoh/dream'
+@@ -0,0 +1,29 @@
++import { Decorators, SoftDelete } from '@rvoh/dream'
 +import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 +import ApplicationModel from '@models/ApplicationModel.js'
 +import User from '@models/User.js'
 +
 +const deco = new Decorators<typeof Host>()
 +
++@SoftDelete()
 +export default class Host extends ApplicationModel {
 +  public override get table() {
 +    return 'hosts' as const
@@ -71,6 +73,7 @@ index 0000000..8536e0d
 +  public id: DreamColumn<Host, 'id'>
 +  public createdAt: DreamColumn<Host, 'createdAt'>
 +  public updatedAt: DreamColumn<Host, 'updatedAt'>
++  public deletedAt: DreamColumn<Host, 'deletedAt'>
 +
 +  @deco.BelongsTo('User', { on: 'userId' })
 +  public user: User
@@ -91,12 +94,12 @@ index 0000000..9ccbada
 +
 +export const HostSerializer = (host: Host) =>
 +  HostSummarySerializer(host)
-diff --git a/api/src/db/migrations/1773151769580-create-host.ts b/api/src/db/migrations/1773151769580-create-host.ts
+diff --git a/api/src/db/migrations/1779136307015-create-host.ts b/api/src/db/migrations/1779136307015-create-host.ts
 new file mode 100644
-index 0000000..fc937ae
+index 0000000..edc2a99
 --- /dev/null
-+++ b/api/src/db/migrations/1773151769580-create-host.ts
-@@ -0,0 +1,28 @@
++++ b/api/src/db/migrations/1779136307015-create-host.ts
+@@ -0,0 +1,29 @@
 +import { Kysely, sql } from 'kysely'
 +
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -111,6 +114,7 @@ index 0000000..fc937ae
 +    .addColumn('user_id', 'uuid', col => col.references('users.id').onDelete('restrict').notNull())
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
++    .addColumn('deleted_at', 'timestamp')
 +    .execute()
 +
 +  await db.schema

@@ -17,6 +17,7 @@ Sync association types.
 
 ```console
 pnpm psy db:migrate
+pnpm uspec spec/unit/models
 ```
 
 If migrations had already been run, after adding
@@ -32,17 +33,18 @@ pnpm psy sync
 
 ``````
 diff --git a/api/src/app/models/User.ts b/api/src/app/models/User.ts
-index ec6b4ab..4250201 100644
+index 9b05776..55cf5f8 100644
 --- a/api/src/app/models/User.ts
 +++ b/api/src/app/models/User.ts
-@@ -1,5 +1,6 @@
+@@ -2,6 +2,7 @@ import { Decorators, SoftDelete } from '@rvoh/dream'
+ import { DreamColumn } from '@rvoh/dream/types'
  import ApplicationModel from '@models/ApplicationModel.js'
  import Guest from '@models/Guest.js'
 +import Host from '@models/Host.js'
- import { Decorators } from '@rvoh/dream'
- import { DreamColumn } from '@rvoh/dream/types'
  
-@@ -25,4 +26,7 @@ export default class User extends ApplicationModel {
+ const deco = new Decorators<typeof User>()
+ 
+@@ -27,4 +28,7 @@ export default class User extends ApplicationModel {
  
    @deco.HasOne('Guest')
    public guest: Guest
@@ -50,30 +52,37 @@ index ec6b4ab..4250201 100644
 +  @deco.HasOne('Host')
 +  public host: Host
  }
-diff --git a/api/src/db/migrations/1773151769580-create-host.ts b/api/src/db/migrations/1773151769580-create-host.ts
-index fc937ae..4c9bc1f 100644
---- a/api/src/db/migrations/1773151769580-create-host.ts
-+++ b/api/src/db/migrations/1773151769580-create-host.ts
-@@ -9,7 +9,8 @@ export async function up(db: Kysely<any>): Promise<void> {
+diff --git a/api/src/db/migrations/1779136307015-create-host.ts b/api/src/db/migrations/1779136307015-create-host.ts
+index edc2a99..70cf71f 100644
+--- a/api/src/db/migrations/1779136307015-create-host.ts
++++ b/api/src/db/migrations/1779136307015-create-host.ts
+@@ -9,7 +9,7 @@ export async function up(db: Kysely<any>): Promise<void> {
          .primaryKey()
          .defaultTo(sql`uuidv7()`),
      )
 -    .addColumn('user_id', 'uuid', col => col.references('users.id').onDelete('restrict').notNull())
-+    // added .unique() to `user_id`
 +    .addColumn('user_id', 'uuid', col => col.references('users.id').onDelete('restrict').notNull().unique())
      .addColumn('created_at', 'timestamp', col => col.notNull())
      .addColumn('updated_at', 'timestamp', col => col.notNull())
-     .execute()
+     .addColumn('deleted_at', 'timestamp')
+@@ -26,4 +26,4 @@ export async function up(db: Kysely<any>): Promise<void> {
+ export async function down(db: Kysely<any>): Promise<void> {
+   await db.schema.dropIndex('hosts_user_id').execute()
+   await db.schema.dropTable('hosts').execute()
+-}
+\ No newline at end of file
++}
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index b5f6597..d46484f 100644
+index bd4ea0f..25bb48d 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -82,6 +82,13 @@ export interface Guests {
+@@ -83,6 +83,14 @@ export interface Guests {
    userId: string
  }
  
 +export interface Hosts {
 +  createdAt: Timestamp
++  deletedAt: Timestamp | null
 +  id: Generated<string>
 +  updatedAt: Timestamp
 +  userId: string
@@ -81,8 +90,8 @@ index b5f6597..d46484f 100644
 +
  export interface Users {
    createdAt: Timestamp
-   email: string
-@@ -92,10 +99,12 @@ export interface Users {
+   deletedAt: Timestamp | null
+@@ -94,10 +102,12 @@ export interface Users {
  
  export interface DB {
    guests: Guests
@@ -112,20 +121,20 @@ index 6c9f10f..f241f3d 100644
 +  ],
  } as const
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 2373941..a4a5d27 100644
+index b5bb80d..9c8cc4b 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -123,6 +123,64 @@ export const schema = {
+@@ -132,6 +132,73 @@ export const schema = {
        },
      },
    },
 +  hosts: {
 +    serializerKeys: ['default', 'summary'],
 +    scopes: {
-+      default: [],
++      default: ['dream:SoftDelete'],
 +      named: [],
 +    },
-+    nonJsonColumnNames: ['createdAt', 'id', 'updatedAt', 'userId'],
++    nonJsonColumnNames: ['createdAt', 'deletedAt', 'id', 'updatedAt', 'userId'],
 +    columns: {
 +      createdAt: {
 +        coercedType: {} as DateTime,
@@ -134,6 +143,15 @@ index 2373941..a4a5d27 100644
 +        enumValues: null,
 +        dbType: 'timestamp without time zone',
 +        allowNull: false,
++        isArray: false,
++      },
++      deletedAt: {
++        coercedType: {} as DateTime | null,
++        enumType: null,
++        enumArrayType: null,
++        enumValues: null,
++        dbType: 'timestamp without time zone',
++        allowNull: true,
 +        isArray: false,
 +      },
 +      id: {
@@ -180,7 +198,7 @@ index 2373941..a4a5d27 100644
    users: {
      serializerKeys: [],
      scopes: {
-@@ -194,6 +252,15 @@ export const schema = {
+@@ -213,6 +280,15 @@ export const schema = {
          requiredAndClauses: null,
          passthroughAndClauses: null,
        },
@@ -196,7 +214,7 @@ index 2373941..a4a5d27 100644
      },
    },
  } as const
-@@ -204,6 +271,7 @@ export const connectionTypeConfig = {
+@@ -223,6 +299,7 @@ export const connectionTypeConfig = {
    globalNames: {
      models: {
        Guest: 'guests',

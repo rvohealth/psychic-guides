@@ -17,9 +17,9 @@ command in VSCode / Cursor)
 
 ```console
 pnpm uspec spec/unit/controllers/V1/Host/PlacesController.spec.ts
-// if it hangs, it's likely that you haven't implemented the controller
-// changes; simply adding `this.ok()` or `this.noContent()` to each action
-// in the controller will get the spec run to complete
+# if it hangs, it's likely that you haven't implemented the controller
+# changes; simply adding `this.ok()` or `this.noContent()` to each action
+# in the controller will get the spec run to complete
 ```
 ``````
 
@@ -27,22 +27,17 @@ pnpm uspec spec/unit/controllers/V1/Host/PlacesController.spec.ts
 
 ``````
 diff --git a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
-index 64923d4..862bb32 100644
+index 64923d4..830ef03 100644
 --- a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 +++ b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
-@@ -1,9 +1,10 @@
-+import Host from '@models/Host.js'
+@@ -1,6 +1,7 @@
  import Place from '@models/Place.js'
  import User from '@models/User.js'
--import Host from '@models/Host.js'
-+import createHost from '@spec/factories/HostFactory.js'
+ import Host from '@models/Host.js'
 +import createHostPlace from '@spec/factories/HostPlaceFactory.js'
  import createPlace from '@spec/factories/PlaceFactory.js'
  import createUser from '@spec/factories/UserFactory.js'
--import createHost from '@spec/factories/HostFactory.js'
- import { RequestBody, session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
- 
- describe('V1/Host/PlacesController', () => {
+ import createHost from '@spec/factories/HostFactory.js'
 @@ -23,7 +24,8 @@ describe('V1/Host/PlacesController', () => {
      }
  
@@ -84,14 +79,13 @@ index 64923d4..862bb32 100644
        await destroy(place, 204)
  
 diff --git a/api/src/app/controllers/AuthedController.ts b/api/src/app/controllers/AuthedController.ts
-index 9ecb9f2..7f37ec2 100644
+index 9714b0f..9bd17df 100644
 --- a/api/src/app/controllers/AuthedController.ts
 +++ b/api/src/app/controllers/AuthedController.ts
-@@ -1,30 +1,27 @@
- import AppEnv from '@conf/AppEnv.js'
+@@ -1,18 +1,15 @@
  import ApplicationController from '@controllers/ApplicationController.js'
+ import resolveCurrentUser from '@controllers/helpers/resolveCurrentUser.js'
 +import User from '@models/User.js'
- import { Encrypt } from '@rvoh/dream/utils'
  import { BeforeAction } from '@rvoh/psychic'
 -/** uncomment after creating User model */
 -// import User from '@models/User.js'
@@ -103,31 +97,13 @@ index 9ecb9f2..7f37ec2 100644
  
    @BeforeAction()
    protected async authenticate() {
+     const user = await resolveCurrentUser(this)
+     if (!user) return this.unauthorized()
 -    /** uncomment after creating User model */
--    // const userId = this.authedUserId()
--    // if (!userId) return this.unauthorized()
--    //
--    // const user = await User.find(userId)
--    // if (!user) return this.unauthorized()
--    //
 -    // this.currentUser = user
-+    const userId = this.authedUserId()
-+    if (!userId) return this.unauthorized()
-+
-+    const user = await User.find(userId)
-+    if (!user) return this.unauthorized()
-+
 +    this.currentUser = user
    }
- 
-   protected authedUserId(): string | null {
-     if (!AppEnv.isTest)
-       throw new Error(
--        'The current authentication scheme is only for early development. Replace with a production grade authentication scheme.'
-+        'The current authentication scheme is only for early development. Replace with a production grade authentication scheme.',
-       )
- 
-     const token = (this.header('authorization') ?? '').split(' ').at(-1)!
+ }
 diff --git a/api/src/app/controllers/V1/Host/BaseController.ts b/api/src/app/controllers/V1/Host/BaseController.ts
 index 1a200d0..1f537e5 100644
 --- a/api/src/app/controllers/V1/Host/BaseController.ts
@@ -149,20 +125,18 @@ index 1a200d0..1f537e5 100644
 +  }
  }
 diff --git a/api/src/app/controllers/V1/Host/PlacesController.ts b/api/src/app/controllers/V1/Host/PlacesController.ts
-index f6b0e42..ee34669 100644
+index e3399a7..ebafde5 100644
 --- a/api/src/app/controllers/V1/Host/PlacesController.ts
 +++ b/api/src/app/controllers/V1/Host/PlacesController.ts
-@@ -1,6 +1,8 @@
+@@ -1,5 +1,7 @@
+ import { OpenAPI } from '@rvoh/psychic'
+ import { DreamParamSafeColumnNames } from '@rvoh/dream/types'
 +import ApplicationModel from '@models/ApplicationModel.js'
 +import HostPlace from '@models/HostPlace.js'
-+import Place from '@models/Place.js'
- import { OpenAPI } from '@rvoh/psychic'
  import V1HostBaseController from './BaseController.js'
--import Place from '@models/Place.js'
+ import Place from '@models/Place.js'
  
- const openApiTags = ['places']
- 
-@@ -14,10 +16,11 @@ export default class V1HostPlacesController extends V1HostBaseController {
+@@ -17,10 +19,11 @@ export default class V1HostPlacesController extends V1HostBaseController {
      fastJsonStringify: true,
    })
    public async index() {
@@ -178,7 +152,7 @@ index f6b0e42..ee34669 100644
    }
  
    @OpenAPI(Place, {
-@@ -27,8 +30,8 @@ export default class V1HostPlacesController extends V1HostBaseController {
+@@ -30,8 +33,8 @@ export default class V1HostPlacesController extends V1HostBaseController {
      fastJsonStringify: true,
    })
    public async show() {
@@ -189,17 +163,15 @@ index f6b0e42..ee34669 100644
    }
  
    @OpenAPI(Place, {
-@@ -38,9 +41,14 @@ export default class V1HostPlacesController extends V1HostBaseController {
-     fastJsonStringify: true,
+@@ -44,9 +47,14 @@ export default class V1HostPlacesController extends V1HostBaseController {
+     },
    })
    public async create() {
--    // let place = await this.currentHost.createAssociation('places', this.extractParams(Place,
--    //   ['name', 'style', 'sleeps'],
--    // ))
+-    // let place = await this.currentHost.createAssociation('places', this.extractParams(Place, paramSafeColumns))
 -    // if (place.isPersisted) place = await place.loadFor('default').execute()
 -    // this.created(place)
 +    let place = await ApplicationModel.transaction(async txn => {
-+      const place = await Place.txn(txn).create(this.extractParams(Place, ['name', 'style', 'sleeps']))
++      const place = await Place.txn(txn).create(this.extractParams(Place, paramSafeColumns))
 +      await HostPlace.txn(txn).create({ host: this.currentHost, place })
 +      return place
 +    })
@@ -209,22 +181,20 @@ index f6b0e42..ee34669 100644
    }
  
    @OpenAPI(Place, {
-@@ -50,9 +58,9 @@ export default class V1HostPlacesController extends V1HostBaseController {
-     fastJsonStringify: true,
+@@ -59,9 +67,9 @@ export default class V1HostPlacesController extends V1HostBaseController {
+     },
    })
    public async update() {
 -    // const place = await this.place()
--    // await place.update(this.extractParams(Place,
--    //   ['name', 'style', 'sleeps'],
--    // ))
+-    // await place.update(this.extractParams(Place, paramSafeColumns))
 -    // this.noContent()
 +    const place = await this.place()
-+    await place.update(this.extractParams(Place, ['name', 'style', 'sleeps']))
++    await place.update(this.extractParams(Place, paramSafeColumns))
 +    this.noContent()
    }
  
    @OpenAPI({
-@@ -62,14 +70,15 @@ export default class V1HostPlacesController extends V1HostBaseController {
+@@ -71,14 +79,15 @@ export default class V1HostPlacesController extends V1HostBaseController {
      fastJsonStringify: true,
    })
    public async destroy() {
@@ -243,7 +213,45 @@ index f6b0e42..ee34669 100644
 +    return await this.currentHost
 +      .associationQuery('places')
 +      .preloadFor('default')
-+      .findOrFail(this.castParam('id', 'string'))
++      .findOrFail(this.castParam('id', 'uuid'))
    }
+ }
+diff --git a/api/src/app/controllers/helpers/resolveCurrentUser.ts b/api/src/app/controllers/helpers/resolveCurrentUser.ts
+index 0d6f1aa..24084aa 100644
+--- a/api/src/app/controllers/helpers/resolveCurrentUser.ts
++++ b/api/src/app/controllers/helpers/resolveCurrentUser.ts
+@@ -1,16 +1,12 @@
+ import AppEnv from '@conf/AppEnv.js'
++import User from '@models/User.js'
+ import { Encrypt } from '@rvoh/dream/utils'
+ import { PsychicController } from '@rvoh/psychic'
+-/** uncomment after creating User model */
+-// import User from '@models/User.js'
+ 
+-// eslint-disable-next-line @typescript-eslint/require-await
+-export default async function resolveCurrentUser(controller: PsychicController): Promise<string | null> {
+-  /** replace previous line with uncommented next line after creating User model */
+-  // export default async function resolveCurrentUser(controller: PsychicController): Promise<User | null> {
++export default async function resolveCurrentUser(controller: PsychicController): Promise<User | null> {
+   if (!AppEnv.isTest)
+     throw new Error(
+-      'The current authentication scheme is only for early development. Replace with a production grade authentication scheme.'
++      'The current authentication scheme is only for early development. Replace with a production grade authentication scheme.',
+     )
+ 
+   const token = (controller.header('authorization') ?? '').split(' ').at(-1)!
+@@ -20,11 +16,8 @@ export default async function resolveCurrentUser(controller: PsychicController):
+     key: AppEnv.string('APP_ENCRYPTION_KEY'),
+   })
+ 
+-  const userId =
+-    typeof decrypted === 'string' && (JSON.parse(decrypted) as Record<'userId', string>)?.userId
++  const userId = typeof decrypted === 'string' && (JSON.parse(decrypted) as Record<'userId', string>)?.userId
+   if (!userId) return null
+ 
+-  /** uncomment after creating User model */
+-  // return await User.find(userId)
+-  return userId
++  return await User.find(userId)
  }
 ``````

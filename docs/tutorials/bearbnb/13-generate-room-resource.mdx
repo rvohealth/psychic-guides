@@ -10,18 +10,15 @@ id: bearbnb-13-generate-room-resource
 ``````
 Generate Room resource
 
-```console
-pnpm psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\{\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom Place:belongs_to position:integer:optional deleted_at:datetime:optional
-```
+Command run:
 
-The `places/{}` (escaped to `places/\{\}` for the console) makes
-rooms a nested resource within the places resource, which you can
-see with `pnpm psy routes`:
+pnpm psy g:resource --help
+pnpm psy g:resource --sti-base-serializer --owning-model=Place 'v1/host/places/{}/rooms' Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom Place:belongs_to position:integer:optional
 
-```console
+The places/{} path makes rooms a nested resource within the places resource.
+
 pnpm psy db:migrate
 pnpm psy routes
-```
 ``````
 
 ## Changes
@@ -246,15 +243,18 @@ index 0000000..475dacc
 +}
 diff --git a/api/src/app/controllers/V1/Host/Places/RoomsController.ts b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
 new file mode 100644
-index 0000000..3fdec77
+index 0000000..abd6199
 --- /dev/null
 +++ b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
-@@ -0,0 +1,75 @@
+@@ -0,0 +1,84 @@
 +import { OpenAPI } from '@rvoh/psychic'
++import { DreamParamSafeColumnNames } from '@rvoh/dream/types'
 +import V1HostPlacesBaseController from './BaseController.js'
 +import Room from '@models/Room.js'
 +
 +const openApiTags = ['rooms']
++
++const paramSafeColumns: DreamParamSafeColumnNames<Room>[] = ['position']
 +
 +export default class V1HostPlacesRoomsController extends V1HostPlacesBaseController {
 +  @OpenAPI(Room, {
@@ -288,11 +288,12 @@ index 0000000..3fdec77
 +    tags: openApiTags,
 +    description: 'Create a Room',
 +    fastJsonStringify: true,
++    requestBody: {
++      only: paramSafeColumns,
++    },
 +  })
 +  public async create() {
-+    // let room = await this.currentPlace.createAssociation('rooms', this.extractParams(Room,
-+    //   ['position'],
-+    // ))
++    // let room = await this.currentPlace.createAssociation('rooms', this.extractParams(Room, paramSafeColumns))
 +    // if (room.isPersisted) room = await room.loadFor('default').execute()
 +    // this.created(room)
 +  }
@@ -302,12 +303,13 @@ index 0000000..3fdec77
 +    tags: openApiTags,
 +    description: 'Update a Room',
 +    fastJsonStringify: true,
++    requestBody: {
++      only: paramSafeColumns,
++    },
 +  })
 +  public async update() {
 +    // const room = await this.room()
-+    // await room.update(this.extractParams(Room,
-+    //   ['position'],
-+    // ))
++    // await room.update(this.extractParams(Room, paramSafeColumns))
 +    // this.noContent()
 +  }
 +
@@ -331,17 +333,18 @@ index 0000000..3fdec77
 +}
 diff --git a/api/src/app/models/Room.ts b/api/src/app/models/Room.ts
 new file mode 100644
-index 0000000..4ea9146
+index 0000000..590f1c2
 --- /dev/null
 +++ b/api/src/app/models/Room.ts
-@@ -0,0 +1,30 @@
-+import { Decorators } from '@rvoh/dream'
+@@ -0,0 +1,31 @@
++import { Decorators, SoftDelete } from '@rvoh/dream'
 +import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 +import ApplicationModel from '@models/ApplicationModel.js'
 +import Place from '@models/Place.js'
 +
 +const deco = new Decorators<typeof Room>()
 +
++@SoftDelete()
 +export default class Room extends ApplicationModel {
 +  public override get table() {
 +    return 'rooms' as const
@@ -357,9 +360,9 @@ index 0000000..4ea9146
 +  public id: DreamColumn<Room, 'id'>
 +  public type: DreamColumn<Room, 'type'>
 +  public position: DreamColumn<Room, 'position'>
-+  public deletedAt: DreamColumn<Room, 'deletedAt'>
 +  public createdAt: DreamColumn<Room, 'createdAt'>
 +  public updatedAt: DreamColumn<Room, 'updatedAt'>
++  public deletedAt: DreamColumn<Room, 'deletedAt'>
 +
 +  @deco.BelongsTo('Place', { on: 'placeId' })
 +  public place: Place
@@ -367,10 +370,10 @@ index 0000000..4ea9146
 +}
 diff --git a/api/src/app/serializers/RoomSerializer.ts b/api/src/app/serializers/RoomSerializer.ts
 new file mode 100644
-index 0000000..79390f9
+index 0000000..b4865a1
 --- /dev/null
 +++ b/api/src/app/serializers/RoomSerializer.ts
-@@ -0,0 +1,12 @@
+@@ -0,0 +1,11 @@
 +import { DreamSerializer } from '@rvoh/dream'
 +import Room from '@models/Room.js'
 +
@@ -382,9 +385,8 @@ index 0000000..79390f9
 +  RoomSummarySerializer(StiChildClass, room)
 +    .attribute('type', { openapi: { type: 'string', enum: [(StiChildClass ?? Room).sanitizedName] } })
 +    .attribute('position')
-+    .attribute('deletedAt')
 diff --git a/api/src/conf/routes.ts b/api/src/conf/routes.ts
-index cfc3ed8..d45c7d4 100644
+index b91ad5b..0c5dc6a 100644
 --- a/api/src/conf/routes.ts
 +++ b/api/src/conf/routes.ts
 @@ -5,7 +5,11 @@ import { PsychicRouter } from '@rvoh/psychic'
@@ -400,11 +402,11 @@ index cfc3ed8..d45c7d4 100644
      })
    })
  
-diff --git a/api/src/db/migrations/1773152983694-create-room.ts b/api/src/db/migrations/1773152983694-create-room.ts
+diff --git a/api/src/db/migrations/1779136689943-create-room.ts b/api/src/db/migrations/1779136689943-create-room.ts
 new file mode 100644
-index 0000000..1de9d4c
+index 0000000..100a7ce
 --- /dev/null
-+++ b/api/src/db/migrations/1773152983694-create-room.ts
++++ b/api/src/db/migrations/1779136689943-create-room.ts
 @@ -0,0 +1,51 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -431,9 +433,9 @@ index 0000000..1de9d4c
 +    .addColumn('type', sql`room_types_enum`, col => col.notNull())
 +    .addColumn('place_id', 'uuid', col => col.references('places.id').onDelete('restrict').notNull())
 +    .addColumn('position', 'integer')
-+    .addColumn('deleted_at', 'timestamp')
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
++    .addColumn('deleted_at', 'timestamp')
 +    .execute()
 +
 +  await db.schema
@@ -459,10 +461,10 @@ index 0000000..1de9d4c
 +}
 \ No newline at end of file
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 51b81af..f608642 100644
+index 2dceb04..0aafbae 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
-@@ -293,6 +293,306 @@
+@@ -293,6 +293,286 @@
            }
          }
        }
@@ -563,16 +565,6 @@ index 51b81af..f608642 100644
 +                    "type": [
 +                      "integer",
 +                      "null"
-+                    ]
-+                  },
-+                  "type": {
-+                    "type": "string",
-+                    "enum": [
-+                      "Bathroom",
-+                      "Bedroom",
-+                      "Den",
-+                      "Kitchen",
-+                      "LivingRoom"
 +                    ]
 +                  }
 +                }
@@ -689,16 +681,6 @@ index 51b81af..f608642 100644
 +                      "integer",
 +                      "null"
 +                    ]
-+                  },
-+                  "type": {
-+                    "type": "string",
-+                    "enum": [
-+                      "Bathroom",
-+                      "Bedroom",
-+                      "Den",
-+                      "Kitchen",
-+                      "LivingRoom"
-+                    ]
 +                  }
 +                }
 +              }
@@ -769,27 +751,18 @@ index 51b81af..f608642 100644
      }
    },
    "components": {
-@@ -401,6 +701,50 @@
+@@ -391,6 +671,40 @@
            }
          }
        },
 +      "Room": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
-+          "deletedAt",
 +          "id",
 +          "position",
 +          "type"
 +        ],
 +        "properties": {
-+          "deletedAt": {
-+            "type": [
-+              "string",
-+              "null"
-+            ],
-+            "format": "date-time"
-+          },
 +          "id": {
 +            "type": "string"
 +          },
@@ -807,7 +780,6 @@ index 51b81af..f608642 100644
 +      },
 +      "RoomSummary": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -821,10 +793,10 @@ index 51b81af..f608642 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index e015ff7..fe1bfc1 100644
+index c1c893d..20583ce 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
-@@ -293,6 +293,306 @@
+@@ -293,6 +293,286 @@
            }
          }
        }
@@ -925,16 +897,6 @@ index e015ff7..fe1bfc1 100644
 +                    "type": [
 +                      "integer",
 +                      "null"
-+                    ]
-+                  },
-+                  "type": {
-+                    "type": "string",
-+                    "enum": [
-+                      "Bathroom",
-+                      "Bedroom",
-+                      "Den",
-+                      "Kitchen",
-+                      "LivingRoom"
 +                    ]
 +                  }
 +                }
@@ -1051,16 +1013,6 @@ index e015ff7..fe1bfc1 100644
 +                      "integer",
 +                      "null"
 +                    ]
-+                  },
-+                  "type": {
-+                    "type": "string",
-+                    "enum": [
-+                      "Bathroom",
-+                      "Bedroom",
-+                      "Den",
-+                      "Kitchen",
-+                      "LivingRoom"
-+                    ]
 +                  }
 +                }
 +              }
@@ -1131,27 +1083,18 @@ index e015ff7..fe1bfc1 100644
      }
    },
    "components": {
-@@ -409,6 +709,52 @@
+@@ -399,6 +679,42 @@
            }
          }
        },
 +      "Room": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
-+          "deletedAt",
 +          "id",
 +          "position",
 +          "type"
 +        ],
 +        "properties": {
-+          "deletedAt": {
-+            "type": [
-+              "string",
-+              "null"
-+            ],
-+            "format": "date-time"
-+          },
 +          "id": {
 +            "type": "string"
 +          },
@@ -1171,7 +1114,6 @@ index e015ff7..fe1bfc1 100644
 +      },
 +      "RoomSummary": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -1185,10 +1127,10 @@ index e015ff7..fe1bfc1 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index ef08622..f18af13 100644
+index 42ef46a..16ea710 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
-@@ -293,6 +293,306 @@
+@@ -293,6 +293,286 @@
            }
          }
        }
@@ -1289,16 +1231,6 @@ index ef08622..f18af13 100644
 +                    "type": [
 +                      "integer",
 +                      "null"
-+                    ]
-+                  },
-+                  "type": {
-+                    "type": "string",
-+                    "enum": [
-+                      "Bathroom",
-+                      "Bedroom",
-+                      "Den",
-+                      "Kitchen",
-+                      "LivingRoom"
 +                    ]
 +                  }
 +                }
@@ -1415,16 +1347,6 @@ index ef08622..f18af13 100644
 +                      "integer",
 +                      "null"
 +                    ]
-+                  },
-+                  "type": {
-+                    "type": "string",
-+                    "enum": [
-+                      "Bathroom",
-+                      "Bedroom",
-+                      "Den",
-+                      "Kitchen",
-+                      "LivingRoom"
-+                    ]
 +                  }
 +                }
 +              }
@@ -1495,27 +1417,18 @@ index ef08622..f18af13 100644
      }
    },
    "components": {
-@@ -409,6 +709,52 @@
+@@ -399,6 +679,42 @@
            }
          }
        },
 +      "Room": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
-+          "deletedAt",
 +          "id",
 +          "position",
 +          "type"
 +        ],
 +        "properties": {
-+          "deletedAt": {
-+            "type": [
-+              "string",
-+              "null"
-+            ],
-+            "format": "date-time"
-+          },
 +          "id": {
 +            "type": "string"
 +          },
@@ -1535,7 +1448,6 @@ index ef08622..f18af13 100644
 +      },
 +      "RoomSummary": {
 +        "type": "object",
-+        "additionalProperties": false,
 +        "required": [
 +          "id"
 +        ],
@@ -1549,7 +1461,7 @@ index ef08622..f18af13 100644
          "type": "object",
          "required": [
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 92bc55d..4586d5f 100644
+index 208b1f2..91dba44 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
 @@ -92,6 +92,21 @@ export const PlaceStylesEnumValues = [
@@ -1574,7 +1486,7 @@ index 92bc55d..4586d5f 100644
  export type Timestamp = ColumnType<DateTime | CalendarDate>
  
  export interface Guests {
-@@ -127,6 +142,16 @@ export interface Places {
+@@ -129,6 +144,16 @@ export interface Places {
    updatedAt: Timestamp
  }
  
@@ -1590,8 +1502,8 @@ index 92bc55d..4586d5f 100644
 +
  export interface Users {
    createdAt: Timestamp
-   email: string
-@@ -140,6 +165,7 @@ export interface DB {
+   deletedAt: Timestamp | null
+@@ -143,6 +168,7 @@ export interface DB {
    host_places: HostPlaces
    hosts: Hosts
    places: Places
@@ -1599,7 +1511,7 @@ index 92bc55d..4586d5f 100644
    users: Users
  }
  
-@@ -148,5 +174,6 @@ export class DBClass {
+@@ -151,5 +177,6 @@ export class DBClass {
    host_places: HostPlaces
    hosts: Hosts
    places: Places
@@ -1619,7 +1531,7 @@ index 538a900..a55e48c 100644
    ],
  } as const
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 605ac00..4961f68 100644
+index 3b60d38..4332741 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
 @@ -62,7 +62,12 @@ import {
@@ -1636,14 +1548,14 @@ index 605ac00..4961f68 100644
  
  export const schema = {
    guests: {
-@@ -393,6 +398,99 @@ export const schema = {
+@@ -411,6 +416,99 @@ export const schema = {
        },
      },
    },
 +  rooms: {
 +    serializerKeys: ['default', 'summary'],
 +    scopes: {
-+      default: [],
++      default: ['dream:SoftDelete'],
 +      named: [],
 +    },
 +    nonJsonColumnNames: [
@@ -1736,7 +1648,7 @@ index 605ac00..4961f68 100644
    users: {
      serializerKeys: [],
      scopes: {
-@@ -486,6 +584,7 @@ export const connectionTypeConfig = {
+@@ -514,6 +612,7 @@ export const connectionTypeConfig = {
        Host: 'hosts',
        HostPlace: 'host_places',
        Place: 'places',
@@ -1745,10 +1657,10 @@ index 605ac00..4961f68 100644
      },
    },
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index 9818b61..2208354 100644
+index 5f5be02..0e726f4 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
-@@ -190,6 +190,205 @@ export interface paths {
+@@ -190,6 +190,201 @@ export interface paths {
          };
          trace?: never;
      };
@@ -1818,8 +1730,6 @@ index 9818b61..2208354 100644
 +                content: {
 +                    "application/json": {
 +                        position?: number | null;
-+                        /** @enum {string} */
-+                        type?: "Bathroom" | "Bedroom" | "Den" | "Kitchen" | "LivingRoom";
 +                    };
 +                };
 +            };
@@ -1932,8 +1842,6 @@ index 9818b61..2208354 100644
 +                content: {
 +                    "application/json": {
 +                        position?: number | null;
-+                        /** @enum {string} */
-+                        type?: "Bathroom" | "Bedroom" | "Den" | "Kitchen" | "LivingRoom";
 +                    };
 +                };
 +            };
@@ -1954,13 +1862,11 @@ index 9818b61..2208354 100644
  }
  export type webhooks = Record<string, never>;
  export interface components {
-@@ -220,6 +419,17 @@ export interface components {
+@@ -218,6 +413,15 @@ export interface components {
              id: string;
              name: string;
          };
 +        Room: {
-+            /** Format: date-time */
-+            deletedAt: string | null;
 +            id: string;
 +            position: number | null;
 +            /** @enum {string} */

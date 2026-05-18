@@ -11,7 +11,8 @@ id: bearbnb-07-generate-place-resource
 Generate Place resource
 
 ```console
-pnpm psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional
+pnpm psy g:resource --help
+pnpm psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer
 ```
 ``````
 
@@ -261,15 +262,18 @@ index 0000000..1a200d0
 +}
 diff --git a/api/src/app/controllers/V1/Host/PlacesController.ts b/api/src/app/controllers/V1/Host/PlacesController.ts
 new file mode 100644
-index 0000000..f6b0e42
+index 0000000..e3399a7
 --- /dev/null
 +++ b/api/src/app/controllers/V1/Host/PlacesController.ts
-@@ -0,0 +1,75 @@
+@@ -0,0 +1,84 @@
 +import { OpenAPI } from '@rvoh/psychic'
++import { DreamParamSafeColumnNames } from '@rvoh/dream/types'
 +import V1HostBaseController from './BaseController.js'
 +import Place from '@models/Place.js'
 +
 +const openApiTags = ['places']
++
++const paramSafeColumns: DreamParamSafeColumnNames<Place>[] = ['name', 'style', 'sleeps']
 +
 +export default class V1HostPlacesController extends V1HostBaseController {
 +  @OpenAPI(Place, {
@@ -303,11 +307,12 @@ index 0000000..f6b0e42
 +    tags: openApiTags,
 +    description: 'Create a Place',
 +    fastJsonStringify: true,
++    requestBody: {
++      only: paramSafeColumns,
++    },
 +  })
 +  public async create() {
-+    // let place = await this.currentHost.createAssociation('places', this.extractParams(Place,
-+    //   ['name', 'style', 'sleeps'],
-+    // ))
++    // let place = await this.currentHost.createAssociation('places', this.extractParams(Place, paramSafeColumns))
 +    // if (place.isPersisted) place = await place.loadFor('default').execute()
 +    // this.created(place)
 +  }
@@ -317,12 +322,13 @@ index 0000000..f6b0e42
 +    tags: openApiTags,
 +    description: 'Update a Place',
 +    fastJsonStringify: true,
++    requestBody: {
++      only: paramSafeColumns,
++    },
 +  })
 +  public async update() {
 +    // const place = await this.place()
-+    // await place.update(this.extractParams(Place,
-+    //   ['name', 'style', 'sleeps'],
-+    // ))
++    // await place.update(this.extractParams(Place, paramSafeColumns))
 +    // this.noContent()
 +  }
 +
@@ -346,16 +352,19 @@ index 0000000..f6b0e42
 +}
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
 new file mode 100644
-index 0000000..ee1bcf4
+index 0000000..0ef7a21
 --- /dev/null
 +++ b/api/src/app/models/Place.ts
-@@ -0,0 +1,26 @@
-+import { Decorators } from '@rvoh/dream'
+@@ -0,0 +1,29 @@
++import { SoftDelete } from '@rvoh/dream'
 +import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
 +import ApplicationModel from '@models/ApplicationModel.js'
 +
-+const deco = new Decorators<typeof Place>()
++// Uncomment when adding decorators (@deco.BelongsTo, @deco.Validates, etc.):
++// import { Decorators } from '@rvoh/dream'
++// const deco = new Decorators<typeof Place>()
 +
++@SoftDelete()
 +export default class Place extends ApplicationModel {
 +  public override get table() {
 +    return 'places' as const
@@ -372,16 +381,16 @@ index 0000000..ee1bcf4
 +  public name: DreamColumn<Place, 'name'>
 +  public style: DreamColumn<Place, 'style'>
 +  public sleeps: DreamColumn<Place, 'sleeps'>
-+  public deletedAt: DreamColumn<Place, 'deletedAt'>
 +  public createdAt: DreamColumn<Place, 'createdAt'>
 +  public updatedAt: DreamColumn<Place, 'updatedAt'>
++  public deletedAt: DreamColumn<Place, 'deletedAt'>
 +}
 diff --git a/api/src/app/serializers/PlaceSerializer.ts b/api/src/app/serializers/PlaceSerializer.ts
 new file mode 100644
-index 0000000..83fab47
+index 0000000..edbd000
 --- /dev/null
 +++ b/api/src/app/serializers/PlaceSerializer.ts
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,12 @@
 +import { DreamSerializer } from '@rvoh/dream'
 +import Place from '@models/Place.js'
 +
@@ -394,9 +403,8 @@ index 0000000..83fab47
 +    .attribute('name')
 +    .attribute('style')
 +    .attribute('sleeps')
-+    .attribute('deletedAt')
 diff --git a/api/src/conf/routes.ts b/api/src/conf/routes.ts
-index 47b692e..cfc3ed8 100644
+index 35b824d..b91ad5b 100644
 --- a/api/src/conf/routes.ts
 +++ b/api/src/conf/routes.ts
 @@ -3,6 +3,12 @@ import internalRoutes from '@conf/routes.internal.js'
@@ -411,12 +419,12 @@ index 47b692e..cfc3ed8 100644
 +
    adminRoutes(r)
    internalRoutes(r)
-   // add routes here, perhaps by running `yarn psy g:resource v1/pets Pet name:citext birthdate:date species:enum:pet_species:dog,cat,fish`
-diff --git a/api/src/db/migrations/1773151915966-create-place.ts b/api/src/db/migrations/1773151915966-create-place.ts
+   // add routes here, perhaps by running `pnpm psy g:resource v1/pets Pet name:citext birthdate:date species:enum:pet_species:dog,cat,fish`
+diff --git a/api/src/db/migrations/1779136380186-create-place.ts b/api/src/db/migrations/1779136380186-create-place.ts
 new file mode 100644
-index 0000000..c18822a
+index 0000000..4270fd8
 --- /dev/null
-+++ b/api/src/db/migrations/1773151915966-create-place.ts
++++ b/api/src/db/migrations/1779136380186-create-place.ts
 @@ -0,0 +1,42 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely, sql } from 'kysely'
@@ -448,9 +456,9 @@ index 0000000..c18822a
 +    .addColumn('name', sql`citext`, col => col.notNull())
 +    .addColumn('style', sql`place_styles_enum`, col => col.notNull())
 +    .addColumn('sleeps', 'integer', col => col.notNull())
-+    .addColumn('deleted_at', 'timestamp')
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
++    .addColumn('deleted_at', 'timestamp')
 +    .execute()
 +}
 +

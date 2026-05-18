@@ -19,26 +19,13 @@ command in VSCode / Cursor)
 
 Note the changes in api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts:
 
-1. The room is no longer the base STI model because, in STI, we can't instantiate
-   the base model, only child models, so we choose an arbitrary Room child to stand
-   in for any Room.
-     • to this end, the `roomFactory` was deleted, and all of the child
-       room factories updated with the initialization lines from `roomFactory`
-     • similarly, removed the serializer from the base Room model, which necessitated
-       removing override from the room STI child models
-2. The request body to the create and update endpoints are changed to reflect the STI
-   child we are creating / updating.
+1. The room is no longer the base STI model because, in STI, we cannot instantiate the base model, only child models, so we choose an arbitrary Room child to stand in for any Room.
+2. The request body to the create and update endpoints is changed to reflect the STI child we are creating/updating.
 
 ```console
 pnpm psy sync
 pnpm build:spec # to surface any errors so you can fix them
 pnpm uspec spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
-// The NODE_DEBUG "psychic" flag can be helpful in debugging controller problems:
-NODE_DEBUG=psychic pnpm uspec spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
-// The NODE_DEBUG "json" flag displays the fast-json-stringify function compiled for a particular endpoint:
-NODE_DEBUG=json pnpm uspec spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
-// There is also an "sql" flag. The flags can be applied simultaneously:
-// `NODE_DEBUG=sql,psychic,json`
 ```
 ``````
 
@@ -55,13 +42,12 @@ index c891352..00a5bda 100644
  api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 +api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 diff --git a/api/spec/factories/Room/BathroomFactory.ts b/api/spec/factories/Room/BathroomFactory.ts
-index 749ce6b..d9b083e 100644
+index 749ce6b..9a79018 100644
 --- a/api/spec/factories/Room/BathroomFactory.ts
 +++ b/api/spec/factories/Room/BathroomFactory.ts
 @@ -1,8 +1,10 @@
--import { UpdateableProperties } from '@rvoh/dream/types'
+ import { UpdateableProperties } from '@rvoh/dream/types'
  import Bathroom from '@models/Room/Bathroom.js'
-+import { UpdateableProperties } from '@rvoh/dream/types'
 +import createPlace from '@spec/factories/PlaceFactory.js'
  
  export default async function createBathroom(attrs: UpdateableProperties<Bathroom> = {}) {
@@ -71,13 +57,12 @@ index 749ce6b..d9b083e 100644
      ...attrs,
    })
 diff --git a/api/spec/factories/Room/BedroomFactory.ts b/api/spec/factories/Room/BedroomFactory.ts
-index 354c9e9..e482350 100644
+index 354c9e9..b0501d5 100644
 --- a/api/spec/factories/Room/BedroomFactory.ts
 +++ b/api/spec/factories/Room/BedroomFactory.ts
 @@ -1,8 +1,10 @@
--import { UpdateableProperties } from '@rvoh/dream/types'
+ import { UpdateableProperties } from '@rvoh/dream/types'
  import Bedroom from '@models/Room/Bedroom.js'
-+import { UpdateableProperties } from '@rvoh/dream/types'
 +import createPlace from '@spec/factories/PlaceFactory.js'
  
  export default async function createBedroom(attrs: UpdateableProperties<Bedroom> = {}) {
@@ -87,13 +72,12 @@ index 354c9e9..e482350 100644
      ...attrs,
    })
 diff --git a/api/spec/factories/Room/DenFactory.ts b/api/spec/factories/Room/DenFactory.ts
-index 1a26df8..d6d03f7 100644
+index 1a26df8..a582b30 100644
 --- a/api/spec/factories/Room/DenFactory.ts
 +++ b/api/spec/factories/Room/DenFactory.ts
 @@ -1,8 +1,10 @@
--import { UpdateableProperties } from '@rvoh/dream/types'
+ import { UpdateableProperties } from '@rvoh/dream/types'
  import Den from '@models/Room/Den.js'
-+import { UpdateableProperties } from '@rvoh/dream/types'
 +import createPlace from '@spec/factories/PlaceFactory.js'
  
  export default async function createDen(attrs: UpdateableProperties<Den> = {}) {
@@ -103,13 +87,12 @@ index 1a26df8..d6d03f7 100644
    })
  }
 diff --git a/api/spec/factories/Room/KitchenFactory.ts b/api/spec/factories/Room/KitchenFactory.ts
-index cb6d068..5006d45 100644
+index cb6d068..1b19362 100644
 --- a/api/spec/factories/Room/KitchenFactory.ts
 +++ b/api/spec/factories/Room/KitchenFactory.ts
 @@ -1,8 +1,10 @@
--import { UpdateableProperties } from '@rvoh/dream/types'
+ import { UpdateableProperties } from '@rvoh/dream/types'
  import Kitchen from '@models/Room/Kitchen.js'
-+import { UpdateableProperties } from '@rvoh/dream/types'
 +import createPlace from '@spec/factories/PlaceFactory.js'
  
  export default async function createKitchen(attrs: UpdateableProperties<Kitchen> = {}) {
@@ -119,13 +102,12 @@ index cb6d068..5006d45 100644
      ...attrs,
    })
 diff --git a/api/spec/factories/Room/LivingRoomFactory.ts b/api/spec/factories/Room/LivingRoomFactory.ts
-index acca82d..cb831f8 100644
+index acca82d..2db3acd 100644
 --- a/api/spec/factories/Room/LivingRoomFactory.ts
 +++ b/api/spec/factories/Room/LivingRoomFactory.ts
 @@ -1,8 +1,10 @@
--import { UpdateableProperties } from '@rvoh/dream/types'
+ import { UpdateableProperties } from '@rvoh/dream/types'
  import LivingRoom from '@models/Room/LivingRoom.js'
-+import { UpdateableProperties } from '@rvoh/dream/types'
 +import createPlace from '@spec/factories/PlaceFactory.js'
  
  export default async function createLivingRoom(attrs: UpdateableProperties<LivingRoom> = {}) {
@@ -151,25 +133,21 @@ index c75d9f4..0000000
 -  })
 -}
 diff --git a/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts b/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
-index 88ac684..453300a 100644
+index 88ac684..437e03a 100644
 --- a/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 +++ b/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
-@@ -1,9 +1,12 @@
-+import Place from '@models/Place.js'
- import Room from '@models/Room.js'
+@@ -1,7 +1,10 @@
 +import Kitchen from '@models/Room/Kitchen.js'
+ import Room from '@models/Room.js'
  import User from '@models/User.js'
--import Place from '@models/Place.js'
+ import Place from '@models/Place.js'
 -import createRoom from '@spec/factories/RoomFactory.js'
--import createUser from '@spec/factories/UserFactory.js'
 +import createHost from '@spec/factories/HostFactory.js'
 +import createHostPlace from '@spec/factories/HostPlaceFactory.js'
- import createPlace from '@spec/factories/PlaceFactory.js'
 +import createKitchen from '@spec/factories/Room/KitchenFactory.js'
-+import createUser from '@spec/factories/UserFactory.js'
+ import createUser from '@spec/factories/UserFactory.js'
+ import createPlace from '@spec/factories/PlaceFactory.js'
  import { RequestBody, session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
- 
- describe('V1/Host/Places/RoomsController', () => {
 @@ -13,7 +16,9 @@ describe('V1/Host/Places/RoomsController', () => {
  
    beforeEach(async () => {
@@ -294,7 +272,7 @@ index 88ac684..453300a 100644
          await destroy(room, 404)
  
 diff --git a/api/src/app/controllers/V1/Host/Places/BaseController.ts b/api/src/app/controllers/V1/Host/Places/BaseController.ts
-index 475dacc..9da129a 100644
+index 475dacc..a80efdb 100644
 --- a/api/src/app/controllers/V1/Host/Places/BaseController.ts
 +++ b/api/src/app/controllers/V1/Host/Places/BaseController.ts
 @@ -1,5 +1,14 @@
@@ -309,28 +287,38 @@ index 475dacc..9da129a 100644
 +  protected async loadCurrentPlace() {
 +    this.currentPlace = await this.currentHost
 +      .associationQuery('places')
-+      .findOrFail(this.castParam('placeId', 'string'))
++      .findOrFail(this.castParam('placeId', 'uuid'))
 +  }
  }
 diff --git a/api/src/app/controllers/V1/Host/Places/RoomsController.ts b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
-index 3fdec77..bf6c9f2 100644
+index abd6199..f1d1bfc 100644
 --- a/api/src/app/controllers/V1/Host/Places/RoomsController.ts
 +++ b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
-@@ -1,6 +1,12 @@
-+import Room from '@models/Room.js'
+@@ -1,11 +1,22 @@
+ import { OpenAPI } from '@rvoh/psychic'
+ import { DreamParamSafeColumnNames } from '@rvoh/dream/types'
 +import Bathroom from '@models/Room/Bathroom.js'
 +import Bedroom from '@models/Room/Bedroom.js'
 +import Den from '@models/Room/Den.js'
 +import Kitchen from '@models/Room/Kitchen.js'
 +import LivingRoom from '@models/Room/LivingRoom.js'
- import { OpenAPI } from '@rvoh/psychic'
 +import { RoomTypesEnumValues } from '@src/types/db.js'
  import V1HostPlacesBaseController from './BaseController.js'
--import Room from '@models/Room.js'
+ import Room from '@models/Room.js'
  
  const openApiTags = ['rooms']
  
-@@ -14,10 +20,11 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
+-const paramSafeColumns: DreamParamSafeColumnNames<Room>[] = ['position']
++const paramSafeColumns: DreamParamSafeColumnNames<Room>[] = [
++  'appliances',
++  'bathOrShowerStyle',
++  'bedTypes',
++  'position',
++]
+ 
+ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseController {
+   @OpenAPI(Room, {
+@@ -17,10 +28,11 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      fastJsonStringify: true,
    })
    public async index() {
@@ -346,7 +334,7 @@ index 3fdec77..bf6c9f2 100644
    }
  
    @OpenAPI(Room, {
-@@ -27,8 +34,8 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
+@@ -30,8 +42,8 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      fastJsonStringify: true,
    })
    public async show() {
@@ -357,63 +345,40 @@ index 3fdec77..bf6c9f2 100644
    }
  
    @OpenAPI(Room, {
-@@ -36,11 +43,59 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
-     tags: openApiTags,
-     description: 'Create a Room',
+@@ -41,12 +53,38 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      fastJsonStringify: true,
-+    requestBody: {
-+      /**
-+       * `type` is normally a protected attribute, but when creating a room, we do want the user
-+       * to be able to select room type, we just have to handle it explicitly since it won't be
-+       * returned by `extractParams` (and we don't want it to be since simply setting the type would
-+       * not be operating on the correct model, even though the correct model would be hydrated
-+       * when loading from the database)
-+       */
+     requestBody: {
+       only: paramSafeColumns,
 +      including: ['type'],
-+    },
+     },
    })
    public async create() {
--    // let room = await this.currentPlace.createAssociation('rooms', this.extractParams(Room,
--    //   ['position'],
--    // ))
+-    // let room = await this.currentPlace.createAssociation('rooms', this.extractParams(Room, paramSafeColumns))
 -    // if (room.isPersisted) room = await room.loadFor('default').execute()
 -    // this.created(room)
 +    let room: Room
 +    const roomType = this.castParam('type', 'string', { enum: RoomTypesEnumValues })
-+
-+    // extractParams is based on the table (even virtual attributes are associated with
-+    // the table at the type level), so passing the STI children to extractParams
-+    // would not alter the results
-+    const roomParams = this.extractParams(Room, ['position'])
++    const roomParams = this.extractParams(Room, paramSafeColumns)
 +
 +    switch (roomType) {
 +      case 'Bathroom':
 +        room = await Bathroom.create({ place: this.currentPlace, ...roomParams })
 +        break
-+
 +      case 'Bedroom':
 +        room = await Bedroom.create({ place: this.currentPlace, ...roomParams })
 +        break
-+
 +      case 'Den':
 +        room = await Den.create({ place: this.currentPlace, ...roomParams })
 +        break
-+
 +      case 'Kitchen':
 +        room = await Kitchen.create({ place: this.currentPlace, ...roomParams })
 +        break
-+
 +      case 'LivingRoom':
 +        room = await LivingRoom.create({ place: this.currentPlace, ...roomParams })
 +        break
-+
 +      default: {
-+        // protection so that if a new RoomTypesEnum is ever added, this will throw a type
-+        // error at build time until a case is added to handle that new RoomTypesEnum
 +        const _never: never = roomType
-+
-+        // even though this should never happen due to the type protection, throw an error to satisfy later types
-+        throw new Error(`Unhandled RoomTypesEnum: ${_never as string}`)
++        throw new Error(`Unhandled RoomTypesEnum: ${String(_never)}`)
 +      }
 +    }
 +
@@ -422,22 +387,20 @@ index 3fdec77..bf6c9f2 100644
    }
  
    @OpenAPI(Room, {
-@@ -50,9 +105,9 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
-     fastJsonStringify: true,
+@@ -59,9 +97,9 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
+     },
    })
    public async update() {
 -    // const room = await this.room()
--    // await room.update(this.extractParams(Room,
--    //   ['position'],
--    // ))
+-    // await room.update(this.extractParams(Room, paramSafeColumns))
 -    // this.noContent()
 +    const room = await this.room()
-+    await room.update(this.extractParams(Room, ['position']))
++    await room.update(this.extractParams(Room, paramSafeColumns))
 +    this.noContent()
    }
  
    @OpenAPI({
-@@ -62,14 +117,15 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
+@@ -71,14 +109,15 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      fastJsonStringify: true,
    })
    public async destroy() {
@@ -456,181 +419,34 @@ index 3fdec77..bf6c9f2 100644
 +    return await this.currentPlace
 +      .associationQuery('rooms')
 +      .preloadFor('default')
-+      .findOrFail(this.castParam('id', 'string'))
++      .findOrFail(this.castParam('id', 'uuid'))
    }
  }
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index 9f8b47d..9243aa1 100644
+index 4dcff89..1600eb3 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
-@@ -1,6 +1,7 @@
+@@ -3,6 +3,7 @@ import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
  import ApplicationModel from '@models/ApplicationModel.js'
  import Host from '@models/Host.js'
  import HostPlace from '@models/HostPlace.js'
 +import Room from '@models/Room.js'
- import { Decorators } from '@rvoh/dream'
- import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
  
-@@ -31,4 +32,9 @@ export default class Place extends ApplicationModel {
+ const deco = new Decorators<typeof Place>()
+ 
+@@ -32,4 +33,7 @@ export default class Place extends ApplicationModel {
  
    @deco.HasMany('Host', { through: 'hostPlaces' })
    public hosts: Host[]
 +
-+  @deco.HasMany('Room')
-+  // make sure this imports from `import Room from '@models/Room.js'`
-+  // not from `import { Room } from 'socket.io-adapter'`
++  @deco.HasMany('Room', { dependent: 'destroy' })
 +  public rooms: Room[]
  }
-diff --git a/api/src/app/models/Room.ts b/api/src/app/models/Room.ts
-index 4ea9146..7b34e52 100644
---- a/api/src/app/models/Room.ts
-+++ b/api/src/app/models/Room.ts
-@@ -1,7 +1,7 @@
--import { Decorators } from '@rvoh/dream'
--import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- import ApplicationModel from '@models/ApplicationModel.js'
- import Place from '@models/Place.js'
-+import { Decorators } from '@rvoh/dream'
-+import { DreamColumn } from '@rvoh/dream/types'
- 
- const deco = new Decorators<typeof Room>()
- 
-@@ -10,13 +10,6 @@ export default class Room extends ApplicationModel {
-     return 'rooms' as const
-   }
- 
--  public get serializers(): DreamSerializers<Room> {
--    return {
--      default: 'RoomSerializer',
--      summary: 'RoomSummarySerializer',
--    }
--  }
--
-   public id: DreamColumn<Room, 'id'>
-   public type: DreamColumn<Room, 'type'>
-   public position: DreamColumn<Room, 'position'>
-diff --git a/api/src/app/models/Room/Bathroom.ts b/api/src/app/models/Room/Bathroom.ts
-index 70f5f61..881ead9 100644
---- a/api/src/app/models/Room/Bathroom.ts
-+++ b/api/src/app/models/Room/Bathroom.ts
-@@ -1,12 +1,12 @@
--import { Decorators, STI } from '@rvoh/dream'
--import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- import Room from '@models/Room.js'
-+import { STI } from '@rvoh/dream'
-+import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- 
--const deco = new Decorators<typeof Bathroom>()
-+// const deco = new Decorators<typeof Bathroom>()
- 
- @STI(Room)
- export default class Bathroom extends Room {
--  public override get serializers(): DreamSerializers<Bathroom> {
-+  public get serializers(): DreamSerializers<Bathroom> {
-     return {
-       default: 'Room/BathroomSerializer',
-       summary: 'Room/BathroomSummarySerializer',
-diff --git a/api/src/app/models/Room/Bedroom.ts b/api/src/app/models/Room/Bedroom.ts
-index b7eabca..2fb83d7 100644
---- a/api/src/app/models/Room/Bedroom.ts
-+++ b/api/src/app/models/Room/Bedroom.ts
-@@ -1,12 +1,12 @@
--import { Decorators, STI } from '@rvoh/dream'
--import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- import Room from '@models/Room.js'
-+import { STI } from '@rvoh/dream'
-+import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- 
--const deco = new Decorators<typeof Bedroom>()
-+// const deco = new Decorators<typeof Bedroom>()
- 
- @STI(Room)
- export default class Bedroom extends Room {
--  public override get serializers(): DreamSerializers<Bedroom> {
-+  public get serializers(): DreamSerializers<Bedroom> {
-     return {
-       default: 'Room/BedroomSerializer',
-       summary: 'Room/BedroomSummarySerializer',
-diff --git a/api/src/app/models/Room/Den.ts b/api/src/app/models/Room/Den.ts
-index 616ff1e..0f80449 100644
---- a/api/src/app/models/Room/Den.ts
-+++ b/api/src/app/models/Room/Den.ts
-@@ -1,16 +1,15 @@
--import { Decorators, STI } from '@rvoh/dream'
--import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- import Room from '@models/Room.js'
-+import { STI } from '@rvoh/dream'
-+import { DreamSerializers } from '@rvoh/dream/types'
- 
--const deco = new Decorators<typeof Den>()
-+// const deco = new Decorators<typeof Den>()
- 
- @STI(Room)
- export default class Den extends Room {
--  public override get serializers(): DreamSerializers<Den> {
-+  public get serializers(): DreamSerializers<Den> {
-     return {
-       default: 'Room/DenSerializer',
-       summary: 'Room/DenSummarySerializer',
-     }
-   }
--
- }
-diff --git a/api/src/app/models/Room/Kitchen.ts b/api/src/app/models/Room/Kitchen.ts
-index e6e9a80..84eebb2 100644
---- a/api/src/app/models/Room/Kitchen.ts
-+++ b/api/src/app/models/Room/Kitchen.ts
-@@ -1,12 +1,12 @@
--import { Decorators, STI } from '@rvoh/dream'
--import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- import Room from '@models/Room.js'
-+import { STI } from '@rvoh/dream'
-+import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- 
--const deco = new Decorators<typeof Kitchen>()
-+// const deco = new Decorators<typeof Kitchen>()
- 
- @STI(Room)
- export default class Kitchen extends Room {
--  public override get serializers(): DreamSerializers<Kitchen> {
-+  public get serializers(): DreamSerializers<Kitchen> {
-     return {
-       default: 'Room/KitchenSerializer',
-       summary: 'Room/KitchenSummarySerializer',
-diff --git a/api/src/app/models/Room/LivingRoom.ts b/api/src/app/models/Room/LivingRoom.ts
-index 18781f3..4231e84 100644
---- a/api/src/app/models/Room/LivingRoom.ts
-+++ b/api/src/app/models/Room/LivingRoom.ts
-@@ -1,16 +1,15 @@
--import { Decorators, STI } from '@rvoh/dream'
--import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- import Room from '@models/Room.js'
-+import { STI } from '@rvoh/dream'
-+import { DreamSerializers } from '@rvoh/dream/types'
- 
--const deco = new Decorators<typeof LivingRoom>()
-+// const deco = new Decorators<typeof LivingRoom>()
- 
- @STI(Room)
- export default class LivingRoom extends Room {
--  public override get serializers(): DreamSerializers<LivingRoom> {
-+  public get serializers(): DreamSerializers<LivingRoom> {
-     return {
-       default: 'Room/LivingRoomSerializer',
-       summary: 'Room/LivingRoomSummarySerializer',
-     }
-   }
--
- }
 diff --git a/api/src/app/serializers/RoomSerializer.ts b/api/src/app/serializers/RoomSerializer.ts
-index 79390f9..7a26a36 100644
+index b4865a1..d16e185 100644
 --- a/api/src/app/serializers/RoomSerializer.ts
 +++ b/api/src/app/serializers/RoomSerializer.ts
-@@ -1,12 +1,12 @@
--import { DreamSerializer } from '@rvoh/dream'
- import Room from '@models/Room.js'
-+import { DreamSerializer } from '@rvoh/dream'
- 
+@@ -4,8 +4,8 @@ import Room from '@models/Room.js'
  export const RoomSummarySerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
    DreamSerializer(StiChildClass ?? Room, room)
      .attribute('id')
@@ -641,12 +457,55 @@ index 79390f9..7a26a36 100644
    RoomSummarySerializer(StiChildClass, room)
 -    .attribute('type', { openapi: { type: 'string', enum: [(StiChildClass ?? Room).sanitizedName] } })
 -    .attribute('position')
-     .attribute('deletedAt')
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 2c48296..a5705ec 100644
+index ca09d72..6191a9a 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
-@@ -446,6 +446,16 @@
+@@ -402,11 +402,60 @@
+               "schema": {
+                 "type": "object",
+                 "properties": {
++                  "appliances": {
++                    "type": "array",
++                    "items": {
++                      "type": "string",
++                      "enum": [
++                        "dishwasher",
++                        "microwave",
++                        "oven",
++                        "stove"
++                      ]
++                    }
++                  },
++                  "bathOrShowerStyle": {
++                    "type": [
++                      "string",
++                      "null"
++                    ],
++                    "enum": [
++                      "bath",
++                      "bath_and_shower",
++                      "none",
++                      "shower",
++                      null
++                    ]
++                  },
++                  "bedTypes": {
++                    "type": "array",
++                    "items": {
++                      "type": "string",
++                      "enum": [
++                        "bunk",
++                        "cot",
++                        "king",
++                        "queen",
++                        "sofabed",
++                        "twin"
++                      ]
++                    }
++                  },
+                   "position": {
+                     "type": [
                        "integer",
                        "null"
                      ]
@@ -663,9 +522,55 @@ index 2c48296..a5705ec 100644
                    }
                  }
                }
-@@ -851,11 +861,23 @@
+@@ -549,6 +598,45 @@
+               "schema": {
+                 "type": "object",
+                 "properties": {
++                  "appliances": {
++                    "type": "array",
++                    "items": {
++                      "type": "string",
++                      "enum": [
++                        "dishwasher",
++                        "microwave",
++                        "oven",
++                        "stove"
++                      ]
++                    }
++                  },
++                  "bathOrShowerStyle": {
++                    "type": [
++                      "string",
++                      "null"
++                    ],
++                    "enum": [
++                      "bath",
++                      "bath_and_shower",
++                      "none",
++                      "shower",
++                      null
++                    ]
++                  },
++                  "bedTypes": {
++                    "type": "array",
++                    "items": {
++                      "type": "string",
++                      "enum": [
++                        "bunk",
++                        "cot",
++                        "king",
++                        "queen",
++                        "sofabed",
++                        "twin"
++                      ]
++                    }
++                  },
+                   "position": {
+                     "type": [
+                       "integer",
+@@ -753,11 +841,23 @@
+       "RoomBathroomSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -688,9 +593,9 @@ index 2c48296..a5705ec 100644
            }
          }
        },
-@@ -903,11 +925,23 @@
+@@ -795,11 +895,23 @@
+       "RoomBedroomSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -713,9 +618,9 @@ index 2c48296..a5705ec 100644
            }
          }
        },
-@@ -947,11 +981,23 @@
+@@ -829,11 +941,23 @@
+       "RoomDenSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -738,9 +643,9 @@ index 2c48296..a5705ec 100644
            }
          }
        },
-@@ -999,11 +1045,23 @@
+@@ -871,11 +995,23 @@
+       "RoomKitchenSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -763,9 +668,9 @@ index 2c48296..a5705ec 100644
            }
          }
        },
-@@ -1043,11 +1101,23 @@
+@@ -905,11 +1041,23 @@
+       "RoomLivingRoomSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -789,10 +694,54 @@ index 2c48296..a5705ec 100644
          }
        },
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 6616d1e..e4a969f 100644
+index 9a96900..8cc03b9 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
-@@ -446,6 +446,16 @@
+@@ -402,11 +402,60 @@
+               "schema": {
+                 "type": "object",
+                 "properties": {
++                  "appliances": {
++                    "type": "array",
++                    "items": {
++                      "type": "string",
++                      "enum": [
++                        "dishwasher",
++                        "microwave",
++                        "oven",
++                        "stove"
++                      ]
++                    }
++                  },
++                  "bathOrShowerStyle": {
++                    "type": [
++                      "string",
++                      "null"
++                    ],
++                    "enum": [
++                      "bath",
++                      "bath_and_shower",
++                      "none",
++                      "shower",
++                      null
++                    ]
++                  },
++                  "bedTypes": {
++                    "type": "array",
++                    "items": {
++                      "type": "string",
++                      "enum": [
++                        "bunk",
++                        "cot",
++                        "king",
++                        "queen",
++                        "sofabed",
++                        "twin"
++                      ]
++                    }
++                  },
+                   "position": {
+                     "type": [
                        "integer",
                        "null"
                      ]
@@ -809,9 +758,55 @@ index 6616d1e..e4a969f 100644
                    }
                  }
                }
-@@ -867,11 +877,25 @@
+@@ -549,6 +598,45 @@
+               "schema": {
+                 "type": "object",
+                 "properties": {
++                  "appliances": {
++                    "type": "array",
++                    "items": {
++                      "type": "string",
++                      "enum": [
++                        "dishwasher",
++                        "microwave",
++                        "oven",
++                        "stove"
++                      ]
++                    }
++                  },
++                  "bathOrShowerStyle": {
++                    "type": [
++                      "string",
++                      "null"
++                    ],
++                    "enum": [
++                      "bath",
++                      "bath_and_shower",
++                      "none",
++                      "shower",
++                      null
++                    ]
++                  },
++                  "bedTypes": {
++                    "type": "array",
++                    "items": {
++                      "type": "string",
++                      "enum": [
++                        "bunk",
++                        "cot",
++                        "king",
++                        "queen",
++                        "sofabed",
++                        "twin"
++                      ]
++                    }
++                  },
+                   "position": {
+                     "type": [
+                       "integer",
+@@ -769,11 +857,25 @@
+       "RoomBathroomSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -836,9 +831,9 @@ index 6616d1e..e4a969f 100644
            }
          }
        },
-@@ -928,11 +952,25 @@
+@@ -820,11 +922,25 @@
+       "RoomBedroomSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -863,9 +858,9 @@ index 6616d1e..e4a969f 100644
            }
          }
        },
-@@ -974,11 +1012,25 @@
+@@ -856,11 +972,25 @@
+       "RoomDenSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -890,9 +885,9 @@ index 6616d1e..e4a969f 100644
            }
          }
        },
-@@ -1033,11 +1085,25 @@
+@@ -905,11 +1035,25 @@
+       "RoomKitchenSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -917,9 +912,9 @@ index 6616d1e..e4a969f 100644
            }
          }
        },
-@@ -1079,11 +1145,25 @@
+@@ -941,11 +1085,25 @@
+       "RoomLivingRoomSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -945,10 +940,54 @@ index 6616d1e..e4a969f 100644
          }
        },
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index e34f706..fcc24fe 100644
+index a6dd096..bd6c5a3 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
-@@ -446,6 +446,16 @@
+@@ -402,11 +402,60 @@
+               "schema": {
+                 "type": "object",
+                 "properties": {
++                  "appliances": {
++                    "type": "array",
++                    "items": {
++                      "type": "string",
++                      "enum": [
++                        "dishwasher",
++                        "microwave",
++                        "oven",
++                        "stove"
++                      ]
++                    }
++                  },
++                  "bathOrShowerStyle": {
++                    "type": [
++                      "string",
++                      "null"
++                    ],
++                    "enum": [
++                      "bath",
++                      "bath_and_shower",
++                      "none",
++                      "shower",
++                      null
++                    ]
++                  },
++                  "bedTypes": {
++                    "type": "array",
++                    "items": {
++                      "type": "string",
++                      "enum": [
++                        "bunk",
++                        "cot",
++                        "king",
++                        "queen",
++                        "sofabed",
++                        "twin"
++                      ]
++                    }
++                  },
+                   "position": {
+                     "type": [
                        "integer",
                        "null"
                      ]
@@ -965,9 +1004,55 @@ index e34f706..fcc24fe 100644
                    }
                  }
                }
-@@ -867,11 +877,25 @@
+@@ -549,6 +598,45 @@
+               "schema": {
+                 "type": "object",
+                 "properties": {
++                  "appliances": {
++                    "type": "array",
++                    "items": {
++                      "type": "string",
++                      "enum": [
++                        "dishwasher",
++                        "microwave",
++                        "oven",
++                        "stove"
++                      ]
++                    }
++                  },
++                  "bathOrShowerStyle": {
++                    "type": [
++                      "string",
++                      "null"
++                    ],
++                    "enum": [
++                      "bath",
++                      "bath_and_shower",
++                      "none",
++                      "shower",
++                      null
++                    ]
++                  },
++                  "bedTypes": {
++                    "type": "array",
++                    "items": {
++                      "type": "string",
++                      "enum": [
++                        "bunk",
++                        "cot",
++                        "king",
++                        "queen",
++                        "sofabed",
++                        "twin"
++                      ]
++                    }
++                  },
+                   "position": {
+                     "type": [
+                       "integer",
+@@ -769,11 +857,25 @@
+       "RoomBathroomSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -992,9 +1077,9 @@ index e34f706..fcc24fe 100644
            }
          }
        },
-@@ -928,11 +952,25 @@
+@@ -820,11 +922,25 @@
+       "RoomBedroomSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -1019,9 +1104,9 @@ index e34f706..fcc24fe 100644
            }
          }
        },
-@@ -974,11 +1012,25 @@
+@@ -856,11 +972,25 @@
+       "RoomDenSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -1046,9 +1131,9 @@ index e34f706..fcc24fe 100644
            }
          }
        },
-@@ -1033,11 +1085,25 @@
+@@ -905,11 +1035,25 @@
+       "RoomKitchenSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -1073,9 +1158,9 @@ index e34f706..fcc24fe 100644
            }
          }
        },
-@@ -1079,11 +1145,25 @@
+@@ -941,11 +1085,25 @@
+       "RoomLivingRoomSummary": {
          "type": "object",
-         "additionalProperties": false,
          "required": [
 -          "id"
 +          "id",
@@ -1101,10 +1186,10 @@ index e34f706..fcc24fe 100644
          }
        },
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index a45e34d..9e6360b 100644
+index facc6e2..4d7d356 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -402,6 +402,15 @@ export const schema = {
+@@ -420,6 +420,15 @@ export const schema = {
          requiredAndClauses: null,
          passthroughAndClauses: null,
        },
@@ -1121,19 +1206,35 @@ index a45e34d..9e6360b 100644
    },
    rooms: {
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index 0ff0366..8135272 100644
+index a34709d..414bbff 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
-@@ -260,6 +260,8 @@ export interface paths {
-                         bathOrShowerStyle?: "bath" | "bath_and_shower" | "none" | "shower" | null;
-                         bedTypes?: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
+@@ -255,7 +255,13 @@ export interface paths {
+             requestBody?: {
+                 content: {
+                     "application/json": {
++                        appliances?: ("dishwasher" | "microwave" | "oven" | "stove")[];
++                        /** @enum {string|null} */
++                        bathOrShowerStyle?: "bath" | "bath_and_shower" | "none" | "shower" | null;
++                        bedTypes?: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
                          position?: number | null;
 +                        /** @enum {string} */
 +                        type?: "Bathroom" | "Bedroom" | "Den" | "Kitchen" | "LivingRoom";
                      };
                  };
              };
-@@ -435,6 +437,9 @@ export interface components {
+@@ -367,6 +373,10 @@ export interface paths {
+             requestBody?: {
+                 content: {
+                     "application/json": {
++                        appliances?: ("dishwasher" | "microwave" | "oven" | "stove")[];
++                        /** @enum {string|null} */
++                        bathOrShowerStyle?: "bath" | "bath_and_shower" | "none" | "shower" | null;
++                        bedTypes?: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
+                         position?: number | null;
+                     };
+                 };
+@@ -423,6 +433,9 @@ export interface components {
          };
          RoomBathroomSummary: {
              id: string;
@@ -1143,7 +1244,7 @@ index 0ff0366..8135272 100644
          };
          RoomBedroom: {
              bedTypes: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
-@@ -447,6 +452,9 @@ export interface components {
+@@ -433,6 +446,9 @@ export interface components {
          };
          RoomBedroomSummary: {
              id: string;
@@ -1152,8 +1253,8 @@ index 0ff0366..8135272 100644
 +            type: "Bedroom";
          };
          RoomDen: {
-             /** Format: date-time */
-@@ -458,6 +466,9 @@ export interface components {
+             id: string;
+@@ -442,6 +458,9 @@ export interface components {
          };
          RoomDenSummary: {
              id: string;
@@ -1163,7 +1264,7 @@ index 0ff0366..8135272 100644
          };
          RoomKitchen: {
              appliances: ("dishwasher" | "microwave" | "oven" | "stove")[];
-@@ -470,6 +481,9 @@ export interface components {
+@@ -452,6 +471,9 @@ export interface components {
          };
          RoomKitchenSummary: {
              id: string;
@@ -1172,8 +1273,8 @@ index 0ff0366..8135272 100644
 +            type: "Kitchen";
          };
          RoomLivingRoom: {
-             /** Format: date-time */
-@@ -481,6 +495,9 @@ export interface components {
+             id: string;
+@@ -461,6 +483,9 @@ export interface components {
          };
          RoomLivingRoomSummary: {
              id: string;
