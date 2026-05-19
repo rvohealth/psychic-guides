@@ -3,27 +3,39 @@ sidebar_position: 0
 title: overview
 pagination_prev: null
 ai_summary: >-
-  @Snapshotable decorator adds takeSnapshot instance method to Dream models.
-  Recursively traverses HasMany and HasOne associations (including soft-deleted
-  records), building JSON object of entire model tree. Skips BelongsTo and
-  through associations (unless @SnapshotableFollowThrough used). Use
-  @SnapshotableIgnore to filter columns or associations; required for
-  required/passthrough on-clause associations (or takeSnapshot throws). Uses
-  batched preloads to avoid N+1 up to 4 levels deep; self-referential trees
-  supported. Recommended for background jobs.
+  @Snapshotable is for internal use only (retention archiving, compliance
+  storage) — not for user-facing data subject access requests. Auto-includes
+  everything reachable as the schema evolves; omission is the real retention
+  risk. BelongsTo always skipped, preventing cross-ownership traversal. Through
+  associations skipped by default; opt in with @SnapshotableFollowThrough.
+  Worst-case over-inclusion is join model records for other owners (not their
+  core records). @SnapshotableIgnore excludes columns or associations; required
+  for required/passthrough and-clause associations (or takeSnapshot throws).
+  Batched preloads up to 4 levels deep; self-referential trees supported.
+  Soft-deleted records included. Run in background job.
 ---
 
 # @Snapshotable - overview
 
-The `@Snapshotable()` class decorator adds the instance method `takeSnapshot` to the decorated Dream model. When called, `takeSnapshot` builds a simple object of all the database fields for the model. It also traverses the association tree rooted at the model, following `HasMany` and `HasOne` associations, recursively calling `takeSnapshot` on each. This is useful for converting an entire model tree to json to, for example, store a user's data in compliance with HIPAA retention requirements.
+The `@Snapshotable()` class decorator adds the instance method `takeSnapshot` to the decorated Dream model. When called, `takeSnapshot` builds a plain object of all the database fields for the model and recursively traverses its association tree, following `HasMany` and `HasOne` associations. It is designed for **internal** use cases — retention archiving, compliance storage, internal audit trails. It is **not** appropriate for responding to user data subject access requests (e.g. GDPR/CCPA "give me all my data"); the output reflects your internal association graph, not what a user would consider "their data."
 
-`BelongsTo` associations are intentionally skipped, as are `through` associations, so Snapshotable automatically avoids circuits (which would lead to an infinite loop). To explicitly include a `through` association, decorate it with the `@SnapshotableFollowThrough()` decorator.
+## Auto-inclusion is the point
 
-Soft-deleted records are **included** in snapshots — the soft-delete default scope is removed so that deleted children appear in the output. This is intentional: for compliance use cases, the data existed and should be captured.
+Snapshotable automatically captures new associations as your schema evolves. For retention use cases, **omission is the real compliance risk**: you don't want a new association silently excluded from archived snapshots just because it was added after the initial implementation. The tool errs toward capturing more rather than less.
 
-Self-referential models (e.g. a `TreeNode` with `HasMany children`) are supported. The same model class can appear up to four times in a single preload path, which handles trees up to depth four with no extra queries; deeper levels fall back to on-demand loading.
+## Data boundaries
+
+`BelongsTo` associations are intentionally skipped, as are `through` associations, so Snapshotable automatically avoids circuits. Starting from a root model, traversal can only reach records that model *owns* — it cannot jump across a `BelongsTo` to a different owner. To explicitly include a `through` association, decorate it with the `@SnapshotableFollowThrough()` decorator.
+
+Many-to-many join models (e.g. `UserGroup` joining `User` and `Group`) are safe by default: the traversal includes the join records but stops there since join models have only `BelongsTo` associations. If you do opt in via `@SnapshotableFollowThrough()` and reach a shared resource (e.g. a `Group`), that resource's `hasMany` back to the join model will pull in join records for *all* owners of that resource — not their core records (still blocked by `BelongsTo`), but the join records. For internal retention this is generally acceptable. If the join model carries sensitive metadata, apply `@SnapshotableIgnore()` to that association on the destination model.
+
+## Other behaviors
 
 Associations with a `DreamConst.required` or `DreamConst.passthrough` `and`-clause **must** be decorated with `@SnapshotableIgnore()`. These associations cannot be preloaded without a runtime value they require, so `takeSnapshot()` throws if it encounters one that hasn't been excluded.
+
+Soft-deleted records are **included** in snapshots — the soft-delete default scope is removed so that deleted children appear in the output. This is intentional: for retention use cases, the data existed and should be captured.
+
+Self-referential models (e.g. a `TreeNode` with `HasMany children`) are supported. The same model class can appear up to four times in a single preload path, which handles trees up to depth four with no extra queries; deeper levels fall back to on-demand loading.
 
 NOTE: Snapshotable uses batched preload queries to avoid N+1 queries for trees up to 4 levels deep, and falls back to on-demand loading beyond that. It will also leverage the read replica, if configured. Snapshotable builds a single object of the entire content tree, so the in-memory object may become quite large. As such, it may be advisable to leverage `@SnapshotableIgnore` to prevent full traversal of the tree so that it can be split into chunks. It is recommended that Snapshotable is only used in a background job (see [https://psychicframework.com/docs/plugins/workers/overview](https://psychicframework.com/docs/plugins/workers/overview)).
 
