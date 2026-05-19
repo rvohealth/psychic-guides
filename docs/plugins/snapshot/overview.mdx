@@ -7,18 +7,20 @@ ai_summary: >-
   Recursively traverses HasMany and HasOne associations, building JSON object of
   entire model tree. Skips BelongsTo and through associations (unless
   @SnapshotableFollowThrough used). Use @SnapshotableIgnore to filter
-  associations. Not optimized for N+1. Recommended for background jobs.
+  associations or exclude required/passthrough on-clause associations (required,
+  or takeSnapshot throws). Uses batched preloads to avoid N+1 up to 4 levels
+  deep. Recommended for background jobs.
 ---
 
 # @Snapshotable - overview
 
 The `@Snapshotable()` class decorator adds the instance method `takeSnapshot` to the decorated Dream model. When called, `takeSnapshot` builds a simple object of all the database fields for the model. It also traverses the association tree rooted at the model, following `HasMany` and `HasOne` associations, recursively calling `takeSnapshot` on each. This is useful for converting an entire model tree to json to, for example, store a user's data in compliance with HIPAA retention requirements.
 
-Snapshotable automatically skips associations with `required` or `passthrough` `on` clauses.
-
 `BelongsTo` associations are intentionally skipped, as are `through` associations, so Snapshotable automatically avoids circuits (which would lead to an infinite loop). To explicitly include a `through` association, decorate it with the `@SnapshotableFollowThrough()` decorator.
 
-NOTE: Snapshotable is not optimized to eliminate the N+1 problem, but it will leverage the read replica, if configured. Snapshotable builds a single object of the entire content tree, so the in-memory object may become quite large. As such, it may be advisable to leverage `@SnapshotableIgnore` to prevent full traversing the tree so that it can be split into chunks. It is recommended that Snapshotable is only used in a background job (see [https://psychicframework.com/docs/plugins/workers/overview](https://psychicframework.com/docs/plugins/workers/overview)).
+Associations with a `DreamConst.required` or `DreamConst.passthrough` `and`-clause **must** be decorated with `@SnapshotableIgnore()`. These associations cannot be preloaded without a runtime value they require, so `takeSnapshot()` throws if it encounters one that hasn't been excluded.
+
+NOTE: Snapshotable uses batched preload queries to avoid N+1 queries for trees up to 4 levels deep, and falls back to on-demand loading beyond that. It will also leverage the read replica, if configured. Snapshotable builds a single object of the entire content tree, so the in-memory object may become quite large. As such, it may be advisable to leverage `@SnapshotableIgnore` to prevent full traversal of the tree so that it can be split into chunks. It is recommended that Snapshotable is only used in a background job (see [https://psychicframework.com/docs/plugins/workers/overview](https://psychicframework.com/docs/plugins/workers/overview)).
 
 :::tip
 
