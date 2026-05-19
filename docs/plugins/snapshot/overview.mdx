@@ -4,12 +4,13 @@ title: overview
 pagination_prev: null
 ai_summary: >-
   @Snapshotable decorator adds takeSnapshot instance method to Dream models.
-  Recursively traverses HasMany and HasOne associations, building JSON object of
-  entire model tree. Skips BelongsTo and through associations (unless
-  @SnapshotableFollowThrough used). Use @SnapshotableIgnore to filter
-  associations or exclude required/passthrough on-clause associations (required,
-  or takeSnapshot throws). Uses batched preloads to avoid N+1 up to 4 levels
-  deep. Recommended for background jobs.
+  Recursively traverses HasMany and HasOne associations (including soft-deleted
+  records), building JSON object of entire model tree. Skips BelongsTo and
+  through associations (unless @SnapshotableFollowThrough used). Use
+  @SnapshotableIgnore to filter columns or associations; required for
+  required/passthrough on-clause associations (or takeSnapshot throws). Uses
+  batched preloads to avoid N+1 up to 4 levels deep; self-referential trees
+  supported. Recommended for background jobs.
 ---
 
 # @Snapshotable - overview
@@ -17,6 +18,10 @@ ai_summary: >-
 The `@Snapshotable()` class decorator adds the instance method `takeSnapshot` to the decorated Dream model. When called, `takeSnapshot` builds a simple object of all the database fields for the model. It also traverses the association tree rooted at the model, following `HasMany` and `HasOne` associations, recursively calling `takeSnapshot` on each. This is useful for converting an entire model tree to json to, for example, store a user's data in compliance with HIPAA retention requirements.
 
 `BelongsTo` associations are intentionally skipped, as are `through` associations, so Snapshotable automatically avoids circuits (which would lead to an infinite loop). To explicitly include a `through` association, decorate it with the `@SnapshotableFollowThrough()` decorator.
+
+Soft-deleted records are **included** in snapshots — the soft-delete default scope is removed so that deleted children appear in the output. This is intentional: for compliance use cases, the data existed and should be captured.
+
+Self-referential models (e.g. a `TreeNode` with `HasMany children`) are supported. The same model class can appear up to four times in a single preload path, which handles trees up to depth four with no extra queries; deeper levels fall back to on-demand loading.
 
 Associations with a `DreamConst.required` or `DreamConst.passthrough` `and`-clause **must** be decorated with `@SnapshotableIgnore()`. These associations cannot be preloaded without a runtime value they require, so `takeSnapshot()` throws if it encounters one that hasn't been excluded.
 

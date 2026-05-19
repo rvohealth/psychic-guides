@@ -5,7 +5,8 @@ ai_summary: >-
   Install @rvoh/dream-plugin-json-snapshot. Extend model with
   Snapshotable(ApplicationModel) mixin. Call takeSnapshot() on instance. Use
   @SnapshotableFollowThrough to include through associations. Use
-  @SnapshotableIgnore to filter out unwanted associations.
+  @SnapshotableIgnore to filter out unwanted columns or associations; required
+  for associations with required/passthrough and-clauses.
 pagination_next: null
 ---
 
@@ -53,14 +54,26 @@ export default class Host extends ApplicationModel {
 }
 ```
 
-## Filtering out unwanted associations
+## Filtering out unwanted columns and associations
 
-In some cases, you want to hide certain associations from snapshots. In these cases, you can use the provided `SnapshotableIgnore` decorator, like so:
+`@SnapshotableIgnore()` works on both columns and associations. Use it to exclude anything you don't want in the snapshot output:
 
 ```ts
 class User extends Snapshotable(ApplicationModel) {
   @SnapshotableIgnore()
-  @deco.HasMany(Pet)
-  public pets: Pet[]
+  public passwordDigest: DreamColumn<User, 'passwordDigest'>  // column excluded
+
+  @SnapshotableIgnore()
+  @deco.HasMany('Pet')
+  public pets: Pet[]                                          // association excluded
 }
+```
+
+Associations with a `DreamConst.required` or `DreamConst.passthrough` `and`-clause **must** be decorated with `@SnapshotableIgnore()`. Snapshotable cannot preload these associations without a runtime value they require, so `takeSnapshot()` throws if it encounters one that hasn't been excluded:
+
+```ts
+// Without @SnapshotableIgnore, takeSnapshot() throws at runtime
+@SnapshotableIgnore()
+@deco.HasMany('Post', { and: { status: DreamConst.required } })
+public postsByStatus: Post[]
 ```
