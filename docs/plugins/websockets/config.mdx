@@ -76,6 +76,10 @@ export default async function initializePsychicApp(opts: PsychicAppInitOptions =
 }
 ```
 
+:::info Run in every process that calls `Ws.emit()`
+`PsychicAppWebsockets.init()` must run in **every** process that calls `Ws.emit()` — including background worker processes, not just the dedicated websocket server. Each Node process has its own module cache and does not share the websocket app instance with other processes. If a worker process skips this call, the first `Ws.emit()` in that process will throw a `cachePsychicAppWebsockets` error. Guard the initializer by service role so it runs for both `'websockets'` and `'worker'` roles.
+:::
+
 4. We recommend you include a singleton within your application to simplify your websockets integration:
 
 ```ts
@@ -161,3 +165,26 @@ export default (wsApp: PsychicAppWebsockets) => {
   })
 }
 ```
+
+## Dedicated WebSocket Host
+
+In production it is common to run the websocket server as a separate process or host. Socket.IO clients default to starting with long-polling before upgrading to a native WebSocket connection. When the websocket server runs as a dedicated host, polling requests can conflict with its HTTP handler, producing header-sent failures or stale browser state: background jobs complete and events are published, but the browser never receives live updates until manual refresh.
+
+**Diagnostic signals:**
+
+- Browser network tab shows `transport=polling` requests to the websocket host.
+- Websocket server logs show HTTP or header errors even though jobs complete successfully.
+
+For dedicated websocket hosts, configure the Socket.IO client to use native WebSocket transport only:
+
+```ts
+import { io } from 'socket.io-client'
+
+const socket = io(websocketHost, {
+  path: '/ws',
+  transports: ['websocket'],
+  auth: { token },
+})
+```
+
+Do not include `'polling'` unless you have explicitly verified that long-polling works end-to-end through your proxy and websocket route stack. This failure is easy to misdiagnose as a queue, worker, or subscription bug — check the client transport first.
