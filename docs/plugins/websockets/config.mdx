@@ -187,7 +187,6 @@ For dedicated websocket hosts, configure the Socket.IO client to use native WebS
 import { io } from 'socket.io-client'
 
 const socket = io(websocketHost, {
-  path: '/ws',
   transports: ['websocket'],
   auth: { token },
 })
