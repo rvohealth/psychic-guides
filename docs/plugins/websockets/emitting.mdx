@@ -16,7 +16,7 @@ Once you have successfully built a registration flow for your users (see the [Re
 must call `cachePsychicAppWebsockets` before loading cached psychic application websockets
 ```
 
-Each Node process has its own module cache — the websocket app instance is **not** shared between the websocket server process and worker processes. To fix this, include `'worker'` in the initializer guard alongside `'websockets'`. The dedicated websocket server still owns socket connection handling; the worker only needs enough initialization for the Redis connection that `Ws.emit()` uses. See [Config](./config) for the recommended initializer pattern.
+Each Node process has its own module cache — the websocket app instance is **not** shared across processes. All three named service roles (`'websockets'`, `'web'`, `'worker'`) need `PsychicAppWebsockets.init()` to run; only `'unknown'` processes (migrations, CLI, REPL) should skip it. See [Config](./config) for the recommended initializer pattern.
 :::
 
 To establish a new Ws instance, we need to provide it with a set of routes that the application allows, like so:

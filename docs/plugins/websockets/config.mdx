@@ -77,7 +77,14 @@ export default async function initializePsychicApp(opts: PsychicAppInitOptions =
 ```
 
 :::info Run in every process that calls `Ws.emit()`
-`PsychicAppWebsockets.init()` must run in **every** process that calls `Ws.emit()` — including background worker processes, not just the dedicated websocket server. Each Node process has its own module cache and does not share the websocket app instance with other processes. If a worker process skips this call, the first `Ws.emit()` in that process will throw a `cachePsychicAppWebsockets` error. Guard the initializer by service role so it runs for both `'websockets'` and `'worker'` roles.
+`PsychicAppWebsockets.init()` must run in **every** process that calls `Ws.emit()` — not just the dedicated websocket server. Each Node process has its own module cache and does not share the websocket app instance with other processes.
+
+All three named service roles need it:
+- **`websockets`** — owns `Cable.start()` and socket connection handling
+- **`web`** — controllers may call `Ws.emit()` directly in response to HTTP requests
+- **`worker`** — background jobs may call `Ws.emit()` to push real-time notifications
+
+Only `'unknown'` processes (migrations, CLI, REPL) should skip it. If any of the above processes skips this call, the first `Ws.emit()` in that process will throw a `cachePsychicAppWebsockets` error.
 :::
 
 4. We recommend you include a singleton within your application to simplify your websockets integration:
