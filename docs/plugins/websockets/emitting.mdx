@@ -9,14 +9,14 @@ ai_summary: "Emit to registered users from anywhere in application (including ba
 
 Once you have successfully built a registration flow for your users (see the [Registering guides](./registering) if you have not), you are able to emit to those registered users anywhere in your application (yes, including within background jobs!).
 
-:::warning Worker processes must initialize `PsychicAppWebsockets`
-`Ws.emit()` boots a `PsychicAppWebsockets` instance on its first call. If a background worker process skipped the websocket initializer (because the guard was limited to `serviceRole === 'websockets'`), the call throws:
+:::warning Each process must initialize `PsychicAppWebsockets`
+`Ws.emit()` boots a `PsychicAppWebsockets` instance on its first call. Each Node process has its own module cache — the websocket app instance is **not** shared across processes. If any process skips `PsychicAppWebsockets.init()` (e.g. via a service-role guard that is too narrow), the call throws:
 
 ```
 must call `cachePsychicAppWebsockets` before loading cached psychic application websockets
 ```
 
-Each Node process has its own module cache — the websocket app instance is **not** shared across processes. By default `PsychicAppWebsockets.init()` runs in all processes so any process can safely call `Ws.emit()`. See [Config](./config) for details and the optional role guard.
+By default the generated initializer runs in all processes. See [Config](./config) for details and the optional role guard.
 :::
 
 To establish a new Ws instance, we need to provide it with a set of routes that the application allows, like so:

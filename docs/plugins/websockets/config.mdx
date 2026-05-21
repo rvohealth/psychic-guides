@@ -172,16 +172,9 @@ export default (wsApp: PsychicAppWebsockets) => {
 }
 ```
 
-## Dedicated WebSocket Host
+## Client Transport
 
-In production it is common to run the websocket server as a separate process or host. Socket.IO clients default to starting with long-polling before upgrading to a native WebSocket connection. When the websocket server runs as a dedicated host, polling requests can conflict with its HTTP handler, producing header-sent failures or stale browser state: background jobs complete and events are published, but the browser never receives live updates until manual refresh.
-
-**Diagnostic signals:**
-
-- Browser network tab shows `transport=polling` requests to the websocket host.
-- Websocket server logs show HTTP or header errors even though jobs complete successfully.
-
-For dedicated websocket hosts, configure the Socket.IO client to use native WebSocket transport only:
+Always set `transports: ['websocket']` on the Socket.IO client. Socket.IO defaults to long-polling first for historical reasons — that fallback is unnecessary today since WebSocket is universally supported by modern browsers and mobile apps. Skipping the polling phase means faster connection establishment and eliminates a class of subtle failures where polling requests interfere with the websocket server's HTTP handler.
 
 ```ts
 import { io } from 'socket.io-client'
@@ -191,5 +184,3 @@ const socket = io(websocketHost, {
   auth: { token },
 })
 ```
-
-Do not include `'polling'` unless you have explicitly verified that long-polling works end-to-end through your proxy and websocket route stack. This failure is easy to misdiagnose as a queue, worker, or subscription bug — check the client transport first.
