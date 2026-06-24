@@ -47,3 +47,7 @@ export default function configureDream(dream: DreamApp) {
 ```
 
 If Dream is unable to decrypt a value using the `current` encryption key, it will attempt to use the `legacy` encryption key before failing, enabling you to switch encryption keys without sweating the complexity of migrating existing data off of one and onto the other.
+
+:::note
+Adding `@deco.Encrypted` to a column that already has data requires more than a rename. A plain rename leaves existing rows as plaintext, which the decorator's getter will fail to decrypt. Use [`DreamMigrationHelpers.encryptColumn`](/docs/migrations/helpers#encryption) to transform the existing data in the same migration.
+:::
