@@ -4,7 +4,7 @@ import { usePackageManager } from './package-manager-context'
 interface PackageManagerTabsProps {
   code: string
   language?: 'ts' | 'sh'
-  defaultTab?: 'pnpm' | 'npm' | 'yarn'
+  defaultTab?: 'pnpm' | 'npm' | 'yarn' | 'bun'
 }
 
 export default function PackageManagerTabs({
@@ -17,6 +17,7 @@ export default function PackageManagerTabs({
     { label: 'pnpm', value: 'pnpm' },
     { label: 'yarn', value: 'yarn' },
     { label: 'npm', value: 'npm run' },
+    { label: 'bun', value: 'bun' },
   ]
 
   const tabs = packageManagers.map((pm) => ({
@@ -29,7 +30,7 @@ export default function PackageManagerTabs({
   const activeTab = defaultTab || selectedPackageManager
 
   const handleTabChange = (tabLabel: string) => {
-    if (tabLabel === 'pnpm' || tabLabel === 'npm' || tabLabel === 'yarn') {
+    if (tabLabel === 'pnpm' || tabLabel === 'npm' || tabLabel === 'yarn' || tabLabel === 'bun') {
       setSelectedPackageManager(tabLabel)
     }
   }
