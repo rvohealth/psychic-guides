@@ -55,7 +55,7 @@ const pings = websocketBroadcasts('/users/ping')
 
 // custom assertion on the array
 expect(pings).toHaveLength(2)
-expect(pings[0].to).toBe(user.id)
+expect(pings[0].userKey).toBe(`user:${user.id}`)
 ```
 
 ## Combining with vi.spyOn

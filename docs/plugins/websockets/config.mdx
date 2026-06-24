@@ -81,22 +81,7 @@ function initializeWebsockets(wsApp: PsychicAppWebsockets) {
 }
 ```
 
-3. Update your `initializePsychicApp.ts` file to include the following:
-
-```ts
-import { PsychicApp, PsychicAppInitOptions } from '@rvoh/psychic'
-import { PsychicAppWebsockets } from '@rvoh/psychic-websockets'
-import psychicConf from '../../conf/app'
-import dreamConf from '../../conf/dream'
-import websocketsConf from '../../conf/websockets'
-
-export default async function initializePsychicApp(opts: PsychicAppInitOptions = {}) {
-  const psychicApp = await PsychicApp.init(psychicConf, dreamConf, opts)
-  await PsychicAppWebsockets.init(psychicApp, websocketsConf)
-  // ...
-  return psychicApp
-}
-```
+3. No changes to `initializePsychicApp.ts` are needed. The initializer file registers itself as a plugin via `psy.plugin(...)`, so `PsychicApp.init()` picks it up automatically.
 
 :::info Initializes in all processes by default
 `PsychicAppWebsockets.init()` runs in all processes by default. Any process — websocket server, web server, or worker — may call `Ws.emit()`, and skipping init in any of them causes a runtime `cachePsychicAppWebsockets` error that is easy to misdiagnose. Each Node process has its own module cache and does not share the websocket app instance with other processes.
@@ -122,7 +107,7 @@ export default ws
 
 ## Configuration
 
-The configuration for the `psychic-websockets` package is driven by the `conf/websockets.ts` file. This file contains both basic bootstrapping information for redis, as well as hooks to tap into to initialize socket.io and establish websocket listeners for your backend application.
+The configuration for the `psychic-websockets` package is driven by the `conf/initializers/websockets.ts` file. This file contains both basic bootstrapping information for redis, as well as hooks to tap into to initialize socket.io and establish websocket listeners for your backend application.
 
 ### Adapter
 
