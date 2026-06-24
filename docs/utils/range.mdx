@@ -1,6 +1,6 @@
 ---
 sidebar_position: 7
-ai_summary: "range is used with where and and clauses for range queries. Supports start, end, or both. Works with CalendarDate, DateTime, and number values. Can be used in association declaration and statements."
+ai_summary: "range is used with where and and clauses for range queries. Supports start, end, or both. Works with CalendarDate, DateTime, ClockTime, and number values. Can be used in association declaration and statements."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -24,10 +24,10 @@ await Place.where({ sleeps: range(null, 2) }).count()
 await Place.where({ sleeps: range(2, 4) }).count()
 ```
 
-## range supports CalendarDate, DateTime, and number values
+## range supports CalendarDate, DateTime, ClockTime, and number values
 
 ```ts
-import { range } from '@rvoh/dream'
+import { CalendarDate, ClockTime, DateTime, range } from '@rvoh/dream'
 
 await user
   .associationQuery('pets')
@@ -44,6 +44,10 @@ await user
   })
   .order({ adoptedOn: 'desc' })
   .all()
+
+await Appointment.where({
+  startTime: range(ClockTime.fromObject({ hour: 9, minute: 0 }), ClockTime.fromObject({ hour: 17, minute: 0 })),
+}).all()
 ```
 
 ## range can be used in association declaration `and` statements
