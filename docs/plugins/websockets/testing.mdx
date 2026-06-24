@@ -1,0 +1,63 @@
+---
+sidebar_position: 4
+title: testing
+ai_summary: "Test websocket broadcasts without Redis using the in-process adapter. Import assertBroadcast, clearBroadcasts, and websocketBroadcasts from @rvoh/psychic-websockets/testing. Call clearBroadcasts() in beforeEach. Use assertBroadcast(path, { to, data }) to assert broadcasts were emitted. Use websocketBroadcasts(path) to get the raw recorded array. Compatible with vi.spyOn."
+---
+
+# Testing
+
+In the `test` environment, `psychic-websockets` automatically selects `InProcessWebsocketsAdapter`. Every `ws.emit(...)` call is recorded in-process — no Redis connection is needed. Three helpers from `@rvoh/psychic-websockets/testing` let you assert on those recordings.
+
+```ts
+import { assertBroadcast, clearBroadcasts, websocketBroadcasts } from '@rvoh/psychic-websockets/testing'
+```
+
+## Setup
+
+Call `clearBroadcasts()` in a `beforeEach` so each test starts with an empty buffer:
+
+```ts
+beforeEach(() => {
+  clearBroadcasts()
+})
+```
+
+## assertBroadcast
+
+Asserts that at least one recorded broadcast matches the given path and optional constraints. Throws a descriptive error if none matched.
+
+```ts
+// path only
+assertBroadcast('/users/ping')
+
+// path + recipient
+assertBroadcast('/users/ping', { to: user.id })
+
+// path + payload
+assertBroadcast('/users/alert', { data: { message: 'hello' } })
+
+// path + recipient + payload
+assertBroadcast('/users/alert', { to: user.id, data: { message: 'hello' } })
+```
+
+`data` is compared with deep strict equality. The optional `prefix` option sets the Redis key prefix (default: `'user'`, matching `Ws`'s default) — only relevant if you override it in your app.
+
+## websocketBroadcasts
+
+Returns all recorded broadcasts in emit order, optionally filtered to a single path:
+
+```ts
+// all broadcasts
+const all = websocketBroadcasts()
+
+// filtered to one path
+const pings = websocketBroadcasts('/users/ping')
+
+// custom assertion on the array
+expect(pings).toHaveLength(2)
+expect(pings[0].to).toBe(user.id)
+```
+
+## Combining with vi.spyOn
+
+These helpers and `vi.spyOn(ws, 'emit')` are not mutually exclusive. Use `assertBroadcast` / `websocketBroadcasts` when you want to assert on what was actually dispatched through the adapter; use a spy when you want to assert on call arguments or prevent the emit from running at all.
