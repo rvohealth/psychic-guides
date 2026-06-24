@@ -130,9 +130,9 @@ Additionally, Psychic provides the following assertion helpers:
 - `toHaveSelector` - expects the page to have the specified css selector
 - `toHaveUnchecked` - expects the page to have an unchecked checkbox with the provided text value
 - `toHaveUrl` - expects the page to have the provided url
-- `toMatchTextContent` - expects the page to have the provided text
+- `toMatchTextContent` - expects the page to have the provided text or match the provided `RegExp`
 - `toNotHaveSelector` - expects the page to not have the provided css selector
-- `toNotMatchTextContent` - expects the page to not match the provided text content
+- `toNotMatchTextContent` - expects the page to not match the provided text content or `RegExp`
 - `toUncheck` - attempts to uncheck a checkbox with the provided text value
 - `toSelect` - attempts to select the option from the provided css selector
 
@@ -140,6 +140,17 @@ To utilize these assertion matchers, you can tap into them via expect chaining, 
 
 ```ts
 await expect(page).toClick('Submit')
+```
+
+`toMatchTextContent` and `toNotMatchTextContent` accept either a plain string or a `RegExp`:
+
+```ts
+// string match
+await expect(page).toMatchTextContent('Welcome back')
+
+// regex match — useful when the exact text varies
+await expect(page).toMatchTextContent(/welcome back/i)
+await expect(page).toNotMatchTextContent(/error/i)
 ```
 
 In addition to these assertion matchers, `@rvoh/psychic-spec-helpers` also ships with some helpful global functions which essentially do the same thing, but are meant to be used in cases when you aren't meaning to make an assertion.
