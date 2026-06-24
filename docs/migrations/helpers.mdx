@@ -195,13 +195,15 @@ export async function down(db: Kysely<any>): Promise<void> {
 
 ### encryptColumn
 
-Use `encryptColumn` when adding the `@deco.Encrypted` decorator to a column that already has data. The helper:
+Use `encryptColumn` when adding the `@deco.Encrypted` decorator to a column that already has data. A plain column rename leaves existing data as plaintext — the `@Encrypted` getter then tries to decrypt it and throws. This helper renames the column and rewrites the data in the same step.
 
-1. Renames `column` to `encrypted_<column>` (or a custom name via `encryptedColumnName`)
-2. Widens the column type to `text`
-3. Rewrites every non-null row's value as AES-GCM ciphertext using the same path the `@Encrypted` decorator uses, so the result decrypts correctly through the getter
+Before generating this migration, add `@deco.Encrypted()` to the model property and run:
 
-A plain column rename leaves existing data as plaintext. The `@Encrypted` getter then tries to decrypt it and throws. This helper performs the data transformation the rename alone omits.
+<PackageManagerTabs
+  code={`{{PM}} psy sync`}
+/>
+
+Then generate the migration and use `encryptColumn` in the `up` function:
 
 ```ts
 import { DreamMigrationHelpers } from '@rvoh/dream/db'
@@ -216,6 +218,12 @@ export async function down(db: Kysely<any>): Promise<void> {
 }
 ```
 
+The helper:
+
+1. Renames `column` to `encrypted_<column>` (or a custom name via `encryptedColumnName`)
+2. Widens the column type to `text`
+3. Rewrites every non-null row's value as AES-GCM ciphertext using the same path the `@Encrypted` decorator uses
+
 ### decryptColumn
 
 The exact inverse of `encryptColumn`. Decrypts each non-null value (trying the `current` key first, then `legacy`) and renames the column back. The optional `columnType` argument restores the original column type; it defaults to `text` if omitted.
@@ -224,7 +232,6 @@ The exact inverse of `encryptColumn`. Decrypts each non-null value (trying the `
 
 - Runs inside the migration transaction — atomic on Postgres.
 - Rewrites one row at a time (each value needs a fresh IV). Unsuitable for very large tables; drop any index on the column before running.
-- Requires column encryption to be configured in `conf/dream.ts`; throws `MissingColumnEncryptionOpts` otherwise.
 
 ## Extensions
 
