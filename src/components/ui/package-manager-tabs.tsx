@@ -17,7 +17,7 @@ export default function PackageManagerTabs({
     { label: 'pnpm', value: 'pnpm' },
     { label: 'yarn', value: 'yarn' },
     { label: 'npm', value: 'npm run' },
-    { label: 'bun', value: 'bun' },
+    { label: 'bun', value: 'bun run' },
   ]
 
   const tabs = packageManagers.map((pm) => ({
