@@ -1,14 +1,14 @@
 ---
-title: Places controller for Guests, including localization
-id: bearbnb-22-places-controller-for-guests-including-localization
+title: Places controller for Visitors, including localization
+id: bearbnb-22-places-controller-for-visitors-including-localization
 ---
 
-# Places controller for Guests, including localization
+# Places controller for Visitors, including localization
 
 ## Commit Message
 
 ``````
-Places controller for Guests, including localization
+Places controller for Visitors, including localization
 
 If the i18n text is coming through in English when it should
 be Spanish, make sure you've added `es` to the locales map
@@ -21,31 +21,38 @@ If you get ambiguous Typescript errors along the way, restart
 the ESLint server in your editor, and if that doesn't work,
 quit and re-open your editor
 
+The V1/Visitor namespace uses MaybeAuthedController as its base,
+so the Places index and show endpoints work whether or not the
+caller is authenticated. The spec demonstrates both contexts.
+
 ```console
 pnpm psy g:controller --help
-pnpm psy g:controller V1/Guest/Places index show
+pnpm psy g:controller V1/Visitor/Places index show
 
 pnpm psy sync
 
 pnpm build
 pnpm build:spec
 
-pnpm uspec spec/unit/controllers/V1/Guest/PlacesController.spec.ts
+pnpm uspec spec/unit/controllers/V1/Visitor/PlacesController.spec.ts
 // If you get 400, use NODE_DEBUG=psychic to see OpenAPI validation errors
-NODE_DEBUG=psychic pnpm uspec spec/unit/controllers/V1/Guest/PlacesController.spec.ts
+NODE_DEBUG=psychic pnpm uspec spec/unit/controllers/V1/Visitor/PlacesController.spec.ts
 pnpm uspec
 ```
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_015KTzZW1VMPnC3xMwePsEPH
 ``````
 
 ## Changes
 
 ``````
-diff --git a/api/spec/unit/controllers/V1/Guest/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Guest/PlacesController.spec.ts
+diff --git a/api/spec/unit/controllers/V1/Visitor/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Visitor/PlacesController.spec.ts
 new file mode 100644
-index 0000000..8b17948
+index 0000000..381b455
 --- /dev/null
-+++ b/api/spec/unit/controllers/V1/Guest/PlacesController.spec.ts
-@@ -0,0 +1,152 @@
++++ b/api/spec/unit/controllers/V1/Visitor/PlacesController.spec.ts
+@@ -0,0 +1,223 @@
 +import Place from '@models/Place.js'
 +import User from '@models/User.js'
 +import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
@@ -57,116 +64,118 @@ index 0000000..8b17948
 +import createLivingRoom from '@spec/factories/Room/LivingRoomFactory.js'
 +import createUser from '@spec/factories/UserFactory.js'
 +import { session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
++import { PsychicServer } from '@rvoh/psychic'
++import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
++import { paths as OpenapiPaths } from '@src/types/openapi/tests.openapi.js'
 +
-+describe('V1/Guest/PlacesController', () => {
-+  let request: SpecRequestType
-+  let user: User
++describe('V1/Visitor/PlacesController', () => {
++  describe('authenticated', () => {
++    let request: SpecRequestType
++    let user: User
 +
-+  beforeEach(async () => {
-+    user = await createUser()
-+    request = await session(user)
-+  })
++    beforeEach(async () => {
++      user = await createUser()
++      request = await session(user)
++    })
 +
-+  describe('GET index', () => {
-+    const subject = async <StatusCode extends 200 | 400>(expectedStatus: StatusCode) => {
-+      return request.get('/v1/guest/places', expectedStatus, {
-+        headers: {
-+          'accept-language': 'es-ES',
-+        },
++    describe('GET index', () => {
++      const subject = async <StatusCode extends 200 | 400>(expectedStatus: StatusCode) => {
++        return request.get('/v1/visitor/places', expectedStatus, {
++          headers: {
++            'accept-language': 'es-ES',
++          },
++        })
++      }
++
++      it('returns the index of Places', async () => {
++        const place = await createPlace()
++        await createLocalizedText({ localizable: place, locale: 'es-ES', title: 'The Spanish title' })
++
++        const { body } = await subject(200)
++
++        expect(body.results).toEqual([
++          {
++            id: place.id,
++            title: 'The Spanish title',
++          },
++        ])
 +      })
-+    }
++    })
 +
-+    it('returns the index of Places', async () => {
-+      const place = await createPlace()
-+      await createLocalizedText({ localizable: place, locale: 'es-ES', title: 'The Spanish title' })
-+
-+      const { body } = await subject(200)
-+
-+      expect(body.results).toEqual([
-+        {
++    describe('GET show', () => {
++      const subject = async <StatusCode extends 200 | 400>(place: Place, expectedStatus: StatusCode) => {
++        return request.get('/v1/visitor/places/{id}', expectedStatus, {
 +          id: place.id,
-+          title: 'The Spanish title',
-+        },
-+      ])
++          headers: {
++            'accept-language': 'es-ES',
++          },
++        })
++      }
++
++      it('returns places with rooms', async () => {
++        const place = await createPlace({ style: 'cabin', sleeps: 3 })
++        await createLocalizedText({ localizable: place, locale: 'es-ES', title: 'The Spanish place title' })
++
++        const { kitchen, bathroom, bedroom, den, livingRoom } = await createRoomsForPlace(place)
++
++        const { body } = await subject(place, 200)
++
++        expect(body).toEqual(expectedShowBody({ place, kitchen, bathroom, bedroom, den, livingRoom }))
++      })
 +    })
 +  })
 +
-+  describe('GET show', () => {
-+    const subject = async <StatusCode extends 200 | 400>(place: Place, expectedStatus: StatusCode) => {
-+      return request.get('/v1/guest/places/{id}', expectedStatus, {
-+        id: place.id,
-+        headers: {
-+          'accept-language': 'es-ES',
-+        },
++  describe('unauthenticated', () => {
++    let request: OpenapiSpecRequest<OpenapiPaths>
++
++    beforeEach(async () => {
++      request = new OpenapiSpecRequest<OpenapiPaths>()
++      await request.init(PsychicServer)
++    })
++
++    describe('GET index', () => {
++      const subject = async <StatusCode extends 200 | 400>(expectedStatus: StatusCode) => {
++        return request.get('/v1/visitor/places', expectedStatus, {
++          headers: {
++            'accept-language': 'es-ES',
++          },
++        })
++      }
++
++      it('returns the index of Places', async () => {
++        const place = await createPlace()
++        await createLocalizedText({ localizable: place, locale: 'es-ES', title: 'The Spanish title' })
++
++        const { body } = await subject(200)
++
++        expect(body.results).toEqual([
++          {
++            id: place.id,
++            title: 'The Spanish title',
++          },
++        ])
 +      })
-+    }
++    })
 +
-+    it('returns places with rooms', async () => {
-+      const place = await createPlace({ style: 'cabin', sleeps: 3 })
-+      await createLocalizedText({ localizable: place, locale: 'es-ES', title: 'The Spanish place title' })
-+
-+      const { kitchen, bathroom, bedroom, den, livingRoom } = await createRoomsForPlace(place)
-+
-+      const { body } = await subject(place, 200)
-+
-+      expect(body).toEqual({
-+        id: place.id,
-+        sleeps: 3,
-+        title: 'The Spanish place title',
-+        style: 'cabin',
-+        displayStyle: 'cabaña rústica',
-+
-+        rooms: [
-+          {
-+            id: kitchen.id,
-+            type: 'Kitchen',
-+            displayType: 'cocina',
-+            title: 'The Spanish kitchen title',
-+            appliances: [
-+              {
-+                value: 'oven',
-+                label: 'horno',
-+              },
-+              {
-+                value: 'dishwasher',
-+                label: 'lavavajillas',
-+              },
-+            ],
++    describe('GET show', () => {
++      const subject = async <StatusCode extends 200 | 400>(place: Place, expectedStatus: StatusCode) => {
++        return request.get('/v1/visitor/places/{id}', expectedStatus, {
++          id: place.id,
++          headers: {
++            'accept-language': 'es-ES',
 +          },
-+          {
-+            id: bathroom.id,
-+            type: 'Bathroom',
-+            displayType: 'baño',
-+            title: 'The Spanish bathroom title',
-+            bathOrShowerStyle: {
-+              value: 'shower',
-+              label: 'ducha',
-+            },
-+          },
-+          {
-+            id: bedroom.id,
-+            type: 'Bedroom',
-+            displayType: 'dormitorio',
-+            title: 'The Spanish bedroom title',
-+            bedTypes: [
-+              {
-+                value: 'cot',
-+                label: 'catre',
-+              },
-+              {
-+                value: 'bunk',
-+                label: 'litera',
-+              },
-+            ],
-+          },
-+          { id: den.id, type: 'Den', displayType: 'estudio', title: 'The Spanish den title' },
-+          {
-+            id: livingRoom.id,
-+            type: 'LivingRoom',
-+            displayType: 'sala de estar',
-+            title: 'The Spanish livingRoom title',
-+          },
-+        ],
++        })
++      }
++
++      it('returns places with rooms', async () => {
++        const place = await createPlace({ style: 'cabin', sleeps: 3 })
++        await createLocalizedText({ localizable: place, locale: 'es-ES', title: 'The Spanish place title' })
++
++        const { kitchen, bathroom, bedroom, den, livingRoom } = await createRoomsForPlace(place)
++
++        const { body } = await subject(place, 200)
++
++        expect(body).toEqual(expectedShowBody({ place, kitchen, bathroom, bedroom, den, livingRoom }))
 +      })
 +    })
 +  })
@@ -197,6 +206,75 @@ index 0000000..8b17948
 +  })
 +
 +  return { kitchen, bathroom, bedroom, den, livingRoom }
++}
++
++function expectedShowBody({
++  place,
++  kitchen,
++  bathroom,
++  bedroom,
++  den,
++  livingRoom,
++}: Awaited<ReturnType<typeof createRoomsForPlace>> & { place: Place }) {
++  return {
++    id: place.id,
++    sleeps: 3,
++    title: 'The Spanish place title',
++    style: 'cabin',
++    displayStyle: 'cabaña rústica',
++
++    rooms: [
++      {
++        id: kitchen.id,
++        type: 'Kitchen',
++        displayType: 'cocina',
++        title: 'The Spanish kitchen title',
++        appliances: [
++          {
++            value: 'oven',
++            label: 'horno',
++          },
++          {
++            value: 'dishwasher',
++            label: 'lavavajillas',
++          },
++        ],
++      },
++      {
++        id: bathroom.id,
++        type: 'Bathroom',
++        displayType: 'baño',
++        title: 'The Spanish bathroom title',
++        bathOrShowerStyle: {
++          value: 'shower',
++          label: 'ducha',
++        },
++      },
++      {
++        id: bedroom.id,
++        type: 'Bedroom',
++        displayType: 'dormitorio',
++        title: 'The Spanish bedroom title',
++        bedTypes: [
++          {
++            value: 'cot',
++            label: 'catre',
++          },
++          {
++            value: 'bunk',
++            label: 'litera',
++          },
++        ],
++      },
++      { id: den.id, type: 'Den', displayType: 'estudio', title: 'The Spanish den title' },
++      {
++        id: livingRoom.id,
++        type: 'LivingRoom',
++        displayType: 'sala de estar',
++        title: 'The Spanish livingRoom title',
++      },
++    ],
++  }
 +}
 diff --git a/api/src/app/controllers/ApplicationController.ts b/api/src/app/controllers/ApplicationController.ts
 index db258f4..2daa964 100644
@@ -229,39 +307,63 @@ index db258f4..2daa964 100644
 +    return locales.includes(locale as (typeof locales)[number]) ? locale : 'en-US'
 +  }
  }
-diff --git a/api/src/app/controllers/V1/Guest/BaseController.ts b/api/src/app/controllers/V1/Guest/BaseController.ts
+diff --git a/api/src/app/controllers/MaybeAuthedController.ts b/api/src/app/controllers/MaybeAuthedController.ts
+index 5d7cb87..a36effb 100644
+--- a/api/src/app/controllers/MaybeAuthedController.ts
++++ b/api/src/app/controllers/MaybeAuthedController.ts
+@@ -1,16 +1,13 @@
+ import ApplicationController from '@controllers/ApplicationController.js'
+ import resolveCurrentUser from '@controllers/helpers/resolveCurrentUser.js'
++import User from '@models/User.js'
+ import { BeforeAction } from '@rvoh/psychic'
+-/** uncomment after creating User model */
+-// import User from '@models/User.js'
+ 
+ export default class MaybeAuthedController extends ApplicationController {
+-  /** uncomment after creating User model */
+-  // protected currentUser: User | null = null
++  protected currentUser: User | null = null
+ 
+   @BeforeAction()
+   protected async authenticate() {
+-    /** uncomment after creating User model */
+-    // this.currentUser = await resolveCurrentUser(this)
++    this.currentUser = await resolveCurrentUser(this)
+   }
+ }
+diff --git a/api/src/app/controllers/V1/Visitor/BaseController.ts b/api/src/app/controllers/V1/Visitor/BaseController.ts
 new file mode 100644
-index 0000000..0fc9479
+index 0000000..9a08056
 --- /dev/null
-+++ b/api/src/app/controllers/V1/Guest/BaseController.ts
++++ b/api/src/app/controllers/V1/Visitor/BaseController.ts
 @@ -0,0 +1,3 @@
-+import V1BaseController from '../BaseController.js'
++import MaybeAuthedController from '../../MaybeAuthedController.js'
 +
-+export default class V1GuestBaseController extends V1BaseController {}
-diff --git a/api/src/app/controllers/V1/Guest/PlacesController.ts b/api/src/app/controllers/V1/Guest/PlacesController.ts
++export default class V1VisitorBaseController extends MaybeAuthedController {}
+diff --git a/api/src/app/controllers/V1/Visitor/PlacesController.ts b/api/src/app/controllers/V1/Visitor/PlacesController.ts
 new file mode 100644
-index 0000000..4cccbef
+index 0000000..d9cee81
 --- /dev/null
-+++ b/api/src/app/controllers/V1/Guest/PlacesController.ts
++++ b/api/src/app/controllers/V1/Visitor/PlacesController.ts
 @@ -0,0 +1,37 @@
 +import { OpenAPI } from '@rvoh/psychic'
 +import Place from '@models/Place.js'
-+import V1GuestBaseController from './BaseController.js'
++import V1VisitorBaseController from './BaseController.js'
 +
-+const openApiTags = ['guest-places']
++const openApiTags = ['visitor-places']
 +
-+export default class V1GuestPlacesController extends V1GuestBaseController {
++export default class V1VisitorPlacesController extends V1VisitorBaseController {
 +  @OpenAPI(Place, {
 +    status: 200,
 +    tags: openApiTags,
-+    description: 'Place index endpoint for Guests',
++    description: 'Place index endpoint for Visitors',
 +    cursorPaginate: true,
-+    serializerKey: 'summaryForGuests',
++    serializerKey: 'summaryForVisitors',
 +    fastJsonStringify: true,
 +  })
 +  public async index() {
 +    const places = await Place.passthrough({ locale: this.locale })
-+      .preloadFor('summaryForGuests')
++      .preloadFor('summaryForVisitors')
 +      .cursorPaginate({ cursor: this.castParam('cursor', 'string', { allowNull: true }) })
 +    this.ok(places)
 +  }
@@ -269,93 +371,105 @@ index 0000000..4cccbef
 +  @OpenAPI(Place, {
 +    status: 200,
 +    tags: openApiTags,
-+    description: 'Place show endpoint for Guests',
-+    serializerKey: 'forGuests',
++    description: 'Place show endpoint for Visitors',
++    serializerKey: 'forVisitors',
 +    fastJsonStringify: true,
 +  })
 +  public async show() {
 +    this.ok(
 +      await Place.passthrough({ locale: this.locale })
-+        .preloadFor('forGuests')
++        .preloadFor('forVisitors')
 +        .findOrFail(this.castParam('id', 'uuid'))
 +    )
 +  }
 +}
+diff --git a/api/src/app/controllers/helpers/resolveCurrentUser.ts b/api/src/app/controllers/helpers/resolveCurrentUser.ts
+index 24084aa..6e5f1b1 100644
+--- a/api/src/app/controllers/helpers/resolveCurrentUser.ts
++++ b/api/src/app/controllers/helpers/resolveCurrentUser.ts
+@@ -10,6 +10,7 @@ export default async function resolveCurrentUser(controller: PsychicController):
+     )
+ 
+   const token = (controller.header('authorization') ?? '').split(' ').at(-1)!
++  if (!token) return null
+ 
+   const decrypted = Encrypt.decrypt(token, {
+     algorithm: 'aes-256-gcm',
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index a1be52d..926eb44 100644
+index a1be52d..4d3cb29 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
 @@ -18,6 +18,8 @@ export default class Place extends ApplicationModel {
      return {
        default: 'PlaceSerializer',
        summary: 'PlaceSummarySerializer',
-+      summaryForGuests: 'PlaceSummaryForGuestsSerializer',
-+      forGuests: 'PlaceForGuestsSerializer',
++      summaryForVisitors: 'PlaceSummaryForVisitorsSerializer',
++      forVisitors: 'PlaceForVisitorsSerializer',
      }
    }
  
 diff --git a/api/src/app/models/Room/Bathroom.ts b/api/src/app/models/Room/Bathroom.ts
-index ae1bc18..ab46c42 100644
+index ae1bc18..c169467 100644
 --- a/api/src/app/models/Room/Bathroom.ts
 +++ b/api/src/app/models/Room/Bathroom.ts
 @@ -12,6 +12,7 @@ export default class Bathroom extends Room {
      return {
        default: 'Room/BathroomSerializer',
        summary: 'Room/BathroomSummarySerializer',
-+      forGuests: 'Room/BathroomForGuestsSerializer',
++      forVisitors: 'Room/BathroomForVisitorsSerializer',
      }
    }
  
 diff --git a/api/src/app/models/Room/Bedroom.ts b/api/src/app/models/Room/Bedroom.ts
-index ed0eeb4..42cecda 100644
+index ed0eeb4..eb3883a 100644
 --- a/api/src/app/models/Room/Bedroom.ts
 +++ b/api/src/app/models/Room/Bedroom.ts
 @@ -12,6 +12,7 @@ export default class Bedroom extends Room {
      return {
        default: 'Room/BedroomSerializer',
        summary: 'Room/BedroomSummarySerializer',
-+      forGuests: 'Room/BedroomForGuestsSerializer',
++      forVisitors: 'Room/BedroomForVisitorsSerializer',
      }
    }
  
 diff --git a/api/src/app/models/Room/Den.ts b/api/src/app/models/Room/Den.ts
-index 2c0a986..725b28d 100644
+index 2c0a986..37549c0 100644
 --- a/api/src/app/models/Room/Den.ts
 +++ b/api/src/app/models/Room/Den.ts
 @@ -12,6 +12,7 @@ export default class Den extends Room {
      return {
        default: 'Room/DenSerializer',
        summary: 'Room/DenSummarySerializer',
-+      forGuests: 'Room/DenForGuestsSerializer',
++      forVisitors: 'Room/DenForVisitorsSerializer',
      }
    }
  
 diff --git a/api/src/app/models/Room/Kitchen.ts b/api/src/app/models/Room/Kitchen.ts
-index a38b947..34fe457 100644
+index a38b947..671a3a9 100644
 --- a/api/src/app/models/Room/Kitchen.ts
 +++ b/api/src/app/models/Room/Kitchen.ts
 @@ -12,6 +12,7 @@ export default class Kitchen extends Room {
      return {
        default: 'Room/KitchenSerializer',
        summary: 'Room/KitchenSummarySerializer',
-+      forGuests: 'Room/KitchenForGuestsSerializer',
++      forVisitors: 'Room/KitchenForVisitorsSerializer',
      }
    }
  
 diff --git a/api/src/app/models/Room/LivingRoom.ts b/api/src/app/models/Room/LivingRoom.ts
-index 1069ae8..ac7eeba 100644
+index 1069ae8..b6fe2b3 100644
 --- a/api/src/app/models/Room/LivingRoom.ts
 +++ b/api/src/app/models/Room/LivingRoom.ts
 @@ -12,6 +12,7 @@ export default class LivingRoom extends Room {
      return {
        default: 'Room/LivingRoomSerializer',
        summary: 'Room/LivingRoomSummarySerializer',
-+      forGuests: 'Room/LivingRoomForGuestsSerializer',
++      forVisitors: 'Room/LivingRoomForVisitorsSerializer',
      }
    }
  
 diff --git a/api/src/app/serializers/PlaceSerializer.ts b/api/src/app/serializers/PlaceSerializer.ts
-index bc76022..f49b98e 100644
+index bc76022..2f78daa 100644
 --- a/api/src/app/serializers/PlaceSerializer.ts
 +++ b/api/src/app/serializers/PlaceSerializer.ts
 @@ -1,5 +1,7 @@
@@ -371,27 +485,27 @@ index bc76022..f49b98e 100644
      .attribute('style')
      .attribute('sleeps')
 +
-+export const PlaceSummaryForGuestsSerializer = (place: Place) =>
++export const PlaceSummaryForVisitorsSerializer = (place: Place) =>
 +  DreamSerializer(Place, place)
 +    .attribute('id')
 +    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
 +
-+export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
-+  PlaceSummaryForGuestsSerializer(place)
++export const PlaceForVisitorsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
++  PlaceSummaryForVisitorsSerializer(place)
 +    .attribute('style')
 +    .customAttribute('displayStyle', () => i18n(passthrough.locale, `places.style.${place.style}`), {
 +      openapi: 'string',
 +    })
 +    .attribute('sleeps')
-+    .rendersMany('rooms', { serializerKey: 'forGuests' })
++    .rendersMany('rooms', { serializerKey: 'forVisitors' })
 diff --git a/api/src/app/serializers/Room/BathroomSerializer.ts b/api/src/app/serializers/Room/BathroomSerializer.ts
-index a80452b..9ef8d33 100644
+index a80452b..1ea2b6f 100644
 --- a/api/src/app/serializers/Room/BathroomSerializer.ts
 +++ b/api/src/app/serializers/Room/BathroomSerializer.ts
 @@ -1,5 +1,12 @@
 -import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 +import { ObjectSerializer } from '@rvoh/dream'
-+import { RoomForGuestsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
  import Bathroom from '@models/Room/Bathroom.js'
 +import {
 +  type BathOrShowerStylesEnum,
@@ -424,17 +538,17 @@ index a80452b..9ef8d33 100644
 +      }
 +    )
 +
-+export const RoomBathroomForGuestsSerializer = (roomBathroom: Bathroom, passthrough: { locale: LocalesEnum }) =>
-+  RoomForGuestsSerializer(Bathroom, roomBathroom, passthrough)
++export const RoomBathroomForVisitorsSerializer = (roomBathroom: Bathroom, passthrough: { locale: LocalesEnum }) =>
++  RoomForVisitorsSerializer(Bathroom, roomBathroom, passthrough)
 +    .rendersOne<Bathroom>('bathOrShowerStyle', { serializer: BathOrShowerStyleSerializer })
 diff --git a/api/src/app/serializers/Room/BedroomSerializer.ts b/api/src/app/serializers/Room/BedroomSerializer.ts
-index f34b5b4..efce021 100644
+index f34b5b4..451df83 100644
 --- a/api/src/app/serializers/Room/BedroomSerializer.ts
 +++ b/api/src/app/serializers/Room/BedroomSerializer.ts
 @@ -1,5 +1,8 @@
 -import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 +import { ObjectSerializer } from '@rvoh/dream'
-+import { RoomForGuestsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
  import Bedroom from '@models/Room/Bedroom.js'
 +import { type BedTypesEnum, BedTypesEnumValues, type LocalesEnum } from '@src/types/db.js'
 +import i18n from '@src/utils/i18n.js'
@@ -453,17 +567,17 @@ index f34b5b4..efce021 100644
 +      openapi: 'string',
 +    })
 +
-+export const RoomBedroomForGuestsSerializer = (roomBedroom: Bedroom, passthrough: { locale: LocalesEnum }) =>
-+  RoomForGuestsSerializer(Bedroom, roomBedroom, passthrough).rendersMany<Bedroom>('bedTypes', {
++export const RoomBedroomForVisitorsSerializer = (roomBedroom: Bedroom, passthrough: { locale: LocalesEnum }) =>
++  RoomForVisitorsSerializer(Bedroom, roomBedroom, passthrough).rendersMany<Bedroom>('bedTypes', {
 +    serializer: BedTypeSerializer,
 +  })
 diff --git a/api/src/app/serializers/Room/DenSerializer.ts b/api/src/app/serializers/Room/DenSerializer.ts
-index 5d4db09..2ebffd3 100644
+index 5d4db09..6a44070 100644
 --- a/api/src/app/serializers/Room/DenSerializer.ts
 +++ b/api/src/app/serializers/Room/DenSerializer.ts
 @@ -1,8 +1,12 @@
 -import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
-+import { RoomForGuestsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
  import Den from '@models/Room/Den.js'
 +import { type LocalesEnum } from '@src/types/db.js'
  
@@ -473,16 +587,16 @@ index 5d4db09..2ebffd3 100644
  export const RoomDenSerializer = (den: Den) =>
    RoomSerializer(Den, den)
 +
-+export const RoomDenForGuestsSerializer = (roomDen: Den, passthrough: { locale: LocalesEnum }) =>
-+  RoomForGuestsSerializer(Den, roomDen, passthrough)
++export const RoomDenForVisitorsSerializer = (roomDen: Den, passthrough: { locale: LocalesEnum }) =>
++  RoomForVisitorsSerializer(Den, roomDen, passthrough)
 diff --git a/api/src/app/serializers/Room/KitchenSerializer.ts b/api/src/app/serializers/Room/KitchenSerializer.ts
-index 633aa8f..6c109d3 100644
+index 633aa8f..5f2929c 100644
 --- a/api/src/app/serializers/Room/KitchenSerializer.ts
 +++ b/api/src/app/serializers/Room/KitchenSerializer.ts
 @@ -1,5 +1,8 @@
 -import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
 +import { ObjectSerializer } from '@rvoh/dream'
-+import { RoomForGuestsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
  import Kitchen from '@models/Room/Kitchen.js'
 +import { type ApplianceTypesEnum, ApplianceTypesEnumValues, type LocalesEnum } from '@src/types/db.js'
 +import i18n from '@src/utils/i18n.js'
@@ -501,17 +615,17 @@ index 633aa8f..6c109d3 100644
 +      openapi: 'string',
 +    })
 +
-+export const RoomKitchenForGuestsSerializer = (roomKitchen: Kitchen, passthrough: { locale: LocalesEnum }) =>
-+  RoomForGuestsSerializer(Kitchen, roomKitchen, passthrough).rendersMany<Kitchen>('appliances', {
++export const RoomKitchenForVisitorsSerializer = (roomKitchen: Kitchen, passthrough: { locale: LocalesEnum }) =>
++  RoomForVisitorsSerializer(Kitchen, roomKitchen, passthrough).rendersMany<Kitchen>('appliances', {
 +    serializer: ApplianceSerializer,
 +  })
 diff --git a/api/src/app/serializers/Room/LivingRoomSerializer.ts b/api/src/app/serializers/Room/LivingRoomSerializer.ts
-index 473d39b..ef92947 100644
+index 473d39b..1c17f34 100644
 --- a/api/src/app/serializers/Room/LivingRoomSerializer.ts
 +++ b/api/src/app/serializers/Room/LivingRoomSerializer.ts
 @@ -1,8 +1,14 @@
 -import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
-+import { RoomForGuestsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
++import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
  import LivingRoom from '@models/Room/LivingRoom.js'
 +import { type LocalesEnum } from '@src/types/db.js'
  
@@ -521,12 +635,12 @@ index 473d39b..ef92947 100644
  export const RoomLivingRoomSerializer = (livingRoom: LivingRoom) =>
    RoomSerializer(LivingRoom, livingRoom)
 +
-+export const RoomLivingRoomForGuestsSerializer = (
++export const RoomLivingRoomForVisitorsSerializer = (
 +  roomLivingRoom: LivingRoom,
 +  passthrough: { locale: LocalesEnum }
-+) => RoomForGuestsSerializer(LivingRoom, roomLivingRoom, passthrough)
++) => RoomForVisitorsSerializer(LivingRoom, roomLivingRoom, passthrough)
 diff --git a/api/src/app/serializers/RoomSerializer.ts b/api/src/app/serializers/RoomSerializer.ts
-index d16e185..7ffd3c7 100644
+index d16e185..5292ce7 100644
 --- a/api/src/app/serializers/RoomSerializer.ts
 +++ b/api/src/app/serializers/RoomSerializer.ts
 @@ -1,5 +1,7 @@
@@ -542,7 +656,7 @@ index d16e185..7ffd3c7 100644
  export const RoomSerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
    RoomSummarySerializer(StiChildClass, room)
 +
-+export const RoomForGuestsSerializer = <T extends Room>(
++export const RoomForVisitorsSerializer = <T extends Room>(
 +  StiChildClass: typeof Room,
 +  room: T,
 +  passthrough: { locale: LocalesEnum }
@@ -683,37 +797,30 @@ index b798cf2..82b076e 100644
 +  es,
  }
 diff --git a/api/src/conf/routes.ts b/api/src/conf/routes.ts
-index ff6749b..39ff67b 100644
+index ff6749b..5f98fa3 100644
 --- a/api/src/conf/routes.ts
 +++ b/api/src/conf/routes.ts
-@@ -4,14 +4,16 @@ import { PsychicRouter } from '@rvoh/psychic'
+@@ -4,6 +4,10 @@ import { PsychicRouter } from '@rvoh/psychic'
  
  export default function routes(r: PsychicRouter) {
    r.namespace('v1', r => {
-+    r.namespace('guest', r => {
++    r.namespace('visitor', r => {
 +      r.resources('places', { only: ['index', 'show'] })
 +    })
 +
      r.namespace('host', r => {
        r.resources('localized-texts', { only: ['update', 'destroy'] })
  
-       r.resources('places', r => {
-         r.resources('rooms')
--
-       })
--
-     })
-   })
- 
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 830fd35..0f8cc53 100644
+index 830fd35..d1fe6c9 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
-@@ -6,6 +6,131 @@
-     "description": "The autogenerated openapi spec for your app"
-   },
-   "paths": {
-+    "/v1/guest/places": {
+@@ -817,10 +817,183 @@
+           }
+         }
+       }
++    },
++    "/v1/visitor/places": {
 +      "parameters": [
 +        {
 +          "in": "query",
@@ -731,9 +838,9 @@ index 830fd35..0f8cc53 100644
 +      ],
 +      "get": {
 +        "tags": [
-+          "guest-places"
++          "visitor-places"
 +        ],
-+        "description": "Place index endpoint for Guests",
++        "description": "Place index endpoint for Visitors",
 +        "responses": {
 +          "200": {
 +            "content": {
@@ -754,7 +861,7 @@ index 830fd35..0f8cc53 100644
 +                    "results": {
 +                      "type": "array",
 +                      "items": {
-+                        "$ref": "#/components/schemas/PlaceSummaryForGuests"
++                        "$ref": "#/components/schemas/PlaceSummaryForVisitors"
 +                      }
 +                    }
 +                  }
@@ -787,7 +894,7 @@ index 830fd35..0f8cc53 100644
 +        }
 +      }
 +    },
-+    "/v1/guest/places/{id}": {
++    "/v1/visitor/places/{id}": {
 +      "parameters": [
 +        {
 +          "in": "path",
@@ -800,15 +907,15 @@ index 830fd35..0f8cc53 100644
 +      ],
 +      "get": {
 +        "tags": [
-+          "guest-places"
++          "visitor-places"
 +        ],
-+        "description": "Place show endpoint for Guests",
++        "description": "Place show endpoint for Visitors",
 +        "responses": {
 +          "200": {
 +            "content": {
 +              "application/json": {
 +                "schema": {
-+                  "$ref": "#/components/schemas/PlaceForGuests"
++                  "$ref": "#/components/schemas/PlaceForVisitors"
 +                }
 +              }
 +            },
@@ -837,11 +944,7 @@ index 830fd35..0f8cc53 100644
 +          }
 +        }
 +      }
-+    },
-     "/v1/host/localized-texts/{id}": {
-       "parameters": [
-         {
-@@ -821,6 +946,54 @@
+     }
    },
    "components": {
      "schemas": {
@@ -900,7 +1003,7 @@ index 830fd35..0f8cc53 100644
            }
          }
        },
-+      "PlaceForGuests": {
++      "PlaceForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "displayStyle",
@@ -922,19 +1025,19 @@ index 830fd35..0f8cc53 100644
 +            "items": {
 +              "anyOf": [
 +                {
-+                  "$ref": "#/components/schemas/RoomBathroomForGuests"
++                  "$ref": "#/components/schemas/RoomBathroomForVisitors"
 +                },
 +                {
-+                  "$ref": "#/components/schemas/RoomBedroomForGuests"
++                  "$ref": "#/components/schemas/RoomBedroomForVisitors"
 +                },
 +                {
-+                  "$ref": "#/components/schemas/RoomDenForGuests"
++                  "$ref": "#/components/schemas/RoomDenForVisitors"
 +                },
 +                {
-+                  "$ref": "#/components/schemas/RoomKitchenForGuests"
++                  "$ref": "#/components/schemas/RoomKitchenForVisitors"
 +                },
 +                {
-+                  "$ref": "#/components/schemas/RoomLivingRoomForGuests"
++                  "$ref": "#/components/schemas/RoomLivingRoomForVisitors"
 +                }
 +              ]
 +            }
@@ -958,7 +1061,7 @@ index 830fd35..0f8cc53 100644
            }
          }
        },
-+      "PlaceSummaryForGuests": {
++      "PlaceSummaryForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "id",
@@ -980,7 +1083,7 @@ index 830fd35..0f8cc53 100644
            }
          }
        },
-+      "RoomBathroomForGuests": {
++      "RoomBathroomForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "bathOrShowerStyle",
@@ -1015,7 +1118,7 @@ index 830fd35..0f8cc53 100644
            }
          }
        },
-+      "RoomBedroomForGuests": {
++      "RoomBedroomForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "bedTypes",
@@ -1053,7 +1156,7 @@ index 830fd35..0f8cc53 100644
            }
          }
        },
-+      "RoomDenForGuests": {
++      "RoomDenForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "displayType",
@@ -1084,7 +1187,7 @@ index 830fd35..0f8cc53 100644
            }
          }
        },
-+      "RoomKitchenForGuests": {
++      "RoomKitchenForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "appliances",
@@ -1122,7 +1225,7 @@ index 830fd35..0f8cc53 100644
            }
          }
        },
-+      "RoomLivingRoomForGuests": {
++      "RoomLivingRoomForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "displayType",
@@ -1150,14 +1253,15 @@ index 830fd35..0f8cc53 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 37767da..a90973d 100644
+index 37767da..b1b5a3d 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
-@@ -6,6 +6,131 @@
-     "description": "The autogenerated openapi spec for your app"
-   },
-   "paths": {
-+    "/v1/guest/places": {
+@@ -817,10 +817,200 @@
+           }
+         }
+       }
++    },
++    "/v1/visitor/places": {
 +      "parameters": [
 +        {
 +          "in": "query",
@@ -1175,9 +1279,9 @@ index 37767da..a90973d 100644
 +      ],
 +      "get": {
 +        "tags": [
-+          "guest-places"
++          "visitor-places"
 +        ],
-+        "description": "Place index endpoint for Guests",
++        "description": "Place index endpoint for Visitors",
 +        "responses": {
 +          "200": {
 +            "content": {
@@ -1198,7 +1302,7 @@ index 37767da..a90973d 100644
 +                    "results": {
 +                      "type": "array",
 +                      "items": {
-+                        "$ref": "#/components/schemas/PlaceSummaryForGuests"
++                        "$ref": "#/components/schemas/PlaceSummaryForVisitors"
 +                      }
 +                    }
 +                  }
@@ -1231,7 +1335,7 @@ index 37767da..a90973d 100644
 +        }
 +      }
 +    },
-+    "/v1/guest/places/{id}": {
++    "/v1/visitor/places/{id}": {
 +      "parameters": [
 +        {
 +          "in": "path",
@@ -1244,15 +1348,15 @@ index 37767da..a90973d 100644
 +      ],
 +      "get": {
 +        "tags": [
-+          "guest-places"
++          "visitor-places"
 +        ],
-+        "description": "Place show endpoint for Guests",
++        "description": "Place show endpoint for Visitors",
 +        "responses": {
 +          "200": {
 +            "content": {
 +              "application/json": {
 +                "schema": {
-+                  "$ref": "#/components/schemas/PlaceForGuests"
++                  "$ref": "#/components/schemas/PlaceForVisitors"
 +                }
 +              }
 +            },
@@ -1281,11 +1385,7 @@ index 37767da..a90973d 100644
 +          }
 +        }
 +      }
-+    },
-     "/v1/host/localized-texts/{id}": {
-       "parameters": [
-         {
-@@ -821,6 +946,71 @@
+     }
    },
    "components": {
      "schemas": {
@@ -1361,7 +1461,7 @@ index 37767da..a90973d 100644
            }
          }
        },
-+      "PlaceForGuests": {
++      "PlaceForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "displayStyle",
@@ -1383,19 +1483,19 @@ index 37767da..a90973d 100644
 +            "items": {
 +              "anyOf": [
 +                {
-+                  "$ref": "#/components/schemas/RoomBathroomForGuests"
++                  "$ref": "#/components/schemas/RoomBathroomForVisitors"
 +                },
 +                {
-+                  "$ref": "#/components/schemas/RoomBedroomForGuests"
++                  "$ref": "#/components/schemas/RoomBedroomForVisitors"
 +                },
 +                {
-+                  "$ref": "#/components/schemas/RoomDenForGuests"
++                  "$ref": "#/components/schemas/RoomDenForVisitors"
 +                },
 +                {
-+                  "$ref": "#/components/schemas/RoomKitchenForGuests"
++                  "$ref": "#/components/schemas/RoomKitchenForVisitors"
 +                },
 +                {
-+                  "$ref": "#/components/schemas/RoomLivingRoomForGuests"
++                  "$ref": "#/components/schemas/RoomLivingRoomForVisitors"
 +                }
 +              ]
 +            }
@@ -1427,7 +1527,7 @@ index 37767da..a90973d 100644
            }
          }
        },
-+      "PlaceSummaryForGuests": {
++      "PlaceSummaryForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "id",
@@ -1449,7 +1549,7 @@ index 37767da..a90973d 100644
            }
          }
        },
-+      "RoomBathroomForGuests": {
++      "RoomBathroomForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "bathOrShowerStyle",
@@ -1486,7 +1586,7 @@ index 37767da..a90973d 100644
            }
          }
        },
-+      "RoomBedroomForGuests": {
++      "RoomBedroomForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "bedTypes",
@@ -1526,7 +1626,7 @@ index 37767da..a90973d 100644
            }
          }
        },
-+      "RoomDenForGuests": {
++      "RoomDenForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "displayType",
@@ -1559,7 +1659,7 @@ index 37767da..a90973d 100644
            }
          }
        },
-+      "RoomKitchenForGuests": {
++      "RoomKitchenForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "appliances",
@@ -1599,7 +1699,7 @@ index 37767da..a90973d 100644
            }
          }
        },
-+      "RoomLivingRoomForGuests": {
++      "RoomLivingRoomForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "displayType",
@@ -1629,14 +1729,15 @@ index 37767da..a90973d 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index da67510..d6e4ca9 100644
+index da67510..e606d57 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
-@@ -6,6 +6,131 @@
-     "description": "The autogenerated openapi spec for your app"
-   },
-   "paths": {
-+    "/v1/guest/places": {
+@@ -817,10 +817,200 @@
+           }
+         }
+       }
++    },
++    "/v1/visitor/places": {
 +      "parameters": [
 +        {
 +          "in": "query",
@@ -1654,9 +1755,9 @@ index da67510..d6e4ca9 100644
 +      ],
 +      "get": {
 +        "tags": [
-+          "guest-places"
++          "visitor-places"
 +        ],
-+        "description": "Place index endpoint for Guests",
++        "description": "Place index endpoint for Visitors",
 +        "responses": {
 +          "200": {
 +            "content": {
@@ -1677,7 +1778,7 @@ index da67510..d6e4ca9 100644
 +                    "results": {
 +                      "type": "array",
 +                      "items": {
-+                        "$ref": "#/components/schemas/PlaceSummaryForGuests"
++                        "$ref": "#/components/schemas/PlaceSummaryForVisitors"
 +                      }
 +                    }
 +                  }
@@ -1710,7 +1811,7 @@ index da67510..d6e4ca9 100644
 +        }
 +      }
 +    },
-+    "/v1/guest/places/{id}": {
++    "/v1/visitor/places/{id}": {
 +      "parameters": [
 +        {
 +          "in": "path",
@@ -1723,15 +1824,15 @@ index da67510..d6e4ca9 100644
 +      ],
 +      "get": {
 +        "tags": [
-+          "guest-places"
++          "visitor-places"
 +        ],
-+        "description": "Place show endpoint for Guests",
++        "description": "Place show endpoint for Visitors",
 +        "responses": {
 +          "200": {
 +            "content": {
 +              "application/json": {
 +                "schema": {
-+                  "$ref": "#/components/schemas/PlaceForGuests"
++                  "$ref": "#/components/schemas/PlaceForVisitors"
 +                }
 +              }
 +            },
@@ -1760,11 +1861,7 @@ index da67510..d6e4ca9 100644
 +          }
 +        }
 +      }
-+    },
-     "/v1/host/localized-texts/{id}": {
-       "parameters": [
-         {
-@@ -821,6 +946,71 @@
+     }
    },
    "components": {
      "schemas": {
@@ -1840,7 +1937,7 @@ index da67510..d6e4ca9 100644
            }
          }
        },
-+      "PlaceForGuests": {
++      "PlaceForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "displayStyle",
@@ -1862,19 +1959,19 @@ index da67510..d6e4ca9 100644
 +            "items": {
 +              "anyOf": [
 +                {
-+                  "$ref": "#/components/schemas/RoomBathroomForGuests"
++                  "$ref": "#/components/schemas/RoomBathroomForVisitors"
 +                },
 +                {
-+                  "$ref": "#/components/schemas/RoomBedroomForGuests"
++                  "$ref": "#/components/schemas/RoomBedroomForVisitors"
 +                },
 +                {
-+                  "$ref": "#/components/schemas/RoomDenForGuests"
++                  "$ref": "#/components/schemas/RoomDenForVisitors"
 +                },
 +                {
-+                  "$ref": "#/components/schemas/RoomKitchenForGuests"
++                  "$ref": "#/components/schemas/RoomKitchenForVisitors"
 +                },
 +                {
-+                  "$ref": "#/components/schemas/RoomLivingRoomForGuests"
++                  "$ref": "#/components/schemas/RoomLivingRoomForVisitors"
 +                }
 +              ]
 +            }
@@ -1906,7 +2003,7 @@ index da67510..d6e4ca9 100644
            }
          }
        },
-+      "PlaceSummaryForGuests": {
++      "PlaceSummaryForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "id",
@@ -1928,7 +2025,7 @@ index da67510..d6e4ca9 100644
            }
          }
        },
-+      "RoomBathroomForGuests": {
++      "RoomBathroomForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "bathOrShowerStyle",
@@ -1965,7 +2062,7 @@ index da67510..d6e4ca9 100644
            }
          }
        },
-+      "RoomBedroomForGuests": {
++      "RoomBedroomForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "bedTypes",
@@ -2005,7 +2102,7 @@ index da67510..d6e4ca9 100644
            }
          }
        },
-+      "RoomDenForGuests": {
++      "RoomDenForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "displayType",
@@ -2038,7 +2135,7 @@ index da67510..d6e4ca9 100644
            }
          }
        },
-+      "RoomKitchenForGuests": {
++      "RoomKitchenForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "appliances",
@@ -2078,7 +2175,7 @@ index da67510..d6e4ca9 100644
            }
          }
        },
-+      "RoomLivingRoomForGuests": {
++      "RoomLivingRoomForVisitors": {
 +        "type": "object",
 +        "required": [
 +          "displayType",
@@ -2108,41 +2205,41 @@ index da67510..d6e4ca9 100644
          "type": "object",
          "required": [
 diff --git a/api/src/types/dream.globals.ts b/api/src/types/dream.globals.ts
-index 0f826c1..a540ffc 100644
+index 0f826c1..f8f3481 100644
 --- a/api/src/types/dream.globals.ts
 +++ b/api/src/types/dream.globals.ts
 @@ -64,18 +64,29 @@ export const globalTypeConfig = {
      'HostSummarySerializer',
      'LocalizedTextSerializer',
      'LocalizedTextSummarySerializer',
-+    'PlaceForGuestsSerializer',
++    'PlaceForVisitorsSerializer',
      'PlaceSerializer',
-+    'PlaceSummaryForGuestsSerializer',
++    'PlaceSummaryForVisitorsSerializer',
      'PlaceSummarySerializer',
 +    'Room/ApplianceSerializer',
 +    'Room/BathOrShowerStyleSerializer',
-+    'Room/BathroomForGuestsSerializer',
++    'Room/BathroomForVisitorsSerializer',
      'Room/BathroomSerializer',
      'Room/BathroomSummarySerializer',
 +    'Room/BedTypeSerializer',
-+    'Room/BedroomForGuestsSerializer',
++    'Room/BedroomForVisitorsSerializer',
      'Room/BedroomSerializer',
      'Room/BedroomSummarySerializer',
-+    'Room/DenForGuestsSerializer',
++    'Room/DenForVisitorsSerializer',
      'Room/DenSerializer',
      'Room/DenSummarySerializer',
-+    'Room/KitchenForGuestsSerializer',
++    'Room/KitchenForVisitorsSerializer',
      'Room/KitchenSerializer',
      'Room/KitchenSummarySerializer',
-+    'Room/LivingRoomForGuestsSerializer',
++    'Room/LivingRoomForVisitorsSerializer',
      'Room/LivingRoomSerializer',
      'Room/LivingRoomSummarySerializer',
-+    'RoomForGuestsSerializer',
++    'RoomForVisitorsSerializer',
      'RoomSerializer',
      'RoomSummarySerializer',
    ],
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index d73f541..747997b 100644
+index d73f541..c881e17 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
 @@ -456,7 +456,7 @@ export const schema = {
@@ -2150,7 +2247,7 @@ index d73f541..747997b 100644
    },
    places: {
 -    serializerKeys: ['default', 'summary'],
-+    serializerKeys: ['default', 'forGuests', 'summary', 'summaryForGuests'],
++    serializerKeys: ['default', 'forVisitors', 'summary', 'summaryForVisitors'],
      scopes: {
        default: ['dream:SoftDelete'],
        named: [],
@@ -2159,17 +2256,19 @@ index d73f541..747997b 100644
    },
    rooms: {
 -    serializerKeys: ['default', 'summary'],
-+    serializerKeys: ['default', 'forGuests', 'summary'],
++    serializerKeys: ['default', 'forVisitors', 'summary'],
      scopes: {
        default: ['dream:STI', 'dream:SoftDelete'],
        named: [],
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index dc147fa..d0e8a21 100644
+index dc147fa..c350eaa 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
-@@ -1,4 +1,103 @@
- export interface paths {
-+    "/v1/guest/places": {
+@@ -466,10 +466,124 @@ export interface paths {
+         };
+         trace?: never;
+     };
++    "/v1/visitor/places": {
 +        parameters: {
 +            query?: {
 +                /** @description Pagination cursor */
@@ -2179,7 +2278,7 @@ index dc147fa..d0e8a21 100644
 +            path?: never;
 +            cookie?: never;
 +        };
-+        /** @description Place index endpoint for Guests */
++        /** @description Place index endpoint for Visitors */
 +        get: {
 +            parameters: {
 +                query?: {
@@ -2200,7 +2299,7 @@ index dc147fa..d0e8a21 100644
 +                    content: {
 +                        "application/json": {
 +                            cursor: string | null;
-+                            results: components["schemas"]["PlaceSummaryForGuests"][];
++                            results: components["schemas"]["PlaceSummaryForVisitors"][];
 +                        };
 +                    };
 +                };
@@ -2221,7 +2320,7 @@ index dc147fa..d0e8a21 100644
 +        patch?: never;
 +        trace?: never;
 +    };
-+    "/v1/guest/places/{id}": {
++    "/v1/visitor/places/{id}": {
 +        parameters: {
 +            query?: never;
 +            header?: never;
@@ -2230,7 +2329,7 @@ index dc147fa..d0e8a21 100644
 +            };
 +            cookie?: never;
 +        };
-+        /** @description Place show endpoint for Guests */
++        /** @description Place show endpoint for Visitors */
 +        get: {
 +            parameters: {
 +                query?: never;
@@ -2248,7 +2347,7 @@ index dc147fa..d0e8a21 100644
 +                        [name: string]: unknown;
 +                    };
 +                    content: {
-+                        "application/json": components["schemas"]["PlaceForGuests"];
++                        "application/json": components["schemas"]["PlaceForVisitors"];
 +                    };
 +                };
 +                400: components["responses"]["BadRequest"];
@@ -2268,10 +2367,7 @@ index dc147fa..d0e8a21 100644
 +        patch?: never;
 +        trace?: never;
 +    };
-     "/v1/host/localized-texts/{id}": {
-         parameters: {
-             query?: never;
-@@ -470,6 +569,21 @@ export interface paths {
+ }
  export type webhooks = Record<string, never>;
  export interface components {
      schemas: {
@@ -2297,10 +2393,10 @@ index dc147fa..d0e8a21 100644
              /** @enum {string} */
              style: "cabin" | "cave" | "cottage" | "dump" | "lean_to" | "tent" | "treehouse";
          };
-+        PlaceForGuests: {
++        PlaceForVisitors: {
 +            displayStyle: string;
 +            id: string;
-+            rooms: (components["schemas"]["RoomBathroomForGuests"] | components["schemas"]["RoomBedroomForGuests"] | components["schemas"]["RoomDenForGuests"] | components["schemas"]["RoomKitchenForGuests"] | components["schemas"]["RoomLivingRoomForGuests"])[];
++            rooms: (components["schemas"]["RoomBathroomForVisitors"] | components["schemas"]["RoomBedroomForVisitors"] | components["schemas"]["RoomDenForVisitors"] | components["schemas"]["RoomKitchenForVisitors"] | components["schemas"]["RoomLivingRoomForVisitors"])[];
 +            sleeps: number;
 +            /** @enum {string} */
 +            style: "cabin" | "cave" | "cottage" | "dump" | "lean_to" | "tent" | "treehouse";
@@ -2310,7 +2406,7 @@ index dc147fa..d0e8a21 100644
              id: string;
              name: string;
          };
-+        PlaceSummaryForGuests: {
++        PlaceSummaryForVisitors: {
 +            id: string;
 +            title: string;
 +        };
@@ -2321,7 +2417,7 @@ index dc147fa..d0e8a21 100644
              /** @enum {string} */
              type: "Bathroom";
          };
-+        RoomBathroomForGuests: {
++        RoomBathroomForVisitors: {
 +            bathOrShowerStyle: components["schemas"]["BathOrShowerStyle"];
 +            displayType: string;
 +            id: string;
@@ -2336,7 +2432,7 @@ index dc147fa..d0e8a21 100644
              /** @enum {string} */
              type: "Bedroom";
          };
-+        RoomBedroomForGuests: {
++        RoomBedroomForVisitors: {
 +            bedTypes: components["schemas"]["BedType"][];
 +            displayType: string;
 +            id: string;
@@ -2351,7 +2447,7 @@ index dc147fa..d0e8a21 100644
              /** @enum {string} */
              type: "Den";
          };
-+        RoomDenForGuests: {
++        RoomDenForVisitors: {
 +            displayType: string;
 +            id: string;
 +            title: string;
@@ -2365,7 +2461,7 @@ index dc147fa..d0e8a21 100644
              /** @enum {string} */
              type: "Kitchen";
          };
-+        RoomKitchenForGuests: {
++        RoomKitchenForVisitors: {
 +            appliances: components["schemas"]["Appliance"][];
 +            displayType: string;
 +            id: string;
@@ -2380,7 +2476,7 @@ index dc147fa..d0e8a21 100644
              /** @enum {string} */
              type: "LivingRoom";
          };
-+        RoomLivingRoomForGuests: {
++        RoomLivingRoomForVisitors: {
 +            displayType: string;
 +            id: string;
 +            title: string;
