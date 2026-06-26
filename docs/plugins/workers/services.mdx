@@ -1,7 +1,7 @@
 ---
 sidebar_position: 4
 title: services
-ai_summary: "Classes extending ApplicationBackgroundedService provide background and backgroundWithDelay methods. Background methods by calling this.background('_methodName', args). Keeps API requests responsive by offloading work."
+ai_summary: "Classes extending ApplicationBackgroundedService provide background and backgroundWithDelay methods. Background methods by calling this.background('_methodName', args). Keep job arguments to IDs/scalars, look records up with find, and use commit hooks when enqueueing from model lifecycle hooks."
 ---
 
 # Services
@@ -36,4 +36,4 @@ Now, from anywhere in your app you can safely call `syncUser` without tying up r
 
 Pass IDs or scalar values to background jobs, not model objects. Job arguments are serialized through Redis; model instances can go stale and lose type information. Inside the backgrounded implementation, look the record up with `find` and return early if it no longer exists.
 
-If you enqueue from model hooks, use an after-commit hook such as `@deco.AfterCreateCommit`. Do not enqueue from inside an open transaction; the worker can race the commit and look up a record before it exists.
+If you enqueue from model hooks, use an after-commit hook such as `@deco.AfterCreateCommit`, `@deco.AfterUpdateCommit`, or `@deco.AfterSaveCommit`. This applies to any enqueue path: calling a backgrounded service, calling `this.background(...)` on a backgrounded model, or calling a helper that queues the job. Do not enqueue from inside an open transaction; the worker can race the commit and either look up a record before it exists or read stale persisted data after an update.
