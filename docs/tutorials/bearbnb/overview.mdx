@@ -22,40 +22,40 @@ A good way to follow along with building a Psychic app is:
 
 erDiagram
   User {
-    bigint id PK
+    uuid id PK
     citext email
     string first_name
     string last_name
   }
 
   Guest {
-    bigint id PK
-    bigint user_id FK
+    uuid id PK
+    uuid user_id FK
   }
 
   Host {
-    bigint id PK
-    bigint user_id FK
+    uuid id PK
+    uuid user_id FK
   }
 
   Place {
-    bigint id PK
+    uuid id PK
     string name
     enum style
     integer sleeps
   }
 
   HostPlace {
-    bigint id PK
-    bigint host_id FK
-    bigint place_id FK
+    uuid id PK
+    uuid host_id FK
+    uuid place_id FK
   }
 
 
   Room__STI_base_model__ {
-    bigint id PK
+    uuid id PK
     enum type
-    bigint place_id FK
+    uuid place_id FK
     integer position
 
     enum bath_or_shower_type
@@ -64,16 +64,18 @@ erDiagram
   }
 
   LocalizedText {
-    bigint id PK
+    uuid id PK
     enum localizable_type
-    bigint localizable_id
+    uuid localizable_id
     enum locale
     string title
     text markdown
   }
 
   Booking__pending__ {
-    bigint id PK
+    uuid id PK
+    uuid guest_id FK
+    uuid place_id FK
     date arrive_on
     date depart_on
     integer adults
@@ -101,18 +103,18 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
   code={`{{PM}} psy g:model --no-serializer User email:citext
 {{PM}} psy g:model Guest User:belongs_to
 {{PM}} psy g:model Host User:belongs_to
-{{PM}} psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,
-{{PM}} psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to deleted_at:datetime:optional
+{{PM}} psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer
+{{PM}} psy g:model --no-serializer HostPlace Host:belongs_to Place:belongs_to
 
-{{PM}} psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\\{\\}/rooms Room type:enum:room_types:Bathroom,
-{{PM}} psy g:sti-child Room/Bathroom extends Room bath_or_shower_style:enum:bath_or_shower_styles:bath,shower,bath_and_shower,
+{{PM}} psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\\{\\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom Place:belongs_to position:integer:optional
 {{PM}} psy g:sti-child --help
+{{PM}} psy g:sti-child Room/Bathroom extends Room bath_or_shower_style:enum:bath_or_shower_styles:bath,shower,bath_and_shower,none
 {{PM}} psy g:sti-child Room/Bedroom extends Room bed_types:enum\[\]:bed_types:twin,bunk,queen,king,cot,sofabed
 {{PM}} psy g:sti-child Room/Kitchen extends Room appliances:enum\[\]:appliance_types:stove,oven,microwave,dishwasher
 {{PM}} psy g:sti-child Room/Den extends Room
 {{PM}} psy g:sti-child Room/LivingRoom extends Room
 
-{{PM}} psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText localizable_type:enum:localized_types:Host,
-{{PM}} psy g:controller V1/Guest/Places index show
+{{PM}} psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText localizable_type:enum:localized_types:Host,Place,Room localizable_id:uuid locale:enum:locales:en-US,es-ES title:string markdown:text
+{{PM}} psy g:controller V1/Visitor/Places index show
 {{PM}} psy g:migration add-deferrable-unique-constraint-to-rooms`}
 />
