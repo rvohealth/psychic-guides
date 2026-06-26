@@ -15,7 +15,9 @@ The API is fluent — you chain calls to `.attribute()`, `.customAttribute()`, `
 
 Each model can have multiple serializers for different contexts (e.g. a `summary` serializer for index endpoints and a `default` serializer for show endpoints), and serializers compose nicely — you can extend one from another.
 
-One important design decision: serializers are intentionally synchronous. This prevents you from accidentally introducing N+1 query problems during serialization. Load your data upfront (using [`preloadFor`](/docs/models/querying/preloadFor) is the easiest way), then let the serializer do its thing.
+One important design decision: serializers are intentionally synchronous. They should not query. This prevents you from accidentally introducing N+1 query problems during serialization. Load your data upfront with [`preloadFor`](/docs/models/querying/preloadFor) or [`loadFor`](/docs/models/querying/loadFor), then let the serializer do its thing.
+
+Serializers are function-based and should use named exports. Avoid class-based serializers and default exports; named serializer functions give OpenAPI stable component names and make runtime registration explicit.
 
 ## example
 

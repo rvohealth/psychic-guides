@@ -12,7 +12,7 @@ Range is used in combination with `where` and `and` clauses in Dream.
 ## range supports start, end, or start and end values
 
 ```ts
-import { range } from '@rvoh/dream'
+import { range } from '@rvoh/dream/utils'
 
 // search Places that sleep at least 3 people
 await Place.where({ sleeps: range(3) }).count()
@@ -27,7 +27,7 @@ await Place.where({ sleeps: range(2, 4) }).count()
 ## range supports CalendarDate, DateTime, ClockTime, and number values
 
 ```ts
-import { CalendarDate, ClockTime, DateTime, range } from '@rvoh/dream'
+import { CalendarDate, ClockTime, DateTime, range } from '@rvoh/dream/utils'
 
 await user
   .associationQuery('pets')

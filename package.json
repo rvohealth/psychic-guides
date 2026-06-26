@@ -13,6 +13,7 @@
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
     "typecheck": "tsc",
+    "audit:psychic-skill": "tsx scripts/audit-psychic-skill-alignment.ts",
     "fix-pagination": "tsx scripts/fix-pagination.ts",
     "combine-docs": "tsx scripts/combine-docs.ts",
     "add-bearbnb-ids": "tsx scripts/add-bearbnb-ids.ts"

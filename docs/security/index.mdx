@@ -1,7 +1,13 @@
 ---
 sidebar_position: 0
 title: Security Overview
-ai_summary: "App-developer security guide for Psychic + Dream. Index for the per-topic guides (rate limiting, output encoding, workers and Redis, supply chain) plus a single-page checklist of every security knob the framework exposes — params, redirects, sessions, encryption, file uploads, websockets, OpenAPI, and the application-layer auth patterns the framework expects you to provide."
+ai_summary: >-
+  App-developer security guide for Psychic + Dream. Index for the per-topic
+  guides (rate limiting, output encoding, workers and Redis, supply chain) plus
+  a single-page checklist of every security knob the framework exposes — params,
+  redirects, sessions, encryption, file uploads, websockets, OpenAPI, and the
+  application-layer auth patterns the framework expects you to provide.
+pagination_prev: null
 ---
 
 # Security Overview
@@ -187,12 +193,16 @@ The framework does not bundle multipart parsing. The 2026-default pattern is **p
 
 ```ts
 // boilerplate websockets initializer
-io.engine.use(allowRequestForOrigins(allowedCorsOrigins()))
+wsApp.set('socketio', {
+  allowRequest: allowRequestForOrigins(allowedCorsOrigins()),
+})
 
-io.on('connection', async (socket) => {
-  const user = await resolveWebsocketUser(socket)
-  if (!user) { socket.disconnect(true); return }
-  await Ws.register(socket, user)
+wsApp.on('ws:start', io => {
+  io.on('connection', async (socket) => {
+    const user = await resolveWebsocketUser(socket)
+    if (!user) { socket.disconnect(true); return }
+    await Ws.register(socket, user.id)
+  })
 })
 ```
 

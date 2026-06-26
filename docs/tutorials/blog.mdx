@@ -720,7 +720,7 @@ export default class AuthSessionController extends AuthedController {
     status: 204,
     tags: openApiTags,
     requestBody: {
-      only: ['email', 'password'],
+      params: ['email', 'password'],
     },
   })
   public async signUp() {
@@ -1210,7 +1210,7 @@ Immediately, we should see errors in this file, since the OpenapiSpecRequest cla
     status: 204,
     tags: openApiTags,
     requestBody: {
-      only: ['email', 'password']
+      params: ['email', 'password']
     }
   })
   public async signIn() {

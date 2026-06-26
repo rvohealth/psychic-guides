@@ -17,7 +17,7 @@ export default class Post extends ApplicationModel {
   ...
   @deco.BelongsTo('User')
   public user: User
-  public userId: DreamColumn<User, 'userId'>
+  public userId: DreamColumn<Post, 'userId'>
 }
 ```
 
@@ -31,12 +31,12 @@ export default class Post extends ApplicationModel {
 export default class Post extends ApplicationModel {
   ...
   @deco.BelongsTo('User', { optional: true })
-  public user: User
-  public userId: DreamColumn<User, 'userId'>
+  public user: User | null
+  public userId: DreamColumn<Post, 'userId'>
 }
 ```
 
-IMPORTANT: `optional` belongs-to associations do _not_ automatically result in `optional` `rendersOne` declarations in serializers. In cases when a serializer is rendering an optional belongs-to association on a Dream model, declare the rendersOne as optional (it is uncommon for model serializers to render belongs-to associations, so this is a rare requirement).
+Required `BelongsTo` associations are a two-way non-nullable contract: the foreign key should be not-null in the database, the model property is not nullable, and serializers/request shapes infer that requiredness. If a required belongs-to is missing because an internal mechanism bypassed the contract, Dream raises `MissingRequiredBelongsToAssociation`; fix the model relationship (`dependent: 'destroy'` on the inverse or `optional: true`), not the serializer.
 
 ### Foreign key (on option)
 

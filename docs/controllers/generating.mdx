@@ -40,8 +40,10 @@ Run `pnpm psy g:resource --help` or see [the g:resource documentation](/docs/cli
 In this example, we'll generate a Places resource and then a nested Rooms resource within Places (so that when a Room is created, it will be associated with the specified Place, and the index will return Rooms for a given Place).
 
 <PackageManagerTabs
-  code={`{{PM}} psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer deleted_at:datetime:optional`}
+  code={`{{PM}} psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer`}
 />
+
+Before using a generator, run its `--help` output in the local project. `g:resource` and `g:model` include `id`, timestamps, `deleted_at`, and `@SoftDelete()` by default; only pass `deleted_at` when you are adding soft delete to an existing model through a migration.
 
 The routes file will be modified with a namespaced resource.
 
@@ -54,13 +56,13 @@ r.namespace('v1', r => {
 })
 ```
 
-The resource generator doesn't know about nested resources, so when generating a nested resource, the nesting namespace will need to be changed into a resource. For example generating a nested Rooms resource within Places:
+Nested resource paths use `{}` for the parent id segment and must include `--owning-model` so the generated controller knows which association to query. For example, to generate Rooms nested under Places:
 
 <PackageManagerTabs
-  code={`{{PM}} psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\\{\\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom Place:belongs_to position:integer:optional deleted_at:datetime:optional`}
+  code={`{{PM}} psy g:resource --sti-base-serializer --owning-model=Place v1/host/places/\\{\\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom Place:belongs_to position:integer:optional`}
 />
 
-would update the above routes like so:
+The generated route may need to be normalized to express the nesting as a resource block:
 
 ```ts
 r.namespace('v1', r => {

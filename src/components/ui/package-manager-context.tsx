@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
 interface PackageManagerContextType {
-  selectedPackageManager: 'pnpm' | 'npm' | 'yarn' | 'bun' | 'bun'
-  setSelectedPackageManager: (pm: 'pnpm' | 'npm' | 'yarn' | 'bun' | 'bun') => void
+  selectedPackageManager: 'pnpm' | 'npm' | 'yarn' | 'bun'
+  setSelectedPackageManager: (pm: 'pnpm' | 'npm' | 'yarn' | 'bun') => void
 }
 
 const PackageManagerContext = createContext<PackageManagerContextType | undefined>(
@@ -19,7 +19,7 @@ export function PackageManagerProvider({ children }: { children: ReactNode }) {
   // Load from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === 'pnpm' || stored === 'npm' || stored === 'yarn') {
+    if (stored === 'pnpm' || stored === 'npm' || stored === 'yarn' || stored === 'bun') {
       setSelectedPackageManagerState(stored)
     }
   }, [])
@@ -49,7 +49,7 @@ export function usePackageManager() {
     // Initialize from localStorage only if context is not available
     if (context === undefined && typeof window !== 'undefined') {
       const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored === 'pnpm' || stored === 'npm' || stored === 'yarn') {
+      if (stored === 'pnpm' || stored === 'npm' || stored === 'yarn' || stored === 'bun') {
         return stored
       }
     }
@@ -65,7 +65,7 @@ export function usePackageManager() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored === 'pnpm' || stored === 'npm' || stored === 'yarn') {
+      if (stored === 'pnpm' || stored === 'npm' || stored === 'yarn' || stored === 'bun') {
         setLocalSelectedPackageManager(stored)
       }
     }
@@ -83,4 +83,3 @@ export function usePackageManager() {
     setSelectedPackageManager,
   }
 }
-

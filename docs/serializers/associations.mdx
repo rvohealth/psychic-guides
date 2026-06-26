@@ -31,6 +31,8 @@ export const PlaceForGuestsSerializer = (place: Place) =>
 
 By default, associations render using the `'default'` serializer declared on the associated model. Pass `serializerKey` to use a different one:
 
+`serializerKey` does not cascade. If a parent serializer uses a non-default key, nested `rendersOne` and `rendersMany` calls still use the associated model's `default` serializer unless you pass `serializerKey` at that nested call too.
+
 ```ts
 export const PlaceDetailSerializer = (place: Place) =>
   DreamSerializer(Place, place)

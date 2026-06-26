@@ -7,11 +7,11 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # repl
 
-The REPL (called `console`) enables you to inspect the database through the lens of your application. The code used to bootstrap your REPL can be found in `conf/repl.ts`:
+The REPL (called `console`) enables you to inspect the database through the lens of your application. Like other `psy` commands, console-oriented commands default to `NODE_ENV=test`; use `NODE_ENV=development` when you want to inspect your development database. The `console` package script is the supported entrypoint, not `psy console`.
 
 <PackageManagerTabs
   code={`# start local repl
-{{PM}} console`}
+NODE_ENV=development {{PM}} console`}
 />
 
 ```ts
@@ -40,3 +40,5 @@ export default (async function () {
   replServer.context.MyClass = MyClass
 })()
 ```
+
+For non-interactive scripts, prefer a scratch TypeScript file that imports `src/conf/global.js`, initializes the app, runs the code, and exits. That gives you the same boot path as the console without relying on interactive `stdout`.

@@ -51,6 +51,10 @@ See the [resource generator documentation](/docs/controllers/generating) for det
     - Include the fully qualified model name, e.g., if the Coach model is in `src/app/models/Health/Coach`:
       `Health/Coach:belongs_to`
 
+`<path>`, `<modelName>`, and `--owning-model` are independent. A nested route path such as `v1/host/places/{}/rooms` does not mean the model should be namespaced under `Place`; the model name should still describe what the record is. Nested `{}` paths must pass `--owning-model` so the generated controller can query and create through the parent association.
+
+The generator includes `id`, `created_at`, `updated_at`, `deleted_at`, and `@SoftDelete()` by default. Use `--no-soft-delete` only when hard deletion is an intentional part of the model design.
+
 ### Options
 
 - `--singular`: Generates a "resource" route instead of "resources", along with the necessary controller and spec changes.
@@ -60,7 +64,7 @@ See the [resource generator documentation](/docs/controllers/generating) for det
   - `show`
   - `update`
   - `delete`
-- `--sti-base-serializer`: Omits the serializer from the dream model, but does create the serializer so it can be extended by STI children.
+- `--sti-base-serializer`: Generates an STI-aware base serializer that child serializers can extend. Use this when the generated model is an STI parent.
 - `--owning-model <modelName>`: The model class of the object that `associationQuery`/`createAssociation` will be performed on in the created controller and spec (e.g., "Host", "Guest", "Ticketing/Ticket"). Defaults to the current user for non-admin/internal namespaced controllers. For admin/internal namespaced controllers, this defaults to null, meaning every admin/internal user can access the model.
 - `--connection-name <connectionName>`: The name of the db connection you would like to use for your model. Defaults to "default" (default: "default").
 - `--model-name <modelName>`: Explicit model class name to use instead of the auto-generated one (e.g. `--model-name=Kitchen` for `Room/Kitchen`).

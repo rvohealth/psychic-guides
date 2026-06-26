@@ -2,14 +2,14 @@
 sidebar_position: 1
 title: overview
 pagination_prev: null
-ai_summary: "Psychic automatically generates OpenAPI 3.0.2 specs using routes, serializers, and @OpenAPI decorator. Supports automatic response generation, request/response validation, and hand-written specs. Types stay in sync with database schema changes."
+ai_summary: "Psychic automatically generates OpenAPI specs using routes, serializers, and @OpenAPI decorator. Supports automatic response generation, request/response validation, and hand-written specs only when derivation is not practical. Types stay in sync with database schema changes."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # OpenAPI Overview
 
-[OpenAPI](https://spec.openapis.org/oas/v3.0.2.html) is a standard for representing API specifications. It is useful whether your service will be consumed by other services or front end clients such as mobile devices. Psychic and Dream work together to automatically generate [OpenAPI 3.0.2](https://spec.openapis.org/oas/v3.0.2.html) specs for your web application with as little additional work from you as possible. They do this by leveraging:
+[OpenAPI](https://spec.openapis.org/) is a standard for representing API specifications. It is useful whether your service will be consumed by other services or front end clients such as mobile devices. Psychic and Dream work together to automatically generate OpenAPI specs for your web application with as little additional work from you as possible. They do this by leveraging:
 
 1. the routes already defined in `api/src/conf/routes.ts`
 1. the serializers you already use to turn models into JSON
@@ -17,7 +17,7 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 The [resource generator](/docs/cli/generators/resource) automatically adds `@OpenAPI` decorator declarations corresponding to each endpoint, and since serializer attributes are typed back to the database schema, these types will stay in sync as you add migrations. (For example, if you add a migration to change a column from not allowing `null` to allowing `null`, the OpenAPI spec will change to include `nullable: true` for the corresponding property.)
 
-Serializers and the `@OpenAPI` decorator also support hand-written specs to provide added flexibility when needed. As with everything in Dream and Psychic, these hand-written specs are strongly typed.
+Serializers and the `@OpenAPI` decorator also support hand-written specs when a shape is genuinely ad hoc. Prefer derived schemas first: model responses through serializers, model request bodies through `requestBody.params` or `requestBody.including`, and computed response objects through `ObjectSerializer`.
 
 OpenAPI validation is enabled on all requests (when a request doesn't match, it returns 400) and on all responses when running specs (to ensure that any hand-written OpenAPI specifications match the data being returned).
 
@@ -137,7 +137,7 @@ const PlaceSerializer = (place: Place) =>
 
 ## Extra response payloads
 
-In addition to the default response shapes described, you can pass custom response objects to the `responses` field, enabling you to handle custom response codes.
+In addition to the default response shapes described, you can pass custom response objects to the `responses` field, enabling you to handle custom response codes. Use this for genuinely ad hoc shapes only. If the response can be represented by a Dream serializer or an `ObjectSerializer`, derive it there instead so the rendered data and OpenAPI schema stay attached.
 
 ```ts
 export default class V1HostPlacesController extends V1HostBaseController {
@@ -165,7 +165,7 @@ export default class V1HostPlacesController extends V1HostBaseController {
 
 ## Parameters
 
-To populate the `parameters` field in your OpenAPI definition for this route, the `headers`, `body`, `pathParams`, and `query` options are passed:
+To populate request metadata in your OpenAPI definition for this route, use `headers`, `requestBody`, `pathParams`, and `query`. For model-backed request bodies, prefer the `requestBody` shorthand instead of hand-written schema:
 
 ```ts
 export default class V1HostPlacesController extends V1HostBaseController {
@@ -173,12 +173,8 @@ export default class V1HostPlacesController extends V1HostBaseController {
     status: 201,
     tags: openApiTags,
     description: 'Create a Place',
-    body: {
-      type: 'object',
-      properties: {
-        name: 'string',
-        description: 'string',
-      },
+    requestBody: {
+      params: ['name', 'description'],
     },
     query: [{ name: 'search', required: false }],
     headers: [{ name: 'Authorization', required: true }],

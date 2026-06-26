@@ -34,33 +34,28 @@ class DataProcessingService extends ApplicationBackgroundedService {
   }
 
   public static async _processLargeDataset(datasetId: string, job: Job) {
-    const dataset = await Dataset.findOrFail(datasetId)
+    const dataset = await Dataset.find(datasetId)
+    if (!dataset) return
 
     await job.log(`Starting processing of dataset ${datasetId}`)
 
     let processedRows = 0
-    let invalidRows = 0
 
     for (const row of dataset.rows) {
-      try {
-        await this.processRow(row)
-        processedRows++
+      await this.processRow(row)
+      processedRows++
 
-        if (processedRows % 100 === 0) {
-          await job.log(`processedRows: ${processedRows}, invalidRows: ${invalidRows}`)
-        }
-      } catch (error) {
-        invalidRows++
-        await job.log(`Invalid row ${row.id}: ${error.message}`)
+      if (processedRows % 100 === 0) {
+        await job.log(`processedRows: ${processedRows}`)
       }
     }
 
-    await job.log(`Completed: processedRows: ${processedRows}, invalidRows: ${invalidRows}`)
+    await job.log(`Completed: processedRows: ${processedRows}`)
   }
 }
 ```
 
-The `Job` parameter is optional and always comes last in the method signature. Job logs are accessible through the BullMQ dashboard and can be retrieved programmatically.
+The `Job` parameter is optional and always comes last in the method signature. Job logs are accessible through the BullMQ dashboard and can be retrieved programmatically. Let unexpected errors throw so BullMQ can retry the job; catching and continuing marks the job successful.
 
 
 :::tip

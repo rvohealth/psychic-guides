@@ -216,7 +216,7 @@ export default class GraphEdge extends ApplicationModel {
 
 ### Dependent
 
-In most cases, cascade deleting for associations can be set up at the database level by simply defining the relationship with a cascade option at the migration level, like so:
+When the application owns child lifecycle, prefer `dependent: 'destroy'` on the association. With soft delete, keep database foreign keys on the default `restrict` behavior and let Dream run model hooks and soft-delete behavior:
 
 ```ts
 export async function up(db: Kysely<any>): Promise<void> {
@@ -227,13 +227,13 @@ export async function up(db: Kysely<any>): Promise<void> {
       'user_id',
       'bigint',
       col => col
-        .references('users.id').onDelete('cascade')
+        .references('users.id').onDelete('restrict')
     )
     ...
 }
 ```
 
-However, in the case of polymorphic relationships, this type of cascading is not possible, since the foreign key of a polymorphic association can point to many other tables. To fix this problem, you can set a `dependent` option at the association level, like so:
+Polymorphic relationships also need application-level dependent behavior, since the foreign key can point to many tables. Set the `dependent` option at the association level:
 
 ```ts
 class Rating extends ApplicationModel {
@@ -247,7 +247,7 @@ class Rating extends ApplicationModel {
 }
 ```
 
-In the above example, any time a `Composition` or `Post` model is destroyed, cascade deletions will apply to any related ratings, causing them to be removed from the database.
+In the above example, any time a `Composition` or `Post` model is destroyed, dependent destroy applies to related ratings. If the parent is soft-deleted, every model in the dependent chain should also use `@SoftDelete()` so children are not permanently removed.
 
 ### Distinct
 

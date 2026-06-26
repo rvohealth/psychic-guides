@@ -28,6 +28,7 @@ The configuration for your unit specs is located in `spec/unit/vite.config.ts`. 
 // spec/unit/vite.config.ts
 
 import '../../src/conf/global.js'
+import AppEnv from '../../src/conf/AppEnv.js'
 
 import { defineConfig } from 'vitest/config'
 
@@ -37,8 +38,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ['luxon-jest-matchers', './spec/unit/setup/hooks.ts'],
     fileParallelism: true,
-    maxConcurrency: parseInt(process.env.DREAM_PARALLEL_TESTS || '1'),
-    maxWorkers: parseInt(process.env.DREAM_PARALLEL_TESTS || '1'),
+    maxConcurrency: AppEnv.integer('DREAM_PARALLEL_TESTS', { optional: true }) || 1,
+    maxWorkers: AppEnv.integer('DREAM_PARALLEL_TESTS', { optional: true }) || 1,
     minWorkers: 1,
     mockReset: true,
     watch: false,
@@ -75,7 +76,7 @@ Since each test needs a freshly-truncated database to operate on, vitest is ordi
 
 export default async function configureDream(app: DreamApp) {
   ...
-  app.set('parallelTests', Number(process.env.DREAM_PARALLEL_TESTS))
+  app.set('parallelTests', AppEnv.integer('DREAM_PARALLEL_TESTS', { optional: true }) || 1)
 }
 ```
 
@@ -158,11 +159,14 @@ Anything else in the app should be fairly straight forward to test, with the exc
 
 ## Controller/endpoint specs
 
-Under the hood, psychic provides some test helpers to make our lives easier when needing to run controller/endpoint tests:
+Under the hood, psychic provides typed test helpers to make controller and endpoint specs line up with generated OpenAPI paths:
 
 ```ts
 import { PsychicServer } from '@rvoh/psychic'
-import { specRequest as request } from '@rvoh/psychic-spec-helpers'
+import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
+import { openapiPaths } from '../../../src/types/openapi.d.ts'
+
+const request = new OpenapiSpecRequest<openapiPaths>(openapiPaths)
 
 describe('a visitor attempts to hit an unauthed route', () => {
   beforeEach(async () => {
@@ -175,25 +179,18 @@ describe('a visitor attempts to hit an unauthed route', () => {
 })
 ```
 
-In addition to routine endpoint tests, one can also test authenticated endpoints using chained sessions, like so:
+Projects commonly wrap authenticated requests in a `session(user)` helper that returns an `OpenapiSpecRequest` with the right cookies or headers applied:
 
 ```ts
 describe('an authed user attempts to hit an authed route', () => {
-  beforeEach(async () => {
-    await createUser({ email: 'how@yadoin', password: 'password' })
-    await request.init(PsychicServer)
-  })
-
   it('returns 200', async () => {
-    const session = await request.session('/api/v1/signin', 204, {
-      data: { email: 'how@yadoin', password: 'password' },
-    })
-    await session.get('/api/v1/users/me').expect(200)
+    const user = await createUser()
+    await session(user).get('/api/v1/users/me', 200)
   })
 })
 ```
 
-Calling `request.session` here is very similar to `request.post`, but with the caviat that any cookies attached during the first request will now be sent to all subsequent requests.
+Negative ownership specs still need the authenticated role row. If a route is scoped to `currentHost`, create a host for the signed-in user before asserting that some other host's record is forbidden or hidden.
 
 ### Openapi
 

@@ -10,14 +10,14 @@ import RoutesOutput from '@site/src/components/ui/routes-output'
 Returns a copy of the array with duplicates removed. The optional, second argument is a function that returns a string or number to compare for uniqueness. NOTE: Dream models bypass any passed `toKey` function, using an internal value for comparison.
 
 ```ts
-import { uniq } from '@rvoh/dream'
+import { uniq } from '@rvoh/dream/utils'
 
 const graphNode1 = await GraphNode.create({ name: 'Hello' })
 const graphNode2 = await GraphNode.create({ name: 'Hello' })
 const graphNode3 = await GraphNode.findOrFail(graphNode1.id)
 
-const uniqArray = uniq([graphNode1, graphnNode2, graphNode3])
-// uniqArray will contain graphNode1 and graphnNode2
+const uniqArray = uniq([graphNode1, graphNode2, graphNode3])
+// uniqArray will contain graphNode1 and graphNode2
 
 uniq(['world', 'hello', 'hello'])
 // ['world', 'hello']

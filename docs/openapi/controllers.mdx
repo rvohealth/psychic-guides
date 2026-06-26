@@ -162,7 +162,7 @@ export default class PostsController extends PsychicController {
 
 ## requestBody
 
-Using the `requestBody` option, we can inform OpenAPI what the shape of our incoming request will be, using standard OpenAPI notation:
+Using the `requestBody` option, we can inform OpenAPI what the shape of our incoming request will be. For Dream models, prefer derived request bodies using `params`, `including`, and `combining`; hand-written JSON schema is only for request shapes that are not sensibly represented by a model.
 
 ```ts
 export default class PostsController extends PsychicController {
@@ -319,7 +319,7 @@ export default class PostsController extends PsychicController {
 
 ## responses
 
-Use the `responses` option to specify the payload shape for specific response statuses:
+Use the `responses` option to specify the payload shape for specific response statuses. Before hand-writing a schema, check whether the response should instead be represented by a Dream serializer or an exported `ObjectSerializer` passed to `@OpenAPI(SerializerFn, { status })`.
 
 ```ts
 export default class PostsController extends PsychicController {
