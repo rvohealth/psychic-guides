@@ -191,6 +191,48 @@ export async function down(db: Kysely<any>): Promise<void> {
 }
 ```
 
+## Encryption
+
+### encryptColumn
+
+Use `encryptColumn` when adding the `@deco.Encrypted` decorator to a column that already has data. A plain column rename leaves existing data as plaintext — the `@Encrypted` getter then tries to decrypt it and throws. This helper renames the column and rewrites the data in the same step.
+
+Before generating this migration, add `@deco.Encrypted()` to the model property and run:
+
+<PackageManagerTabs
+  code={`{{PM}} psy sync`}
+/>
+
+Then generate the migration and use `encryptColumn` in the `up` function:
+
+```ts
+import { DreamMigrationHelpers } from '@rvoh/dream/db'
+import { Kysely } from 'kysely'
+
+export async function up(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.encryptColumn(db, { table: 'users', column: 'secret' })
+}
+
+export async function down(db: Kysely<any>): Promise<void> {
+  await DreamMigrationHelpers.decryptColumn(db, { table: 'users', column: 'secret' })
+}
+```
+
+The helper:
+
+1. Renames `column` to `encrypted_<column>` (or a custom name via `encryptedColumnName`)
+2. Widens the column type to `text`
+3. Rewrites every non-null row's value as AES-GCM ciphertext using the same path the `@Encrypted` decorator uses
+
+### decryptColumn
+
+The exact inverse of `encryptColumn`. Decrypts each non-null value (trying the `current` key first, then `legacy`) and renames the column back. The optional `columnType` argument restores the original column type; it defaults to `text` if omitted.
+
+**Caveats:**
+
+- Runs inside the migration transaction — atomic on Postgres.
+- Rewrites one row at a time (each value needs a fresh IV). Unsuitable for very large tables; drop any index on the column before running.
+
 ## Extensions
 
 ### createExtension

@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
 interface PackageManagerContextType {
-  selectedPackageManager: 'pnpm' | 'npm' | 'yarn'
-  setSelectedPackageManager: (pm: 'pnpm' | 'npm' | 'yarn') => void
+  selectedPackageManager: 'pnpm' | 'npm' | 'yarn' | 'bun' | 'bun'
+  setSelectedPackageManager: (pm: 'pnpm' | 'npm' | 'yarn' | 'bun' | 'bun') => void
 }
 
 const PackageManagerContext = createContext<PackageManagerContextType | undefined>(
@@ -13,7 +13,7 @@ const STORAGE_KEY = 'psychic-docs-package-manager'
 
 export function PackageManagerProvider({ children }: { children: ReactNode }) {
   const [selectedPackageManager, setSelectedPackageManagerState] = useState<
-    'pnpm' | 'npm' | 'yarn'
+    'pnpm' | 'npm' | 'yarn' | 'bun'
   >('pnpm')
 
   // Load from localStorage on mount
@@ -25,7 +25,7 @@ export function PackageManagerProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // Save to localStorage when selection changes
-  const setSelectedPackageManager = (pm: 'pnpm' | 'npm' | 'yarn') => {
+  const setSelectedPackageManager = (pm: 'pnpm' | 'npm' | 'yarn' | 'bun') => {
     setSelectedPackageManagerState(pm)
     localStorage.setItem(STORAGE_KEY, pm)
   }
@@ -44,7 +44,7 @@ export function usePackageManager() {
   
   // Always call hooks (rules of hooks)
   const [localSelectedPackageManager, setLocalSelectedPackageManager] = useState<
-    'pnpm' | 'npm' | 'yarn'
+    'pnpm' | 'npm' | 'yarn' | 'bun'
   >(() => {
     // Initialize from localStorage only if context is not available
     if (context === undefined && typeof window !== 'undefined') {
@@ -71,7 +71,7 @@ export function usePackageManager() {
     }
   }, [])
 
-  const setSelectedPackageManager = (pm: 'pnpm' | 'npm' | 'yarn') => {
+  const setSelectedPackageManager = (pm: 'pnpm' | 'npm' | 'yarn' | 'bun') => {
     setLocalSelectedPackageManager(pm)
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, pm)
