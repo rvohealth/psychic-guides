@@ -146,7 +146,7 @@ index 0000000..132b046
 +})
 diff --git a/api/src/app/controllers/V1/Host/LocalizedTextsController.ts b/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
 new file mode 100644
-index 0000000..af12ce7
+index 0000000..770f3aa
 --- /dev/null
 +++ b/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
 @@ -0,0 +1,43 @@
@@ -166,7 +166,7 @@ index 0000000..af12ce7
 +    description: 'Update a LocalizedText',
 +    fastJsonStringify: true,
 +    requestBody: {
-+      only: paramSafeColumns,
++      params: paramSafeColumns,
 +    },
 +  })
 +  public async update() {

@@ -243,7 +243,7 @@ index 0000000..475dacc
 +}
 diff --git a/api/src/app/controllers/V1/Host/Places/RoomsController.ts b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
 new file mode 100644
-index 0000000..abd6199
+index 0000000..7898fe5
 --- /dev/null
 +++ b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
 @@ -0,0 +1,84 @@
@@ -289,7 +289,7 @@ index 0000000..abd6199
 +    description: 'Create a Room',
 +    fastJsonStringify: true,
 +    requestBody: {
-+      only: paramSafeColumns,
++      params: paramSafeColumns,
 +    },
 +  })
 +  public async create() {
@@ -304,7 +304,7 @@ index 0000000..abd6199
 +    description: 'Update a Room',
 +    fastJsonStringify: true,
 +    requestBody: {
-+      only: paramSafeColumns,
++      params: paramSafeColumns,
 +    },
 +  })
 +  public async update() {
