@@ -1,6 +1,6 @@
 ---
 sidebar_position: 7
-ai_summary: "Dream lifecycle hooks include BeforeCreate, BeforeUpdate, BeforeSave, AfterCreate, AfterUpdate, AfterSave, AfterCreateCommit, AfterSaveCommit, AfterUpdateCommit, AfterDestroy, AfterDestroyCommit. Hooks can be conditional using ifChanging option. All hooks are async methods."
+ai_summary: "Dream lifecycle hooks include BeforeCreate, BeforeUpdate, BeforeSave, AfterCreate, AfterUpdate, AfterSave, AfterCreateCommit, AfterSaveCommit, AfterUpdateCommit, AfterDestroy, AfterDestroyCommit. Use before hooks to change the record being persisted. Use commit hooks for any hook that queues background work."
 ---
 
 # lifecycle hooks
@@ -53,6 +53,27 @@ export default class Post extends ApplicationModel {
   }
 }
 ```
+
+## changing the same record in a hook
+
+If a hook needs to change attributes on the record being persisted, use a before hook and assign the values directly. Do not call `save()` or `update()` on `this` from inside one of its own lifecycle hooks; that starts another persistence cycle while the current one is still running.
+
+```ts
+export default class Place extends ApplicationModel {
+  @deco.BeforeSave()
+  public normalizeAddress() {
+    if (this.city) this.city = this.city.trim()
+  }
+
+  // Avoid this pattern. Use a before hook and direct assignment instead.
+  @deco.AfterSave()
+  public async normalizeAddressAgain() {
+    if (this.city) await this.update({ city: this.city.trim() })
+  }
+}
+```
+
+Use after hooks for side effects that require the row to already exist, such as creating associated records or delegating to a service. If the side effect writes other records, pass the hook's transaction through. If the side effect queues background work, use a commit hook variant.
 
 ## before destroy
 
@@ -138,9 +159,9 @@ export default class Post extends ApplicationModel {
 
 ## after commit hooks
 
-In contrast to ordinary after hooks (like AfterCreate, AfterUpdate, etc...), we have commit variants. the implementation is similar to the approach taken by Ruby on Rails, whereby our commit hooks are bound to an existing transaction if it exists, and will wait until after the commit has been made at the transaction level to run your callback.
+In contrast to ordinary after hooks (like AfterCreate, AfterUpdate, etc...), we have commit variants. The implementation is similar to the approach taken by Ruby on Rails, whereby commit hooks are bound to an existing transaction if it exists, and will wait until after the commit has been made at the transaction level to run your callback.
 
-IMPORTANT: when sending a model to a background job, _always_ use an after commit hook to ensure that the model exists (when it was just created) and the latest data are present (when the model already existed) by the time the background job loads the model. Otherwise, a race condition exists between the model being persisted to the database and the background job picking loading the model.
+IMPORTANT: any lifecycle hook that queues background work must use a commit hook, whether it calls a backgrounded service, calls `this.background(...)` on a backgrounded model, or delegates to another method that queues the job. This ensures the row exists after create and the latest persisted data are visible after update by the time the worker loads the record. Otherwise, the worker can race the transaction and either miss the row or read stale data.
 
 ### after create commit
 
@@ -170,7 +191,7 @@ export default class Post extends ApplicationModel {
     // ... do whatever you want here!
   }
 
-  @deco.AfterUpdate({ ifChanged: ['color'] })
+  @deco.AfterUpdateCommit({ ifChanged: ['color'] })
   public async doSomethingWhenColorChanged() {
     // ... do whatever you want here!
   }

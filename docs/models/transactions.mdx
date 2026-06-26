@@ -17,3 +17,5 @@ await ApplicationModel.transaction(async txn => {
 The pattern for this can seem strange at first, but you will get the hang of it in short order. To instantiate a transaction, you will call the static `transaction` method on your app's ApplicationModel, capturing the provided transaction in the callback function you provide, named `txn` by convention. With the txn variable on hand, you proceed to pass it to each subsequent query that might need it, as demonstrated above, using the `txn` method (named the same as the variable).
 
 Once in a transaction builder (done by calling the `txn` method), you will be prohibited from using methods that take advantage of errors with foreign key violations, like `createOrFindBy`, since they will not function properly in a transaction.
+
+Do not enqueue background work from inside an open transaction. When a model lifecycle hook queues a backgrounded service, a backgrounded model method, or any helper that queues work, use a commit hook variant such as `@deco.AfterCreateCommit`, `@deco.AfterUpdateCommit`, or `@deco.AfterSaveCommit` so the worker only runs after the transaction commits.

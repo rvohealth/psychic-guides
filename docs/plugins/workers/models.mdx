@@ -38,3 +38,5 @@ await user.background('doSomething', 'howyadoin', 1)
 In the above example, Psychic will make sure to store the primaryKey belonging to the `user` var, and then, once a worker picks up the job, it will do a lookup based on the primary key that was stored.
 
 If the row has been deleted before the worker runs, the lookup should be treated as a no-op rather than a retryable failure.
+
+When calling `this.background(...)` from a model lifecycle hook, use a commit hook such as `@deco.AfterCreateCommit`, `@deco.AfterUpdateCommit`, or `@deco.AfterSaveCommit`. Regular hooks run inside the surrounding transaction, so the worker can run before a created row is visible or before an update has committed.
