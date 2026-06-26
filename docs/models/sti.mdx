@@ -1,82 +1,129 @@
 ---
 sidebar_position: 12
-ai_summary: "Single Table Inheritance (STI) enables multiple models to share a single table using a type field. Requires type column in database (can use enum). Child models use @STI decorator. Type field automatically populated with class name. Supports scoped queries and associations."
+ai_summary: "Single Table Inheritance (STI) stores several model types in one table using a database enum type column whose values match child class names. Generate parents with --sti-base-serializer, children with g:sti-child, dispatch creates with exhaustive switches, and keep associations/decorators on the parent."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # single table inheritance
 
-Single Table Inheritance, or "STI" for short, is a design pattern which enables a single table to reflect multiple unique models, all of which inherit from a base model. In order for STI to work, a `type` field _must_ be present on the STI model, like so:
+Single Table Inheritance, or STI, stores several model types in one table. The parent table has a `type` column, and each child class maps to one enum value. Use STI when those types share one lifecycle and table, but need different behavior, validations, child-specific columns, serializers, or controller dispatch.
 
-```ts
-export async function up(db: Kysely<any>): Promise<void> {
-  await db.schema
-    .createTable('pets')
-    ...
-    .addColumn('type', 'varchar(255)', col => col.notNull())
-    ...
-    .execute()
-}
-```
+## generating STI models
 
-If desired, you can also use enums to enforce only specific types, like so:
-
-```ts
-export async function up(db: Kysely<any>): Promise<void> {
-  await db.schema.createType('pet_types_enum').asEnum(['Cat', 'Dog']).execute()
-  await db.schema
-    .createTable('pets')
-    ...
-    .addColumn('type', sql`pet_types_enum`, col => col.notNull())
-    ...
-    .execute()
-}
-```
-
-Additionally, you will need to leverage the STI decorator on your child models, like so:
-
-```ts
-class Pet extends ApplicationModel {
-  ...
-  public type: DreamColumn<Pet, 'type'>
-  ...
-}
-
-@STI(Pet)
-class Cat extends Pet {}
-
-@STI(Pet)
-class Dog extends Pet {}
-```
-
-Whenever an STI model is persisted to the database, the `type` field will automatically be populated with the class name of the STI model:
-
-```ts
-const cat = await Cat.create()
-cat.type
-// 'Cat'
-
-const dog = await Dog.create()
-dog.type
-// 'Dog'
-```
-
-Additionally, whenever running queries against an STI model, the `type` field will automatically by added to your query:
-
-```ts
-await Pet.all()
-// [Cat{}, Dog{}, ...]
-
-await Cat.all()
-// [Cat{}, Cat{}, ...]
-
-await Dog.all()
-// [Dog{}, Dog{}, ...]
-```
-
-The sti-child generator makes it easy to create STI children:
+Generate the parent with `--sti-base-serializer`. The `type` column must be a database enum, and the enum values must exactly match the child class names:
 
 <PackageManagerTabs
-  code={`{{PM}} psy g:sti-child Foo/Bar extends Foo/Base hello:string`}
+  code={`{{PM}} psy g:resource --sti-base-serializer --owning-model=Place \\
+  v1/host/places/\\{\\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \\
+  Place:belongs_to position:integer:optional`}
 />
+
+Then generate each child with `g:sti-child`:
+
+<PackageManagerTabs
+  code={`{{PM}} psy g:sti-child Room/Bedroom extends Room bed_types:enum[]:bed_types:king,queen,bunk
+{{PM}} psy g:sti-child Room/Kitchen extends Room appliances:enum[]:appliance_types:stove,oven,microwave`}
+/>
+
+STI children alter the parent table. They do not get their own tables, and child-specific columns are nullable at the database level because sibling rows do not use them.
+
+## model constraints
+
+Keep shared associations and shared decorators on the parent model. STI children should not declare their own associations, `@SoftDelete()`, `@Sortable()`, or `@ReplicaSafe()` decorators. `@SoftDelete()` belongs on the parent and applies to every child.
+
+```ts
+export default class Room extends ApplicationModel {
+  public type: DreamColumn<Room, 'type'>
+
+  @deco.BelongsTo('Place')
+  public place: Place
+  public placeId: DreamColumn<Room, 'placeId'>
+}
+
+@STI(Room)
+export default class Bedroom extends Room {
+  public bedTypes: DreamColumn<Bedroom, 'bedTypes'>
+}
+```
+
+Queries against a child automatically include the STI default scope:
+
+```ts
+await Room.all()
+// [Bathroom{}, Bedroom{}, Kitchen{}, ...]
+
+await Bedroom.all()
+// [Bedroom{}, Bedroom{}, ...]
+```
+
+## controller creation
+
+`extractParams(Room, [...])` can extract child-specific columns, but it intentionally strips the STI `type`. Read `type` with `castParam`, validate it against the generated database enum values, and dispatch with an exhaustive `switch`:
+
+```ts
+const roomType = this.castParam('type', 'string', { enum: RoomTypesEnumValues })
+
+switch (roomType) {
+  case 'Bathroom':
+    room = await this.place.createAssociation('rooms', Bathroom, this.extractParams(Room, ['bathOrShowerStyle']))
+    break
+  case 'Bedroom':
+    room = await this.place.createAssociation('rooms', Bedroom, this.extractParams(Room, ['bedTypes']))
+    break
+  case 'Kitchen':
+    room = await this.place.createAssociation('rooms', Kitchen, this.extractParams(Room, ['appliances']))
+    break
+  case 'Den':
+  case 'LivingRoom':
+    room = await this.place.createAssociation('rooms', roomType === 'Den' ? Den : LivingRoom, {})
+    break
+  default: {
+    const _never: never = roomType
+    throw new Error(`Unhandled room type: ${String(_never)}`)
+  }
+}
+```
+
+Pair that controller with OpenAPI request-body narrowing:
+
+```ts
+@OpenAPI(Room, {
+  status: 201,
+  requestBody: { including: ['type'] },
+})
+```
+
+## serializers
+
+The generated base serializer is intentionally generic so child serializers can preserve OpenAPI discrimination. When hand-adding a serializer variant, keep the `StiChildClass` parameter and render `type` as the single child enum value:
+
+```ts
+export const RoomForGuestsSerializer = (
+  StiChildClass: typeof Room | null,
+  room: Room,
+  passthrough: { locale: LocalesEnum },
+) =>
+  DreamSerializer(StiChildClass ?? Room, room, passthrough)
+    .attribute('id')
+    .attribute('type', { openapi: { type: 'string', enum: [StiChildClass?.sanitizedName || room.type] } })
+    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
+```
+
+Dropping the generic child class shape can make every child serialize as the parent schema over HTTP, even if unit-level rendering looks correct.
+
+## STI and localized text
+
+STI works with polymorphic localized content. Keep the polymorphic association on the STI parent, then let child serializers extend the parent serializer and add child-specific localized attributes.
+
+```ts
+@deco.HasMany('LocalizedText', { polymorphic: true, on: 'localizableId', dependent: 'destroy' })
+public localizedTexts: LocalizedText[]
+
+@deco.HasOne('LocalizedText', {
+  polymorphic: true,
+  on: 'localizableId',
+  and: { locale: DreamConst.passthrough },
+})
+public currentLocalizedText: LocalizedText
+```

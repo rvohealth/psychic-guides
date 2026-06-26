@@ -22,3 +22,20 @@ export default class ScheduledJobs extends ApplicationScheduledService {
   }
 }
 ```
+
+A service class should be either scheduled or backgrounded, not both. Scheduled services work best as thin orchestrators: select the work due now, then fan out to backgrounded services for the expensive or retryable work.
+
+```ts
+export default class ScheduledJobs extends ApplicationScheduledService {
+  public static async scheduleAllJobs() {
+    await this.schedule('0 * * * *', 'processHour')
+  }
+
+  public static async processHour() {
+    const userIds = await User.where({ syncEnabled: true }).pluck('id')
+    for (const userId of userIds) {
+      await IntercomSync.syncUser(userId)
+    }
+  }
+}
+```

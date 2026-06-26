@@ -26,7 +26,7 @@ import AppEnv from '@conf/AppEnv.js'
 import allowedCorsOrigins from '@conf/system/allowedCorsOrigins.js'
 import resolveWebsocketUser from '@conf/system/resolveWebsocketUser.js'
 import { PsychicApp } from '@rvoh/psychic'
-import { PsychicAppWebsockets, Ws } from '@rvoh/psychic-websockets'
+import { allowRequestForOrigins, PsychicAppWebsockets, Ws } from '@rvoh/psychic-websockets'
 import { Redis } from 'ioredis'
 
 export default (psy: PsychicApp) => {
@@ -64,6 +64,10 @@ function initializeWebsockets(wsApp: PsychicAppWebsockets) {
     )
   }
 
+  wsApp.set('socketio', {
+    allowRequest: allowRequestForOrigins(allowedCorsOrigins()),
+  })
+
   wsApp.on('ws:start', io => {
     io.of('/').on('connection', async socket => {
       const user = await resolveWebsocketUser(socket)
@@ -71,7 +75,7 @@ function initializeWebsockets(wsApp: PsychicAppWebsockets) {
         socket.disconnect(true)
         return
       }
-      await Ws.register(socket, user)
+      await Ws.register(socket, user.id)
     })
   })
 

@@ -4,20 +4,34 @@ ai_summary: >-
 ---
 # passthrough
 
-Associations in Dream can be defined with a passthrough constraint. This means that the only way these associations can be loaded is if data is passed through using a passthrough method. This can be useful for, i.e., localization patterns, where the locale changes for each user, and is driven by headers in a request:
+Associations in Dream can be defined with a passthrough constraint. This means that the only way these associations can be loaded is if data is passed through using a passthrough method. This is useful for localization patterns where the locale changes per request and is driven by headers:
 
 ```ts
 export default class Post extends ApplicationModel {
   @deco.HasOne('LocalizedText', {
     polymorphic: true,
     on: 'localizableId',
-    where: { locale: DreamConst.passthrough },
+    and: { locale: DreamConst.passthrough },
   })
-  public currentLocalizedText: LocalizedText[]
+  public currentLocalizedText: LocalizedText
 }
 
 const reloadedUser = await user
   .passthrough({ locale: 'es-ES' })
   .load('posts', 'currentLocalizedText')
   .execute()
+```
+
+For serializer-driven responses, pass the same value through both channels when needed:
+
+```ts
+const locale = this.castParam('Accept-Language', 'string', { enum: LocalesEnumValues })
+
+const place = await Place
+  .passthrough({ locale })      // association constraints
+  .preloadFor('forGuests')
+  .findOrFail(this.castParam('id', 'uuid'))
+
+this.serializerPassthrough({ locale }) // serializer callbacks
+this.ok(place)
 ```

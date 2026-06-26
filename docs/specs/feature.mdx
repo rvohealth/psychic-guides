@@ -63,6 +63,7 @@ The second point of departure from unit specs can be found at `spec/features/set
 import { DreamApp } from '@rvoh/dream'
 import { PsychicServer } from '@rvoh/psychic'
 import { truncate } from '@rvoh/dream-spec-helpers'
+import AppEnv from '../../../../src/conf/AppEnv.js'
 import initializePsychicApp from '../../../../src/app/helpers/initializePsychicApp'
 
 let server: PsychicServer
@@ -71,7 +72,7 @@ beforeEach(async () => {
   await initializePsychicApp()
 
   server = new PsychicServer()
-  await server.start(parseInt(process.env.DEV_SERVER_PORT || '7778'))
+  await server.start(AppEnv.integer('DEV_SERVER_PORT', { optional: true }) || 7778)
 
   await truncate(DreamApp)
 })
@@ -105,7 +106,7 @@ describe('places index page', () => {
 
   it('accepts the request', async () => {
     const page = await visit('/places')
-    await expect(page).toHaveTextContent('Mountain Cabin')
+    await expect(page).toMatchTextContent('Mountain Cabin')
   })
 })
 ```

@@ -17,8 +17,8 @@ new Cluster(
   [{ host: 'redis-host', port: 6379 }],
   {
     redisOptions: {
-      username: process.env.BG_JOBS_REDIS_USERNAME,
-      password: process.env.BG_JOBS_REDIS_PASSWORD,
+      username: AppEnv.string('BG_JOBS_REDIS_USERNAME'),
+      password: AppEnv.string('BG_JOBS_REDIS_PASSWORD'),
       tls: {},
     },
     // ...

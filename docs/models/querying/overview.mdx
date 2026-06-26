@@ -269,9 +269,11 @@ const usersWithPostsAndComments = await User
   .all()
 
 // Preload with conditions
+import { DateTime } from '@rvoh/dream'
+
 const usersWithRecentPosts = await User
   .preload('posts', (query) => 
-    query.where({ createdAt: ops.gte(new Date('2024-01-01')) })
+    query.where({ createdAt: ops.gte(DateTime.fromISO('2024-01-01T00:00:00Z')) })
   )
   .all()
 ```
@@ -289,7 +291,7 @@ const allUsersWithPosts = await User.leftJoinPreload('posts').all()
 // Left join with conditions
 const usersWithOptionalRecentPosts = await User
   .leftJoinPreload('posts', (query) => 
-    query.where({ createdAt: ops.gte(new Date('2024-01-01')) })
+    query.where({ createdAt: ops.gte(DateTime.fromISO('2024-01-01T00:00:00Z')) })
   )
   .all()
 ```
@@ -305,7 +307,7 @@ Adds additional data to be passed through with query results.
 const usersWithExtra = await User
   .passthrough({ 
     isVip: true,
-    computedAt: new Date()
+    computedAt: DateTime.now()
   })
   .all()
 
@@ -313,7 +315,7 @@ const usersWithExtra = await User
 const usersWithMetadata = await User
   .passthrough((user) => ({
     displayName: `${user.firstName} ${user.lastName}`,
-    accountAge: Date.now() - user.createdAt.getTime()
+    accountAge: DateTime.now().diff(user.createdAt, 'days').days
   }))
   .all()
 ```

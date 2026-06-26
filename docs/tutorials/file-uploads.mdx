@@ -1,7 +1,11 @@
 ---
 sidebar_position: 4
 title: File Uploads
-ai_summary: "Recommended patterns for handling file uploads in a Psychic app, leading with presigned-URL object-storage flows and covering the fallback local-handling recipe."
+ai_summary: >-
+  Recommended patterns for handling file uploads in a Psychic app, leading with
+  presigned-URL object-storage flows and covering the fallback local-handling
+  recipe.
+pagination_next: null
 ---
 
 # File Uploads
@@ -45,12 +49,14 @@ The `presign` action validates what the client says it is about to upload, deriv
 import { AuthedController, OpenAPI } from '@rvoh/psychic'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import AppEnv from '@conf/AppEnv.js'
+import { DateTime } from '@rvoh/dream'
 import crypto from 'node:crypto'
 
 const ALLOWED_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
 
-const s3 = new S3Client({ region: process.env.AWS_REGION })
+const s3 = new S3Client({ region: AppEnv.string('AWS_REGION') })
 
 export default class UploadsController extends AuthedController {
   @OpenAPI({
@@ -74,7 +80,7 @@ export default class UploadsController extends AuthedController {
     const url = await getSignedUrl(
       s3,
       new PutObjectCommand({
-        Bucket: process.env.UPLOADS_BUCKET,
+        Bucket: AppEnv.string('UPLOADS_BUCKET'),
         Key: key,
         ContentType: contentType,
         ContentLength: contentLength,
@@ -85,7 +91,7 @@ export default class UploadsController extends AuthedController {
     this.created({
       url,
       key,
-      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      expiresAt: DateTime.now().plus({ seconds: 60 }).toISO(),
     })
   }
 }
@@ -122,7 +128,7 @@ export default class UploadsController extends AuthedController {
 
     const head = await s3.send(
       new HeadObjectCommand({
-        Bucket: process.env.UPLOADS_BUCKET,
+        Bucket: AppEnv.string('UPLOADS_BUCKET'),
         Key: key,
       }),
     )

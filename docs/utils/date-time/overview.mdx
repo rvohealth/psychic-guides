@@ -78,3 +78,12 @@ DateTime.fromISO('2024-01-15T10:30:45.123456Z')
 ```ts
 import { DateTime, CalendarDate, ClockTime, ClockTimeTz } from '@rvoh/dream'
 ```
+
+## JavaScript Date Interop
+
+Use JavaScript `Date` only at platform or third-party API boundaries. Convert incoming `Date` values to Dream classes immediately, and convert out only when an external API explicitly requires a native `Date`.
+
+```ts
+const startsAt = DateTime.fromJSDate(externalDate)
+const payload = { startsAt: startsAt.toISO() }
+```

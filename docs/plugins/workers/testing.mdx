@@ -28,6 +28,8 @@ To do this, you will first need to set the `testInvocation` to `manual`. This ca
 If you choose to do it here, you will be forced to manually invoke all backgrounded methods you are wishing to test. If instead, you wish to only turn this on for a single test, you can do it inside the test, like so:
 
 ```ts
+import { PsychicAppWorkers } from '@rvoh/psychic-workers'
+
 beforeEach(async () => {
   PsychicAppWorkers.getOrFail().set('testInvocation', 'manual')
 })
@@ -36,6 +38,8 @@ afterEach(async () => {
   PsychicAppWorkers.getOrFail().set('testInvocation', 'automatic')
 })
 ```
+
+Always switch back to `automatic` in cleanup when you enable manual mode inside a single spec; otherwise later specs can silently stop running background jobs inline.
 
 ## cleanup
 

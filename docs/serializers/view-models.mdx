@@ -45,20 +45,23 @@ class DashboardViewModel {
 }
 ```
 
+Export an `ObjectSerializer` function for the view model, then use it both for rendering and OpenAPI:
+
+```ts
+export const DashboardSerializer = (viewModel: DashboardViewModel) =>
+  ObjectSerializer(viewModel)
+    .attribute('userName', { openapi: 'string' })
+    .attribute('recentActivityCount', { openapi: 'integer' })
+    .attribute('gravatarUrl', { openapi: ['string', 'null'] })
+```
+
 Then in your controller:
 
 ```ts
+@OpenAPI(DashboardSerializer, { status: 200 })
 public async show() {
   const user = await User.findOrFail(this.castParam('id', 'bigint'))
-  const viewModel = await DashboardViewModel.build(user)
-
-  this.ok(
-    ObjectSerializer(viewModel)
-      .attribute('userName', { openapi: 'string' })
-      .attribute('recentActivityCount', { openapi: 'integer' })
-      .attribute('gravatarUrl', { openapi: ['string', 'null'] })
-      .render()
-  )
+  this.ok(await DashboardViewModel.build(user))
 }
 ```
 

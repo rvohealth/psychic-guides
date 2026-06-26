@@ -33,3 +33,7 @@ class IntercomSync extends ApplicationBackgroundedService {
 ```
 
 Now, from anywhere in your app you can safely call `syncUser` without tying up resources on the api request!
+
+Pass IDs or scalar values to background jobs, not model objects. Job arguments are serialized through Redis; model instances can go stale and lose type information. Inside the backgrounded implementation, look the record up with `find` and return early if it no longer exists.
+
+If you enqueue from model hooks, use an after-commit hook such as `@deco.AfterCreateCommit`. Do not enqueue from inside an open transaction; the worker can race the commit and look up a record before it exists.

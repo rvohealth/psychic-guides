@@ -7,13 +7,13 @@ ai_summary: "Use I18nProvider.provide() to create curried i18n function with typ
 
 # i18n - usage
 
-Within `app/helpers/i18n.ts`, you will find some boilerplate code provided for you which will activate [your app's locale configuration](/docs/utils/i18n/config). This code uses a util provided by Psychic to provision a curried `i18n` function for you, which will carefully absorb the locale shape of your config and use it to provide type completion that will make your life much easier.
+Within `src/utils/i18n.ts`, you will find some boilerplate code provided for you which will activate [your app's locale configuration](/docs/utils/i18n/config). This code uses a util provided by Psychic to provision a curried `i18n` function for you, which will carefully absorb the locale shape of your config and use it to provide type completion that will make your life much easier.
 
 ```ts
-// app/helpers/i18n.ts
+// src/utils/i18n.ts
 
-import { I18nProvider } from '@rvoh/psychic'
-import locales from '../../conf/locales'
+import locales from '@conf/locales/index.js'
+import { I18nProvider } from '@rvoh/psychic/system'
 
 const i18n = I18nProvider.provide(locales, 'en')
 
@@ -34,8 +34,8 @@ See the [passthrough setting documentation](/docs/serializers/render#serializer-
 
 ```ts
 import { DreamSerializer } from '@rvoh/dream'
-import { LocalesEnum } from '../../types/db.js'
-import i18n from '../../utils/i18n.js'
+import { LocalesEnum } from '@src/types/db.js'
+import i18n from '@src/utils/i18n.js'
 
 export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
   PlaceSummaryForGuestsSerializer(place)
@@ -45,3 +45,19 @@ export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: Lo
     .attribute('sleeps')
     .rendersMany('rooms', { serializerKey: 'forGuests' })
 ```
+
+For locale-aware endpoints, validate the `Accept-Language` header against your generated database enum values and pass the locale through both serializer passthrough and any query passthrough associations:
+
+```ts
+const locale = this.castParam('Accept-Language', 'string', { enum: LocalesEnumValues })
+
+const place = await Place
+  .passthrough({ locale })
+  .preloadFor('forGuests')
+  .findOrFail(this.castParam('id', 'uuid'))
+
+this.serializerPassthrough({ locale })
+this.ok(place)
+```
+
+`I18nProvider` interpolation does not HTML-escape values. Psychic is a JSON API, so encode output in the frontend context that renders it. See [output encoding](/docs/security/output-encoding).

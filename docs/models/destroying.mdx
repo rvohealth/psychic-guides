@@ -59,7 +59,7 @@ The `@SoftDelete` decorator enables a model to be hidden, by default, from all q
 To activate soft deletion, first create a migration to add a `deleted_at` column to the database:
 
 <PackageManagerTabs
-  code={`{{PM}} psy g:migration add-deleted-at-to-rooms deleted_at:datetime`}
+  code={`{{PM}} psy g:migration add-deleted-at-to-rooms deleted_at:datetime:optional`}
 />
 
 Then apply the `@SoftDelete` decorator to the Dream model class:
@@ -71,7 +71,7 @@ export default class Place extends ApplicationModel {
 }
 ```
 
-NOTE: when using soft deletion, it is recommended that the default foreign key deletion constraint of 'restrict' be used:
+NOTE: when using soft deletion, use the default foreign key deletion constraint of `'restrict'`. If a parent association uses `dependent: 'destroy'`, every model in that destroy chain should also use `@SoftDelete()`; otherwise destroying the parent can permanently delete children.
 
 ```ts
   await db.schema

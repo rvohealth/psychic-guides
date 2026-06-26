@@ -29,3 +29,5 @@ Jobs that throw an unhandled Error during execution are automatically retried. T
 ```
 
 This config is sent directly to BullMQ, so see [the BullMQ retry documentation](https://docs.bullmq.io/guide/retrying-failing-jobs) for details on how to customize the retry strategy.
+
+Do not wrap a backgrounded method in a broad `try/catch` just to log and continue. If the job cannot complete, let the error throw so BullMQ records the failure and applies retry/backoff. Catch only a specific, expected error when the correct outcome is genuinely to continue.

@@ -12,12 +12,12 @@ The STI (Single Table Inheritance) child generator creates new Dream models that
 
 ## Prerequisites: Creating the STI Parent
 
-Before generating STI children, you must first create the parent model, and it is recommended to use the `--sti-base-serializer` flag when doing so:
+Before generating STI children, you must first create the parent model with the `--sti-base-serializer` flag:
 
 <PackageManagerTabs
   code={`{{PM}} psy g:resource --sti-base-serializer --owning-model=Place \
   v1/host/places/\\{\\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
-  Place:belongs_to position:integer:optional deleted_at:datetime:optional`}
+  Place:belongs_to position:integer:optional`}
 />
 
 **Why `--sti-base-serializer`?** This flag creates the base serializer in a format that child serializers can properly extend, ensuring the inheritance hierarchy works correctly.
@@ -29,7 +29,7 @@ You can also create an STI parent using the model generator:
 <PackageManagerTabs
   code={`{{PM}} psy g:model --sti-base-serializer \
   Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
-  Place:belongs_to position:integer:optional deleted_at:datetime:optional`}
+  Place:belongs_to position:integer:optional`}
 />
 
 <PackageManagerTabs
@@ -92,7 +92,7 @@ Create the base `Room` model using the resource generator with the `--sti-base-s
 <PackageManagerTabs
   code={`{{PM}} psy g:resource --sti-base-serializer --owning-model=Place \
   v1/host/places/\\{\\}/rooms Room type:enum:room_types:Bathroom,Bedroom,Kitchen,Den,LivingRoom \
-  Place:belongs_to position:integer:optional deleted_at:datetime:optional`}
+  Place:belongs_to position:integer:optional`}
 />
 
 ### STI Child
@@ -105,4 +105,4 @@ Then create an STI child:
 
 ## Supported Column Types
 
-STI child models support the same column types as the [model generator](/docs/models/generating).
+STI child models support the same column types as the [model generator](/docs/models/generating). Child-specific columns are added to the parent table; STI children should not declare their own associations, `@SoftDelete()`, `@Sortable()`, or `@ReplicaSafe()` decorators.

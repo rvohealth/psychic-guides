@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: registering
-ai_summary: "Register users with Ws class when websocket connections are established. Frontend provides auth token (encrypted user ID) via socket.io-client handshake. Backend decrypts token, finds user, and calls Ws.register(socket, user). Token generated during login flow."
+ai_summary: "Register users with Ws class when websocket connections are established. Frontend provides auth token via socket.io-client handshake. Backend resolves the websocket user in the initializer and calls Ws.register(socket, user.id)."
 ---
 
 # Registering
@@ -57,33 +57,22 @@ try {
 }
 ```
 
-Finally, in your `conf/app.ts` file, you will need to register your users with `Ws` upon connection via websocket:
+Finally, in `src/conf/initializers/websockets.ts`, register your users with `Ws` upon connection via websocket:
 
 ```ts
-// conf/app.ts
-
-export default async (psy: PsychicApp) => {
-  ...
-
-  psy.on('ws:start', io => {
+// src/conf/initializers/websockets.ts
+function initializeWebsockets(wsApp: PsychicAppWebsockets) {
+  wsApp.on('ws:start', io => {
     io.of('/').on('connection', async socket => {
-      // this will be the token that you passed to socket.io-client
-      const token = socket.handshake.auth.token as string
-
-      const userId = Encrypt.decrypt(token, {
-        algorithm: 'aes-256-gcm',
-        key: AppEnv.string('APP_ENCRYPTION_KEY'),
-      })
-      const user = await User.find(userId)
-
-      if (user) {
-        await Ws.register(socket, user)
+      const user = await resolveWebsocketUser(socket)
+      if (!user) {
+        socket.disconnect(true)
+        return
       }
+      await Ws.register(socket, user.id)
     })
   })
-
-  ...
-})
+}
 ```
 
 Once this is done, you are able to emit from anywhere in your backend application to this user using the `#emit` method.

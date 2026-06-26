@@ -1,6 +1,6 @@
 ---
 sidebar_position: 4
-ai_summary: "Psychic automatically handles certain errors with intuitive response codes. castParam raises 400 for invalid params. extractParams raises 400 for invalid model attributes. Failable lookups (findOrFail, firstOrFail) raise 404 for not found. Validation errors raise 422."
+ai_summary: "Psychic automatically handles certain errors with intuitive response codes. castParam raises 400 for invalid params. extractParams raises 400 for invalid model attributes. Failable lookups (findOrFail, firstOrFail) raise 404 for not found. Validation errors raise 400."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -93,7 +93,7 @@ There are many failable lookup methods within dream, and taking advantage of the
 
 ## validation failures
 
-Setting up [validations](/docs/models/validations/overview) on your models will automatically cause 422 errors to be thrown if any of the validations fails.
+Setting up [validations](/docs/models/validations/overview) on your models will automatically cause 400 errors to be thrown if any of the validations fails.
 
 ## try/catch in controllers
 
@@ -111,7 +111,7 @@ public async show() {
     const place = await this.place()
     this.ok(place)
   } catch (e) {
-    console.error(e)
+    PsychicApp.logWithLevel('error', 'failed to show place', { error: e })
   }
 }
 
@@ -121,3 +121,5 @@ public async show() {
   this.ok(place)
 }
 ```
+
+The bad example also bypasses normal control flow: logging does not make the HTTP response fail, and swallowing the error prevents Psychic from returning the correct status code.
