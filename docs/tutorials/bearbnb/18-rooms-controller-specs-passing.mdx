@@ -291,7 +291,7 @@ index 475dacc..a80efdb 100644
 +  }
  }
 diff --git a/api/src/app/controllers/V1/Host/Places/RoomsController.ts b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
-index abd6199..f1d1bfc 100644
+index 7898fe5..b279458 100644
 --- a/api/src/app/controllers/V1/Host/Places/RoomsController.ts
 +++ b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
 @@ -1,11 +1,22 @@
@@ -348,7 +348,7 @@ index abd6199..f1d1bfc 100644
 @@ -41,12 +53,38 @@ export default class V1HostPlacesRoomsController extends V1HostPlacesBaseControl
      fastJsonStringify: true,
      requestBody: {
-       only: paramSafeColumns,
+       params: paramSafeColumns,
 +      including: ['type'],
      },
    })

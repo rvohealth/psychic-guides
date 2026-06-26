@@ -262,7 +262,7 @@ index 0000000..1a200d0
 +}
 diff --git a/api/src/app/controllers/V1/Host/PlacesController.ts b/api/src/app/controllers/V1/Host/PlacesController.ts
 new file mode 100644
-index 0000000..e3399a7
+index 0000000..2509aca
 --- /dev/null
 +++ b/api/src/app/controllers/V1/Host/PlacesController.ts
 @@ -0,0 +1,84 @@
@@ -308,7 +308,7 @@ index 0000000..e3399a7
 +    description: 'Create a Place',
 +    fastJsonStringify: true,
 +    requestBody: {
-+      only: paramSafeColumns,
++      params: paramSafeColumns,
 +    },
 +  })
 +  public async create() {
@@ -323,7 +323,7 @@ index 0000000..e3399a7
 +    description: 'Update a Place',
 +    fastJsonStringify: true,
 +    requestBody: {
-+      only: paramSafeColumns,
++      params: paramSafeColumns,
 +    },
 +  })
 +  public async update() {
