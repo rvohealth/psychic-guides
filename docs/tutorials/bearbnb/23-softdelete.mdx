@@ -22,7 +22,7 @@ SoftDelete works with `deletedAt`, which current generators include by default. 
 pnpm psy g:migration add-deleted-at-to-rooms deleted_at:datetime:optional
 ```
 
-To cascade deletion (regular or soft), add `dependent: destroy` to the relevant association declarations.
+To cascade deletion (regular or soft), add `dependent: 'destroy'` to the relevant association declarations.
 ``````
 
 ## Changes
