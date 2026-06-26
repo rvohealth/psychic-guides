@@ -32,6 +32,7 @@ const stalePatterns: Array<[RegExp, string]> = [
   [/new Date\(/, 'Use Dream date/time classes except explicit JS interop examples'],
   [/deleted_at:datetime(?!:optional)/, 'Soft-delete migration shorthand should be nullable'],
   [/from '@rvoh\/dream'[\s\S]{0,80}\b(camelize|compact|groupBy|uniq|range)\b/, 'Utility helpers should import from @rvoh/dream/utils'],
+  [/Psychic converts to 422 errors/, 'Validation-layer failures should be documented as 400, not 422'],
 ]
 
 function existsRelative(relativePath: string): boolean {
