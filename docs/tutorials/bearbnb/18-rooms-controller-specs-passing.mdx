@@ -458,10 +458,10 @@ index b4865a1..d16e185 100644
 -    .attribute('type', { openapi: { type: 'string', enum: [(StiChildClass ?? Room).sanitizedName] } })
 -    .attribute('position')
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index ca09d72..6191a9a 100644
+index c7336a7..1bd1555 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
-@@ -402,11 +402,60 @@
+@@ -384,11 +384,60 @@
                "schema": {
                  "type": "object",
                  "properties": {
@@ -522,7 +522,7 @@ index ca09d72..6191a9a 100644
                    }
                  }
                }
-@@ -549,6 +598,45 @@
+@@ -525,6 +574,45 @@
                "schema": {
                  "type": "object",
                  "properties": {
@@ -568,7 +568,7 @@ index ca09d72..6191a9a 100644
                    "position": {
                      "type": [
                        "integer",
-@@ -753,11 +841,23 @@
+@@ -723,11 +811,23 @@
        "RoomBathroomSummary": {
          "type": "object",
          "required": [
@@ -593,7 +593,7 @@ index ca09d72..6191a9a 100644
            }
          }
        },
-@@ -795,11 +895,23 @@
+@@ -765,11 +865,23 @@
        "RoomBedroomSummary": {
          "type": "object",
          "required": [
@@ -618,7 +618,7 @@ index ca09d72..6191a9a 100644
            }
          }
        },
-@@ -829,11 +941,23 @@
+@@ -799,11 +911,23 @@
        "RoomDenSummary": {
          "type": "object",
          "required": [
@@ -643,7 +643,7 @@ index ca09d72..6191a9a 100644
            }
          }
        },
-@@ -871,11 +995,23 @@
+@@ -841,11 +965,23 @@
        "RoomKitchenSummary": {
          "type": "object",
          "required": [
@@ -668,7 +668,7 @@ index ca09d72..6191a9a 100644
            }
          }
        },
-@@ -905,11 +1041,23 @@
+@@ -875,11 +1011,23 @@
        "RoomLivingRoomSummary": {
          "type": "object",
          "required": [
@@ -694,10 +694,10 @@ index ca09d72..6191a9a 100644
          }
        },
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 9a96900..8cc03b9 100644
+index 72bb9b5..13b7219 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
-@@ -402,11 +402,60 @@
+@@ -384,11 +384,60 @@
                "schema": {
                  "type": "object",
                  "properties": {
@@ -758,7 +758,7 @@ index 9a96900..8cc03b9 100644
                    }
                  }
                }
-@@ -549,6 +598,45 @@
+@@ -525,6 +574,45 @@
                "schema": {
                  "type": "object",
                  "properties": {
@@ -804,7 +804,7 @@ index 9a96900..8cc03b9 100644
                    "position": {
                      "type": [
                        "integer",
-@@ -769,11 +857,25 @@
+@@ -739,11 +827,25 @@
        "RoomBathroomSummary": {
          "type": "object",
          "required": [
@@ -831,7 +831,7 @@ index 9a96900..8cc03b9 100644
            }
          }
        },
-@@ -820,11 +922,25 @@
+@@ -790,11 +892,25 @@
        "RoomBedroomSummary": {
          "type": "object",
          "required": [
@@ -858,7 +858,7 @@ index 9a96900..8cc03b9 100644
            }
          }
        },
-@@ -856,11 +972,25 @@
+@@ -826,11 +942,25 @@
        "RoomDenSummary": {
          "type": "object",
          "required": [
@@ -885,7 +885,7 @@ index 9a96900..8cc03b9 100644
            }
          }
        },
-@@ -905,11 +1035,25 @@
+@@ -875,11 +1005,25 @@
        "RoomKitchenSummary": {
          "type": "object",
          "required": [
@@ -912,7 +912,7 @@ index 9a96900..8cc03b9 100644
            }
          }
        },
-@@ -941,11 +1085,25 @@
+@@ -911,11 +1055,25 @@
        "RoomLivingRoomSummary": {
          "type": "object",
          "required": [
@@ -940,10 +940,10 @@ index 9a96900..8cc03b9 100644
          }
        },
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index a6dd096..bd6c5a3 100644
+index 51de84c..f55ff6d 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
-@@ -402,11 +402,60 @@
+@@ -384,11 +384,60 @@
                "schema": {
                  "type": "object",
                  "properties": {
@@ -1004,7 +1004,7 @@ index a6dd096..bd6c5a3 100644
                    }
                  }
                }
-@@ -549,6 +598,45 @@
+@@ -525,6 +574,45 @@
                "schema": {
                  "type": "object",
                  "properties": {
@@ -1050,7 +1050,7 @@ index a6dd096..bd6c5a3 100644
                    "position": {
                      "type": [
                        "integer",
-@@ -769,11 +857,25 @@
+@@ -739,11 +827,25 @@
        "RoomBathroomSummary": {
          "type": "object",
          "required": [
@@ -1077,7 +1077,7 @@ index a6dd096..bd6c5a3 100644
            }
          }
        },
-@@ -820,11 +922,25 @@
+@@ -790,11 +892,25 @@
        "RoomBedroomSummary": {
          "type": "object",
          "required": [
@@ -1104,7 +1104,7 @@ index a6dd096..bd6c5a3 100644
            }
          }
        },
-@@ -856,11 +972,25 @@
+@@ -826,11 +942,25 @@
        "RoomDenSummary": {
          "type": "object",
          "required": [
@@ -1131,7 +1131,7 @@ index a6dd096..bd6c5a3 100644
            }
          }
        },
-@@ -905,11 +1035,25 @@
+@@ -875,11 +1005,25 @@
        "RoomKitchenSummary": {
          "type": "object",
          "required": [
@@ -1158,7 +1158,7 @@ index a6dd096..bd6c5a3 100644
            }
          }
        },
-@@ -941,11 +1085,25 @@
+@@ -911,11 +1055,25 @@
        "RoomLivingRoomSummary": {
          "type": "object",
          "required": [
@@ -1206,10 +1206,10 @@ index facc6e2..4d7d356 100644
    },
    rooms: {
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index a34709d..414bbff 100644
+index 992a189..2278a39 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
-@@ -255,7 +255,13 @@ export interface paths {
+@@ -249,7 +249,13 @@ export interface paths {
              requestBody?: {
                  content: {
                      "application/json": {
@@ -1223,7 +1223,7 @@ index a34709d..414bbff 100644
                      };
                  };
              };
-@@ -367,6 +373,10 @@ export interface paths {
+@@ -358,6 +364,10 @@ export interface paths {
              requestBody?: {
                  content: {
                      "application/json": {
@@ -1234,7 +1234,7 @@ index a34709d..414bbff 100644
                          position?: number | null;
                      };
                  };
-@@ -423,6 +433,9 @@ export interface components {
+@@ -413,6 +423,9 @@ export interface components {
          };
          RoomBathroomSummary: {
              id: string;
@@ -1244,7 +1244,7 @@ index a34709d..414bbff 100644
          };
          RoomBedroom: {
              bedTypes: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
-@@ -433,6 +446,9 @@ export interface components {
+@@ -423,6 +436,9 @@ export interface components {
          };
          RoomBedroomSummary: {
              id: string;
@@ -1254,7 +1254,7 @@ index a34709d..414bbff 100644
          };
          RoomDen: {
              id: string;
-@@ -442,6 +458,9 @@ export interface components {
+@@ -432,6 +448,9 @@ export interface components {
          };
          RoomDenSummary: {
              id: string;
@@ -1264,7 +1264,7 @@ index a34709d..414bbff 100644
          };
          RoomKitchen: {
              appliances: ("dishwasher" | "microwave" | "oven" | "stove")[];
-@@ -452,6 +471,9 @@ export interface components {
+@@ -442,6 +461,9 @@ export interface components {
          };
          RoomKitchenSummary: {
              id: string;
@@ -1274,7 +1274,7 @@ index a34709d..414bbff 100644
          };
          RoomLivingRoom: {
              id: string;
-@@ -461,6 +483,9 @@ export interface components {
+@@ -451,6 +473,9 @@ export interface components {
          };
          RoomLivingRoomSummary: {
              id: string;

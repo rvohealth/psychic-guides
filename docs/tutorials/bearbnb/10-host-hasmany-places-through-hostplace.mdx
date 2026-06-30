@@ -140,10 +140,10 @@ index 0ef7a21..4dcff89 100644
 +  public hosts: Host[]
  }
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 50735b9..208b1f2 100644
+index 65ed540..7271711 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -102,6 +102,15 @@ export interface Guests {
+@@ -96,6 +96,15 @@ export interface Guests {
    userId: string
  }
  
@@ -159,7 +159,7 @@ index 50735b9..208b1f2 100644
  export interface Hosts {
    createdAt: Timestamp
    deletedAt: Timestamp | null
-@@ -131,6 +140,7 @@ export interface Users {
+@@ -125,6 +134,7 @@ export interface Users {
  
  export interface DB {
    guests: Guests
@@ -167,7 +167,7 @@ index 50735b9..208b1f2 100644
    hosts: Hosts
    places: Places
    users: Users
-@@ -138,6 +148,7 @@ export interface DB {
+@@ -132,6 +142,7 @@ export interface DB {
  
  export class DBClass {
    guests: Guests
