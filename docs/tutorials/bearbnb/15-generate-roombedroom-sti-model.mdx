@@ -84,11 +84,11 @@ index 0000000..f34b5b4
 +export const RoomBedroomSerializer = (bedroom: Bedroom) =>
 +  RoomSerializer(Bedroom, bedroom)
 +    .attribute('bedTypes')
-diff --git a/api/src/db/migrations/1779136808507-create-room-bedroom.ts b/api/src/db/migrations/1779136808507-create-room-bedroom.ts
+diff --git a/api/src/db/migrations/1782836036208-create-room-bedroom.ts b/api/src/db/migrations/1782836036208-create-room-bedroom.ts
 new file mode 100644
 index 0000000..55d5d4c
 --- /dev/null
-+++ b/api/src/db/migrations/1779136808507-create-room-bedroom.ts
++++ b/api/src/db/migrations/1782836036208-create-room-bedroom.ts
 @@ -0,0 +1,31 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -123,10 +123,10 @@ index 0000000..55d5d4c
 +}
 \ No newline at end of file
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 0b375d2..90823b0 100644
+index 4b065cd..ba0046f 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
-@@ -343,7 +343,14 @@
+@@ -328,7 +328,14 @@
                      "results": {
                        "type": "array",
                        "items": {
@@ -142,7 +142,7 @@ index 0b375d2..90823b0 100644
                        }
                      }
                    }
-@@ -402,7 +409,14 @@
+@@ -384,7 +391,14 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -158,7 +158,7 @@ index 0b375d2..90823b0 100644
                  }
                }
              },
-@@ -461,7 +475,14 @@
+@@ -440,7 +454,14 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -174,7 +174,7 @@ index 0b375d2..90823b0 100644
                  }
                }
              },
-@@ -713,6 +734,48 @@
+@@ -683,6 +704,48 @@
            }
          }
        },
@@ -224,10 +224,10 @@ index 0b375d2..90823b0 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index b4e6930..2b7a39c 100644
+index 3bf27f4..335ce67 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
-@@ -343,7 +343,14 @@
+@@ -328,7 +328,14 @@
                      "results": {
                        "type": "array",
                        "items": {
@@ -243,7 +243,7 @@ index b4e6930..2b7a39c 100644
                        }
                      }
                    }
-@@ -402,7 +409,14 @@
+@@ -384,7 +391,14 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -259,7 +259,7 @@ index b4e6930..2b7a39c 100644
                  }
                }
              },
-@@ -461,7 +475,14 @@
+@@ -440,7 +454,14 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -275,7 +275,7 @@ index b4e6930..2b7a39c 100644
                  }
                }
              },
-@@ -729,6 +750,57 @@
+@@ -699,6 +720,57 @@
            }
          }
        },
@@ -334,10 +334,10 @@ index b4e6930..2b7a39c 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index 6c559c8..12d62f8 100644
+index 7d5e68b..b8a904a 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
-@@ -343,7 +343,14 @@
+@@ -328,7 +328,14 @@
                      "results": {
                        "type": "array",
                        "items": {
@@ -353,7 +353,7 @@ index 6c559c8..12d62f8 100644
                        }
                      }
                    }
-@@ -402,7 +409,14 @@
+@@ -384,7 +391,14 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -369,7 +369,7 @@ index 6c559c8..12d62f8 100644
                  }
                }
              },
-@@ -461,7 +475,14 @@
+@@ -440,7 +454,14 @@
              "content": {
                "application/json": {
                  "schema": {
@@ -385,7 +385,7 @@ index 6c559c8..12d62f8 100644
                  }
                }
              },
-@@ -729,6 +750,57 @@
+@@ -699,6 +720,57 @@
            }
          }
        },
@@ -444,7 +444,7 @@ index 6c559c8..12d62f8 100644
          "type": "object",
          "required": [
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index e6aa3bd..03deb02 100644
+index abf0c14..2e7578c 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
 @@ -68,6 +68,14 @@ import {
@@ -460,19 +460,14 @@ index e6aa3bd..03deb02 100644
 +    : T[]
 +
  export type BathOrShowerStylesEnum =
-   | 'bath'
-   | 'bath_and_shower'
-@@ -81,6 +89,23 @@ export const BathOrShowerStylesEnumValues = [
+   'bath' | 'bath_and_shower' | 'none' | 'shower'
+ 
+@@ -78,6 +86,18 @@ export const BathOrShowerStylesEnumValues = [
    'shower',
  ] as const
  
 +export type BedTypesEnum =
-+  | 'bunk'
-+  | 'cot'
-+  | 'king'
-+  | 'queen'
-+  | 'sofabed'
-+  | 'twin'
++  'bunk' | 'cot' | 'king' | 'queen' | 'sofabed' | 'twin'
 +
 +export const BedTypesEnumValues = [
 +  'bunk',
@@ -486,7 +481,7 @@ index e6aa3bd..03deb02 100644
  export type Generated<T> =
    T extends ColumnType<infer S, infer I, infer U>
      ? ColumnType<S, I | undefined, U>
-@@ -159,6 +184,7 @@ export interface Places {
+@@ -146,6 +166,7 @@ export interface Places {
  
  export interface Rooms {
    bathOrShowerStyle: BathOrShowerStylesEnum | null
@@ -556,10 +551,10 @@ index e450fe4..47fd445 100644
      },
    },
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index 8f52785..6a81ad9 100644
+index d2a2e3a..734f1ba 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
-@@ -225,7 +225,7 @@ export interface paths {
+@@ -220,7 +220,7 @@ export interface paths {
                      content: {
                          "application/json": {
                              cursor: string | null;
@@ -568,7 +563,7 @@ index 8f52785..6a81ad9 100644
                          };
                      };
                  };
-@@ -266,7 +266,7 @@ export interface paths {
+@@ -260,7 +260,7 @@ export interface paths {
                          [name: string]: unknown;
                      };
                      content: {
@@ -577,7 +572,7 @@ index 8f52785..6a81ad9 100644
                      };
                  };
                  400: components["responses"]["BadRequest"];
-@@ -313,7 +313,7 @@ export interface paths {
+@@ -306,7 +306,7 @@ export interface paths {
                          [name: string]: unknown;
                      };
                      content: {
@@ -586,7 +581,7 @@ index 8f52785..6a81ad9 100644
                      };
                  };
                  400: components["responses"]["BadRequest"];
-@@ -424,6 +424,16 @@ export interface components {
+@@ -414,6 +414,16 @@ export interface components {
          RoomBathroomSummary: {
              id: string;
          };

@@ -52,10 +52,10 @@ index 9b05776..55cf5f8 100644
 +  @deco.HasOne('Host')
 +  public host: Host
  }
-diff --git a/api/src/db/migrations/1779136307015-create-host.ts b/api/src/db/migrations/1779136307015-create-host.ts
-index edc2a99..70cf71f 100644
---- a/api/src/db/migrations/1779136307015-create-host.ts
-+++ b/api/src/db/migrations/1779136307015-create-host.ts
+diff --git a/api/src/db/migrations/1782835306884-create-host.ts b/api/src/db/migrations/1782835306884-create-host.ts
+index edc2a99..4a62da0 100644
+--- a/api/src/db/migrations/1782835306884-create-host.ts
++++ b/api/src/db/migrations/1782835306884-create-host.ts
 @@ -9,7 +9,7 @@ export async function up(db: Kysely<any>): Promise<void> {
          .primaryKey()
          .defaultTo(sql`uuidv7()`),
@@ -65,13 +65,6 @@ index edc2a99..70cf71f 100644
      .addColumn('created_at', 'timestamp', col => col.notNull())
      .addColumn('updated_at', 'timestamp', col => col.notNull())
      .addColumn('deleted_at', 'timestamp')
-@@ -26,4 +26,4 @@ export async function up(db: Kysely<any>): Promise<void> {
- export async function down(db: Kysely<any>): Promise<void> {
-   await db.schema.dropIndex('hosts_user_id').execute()
-   await db.schema.dropTable('hosts').execute()
--}
-\ No newline at end of file
-+}
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
 index bd4ea0f..25bb48d 100644
 --- a/api/src/types/db.ts

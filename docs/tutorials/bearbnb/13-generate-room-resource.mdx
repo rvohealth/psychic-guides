@@ -402,11 +402,11 @@ index b91ad5b..0c5dc6a 100644
      })
    })
  
-diff --git a/api/src/db/migrations/1779136689943-create-room.ts b/api/src/db/migrations/1779136689943-create-room.ts
+diff --git a/api/src/db/migrations/1782835926764-create-room.ts b/api/src/db/migrations/1782835926764-create-room.ts
 new file mode 100644
 index 0000000..100a7ce
 --- /dev/null
-+++ b/api/src/db/migrations/1779136689943-create-room.ts
++++ b/api/src/db/migrations/1782835926764-create-room.ts
 @@ -0,0 +1,51 @@
 +import { Kysely, sql } from 'kysely'
 +
@@ -461,10 +461,10 @@ index 0000000..100a7ce
 +}
 \ No newline at end of file
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 2dceb04..0aafbae 100644
+index e9bd9cd..7a51767 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
-@@ -293,6 +293,286 @@
+@@ -278,6 +278,271 @@
            }
          }
        }
@@ -542,9 +542,6 @@ index 2dceb04..0aafbae 100644
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
 +          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
-+          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
 +          }
@@ -597,9 +594,6 @@ index 2dceb04..0aafbae 100644
 +          },
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
-+          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
 +          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
@@ -657,9 +651,6 @@ index 2dceb04..0aafbae 100644
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
 +          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
-+          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
 +          }
@@ -707,9 +698,6 @@ index 2dceb04..0aafbae 100644
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
 +          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
-+          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
 +          }
@@ -740,9 +728,6 @@ index 2dceb04..0aafbae 100644
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
 +          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
-+          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
 +          }
@@ -751,7 +736,7 @@ index 2dceb04..0aafbae 100644
      }
    },
    "components": {
-@@ -391,6 +671,40 @@
+@@ -376,6 +641,40 @@
            }
          }
        },
@@ -793,10 +778,10 @@ index 2dceb04..0aafbae 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index c1c893d..20583ce 100644
+index 3ed4b72..4cb68c5 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
-@@ -293,6 +293,286 @@
+@@ -278,6 +278,271 @@
            }
          }
        }
@@ -874,9 +859,6 @@ index c1c893d..20583ce 100644
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
 +          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
-+          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
 +          }
@@ -929,9 +911,6 @@ index c1c893d..20583ce 100644
 +          },
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
-+          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
 +          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
@@ -989,9 +968,6 @@ index c1c893d..20583ce 100644
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
 +          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
-+          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
 +          }
@@ -1039,9 +1015,6 @@ index c1c893d..20583ce 100644
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
 +          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
-+          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
 +          }
@@ -1072,9 +1045,6 @@ index c1c893d..20583ce 100644
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
 +          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
-+          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
 +          }
@@ -1083,7 +1053,7 @@ index c1c893d..20583ce 100644
      }
    },
    "components": {
-@@ -399,6 +679,42 @@
+@@ -384,6 +649,42 @@
            }
          }
        },
@@ -1127,10 +1097,10 @@ index c1c893d..20583ce 100644
          "type": "object",
          "required": [
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index 42ef46a..16ea710 100644
+index f8e01ed..fdb05d8 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
-@@ -293,6 +293,286 @@
+@@ -278,6 +278,271 @@
            }
          }
        }
@@ -1208,9 +1178,6 @@ index 42ef46a..16ea710 100644
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
 +          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
-+          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
 +          }
@@ -1263,9 +1230,6 @@ index 42ef46a..16ea710 100644
 +          },
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
-+          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
 +          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
@@ -1323,9 +1287,6 @@ index 42ef46a..16ea710 100644
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
 +          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
-+          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
 +          }
@@ -1373,9 +1334,6 @@ index 42ef46a..16ea710 100644
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
 +          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
-+          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
 +          }
@@ -1406,9 +1364,6 @@ index 42ef46a..16ea710 100644
 +          "409": {
 +            "$ref": "#/components/responses/Conflict"
 +          },
-+          "422": {
-+            "$ref": "#/components/responses/ValidationErrors"
-+          },
 +          "500": {
 +            "$ref": "#/components/responses/InternalServerError"
 +          }
@@ -1417,7 +1372,7 @@ index 42ef46a..16ea710 100644
      }
    },
    "components": {
-@@ -399,6 +679,42 @@
+@@ -384,6 +649,42 @@
            }
          }
        },
@@ -1461,19 +1416,15 @@ index 42ef46a..16ea710 100644
          "type": "object",
          "required": [
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 208b1f2..91dba44 100644
+index 7271711..0da5bf1 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -92,6 +92,21 @@ export const PlaceStylesEnumValues = [
+@@ -86,6 +86,17 @@ export const PlaceStylesEnumValues = [
    'treehouse',
  ] as const
  
 +export type RoomTypesEnum =
-+  | 'Bathroom'
-+  | 'Bedroom'
-+  | 'Den'
-+  | 'Kitchen'
-+  | 'LivingRoom'
++  'Bathroom' | 'Bedroom' | 'Den' | 'Kitchen' | 'LivingRoom'
 +
 +export const RoomTypesEnumValues = [
 +  'Bathroom',
@@ -1486,7 +1437,7 @@ index 208b1f2..91dba44 100644
  export type Timestamp = ColumnType<DateTime | CalendarDate>
  
  export interface Guests {
-@@ -129,6 +144,16 @@ export interface Places {
+@@ -123,6 +134,16 @@ export interface Places {
    updatedAt: Timestamp
  }
  
@@ -1503,7 +1454,7 @@ index 208b1f2..91dba44 100644
  export interface Users {
    createdAt: Timestamp
    deletedAt: Timestamp | null
-@@ -143,6 +168,7 @@ export interface DB {
+@@ -137,6 +158,7 @@ export interface DB {
    host_places: HostPlaces
    hosts: Hosts
    places: Places
@@ -1511,7 +1462,7 @@ index 208b1f2..91dba44 100644
    users: Users
  }
  
-@@ -151,5 +177,6 @@ export class DBClass {
+@@ -145,5 +167,6 @@ export class DBClass {
    host_places: HostPlaces
    hosts: Hosts
    places: Places
@@ -1657,10 +1608,10 @@ index 3b60d38..4332741 100644
      },
    },
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index 5f5be02..0e726f4 100644
+index d1fd8d8..eb309c2 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
-@@ -190,6 +190,201 @@ export interface paths {
+@@ -185,6 +185,196 @@ export interface paths {
          };
          trace?: never;
      };
@@ -1708,7 +1659,6 @@ index 5f5be02..0e726f4 100644
 +                403: components["responses"]["Forbidden"];
 +                404: components["responses"]["NotFound"];
 +                409: components["responses"]["Conflict"];
-+                422: components["responses"]["ValidationErrors"];
 +                500: components["responses"]["InternalServerError"];
 +            };
 +        };
@@ -1748,7 +1698,6 @@ index 5f5be02..0e726f4 100644
 +                403: components["responses"]["Forbidden"];
 +                404: components["responses"]["NotFound"];
 +                409: components["responses"]["Conflict"];
-+                422: components["responses"]["ValidationErrors"];
 +                500: components["responses"]["InternalServerError"];
 +            };
 +        };
@@ -1795,7 +1744,6 @@ index 5f5be02..0e726f4 100644
 +                403: components["responses"]["Forbidden"];
 +                404: components["responses"]["NotFound"];
 +                409: components["responses"]["Conflict"];
-+                422: components["responses"]["ValidationErrors"];
 +                500: components["responses"]["InternalServerError"];
 +            };
 +        };
@@ -1821,7 +1769,6 @@ index 5f5be02..0e726f4 100644
 +                403: components["responses"]["Forbidden"];
 +                404: components["responses"]["NotFound"];
 +                409: components["responses"]["Conflict"];
-+                422: components["responses"]["ValidationErrors"];
 +                500: components["responses"]["InternalServerError"];
 +            };
 +        };
@@ -1853,7 +1800,6 @@ index 5f5be02..0e726f4 100644
 +                403: components["responses"]["Forbidden"];
 +                404: components["responses"]["NotFound"];
 +                409: components["responses"]["Conflict"];
-+                422: components["responses"]["ValidationErrors"];
 +                500: components["responses"]["InternalServerError"];
 +            };
 +        };
@@ -1862,7 +1808,7 @@ index 5f5be02..0e726f4 100644
  }
  export type webhooks = Record<string, never>;
  export interface components {
-@@ -218,6 +413,15 @@ export interface components {
+@@ -213,6 +403,15 @@ export interface components {
              id: string;
              name: string;
          };

@@ -21,10 +21,10 @@ pnpm psy db:migrate
 ``````
 diff --git a/api/src/openapi/admin.openapi.json b/api/src/openapi/admin.openapi.json
 new file mode 100644
-index 0000000..80aca7b
+index 0000000..dfd908b
 --- /dev/null
 +++ b/api/src/openapi/admin.openapi.json
-@@ -0,0 +1,125 @@
+@@ -0,0 +1,115 @@
 +{
 +  "openapi": "3.1.0",
 +  "info": {
@@ -134,16 +134,6 @@ index 0000000..80aca7b
 +      "Conflict": {
 +        "description": "The request failed because a conflict was detected with the given request params"
 +      },
-+      "ValidationErrors": {
-+        "description": "The request failed to process due to validation errors with the provided values",
-+        "content": {
-+          "application/json": {
-+            "schema": {
-+              "$ref": "#/components/schemas/ValidationErrors"
-+            }
-+          }
-+        }
-+      },
 +      "InternalServerError": {
 +        "description": "the server encountered an unexpected condition that prevented it from fulfilling the request"
 +      }
@@ -153,10 +143,10 @@ index 0000000..80aca7b
 \ No newline at end of file
 diff --git a/api/src/openapi/internal.openapi.json b/api/src/openapi/internal.openapi.json
 new file mode 100644
-index 0000000..ac65f86
+index 0000000..560f325
 --- /dev/null
 +++ b/api/src/openapi/internal.openapi.json
-@@ -0,0 +1,125 @@
+@@ -0,0 +1,115 @@
 +{
 +  "openapi": "3.1.0",
 +  "info": {
@@ -266,16 +256,6 @@ index 0000000..ac65f86
 +      "Conflict": {
 +        "description": "The request failed because a conflict was detected with the given request params"
 +      },
-+      "ValidationErrors": {
-+        "description": "The request failed to process due to validation errors with the provided values",
-+        "content": {
-+          "application/json": {
-+            "schema": {
-+              "$ref": "#/components/schemas/ValidationErrors"
-+            }
-+          }
-+        }
-+      },
 +      "InternalServerError": {
 +        "description": "the server encountered an unexpected condition that prevented it from fulfilling the request"
 +      }
@@ -285,10 +265,10 @@ index 0000000..ac65f86
 \ No newline at end of file
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
 new file mode 100644
-index 0000000..725471e
+index 0000000..f89de76
 --- /dev/null
 +++ b/api/src/openapi/mobile.openapi.json
-@@ -0,0 +1,125 @@
+@@ -0,0 +1,115 @@
 +{
 +  "openapi": "3.1.0",
 +  "info": {
@@ -398,16 +378,6 @@ index 0000000..725471e
 +      "Conflict": {
 +        "description": "The request failed because a conflict was detected with the given request params"
 +      },
-+      "ValidationErrors": {
-+        "description": "The request failed to process due to validation errors with the provided values",
-+        "content": {
-+          "application/json": {
-+            "schema": {
-+              "$ref": "#/components/schemas/ValidationErrors"
-+            }
-+          }
-+        }
-+      },
 +      "InternalServerError": {
 +        "description": "the server encountered an unexpected condition that prevented it from fulfilling the request"
 +      }
@@ -417,10 +387,10 @@ index 0000000..725471e
 \ No newline at end of file
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
 new file mode 100644
-index 0000000..934ac80
+index 0000000..45ce545
 --- /dev/null
 +++ b/api/src/openapi/openapi.json
-@@ -0,0 +1,125 @@
+@@ -0,0 +1,115 @@
 +{
 +  "openapi": "3.1.0",
 +  "info": {
@@ -530,16 +500,6 @@ index 0000000..934ac80
 +      "Conflict": {
 +        "description": "The request failed because a conflict was detected with the given request params"
 +      },
-+      "ValidationErrors": {
-+        "description": "The request failed to process due to validation errors with the provided values",
-+        "content": {
-+          "application/json": {
-+            "schema": {
-+              "$ref": "#/components/schemas/ValidationErrors"
-+            }
-+          }
-+        }
-+      },
 +      "InternalServerError": {
 +        "description": "the server encountered an unexpected condition that prevented it from fulfilling the request"
 +      }
@@ -549,10 +509,10 @@ index 0000000..934ac80
 \ No newline at end of file
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
 new file mode 100644
-index 0000000..e6354ae
+index 0000000..9362f01
 --- /dev/null
 +++ b/api/src/openapi/tests.openapi.json
-@@ -0,0 +1,125 @@
+@@ -0,0 +1,115 @@
 +{
 +  "openapi": "3.1.0",
 +  "info": {
@@ -661,16 +621,6 @@ index 0000000..e6354ae
 +      },
 +      "Conflict": {
 +        "description": "The request failed because a conflict was detected with the given request params"
-+      },
-+      "ValidationErrors": {
-+        "description": "The request failed to process due to validation errors with the provided values",
-+        "content": {
-+          "application/json": {
-+            "schema": {
-+              "$ref": "#/components/schemas/ValidationErrors"
-+            }
-+          }
-+        }
 +      },
 +      "InternalServerError": {
 +        "description": "the server encountered an unexpected condition that prevented it from fulfilling the request"
@@ -1006,10 +956,10 @@ index 63f4975..0cd3580 100644
 +} as const
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
 new file mode 100644
-index 0000000..36895e1
+index 0000000..5b5ad03
 --- /dev/null
 +++ b/api/src/types/openapi/tests.openapi.d.ts
-@@ -0,0 +1,92 @@
+@@ -0,0 +1,83 @@
 +export type paths = Record<string, never>;
 +export type webhooks = Record<string, never>;
 +export interface components {
@@ -1077,15 +1027,6 @@ index 0000000..36895e1
 +                [name: string]: unknown;
 +            };
 +            content?: never;
-+        };
-+        /** @description The request failed to process due to validation errors with the provided values */
-+        ValidationErrors: {
-+            headers: {
-+                [name: string]: unknown;
-+            };
-+            content: {
-+                "application/json": components["schemas"]["ValidationErrors"];
-+            };
 +        };
 +        /** @description the server encountered an unexpected condition that prevented it from fulfilling the request */
 +        InternalServerError: {
