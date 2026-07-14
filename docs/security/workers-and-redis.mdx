@@ -156,8 +156,8 @@ This is a recipe, not a framework primitive. If your app needs it, write the few
 
 The `create-psychic` workers boilerplate already sets the production-correct values for the easy-to-get-wrong knobs. Worth knowing they are there:
 
-- **`enableOfflineQueue: false`** on the queue connection — when Redis is unreachable, `queue.add()` fails fast instead of buffering jobs in process memory that vanish on restart. Surfaces outages immediately.
-- **`maxRetriesPerRequest: null`** on the worker connection — required by BullMQ for blocking commands (`BLPOP`, `BRPOPLPUSH`). The boilerplate sets it for you; do not change it.
+- **`enableOfflineQueue: false`** on the queue connection — when Redis is unreachable, `queue.add()` fails fast instead of buffering jobs in process memory that vanish on restart. Surfaces outages immediately. Source: [BullMQ — failing fast when Redis is down](https://docs.bullmq.io/patterns/failing-fast-when-redis-is-down) ("disable this queue for the Queue instance, but leave it as is for Worker instances").
+- **`maxRetriesPerRequest: null`** on the worker connection — required by BullMQ for blocking commands (`BLPOP`, `BRPOPLPUSH`); it throws otherwise. The boilerplate sets it for you; do not change it — and do **not** copy `null` onto non-blocking connections (the queue connection above, or the websockets adapter connection), which issue no blocking commands and should fail fast instead. Source: [BullMQ — connections](https://docs.bullmq.io/guide/connections).
 - **Cluster `dnsLookup: (address, callback) => callback(null, address)`** — required for AWS ElastiCache cluster mode where node IPs are returned in `CLUSTER SLOTS` and ioredis must not re-resolve them. The boilerplate sets it for you when you opt into Cluster.
 - **`clusterRetryStrategy` / `retryStrategy`** — bounded exponential backoff on connection retries (1s floor, 20s ceiling). Tunable but rarely needs to change.
 

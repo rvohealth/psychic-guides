@@ -51,7 +51,8 @@ function initializeWebsockets(wsApp: PsychicAppWebsockets) {
             username: AppEnv.string('WS_REDIS_USERNAME'),
             password: AppEnv.string('WS_REDIS_PASSWORD'),
             tls: {},
-            maxRetriesPerRequest: null,
+            maxRetriesPerRequest: 3,
+            commandTimeout: 10000,
           })
         : new Redis({
             host: AppEnv.string('WS_REDIS_HOST', { optional: true }) || 'localhost',
@@ -59,7 +60,8 @@ function initializeWebsockets(wsApp: PsychicAppWebsockets) {
             username: AppEnv.string('WS_REDIS_USERNAME', { optional: true }),
             password: AppEnv.string('WS_REDIS_PASSWORD', { optional: true }),
             // tls:  {},
-            maxRetriesPerRequest: null,
+            maxRetriesPerRequest: 3,
+            commandTimeout: 10000,
           }),
     )
   }
@@ -148,7 +150,8 @@ if (!AppEnv.isTest) {
           username: AppEnv.string('WS_REDIS_USERNAME'),
           password: AppEnv.string('WS_REDIS_PASSWORD'),
           tls: {},
-          maxRetriesPerRequest: null,
+          maxRetriesPerRequest: 3,
+          commandTimeout: 10000,
         })
       : new Redis({
           host: AppEnv.string('WS_REDIS_HOST', { optional: true }) || 'localhost',
@@ -156,11 +159,16 @@ if (!AppEnv.isTest) {
           username: AppEnv.string('WS_REDIS_USERNAME', { optional: true }),
           password: AppEnv.string('WS_REDIS_PASSWORD', { optional: true }),
           // tls: {},
-          maxRetriesPerRequest: null,
+          maxRetriesPerRequest: 3,
+          commandTimeout: 10000,
         }),
   )
 }
 ```
+
+:::note Bound the connection — do not set `maxRetriesPerRequest: null`
+Unlike a BullMQ worker connection (which _must_ use `maxRetriesPerRequest: null` for its blocking `BLPOP`/`BRPOPLPUSH` commands), the socket.io redis-adapter issues no blocking commands. Setting `null` here makes a broadcast or socket-registry lookup hang indefinitely when Redis is unreachable — including a `Ws.emit()` from a worker, which stalls that job. Bound `maxRetriesPerRequest` and set a `commandTimeout` so the connection fails fast instead. The adapter needs no special connection options — see the [socket.io Redis adapter docs](https://socket.io/docs/v4/redis-adapter/); for the contrasting worker requirement see [BullMQ connections](https://docs.bullmq.io/guide/connections).
+:::
 
 ### Connection limits
 
