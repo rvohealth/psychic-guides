@@ -99,7 +99,11 @@ export default (workersApp: PsychicAppWorkers) => {
       },
     },
 
-    // Any instance can push onto the queue
+    // Any instance can push onto the queue. This producer (non-blocking) connection
+    // sets `enableOfflineQueue: false` so `queue.add()` fails fast when Redis is down
+    // instead of buffering jobs in memory that vanish on restart. BullMQ recommends
+    // disabling the offline queue on the Queue while leaving it on for Workers.
+    // https://docs.bullmq.io/patterns/failing-fast-when-redis-is-down
     defaultQueueConnection: AppEnv.isProduction
       ? new Cluster(
           [
@@ -130,7 +134,12 @@ export default (workersApp: PsychicAppWorkers) => {
           enableOfflineQueue: false,
         }),
 
-    // Only establish the worker Redis connection if on an instance that does the work
+    // Only establish the worker Redis connection if on an instance that does the work.
+    // This consumer (blocking) connection sets `maxRetriesPerRequest: null` — required by
+    // BullMQ, whose Worker/QueueEvents use blocking commands (BLPOP/BRPOPLPUSH) on a
+    // duplicated connection and throw unless it is null. Do not change it, and do NOT copy
+    // `null` to non-blocking connections (the queue above, the websockets adapter), which
+    // should fail fast. https://docs.bullmq.io/guide/connections
     defaultWorkerConnection: !AppEnv.boolean('WORKER_SERVICE')
       ? undefined
       : AppEnv.isProduction
