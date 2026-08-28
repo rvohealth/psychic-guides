@@ -1,13 +1,13 @@
 ---
 sidebar_position: 4
-ai_summary: "The REPL (console) enables database inspection through the application. All models are loaded into global namespace, namespaced by folder path. Additional globals can be added via conf/repl.ts."
+ai_summary: "The REPL (console) enables database inspection through the application. All models and services are loaded into the global namespace, namespaced by folder path. Additional globals can be added via conf/repl.ts. Exit with ESC twice. For non-interactive use, write a scratch script that mirrors conf/repl.ts's boot order instead of piping into the REPL."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # repl
 
-The REPL (called `console`) enables you to inspect the database through the lens of your application. Like other `psy` commands, console-oriented commands default to `NODE_ENV=test`; use `NODE_ENV=development` when you want to inspect your development database. The `console` package script is the supported entrypoint, not `psy console`.
+The REPL (called `console`) enables you to inspect the database through the lens of your application. Like other `psy` commands, console-oriented commands default to `NODE_ENV=test`; use `NODE_ENV=development` when you want to inspect your development database. The `console` package script is the supported entrypoint, not `psy console` — `psy` is reserved for generators, migrations, sync, and `db:reset`.
 
 <PackageManagerTabs
   code={`# start local repl
@@ -18,27 +18,77 @@ NODE_ENV=development {{PM}} console`}
 > u = await User.all()
 ```
 
+Wait for the console to fully load before using auto-imported names — it does not live-reload, so exit and relaunch after code changes. Press `ESC` twice to exit.
+
+## Auto-imported models
+
 By default, all of your models are loaded into the global namespace. However, to avoid class naming conflicts, all models will actually be namespaced based on their folder path, starting from the `models` directory. This means that if you have a model located at `Nutrition/LogEntry`, and another located at `Weight/LogEntry`, the class names in the repl will be `NutritionLogEntry` and `WeightLogEntry`, regardless of what their actual class names are.
 
-If you want to add additional globals to your repl, you can do so by modifying the `conf/repl.ts` file, adding any additional globals to the provided `context`, like so:
+## Auto-imported services
+
+Services are namespaced the same way, prefixed with `Services` and derived from the path relative to `app/services/`:
+
+| File Path                                          | Console Name                        |
+| --------------------------------------------------- | ------------------------------------ |
+| `app/services/NotificationService.ts`                | `ServicesNotificationService`        |
+| `app/services/Host/OnboardingService.ts`             | `ServicesHostOnboardingService`      |
+
+## Adding custom globals
+
+If you want to add additional globals to your repl, you can do so by modifying the `conf/repl.ts` file, adding any additional globals to the provided `context`. `DreamCLI.loadRepl` — imported from `@rvoh/dream/system` — is what wires up the auto-imported models and services above; add your own globals after calling it:
 
 ```ts
 // conf/repl.ts
-import './global.js'
+import './loadEnv.js'
 
 import * as repl from 'node:repl'
-import { loadRepl } from '@rvoh/dream'
+import { DreamCLI } from '@rvoh/dream/system'
 import initializePsychicApp from './system/initializePsychicApp.js'
 import MyClass from '../services/MyClass'
 
 const replServer = repl.start('> ')
 export default (async function () {
   await initializePsychicApp()
-  await loadRepl(replServer.context)
+  await DreamCLI.loadRepl(replServer.context)
 
   // add your additional globals here:
   replServer.context.MyClass = MyClass
 })()
 ```
 
-For non-interactive scripts, prefer a scratch TypeScript file that imports `src/conf/global.js`, initializes the app, runs the code, and exits. That gives you the same boot path as the console without relying on interactive `stdout`.
+## Dynamically importing files
+
+For code that isn't auto-imported, use a dynamic import with a path relative to `src/`:
+
+```ts
+myHelper = (await import('./app/services/Host/pricingHelpers.js')).default
+```
+
+## Non-interactive use
+
+`pnpm console` is interactive by design — it's meant for a human who launches it, waits for it to finish booting, then types or pastes queries. Piping commands into its stdin is unreliable: the REPL starts reading before auto-imports finish, each newline is evaluated separately (so a variable declared on one line isn't visible on the next), and the process can exit before pending async work resolves.
+
+For non-interactive or scripted work, write a scratch TypeScript file instead. It should mirror `conf/repl.ts`'s boot order — load env, initialize the Psychic app, then import models — but skip the REPL-specific `DreamCLI.loadRepl(...)` call and import what it needs directly:
+
+```ts
+// scratch-cleanup.ts
+import './conf/loadEnv.js'
+import initializePsychicApp from './conf/system/initializePsychicApp.js'
+
+await initializePsychicApp()
+
+const { default: Place } = await import('./app/models/Place.js') // dynamic — must come after init
+console.log(await Place.count())
+
+process.exit(0)
+```
+
+Run it with `tsx` from the `api/` directory, since both the boot-time path aliases and the relative model import resolve from there. `APP_NAME` / `APP_VERSION` are read at boot by some projects' environment setup; the `console` script sets these from the package manifest automatically, so a standalone `tsx` invocation needs to set them explicitly:
+
+```bash
+APP_NAME=$(node -p "require('./package.json').name") \
+  APP_VERSION=$(node -p "require('./package.json').version") \
+  npx tsx scratch-cleanup.ts
+```
+
+This defaults to the test database. Prefix with `NODE_ENV=development` only when you intend to run the script against your development database — see [Key Commands](/docs/cli/overview) for the risks of running destructive commands against `development`. Treat scratch scripts as throwaway: add `scratch-*.ts` to `.gitignore` and delete them after use.

@@ -52,10 +52,19 @@ The `generate:model` CLI documentation follows below, but more details about gen
   - `belongs_to`: not only adds a foreign key to the migration, but also adds a BelongsTo association to the generated model:
     - Include the fully qualified model name, e.g., if the Coach model is in `src/app/models/Health/Coach`:
       `Health/Coach:belongs_to`
+    - **Aliased FK shorthand** — append `@alias` to generate a foreign key with a custom column name. This is the canonical pattern for `_by` columns (e.g. `canceled_by_id`) and for multiple foreign keys to the same model:
+      `InternalUser@canceled_by:belongs_to:optional`
+      produces a `canceled_by_id` column, a `canceledById` model property, and a `canceledBy` association — all from one token. Examples:
+      - `User@created_by:belongs_to` — `created_by_id` FK, `createdBy` association
+      - `Message@last_inbound:belongs_to:optional` — `last_inbound_id` FK, `lastInbound` association
+      - `Message@last_outbound:belongs_to:optional` — `last_outbound_id` FK, `lastOutbound` association
+
+The generator includes `id`, `created_at`, `updated_at`, `deleted_at`, and `@SoftDelete()` by default — do not specify these columns yourself. Use `--no-soft-delete` only when hard deletion is an intentional part of the model design.
 
 ### Options
 
 - `--no-serializer`: Do not generate a serializer for the model.
+- `--no-soft-delete`: Skip the default `@SoftDelete()` decorator and `deleted_at` column, so `destroy()` permanently removes rows instead of marking them removed.
 - `--connection-name <connectionName>`: The db connection you want this attached to (defaults to the default db connection) (default: "default").
 - `--sti-base-serializer`: Generate a base serializer for STI.
 - `--table-name <tableName>`: Explicit table name to use instead of the auto-generated one (useful when model namespaces produce long names).

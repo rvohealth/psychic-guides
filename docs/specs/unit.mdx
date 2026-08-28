@@ -2,7 +2,7 @@
 sidebar_position: 1
 title: unit
 pagination_prev: null
-ai_summary: "Unit specs test backend components in isolation (helpers, models, services, controllers). Uses Vitest. Configuration in spec/unit/vite.config.ts. Database truncated between runs. Supports parallelism. Provides special unit spec helpers for endpoint testing."
+ai_summary: "Unit specs test backend components in isolation (helpers, models, services, controllers). Uses Vitest. Configuration in spec/unit/vite.config.ts. Database truncated between runs. Supports parallelism. Covers the factory pattern (including STI and side-effect-hook factories), toMatchDreamModels/toMatchDreamModel matchers, typed OpenapiSpecRequest controller specs via the tests spec, background worker testing, AppEnv stubbing, and spec organization conventions."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -97,6 +97,155 @@ export default defineConfig({
 })
 ```
 
+## Factories
+
+Factories create real database records with sensible defaults, and are the standard way to build data for both unit and feature specs — never reach for a stub or mock of a Dream model.
+
+```ts
+// spec/factories/PlaceFactory.ts
+
+import Place from '@models/Place.js'
+import { UpdateableProperties } from '@rvoh/dream/types'
+
+let counter = 0
+
+export default async function createPlace(attrs: UpdateableProperties<Place> = {}) {
+  return await Place.create({
+    name: `Place name ${++counter}`,
+    style: 'cottage',
+    sleeps: 1,
+    ...attrs,
+  })
+}
+```
+
+Factory conventions:
+
+- Export a default async function named `create{ModelName}`.
+- Accept optional `attrs` typed as `UpdateableProperties<Model>`.
+- Use a module-level counter to keep generated values unique.
+- Provide sensible defaults for every required field.
+- Accept overrides via spread, applied last so `attrs` always wins.
+
+Factories are for records that exist. Reach for `Model.new()` instead when the spec's subject is an instance that deliberately has no row behind it — validation state before a save, or an identifier with no account.
+
+### Factories with associations
+
+```ts
+// spec/factories/HostPlaceFactory.ts
+
+import HostPlace from '@models/HostPlace.js'
+import createHost from './HostFactory.js'
+import createPlace from './PlaceFactory.js'
+import { UpdateableProperties } from '@rvoh/dream/types'
+
+export default async function createHostPlace(
+  attrs: UpdateableProperties<HostPlace> = {}
+) {
+  return await HostPlace.create({
+    host: attrs.host ?? (await createHost()),
+    place: attrs.place ?? (await createPlace()),
+    ...attrs,
+  })
+}
+```
+
+### STI factories
+
+```ts
+// spec/factories/Room/BedroomFactory.ts
+
+import Bedroom from '@models/Room/Bedroom.js'
+import createPlace from '../PlaceFactory.js'
+import { UpdateableProperties } from '@rvoh/dream/types'
+
+export default async function createBedroom(
+  attrs: UpdateableProperties<Bedroom> = {}
+) {
+  return await Bedroom.create({
+    place: attrs.place ?? (await createPlace()),
+    bedTypes: ['queen'],
+    ...attrs,
+  })
+}
+```
+
+### Factories for AfterCreate auto-created associations
+
+When a model's `AfterCreate` hook automatically creates an associated record (for example, `User` auto-creates `Guest`), the factory for the associated model should return the auto-created record rather than create a duplicate:
+
+```ts
+// BAD — creates a duplicate Guest, may violate a unique constraint on userId
+export default async function createGuest(attrs: UpdateableProperties<Guest> = {}) {
+  return await Guest.create({ user: await createUser(), ...attrs })
+}
+
+// GOOD — returns the Guest auto-created by User's AfterCreate hook
+export default async function createGuest(attrs: UpdateableProperties<Guest> = {}) {
+  const user = attrs.user ?? (await createUser())
+  const guest = await Guest.findBy({ userId: user.id })
+  if (!guest) throw new Error(`Guest not found for userId ${user.id}`)
+  return guest
+}
+```
+
+### Factories for models with side-effect hooks
+
+When a model's `AfterCreate` hook creates several side-effect records rather than a single auto-associated child (for example, `Place` auto-creates default rooms, photos, and amenities), have the factory pass `skipHooks: true` so test data stays minimal and predictable:
+
+```ts
+// PlaceFactory — bypasses the AfterCreate hook that auto-seeds rooms.
+// Tests that want to verify the auto-seed flow should call Place.create() directly.
+export default async function createPlace(attrs: UpdateableProperties<Place> = {}) {
+  return await Place.create(
+    {
+      host: attrs.host ?? (await createHost()),
+      name: 'Test Place',
+      ...attrs,
+    },
+    { skipHooks: true },
+  )
+}
+```
+
+If the factory fired the hook, every spec that creates a `Place` would get the auto-seeded rooms, and index queries, count assertions, and isolation tests would break in confusing ways. The factory's job is to provide a minimal valid record; specs that need the full hook flow can call `Model.create()` directly without `skipHooks`.
+
+Test the hook itself in the model spec, with explicit coverage for both paths:
+
+```ts
+it('auto-seeds default rooms', async () => {
+  const place = await Place.create({ host: await createHost(), name: 'Test' })
+  const rooms = await place.associationQuery('rooms').all()
+  expect(rooms.length).toBeGreaterThan(0)
+})
+
+it('does NOT auto-seed when skipHooks is true', async () => {
+  const place = await Place.create({ host: await createHost(), name: 'Test' }, { skipHooks: true })
+  const rooms = await place.associationQuery('rooms').all()
+  expect(rooms).toEqual([])
+})
+```
+
+When to use which pattern:
+
+- **Return the auto-created record** when the hook creates a single 1:1 child with a unique constraint (`User` → `Guest`). Calling the factory directly would violate the constraint.
+- **Bypass with `skipHooks`** when the hook creates multiple side-effect records that would pollute test data and aren't usually needed by every spec.
+
+### Reused-enum placeholder
+
+When a model column reuses an existing enum (the shorthand `name:enum:enum_type_name`, with no inline values), the generator can't see the enum's values and emits a `'TODO'` placeholder that TypeScript rejects, paired with a comment hint:
+
+```ts
+// TODO: replace with a value from the `place_styles` enum
+preferredStyle: 'TODO',
+
+// Array form
+// TODO: replace with a value from the `bed_types` enum
+preferredBedTypes: ['TODO'],
+```
+
+`'TODO'` isn't a member of the enum's literal union, so `pnpm build:spec` fails fast at the factory until the placeholder is replaced — preferable to a runtime NOT NULL / enum-mismatch surprise the first time the factory runs. The declare-with-values shorthand (`name:enum:type:val1,val2`) emits the first listed value instead of a placeholder.
+
 ## Models
 
 Write model specs to enfore behavior for your models, like so:
@@ -140,6 +289,93 @@ describe('User', () => {
 })
 ```
 
+### Common patterns
+
+Model specs typically cover associations, hooks, soft deletes, validations, scopes, and virtual attributes:
+
+```ts
+describe('Place', () => {
+  describe('associations', () => {
+    it('has many hosts through hostPlaces', async () => {
+      const host = await createHost()
+      const place = await createPlace()
+      await createHostPlace({ host, place })
+
+      expect(await place.associationQuery('hosts').all()).toMatchDreamModels([host])
+    })
+  })
+
+  describe('hooks', () => {
+    context('upon creation', () => {
+      it('creates default LocalizedText', async () => {
+        const place = await createPlace({ style: 'cottage' })
+        const text = await place.associationQuery('localizedTexts').firstOrFail()
+        expect(text.locale).toEqual('en-US')
+        expect(text.title).toEqual('My cottage')
+      })
+    })
+  })
+
+  describe('soft delete', () => {
+    it('soft deletes and cascades to dependents', async () => {
+      const place = await createPlace()
+      const hostPlace = await createHostPlace({ place })
+
+      await place.destroy()
+
+      // Soft deleted - hidden from default queries
+      expect(await Place.where({ id: place.id }).exists()).toBe(false)
+      // Still in database
+      expect(await Place.where({ id: place.id }).removeAllDefaultScopes().exists()).toBe(true)
+
+      // Cascaded to dependents
+      expect(await HostPlace.where({ id: hostPlace.id }).exists()).toBe(false)
+    })
+  })
+
+  describe('validations', () => {
+    it('requires name', async () => {
+      const place = Place.new({ style: 'cottage', sleeps: 1 })
+      expect(place.isInvalid).toBe(true)
+      expect(place.errors.name).toBeDefined()
+    })
+  })
+
+  describe('scopes', () => {
+    it('.active returns only active places', async () => {
+      const active = await createPlace({ status: 'active' })
+      const inactive = await createPlace({ status: 'inactive' })
+
+      const results = await Place.scope('active').all()
+      expect(results).toMatchDreamModels([active])
+    })
+  })
+})
+```
+
+Test soft deletes by testing behavior, not implementation: verify the record is hidden from a normal query **and** still present once default scopes are removed.
+
+## Matchers
+
+Alongside standard vitest matchers, Psychic's spec helpers add matchers for Dream models:
+
+```ts
+// Dream model matching
+expect(result).toMatchDreamModels([bedroom, kitchen])  // Set membership by ID, order-insensitive
+expect(result).toMatchDreamModel(bedroom)               // Single model
+
+// Standard vitest matchers
+expect(body).toEqual(expect.objectContaining({ id: place.id }))
+expect(body.results).toHaveLength(1)
+expect(place.name).toEqual('Expected Name')
+```
+
+`toMatchDreamModels` compares the two arrays as **sets**: it sorts both the received and the expected list by each model's comparison key before matching, so the assertion passes regardless of the order the query returned rows in. That's exactly what you want for a query whose order you don't control — `expect(rooms).toMatchDreamModels([bedroom, kitchen])` holds whether the rows come back `[bedroom, kitchen]` or `[kitchen, bedroom]`.
+
+:::caution Don't assert order a query doesn't guarantee
+A Dream query without an explicit `order` — `.all()`, an unordered `associationQuery(...).all()`, a `pluck` — carries no SQL `ORDER BY`, so Postgres may return rows in any order. Reaching for an order-sensitive assertion (`toEqual`, indexing `results[0]`, `.map(r => r.id)` against a fixed list) on such a query is a latent flake — the row sequence you happen to observe today is not a guarantee. When order is part of what you're testing, make it explicit in the query (`.order({ name: 'asc' })`, an association `order` option) or sort the results before asserting, and only then assert the sequence.
+:::
+
 ## Serializers
 
 We don't generally encourage developers to write serializer specs (since this is normally covered by endpoint tests), but sometimes it can make sense if the rendering logic gets to be fairly complex. In that case, you can test your serializers like this:
@@ -157,70 +393,167 @@ describe('UserSerializer', () => {
 
 Anything else in the app should be fairly straight forward to test, with the exception of controller/endpoint tests, which we will cover next.
 
-## Controller/endpoint specs
+## Controller specs
 
-Under the hood, psychic provides typed test helpers to make controller and endpoint specs line up with generated OpenAPI paths:
+Controller specs use `OpenapiSpecRequest` from `@rvoh/psychic-spec-helpers` for type-safe HTTP testing:
 
 ```ts
 import { PsychicServer } from '@rvoh/psychic'
 import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
-import { openapiPaths } from '../../../src/types/openapi.d.ts'
+import { session } from '@spec/unit/helpers/authentication.js'
+import createUser from '@factories/UserFactory.js'
+import createHost from '@factories/HostFactory.js'
+import createPlace from '@factories/PlaceFactory.js'
+import createHostPlace from '@factories/HostPlaceFactory.js'
 
-const request = new OpenapiSpecRequest<openapiPaths>(openapiPaths)
+type SpecRequestType = Awaited<ReturnType<typeof session>>
 
-describe('a visitor attempts to hit an unauthed route', () => {
+describe('V1/Host/PlacesController', () => {
+  let request: SpecRequestType
+  let user: User
+  let host: Host
+
   beforeEach(async () => {
-    await request.init(PsychicServer)
+    user = await createUser()
+    host = await createHost({ user })
+    request = await session(user)
   })
 
-  it('accepts the request', async () => {
-    await request.get('/ping', 200)
-  })
-})
-```
+  describe('GET /v1/host/places', () => {
+    it('returns paginated places for this host', async () => {
+      const place = await createPlace()
+      await createHostPlace({ host, place })
 
-Projects commonly wrap authenticated requests in a `session(user)` helper that returns an `OpenapiSpecRequest` with the right cookies or headers applied:
+      const { body } = await request.get('/v1/host/places', 200)
+      expect(body.results).toEqual([
+        expect.objectContaining({ id: place.id, name: place.name }),
+      ])
+    })
 
-```ts
-describe('an authed user attempts to hit an authed route', () => {
-  it('returns 200', async () => {
-    const user = await createUser()
-    await session(user).get('/api/v1/users/me', 200)
-  })
-})
-```
+    context('places created by another host', () => {
+      it('are omitted', async () => {
+        const otherHost = await createHost()
+        const otherPlace = await createPlace()
+        await createHostPlace({ host: otherHost, place: otherPlace })
 
-Negative ownership specs still need the authenticated role row. If a route is scoped to `currentHost`, create a host for the signed-in user before asserting that some other host's record is forbidden or hidden.
-
-### Openapi
-
-If you are taking advantage of the `OpenAPI` decorator in your controllers, you can leverage the `OpenapiSpecRequest` class to issue requests. The api is nearly identical to the `specRequest` api, except for the way it treats urls that have named uri segments.
-
-```ts
-import { PsychicServer } from '@rvoh/psychic'
-import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
-import { openapiPaths } from '../../../src/types/openapi.d.ts'
-import createPost from '../../factories/PostFactory'
-
-const request = new OpenapiSpecRequest<openapiPaths>(openapiPaths)
-
-describe('PostsController', () => {
-  beforeAll(async () => {
-    await request.init(PsychicServer)
+        const { body } = await request.get('/v1/host/places', 200)
+        expect(body.results).toEqual([])
+      })
+    })
   })
 
-  describe('show', () => {
-    it('renders the post by id', async () => {
-      const post = await createPost({ title: 'my title', body: 'my body' })
-      const { body } = await request.get('/posts/{id}', 200, { id: post.id })
-      expect(body.title).toEqual('my title')
-      expect(body.body).toEqual('my body')
+  describe('POST /v1/host/places', () => {
+    it('creates a Place', async () => {
+      const { body } = await request.post('/v1/host/places', 201, {
+        data: { name: 'Cozy Cabin', style: 'cabin', sleeps: 4 },
+      })
+
+      const place = await host.associationQuery('places').firstOrFail()
+      expect(place.name).toEqual('Cozy Cabin')
+      expect(body).toEqual(expect.objectContaining({ id: place.id }))
+    })
+
+    context('with invalid params', () => {
+      it('returns 400', async () => {
+        await request.post('/v1/host/places', 400, {
+          data: { style: 'cabin', sleeps: 4 },  // Missing required 'name'
+        })
+      })
     })
   })
 })
 ```
 
-The `OpenapiSpecRequest` will integrate with the output of `openapi-typescript`, which can be automatically activated in your `conf/app.ts` file during the `sync` hook, like so:
+The `session(...)` helper (generated at `spec/unit/helpers/authentication.ts`) authenticates a user and returns an `OpenapiSpecRequest` with the right headers applied:
+
+```ts
+// spec/unit/helpers/authentication.ts
+
+import { Encrypt } from '@rvoh/dream'
+import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
+import { PsychicServer } from '@rvoh/psychic'
+import AppEnv from '@conf/AppEnv.js'
+
+type OpenapiPaths = import('@src/types/openapi/tests.openapi.js').paths
+
+function testToken(user: Dream): string {
+  return Encrypt.encrypt(
+    JSON.stringify({ userId: user.primaryKeyValue() }),
+    { algorithm: 'aes-256-gcm', key: AppEnv.string('APP_ENCRYPTION_KEY') }
+  )
+}
+
+export async function session(user: Dream) {
+  const request = new OpenapiSpecRequest<OpenapiPaths>()
+  await request.init(PsychicServer)
+  const bearerToken = testToken(user)
+  return request.setDefaultHeaders({ Authorization: `Bearer ${bearerToken}` })
+}
+```
+
+:::tip Generate resourceful controllers first
+`pnpm psy g:resource` generates the controller spec already wired up this way — the typed `session` request, `RequestBody<...>` bodies, and per-action blocks with status-code generics. A bare controller generator emits only a placeholder spec (`it.todo(...)`) with none of the typing, so build resourceful controllers before non-resourceful ones — it seeds the codebase with the correct, fully-typed pattern that people and agents then mimic when hand-writing the specs a bare controller leaves as a stub.
+:::
+
+### Request and response types come from the `tests` spec
+
+`request` is an `OpenapiSpecRequest` parameterized by the `tests` spec's generated `paths` types. Because of that, the URI string literal and HTTP method you pass select the endpoint from the spec, and the call is typed on every side:
+
+- path params (keys matching the `{id}` placeholders), the request body (`RequestBody<'post', '/v1/host/places'>`), and query params (`RequestQuery<...>`) are typed to what the endpoint accepts;
+- the response `body` is typed to what the endpoint returns for the status you assert.
+
+`RequestBody` / `RequestQuery` are exposed from the generated `spec/unit/helpers/authentication.ts`. Pass the URI as a literal with `{placeholder}` params, not an interpolated string, so it can index the spec.
+
+This keeps the spec and the API contract from drifting apart silently: change an endpoint's params or response shape, run `pnpm psy sync`, and any spec that no longer matches stops compiling under `pnpm build:spec` until it is updated. For example, an out-of-enum value or an unknown param fails the type check:
+
+```ts
+await request.post('/v1/host/places', 201, {
+  data: { name: 'Cozy Cabin', style: 'not_a_real_style', sleeps: 4 },
+  //                           ^ TS error: not assignable to the style enum union from the spec
+})
+```
+
+The status argument is typed the same way, so an error status the action answers by hand — a `422` from `this.unprocessableContent(...)` — has to be added to the action's `@OpenAPI` `responses` (or conf `defaults.responses`) and picked up by `pnpm psy sync` before a spec can assert it. Declare only error statuses there, since a `200`/`201`/`204` in `responses` suppresses the serializer-derived success response.
+
+The types resolve against the `tests` spec because every surface includes `'tests'` in its `openapiNames`; see [The tests spec](/docs/openapi/multiple-specs#the-tests-spec). Any `openapiNames` override you write must keep `'tests'` in the list — an endpoint left out of the tests spec has no generated types, so its controller spec can't type-check.
+
+### Query parameters in spec requests
+
+Query parameters nest under `query: {...}`; path parameters are direct keys. The third argument to `request.get/post/patch/delete` carries everything the request needs beyond URL and expected status: path params as top-level keys (matching the `{name}` placeholders in the URI), and query-string params under a `query` key. Passing a flat `{ search: 'Alice' }` is silently treated as a path-param attempt and won't reach the controller as a query.
+
+```ts
+// Path param only
+await request.get('/v1/host/places/{id}', 200, { id: place.id })
+
+// Query params only
+await request.get('/v1/host/places', 200, { query: { search: 'Cabin', minSleeps: 4 } })
+
+// Both — path params at top level, query params under `query`
+await request.get('/v1/host/places/{placeId}/rooms', 200, {
+  placeId: place.id,
+  query: { type: 'Bedroom' },
+})
+```
+
+The shape is enforced by the OpenAPI-derived types: query-param keys come from the action's `@OpenAPI({ query: { ... } })` declaration, so a typo on either side surfaces as a TS error.
+
+:::note
+OpenAPI request validation may reject invalid model params before model validations run. In controller specs that use OpenAPI spec helpers, out-of-range or missing fields derived from model validators expect `400` — the same status the framework returns for param, request-body, and model-validation failures alike.
+:::
+
+### Negative specs: the principal still needs its auth role row
+
+A negative controller spec that expects a `403`/`404` from an **ownership** check (for example, "host A cannot update host B's place") must still give the current principal whatever role row the auth layer requires — a `Host` record, a membership row, and so on. If the principal lacks that role, the auth `BeforeAction` returns `403` *before* the controller's ownership lookup ever runs. The spec goes green, but for the wrong reason: it's asserting "no host role → 403", not the "wrong owner → 403" it claims to exercise, and the ownership branch silently loses coverage.
+
+Set up the negative spec so the principal is fully authenticated and authorized as far as the auth layer is concerned, and only the ownership relationship is wrong. A quick check: the same request with the *correct* owner should return success in a sibling positive spec using identical role setup — if it doesn't, the negative spec is tripping the auth gate, not the ownership gate.
+
+### Transaction-callback type for helper methods
+
+For helper methods called inside a `.transaction(...)` callback, type the txn parameter as `DreamTransaction<Dream>` (imported from `@rvoh/dream`). The same type is used by `@AfterCreate` / `@AfterUpdate` hooks and Dream's transactions. Don't reach for `Parameters<Parameters<typeof ApplicationModel.transaction>[0]>[0]` gymnastics.
+
+### Openapi sync configuration
+
+The `OpenapiSpecRequest` integrates with the output of `openapi-typescript`, which can be automatically activated in your `conf/app.ts` file during the `sync` hook, like so:
 
 ```ts
 // conf/app.ts
@@ -256,4 +589,116 @@ import { validationOpenapiPaths } from '../../../src/types/validation.openapi.d.
 const request = new OpenapiSpecRequest<validationOpenapiPaths>(openapiPaths)
 
 ...
+```
+
+## Background worker testing
+
+By default, backgrounded jobs execute immediately in tests (`testInvocation = 'automatic'`), so a spec can assert on their effects without any extra setup:
+
+```ts
+await EmailService.background('sendWelcome', user.id)
+// Method runs synchronously
+```
+
+Switch to manual mode when a spec needs fine-grained control over when the queue drains:
+
+```ts
+import { WorkerTestUtils } from '@rvoh/psychic-workers'
+
+const workersApp = PsychicAppWorkers.getOrFail()
+workersApp.set('testInvocation', 'manual')
+
+await EmailService.background('sendWelcome', user.id)  // Queued
+await WorkerTestUtils.work()                            // Process queue
+WorkerTestUtils.clean()                                 // Clear queues
+```
+
+:::caution A job that throws fails the enqueuing request in tests, but not in prod
+Under the default `automatic` invocation, a backgrounded method runs inline and is **awaited** inside the call that enqueued it — the framework short-circuits the queue and calls the method directly, with no surrounding try/catch. If the job throws, the error propagates back through `.background(...)` to the caller, so a controller action that backgrounds a job and awaits it returns **500 in tests** when the job throws.
+
+In production the same job runs on a separate BullMQ worker. A throw there is retried per the queue's `defaultJobOptions` and lands in `failed` only once attempts are exhausted — none of it touches the HTTP response that was already returned. The "fire-and-forget" mental model — `await this.background(...)` returns once queued, and the job's success or failure is independent of the request — holds in prod but not in tests.
+
+Two practical consequences:
+
+- A spec that drives a backgrounded job must stub or record any external I/O that job performs. Because the job runs synchronously inside the request, an unstubbed call hits the network for real and, if it fails, 500s the spec — a frequent source of "works in isolation, flaky in the suite" specs.
+- The inline error propagation is useful, since it surfaces job bugs the prod fire-and-forget path would bury, but it means a spec asserting on the request's status code exercises a different path than production. Assert on the job's side effects, not on a status code that only differs because the job ran inline.
+:::
+
+## Testing principles
+
+1. **Use real models** — create records via factories, not mocks.
+2. **Don't stub Dream internals** — never mock `.find()`, `.create()`, `.loaded()`, etc.
+3. **Test behavior, not implementation** — assert on outcomes, not internal calls.
+4. **Don't spec behavior of another class that is already spec'd** — use vitest spies to return different values instead.
+5. **In controller specs, use factories to create real models.** Let controllers leverage real Dream queries, never mocked. If a spec'd service or view-model fetches or transforms the data, you may mock it, but make sure its own spec covers the full variety of cases.
+6. **Test authorization** — verify users can only access their own resources.
+7. **Test soft deletes by testing behavior** — verify the record is hidden from a normal query and still present when scopes are removed.
+8. **Use Polly** (`setupPolly`) for recording and replaying external API calls rather than stubbing.
+9. **Stub the environment through `AppEnv`, not `vi.stubEnv`** — app config is read through `AppEnv`, whose setters are name-typed to the app's union and restored explicitly, where `vi.stubEnv` is untyped and, in the generated app's default configuration, never restored.
+
+### Stubbing environment values in specs
+
+`AppEnv.string` / `.integer` / `.boolean` are single methods discriminated by their argument, so `vi.spyOn(AppEnv, 'string')` returns the stubbed value for **every** variable read anywhere under test — the spec passes, then breaks an unrelated one once a second `AppEnv` read appears downstream. Use Dream's typed setter for a named variable instead, and capture and restore the original value yourself:
+
+```ts
+let originalMapsApiKey: string | undefined
+
+beforeEach(() => {
+  originalMapsApiKey = AppEnv.string('BEARBNB_MAPS_API_KEY', { optional: true })
+  AppEnv.setString('BEARBNB_MAPS_API_KEY', 'test-maps-key')
+})
+
+afterEach(() => {
+  AppEnv.setString('BEARBNB_MAPS_API_KEY', originalMapsApiKey)
+})
+```
+
+The setter writes `process.env`, which nothing restores automatically — the generated app's vite configs set `restoreMocks: true` but not `unstubEnvs` — so the `afterEach` is required. A spy is restored for you.
+
+The derived getters (`AppEnv.isTest`, `.nodeEnv`, `.serviceRole`) have no setter, so spy on those instead: `vi.spyOn(AppEnv, 'isTest', 'get').mockReturnValue(false)`.
+
+## Spec organization
+
+When spec'ing a function, use `describe` for the outermost block and `context` blocks for different state:
+
+```ts
+describe('calculatePrice', () => {
+  context('when the item is on sale', () => {
+    it('applies the discount', async () => { ... })
+  })
+})
+```
+
+When spec'ing a class, use `describe` for the class, `describe` for each public method (`.staticMethod` or `#instanceMethod`), and `context` for state:
+
+```ts
+describe('Place', () => {
+  describe('#destroy', () => {
+    context('when the place has rooms', () => {
+      it('cascades the soft delete', async () => { ... })
+    })
+  })
+})
+```
+
+Leverage nested `context` blocks to keep setup DRY, changing only the one thing being tested:
+
+```ts
+describe('V1/Host/PlacesController', () => {
+  describe('POST create', () => {
+    let options: CreatePlaceOptions
+
+    beforeEach(async () => {
+      // Set happy path defaults
+      options = { name: 'Cozy Cabin', style: 'cabin', sleeps: 4 }
+    })
+
+    it('creates a Place', async () => { ... })
+
+    context('when sleeps is negative', () => {
+      beforeEach(() => { options.sleeps = -1 })
+      it('returns 400', async () => { ... })
+    })
+  })
+})
 ```

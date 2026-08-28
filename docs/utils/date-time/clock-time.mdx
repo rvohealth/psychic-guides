@@ -407,10 +407,11 @@ const workingHours = totalHours - lunchEnd.diff(lunchStart, 'hours').hours // 7
 
 ## Error Handling
 
-ClockTime throws `InvalidClockTime` errors for invalid operations:
+ClockTime throws `InvalidClockTime` errors for invalid operations. There is no "invalid instance" to inspect — every parser throws immediately on unparsable input, so catch the specific error rather than probing the result. `InvalidClockTime` is exported from `@rvoh/dream/errors`, not `@rvoh/dream`:
 
 ```ts
-import { ClockTime, InvalidClockTime } from '@rvoh/dream'
+import { ClockTime } from '@rvoh/dream'
+import { InvalidClockTime } from '@rvoh/dream/errors'
 
 try {
   const time = ClockTime.fromISO('25:00:00') // invalid hour

@@ -482,10 +482,11 @@ console.log(supportEnd.setZone(userZone).toISO()) // '14:00:00-08:00'
 
 ## Error Handling
 
-ClockTimeTz throws `InvalidClockTimeTz` errors for invalid operations:
+ClockTimeTz throws `InvalidClockTimeTz` errors for invalid operations. There is no "invalid instance" to inspect — every parser throws immediately on unparsable input, so catch the specific error rather than probing the result. `InvalidClockTimeTz` is exported from `@rvoh/dream/errors`, not `@rvoh/dream`:
 
 ```ts
-import { ClockTimeTz, InvalidClockTimeTz } from '@rvoh/dream'
+import { ClockTimeTz } from '@rvoh/dream'
+import { InvalidClockTimeTz } from '@rvoh/dream/errors'
 
 try {
   const time = ClockTimeTz.fromISO('25:00:00') // invalid hour

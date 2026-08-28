@@ -1,7 +1,7 @@
 ---
 sidebar_position: 4
 title: migration
-ai_summary: "The generate:migration command creates timestamped migration files. Supports column types (uuid, citext, encrypted, string, text, date, datetime, time, timetz, integer, decimal, enum, belongs_to), arrays, optional columns, and custom connection names. Ending migration name with -to-table-name auto-populates alterTable command."
+ai_summary: "The generate:migration command creates timestamped migration files. Supports column types (uuid, citext, encrypted, string, text, boolean, date, datetime, time, timetz, integer, decimal, jsonb, enum, belongs_to), arrays, optional columns, and custom connection names. Ending migration name with -to-table-name auto-populates alterTable command."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -37,6 +37,7 @@ Use the built-in CLI command for generating migrations to easily get up and runn
   - `encrypted`: encrypted text (used in conjunction with the `@deco.Encrypted` decorator)
   - `string`, `string[]`: varchar; allowed length defaults to 255, but may be customized, e.g.: `subtitle:string:128` or `subtitle:string:128:optional`
   - `text`, `text[]`
+  - `boolean`, `boolean[]`
   - `date`, `date[]`
   - `datetime`, `datetime[]`
   - `time`, `time[]`
@@ -44,6 +45,7 @@ Use the built-in CLI command for generating migrations to easily get up and runn
   - `integer`, `integer[]`
   - `decimal`, `decimal[]`: precision,scale is required, e.g.: `volume:decimal:3,2` or `volume:decimal:3,2:optional`
     - Leveraging arrays, add the "[]" suffix, e.g.: `volume:decimal[]:3,2`
+  - `jsonb`: prefer this over `json` unless you specifically need Postgres's non-normalized `json` storage. Reach for either only when the data genuinely can't be modeled as columns or an associated table — see [Column Types — JSON](/docs/migrations/overview#json) for when a `jsonb` column is (and isn't) the right call.
   - `enum`, `enum[]`: include the enum name to automatically create the enum:
     `type:enum:room_types:bathroom,kitchen,bedroom` or `type:enum:room_types:bathroom,kitchen,bedroom:optional`
     - Omit the enum values to leverage an existing enum (omits the enum type creation):
@@ -64,6 +66,10 @@ Use the built-in CLI command for generating migrations to easily get up and runn
 - `--connection-name <connectionName>`: The connection name you wish to use for your migration.
 - `-h, --help`: Display help for command.
 
-Ending the migration name with `-to-table-name` will automatically include the underscored table name in the migration.
+Ending the migration name with `-to-table-name` will automatically include the underscored table name in the migration. When a name contains both markers, `-to-` wins regardless of where `-from-` appears; `-from-` only takes effect when the name has no `-to-` at all.
+
+Because of this, a hand-written migration name (one with no columns passed, meant to be edited by hand) must avoid `-to-` and `-from-` entirely — either substring resolves the trailing text into a real table name and the generator fails when it can't find columns to pair with that table.
 
 If you want to also generate a model for this migration, you can simply use the [g:model](./model.mdx) or [g:resource](./resource.mdx) commands instead.
+
+For schema changes that just add columns (or a foreign key) to an existing table, `g:migration` accepts the same column shorthand shown above — including `Model:belongs_to` and `:optional`. Hand-edit the generated migration only when the change isn't expressible as column shorthand, such as check constraints, enum alterations, or a custom backfill; see [migrations](/docs/migrations/overview) for that reference.

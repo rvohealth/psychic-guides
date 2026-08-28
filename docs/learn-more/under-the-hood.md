@@ -116,6 +116,8 @@ As mentioned previously, syncing will happen automatically for you whenever you 
 
 - generating (or manually adding) a new model, migration, serializer, or controller
 - renaming a model or serializer
+- changing an association
+- adding a decorator that declares a virtual column (`@deco.Virtual()`, `@deco.Encrypted()`) — this sync is separate from the one a migration triggers, since the migration ran before the decorator existed
 - changing a route
 - adding a new OpenAPI decorator to a controller
 - changing an openapi configuration for psychic (using `psy.set('openapi', ...)`)

@@ -1,31 +1,15 @@
 ---
 sidebar_position: 1
 title: config
-ai_summary: "i18n configuration in conf/locales/index.ts. Default English translation provided. Add additional languages. Ensure same payload shape across locales. Supports regional locale resolution (en-US, en-UK)."
+ai_summary: "i18n configuration lives in src/conf/locales/. Locale files export the same payload shape; src/conf/locales/index.ts maps locale keys to files. Tie supported locales to a generated database enum rather than a hand-written union type, so locales are defined in one place. Supports regional locale resolution (en-US, en-UK)."
 ---
 
 # i18n - config
 
-By default, Psychic apps are already provisioned with the necessary bindings to provide this translation utility. While the `i18n` function itself exists in the `app/helpers` folder, the configuration for it can be found at `conf/locales/index.ts`. By default, an english translation file is set up for you, but any other languages you wish to support can be provided as well.
+Locale files for a Psychic app live in `src/conf/locales/`. By default, an English translation file is set up for you, but any other languages you wish to support can be provided as well.
 
 ```ts
-// conf/locales/index.ts
-
-import en from './en'
-import es from './es'
-
-export default {
-  en,
-  es,
-}
-
-export type SupportedLocales = 'en' | 'es'
-```
-
-Within each translation file, you will want to make sure to provide the same payload shape, so that translations can be correctly resolved in all locales:
-
-```ts
-// conf/locales/en.ts
+// src/conf/locales/en.ts
 
 export default {
   labels: {
@@ -35,7 +19,7 @@ export default {
   },
 }
 
-// conf/locales/es.ts
+// src/conf/locales/es.ts
 
 export default {
   labels: {
@@ -46,22 +30,58 @@ export default {
 }
 ```
 
+Within each translation file, you will want to make sure to provide the same payload shape, so that translations can be correctly resolved in all locales.
+
+Map the locale keys to their files in `src/conf/locales/index.ts`:
+
+```ts
+// src/conf/locales/index.ts
+
+import en from './en.js'
+import es from './es.js'
+
+export default {
+  en,
+  es,
+}
+```
+
+## Tie supported locales to the database enum
+
+Resist the urge to hand-write a union type for your supported locales (`type SupportedLocales = 'en' | 'es'`) alongside this file. Instead, back your locale column with a database enum in a migration, and let the generated `LocalesEnum` / `LocalesEnumValues` types (in `@src/types/db.js`) be the single source of truth. That way the list of supported locales is defined in exactly one place — the migration — and flows through the type system from there, instead of drifting out of sync with a manually maintained type.
+
+Expose the supported locales for runtime validation (for example, when checking an incoming `Accept-Language` header) from the same file that builds your `i18n` function:
+
+```ts
+// src/utils/i18n.ts
+
+import locales from '@conf/locales/index.js'
+import { I18nProvider } from '@rvoh/psychic/system'
+import { LocalesEnumValues } from '@src/types/db.js'
+
+export function supportedLocales() {
+  return LocalesEnumValues
+}
+
+export default I18nProvider.provide(locales, 'en')
+```
+
+See [usage](/docs/utils/i18n/usage) for how `I18nProvider.provide` uses these locale files, and for using `supportedLocales()` to validate the locale a request asks for.
+
 ## Regional locale resolution
 
 While configurations demonstrate base locales like `en` and `es`, Psychic also supports more specific locale resolutions, such as `en-US` vs `en-UK`. To create locales which can resolve to these specific regions, you can simply provide direct overrides for each region, like so:
 
 ```ts
-// conf/locales/index.ts
+// src/conf/locales/index.ts
 
-import en from './en'
-import enUk from './en-UK'
+import en from './en.js'
+import enUk from './en-UK.js'
 
 export default {
   en,
   ['en-UK']: enUk,
 }
-
-export type SupportedLocales = 'en' | 'en-US' | 'en-UK'
 ```
 
-With this in place, Psychic will carefully resolve the `en-UK` locale to the provided override. All other variants of `en-*` will be resolved to `en`.
+With this in place, Psychic will carefully resolve the `en-UK` locale to the provided override. Any other `en-*` locale value is matched by its language prefix and resolved to the base `en` file — for example, a request with locale `en-AU` resolves to `en`, not `en-UK`.
