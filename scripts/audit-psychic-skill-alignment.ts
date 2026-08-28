@@ -24,15 +24,25 @@ const topicMap: Record<string, string[]> = {
   'utils.md': ['docs/utils'],
   'console.md': ['docs/cli/repl.mdx', 'docs/config/repl.mdx'],
   'deploying.md': ['docs/deployment/server'],
+  'locking.md': ['docs/models/locking.mdx'],
+  'openapi.md': ['docs/openapi'],
 }
+
+// Skill files that are not topic sections, so they need no docs target.
+const skillMetaFiles = /^(CHANGELOG|CLAUDE|README|SKILL|VERSION|WHAT_I_LEARNED_ABOUT_PSYCHIC.*)\.md$/
 
 const stalePatterns: Array<[RegExp, string]> = [
   [/requestBody:\s*\{\s*only:/, 'Use requestBody.params instead of requestBody.only'],
-  [/process\.env\.[A-Z0-9_]+/, 'Use AppEnv instead of direct process.env in application examples'],
+  // Reads only. `AppEnv` has no setter, so writing a process marker (e.g. `process.env.WS_SERVICE = '1'`
+  // in a ws entrypoint) has no AppEnv equivalent and is correct — the skill does it too.
+  [/process\.env\.[A-Z0-9_]+\b(?!\s*=[^=])/, 'Use AppEnv instead of direct process.env in application examples'],
   [/new Date\(/, 'Use Dream date/time classes except explicit JS interop examples'],
   [/deleted_at:datetime(?!:optional)/, 'Soft-delete migration shorthand should be nullable'],
   [/from '@rvoh\/dream'[\s\S]{0,80}\b(camelize|compact|groupBy|uniq|range)\b/, 'Utility helpers should import from @rvoh/dream/utils'],
   [/Psychic converts to 422 errors/, 'Validation-layer failures should be documented as 400, not 422'],
+  // The guides document only the current state of the latest packages — no superseded APIs.
+  [/\bscrollPaginate\b/, 'scrollPaginate was replaced by cursorPaginate; document only the current API'],
+  [/\buseSsl\b/, 'useSsl is superseded by an explicit ssl directive; document only the current API'],
 ]
 
 function existsRelative(relativePath: string): boolean {
@@ -50,6 +60,24 @@ function allDocFiles(dir: string): string[] {
 }
 
 const failures: string[] = []
+
+const skillSectionFiles = fs
+  .readdirSync(skillRoot)
+  .filter(name => name.endsWith('.md') && !skillMetaFiles.test(name))
+
+for (const skillFile of skillSectionFiles) {
+  if (!(skillFile in topicMap)) {
+    failures.push(
+      `${skillFile}: skill section has no docs target in topicMap — add one, or map it to the page that should cover it`,
+    )
+  }
+}
+
+for (const skillFile of Object.keys(topicMap)) {
+  if (!skillSectionFiles.includes(skillFile)) {
+    failures.push(`${skillFile}: topicMap entry no longer exists in the skill — remove or rename it`)
+  }
+}
 
 for (const [skillFile, docsTargets] of Object.entries(topicMap)) {
   const skillPath = path.join(skillRoot, skillFile)
