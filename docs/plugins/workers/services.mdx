@@ -1,7 +1,7 @@
 ---
 sidebar_position: 4
 title: services
-ai_summary: "Classes extending ApplicationBackgroundedService provide background and backgroundWithDelay methods. Background methods by calling this.background('_methodName', args). Keep job arguments to IDs/scalars, look records up with find, and use commit hooks when enqueueing from model lifecycle hooks."
+ai_summary: "Classes extending ApplicationBackgroundedService provide background and backgroundWithDelay methods. Background methods by calling this.background('_methodName', args). Keep job arguments to IDs/scalars — including composed strings that embed a secret — look records up with find, use commit hooks when enqueueing from model lifecycle hooks, and never catch-and-continue inside a backgrounded method. backgroundJobConfig is class-level, governing every method on the service."
 ---
 
 # Services
@@ -34,6 +34,66 @@ class IntercomSync extends ApplicationBackgroundedService {
 
 Now, from anywhere in your app you can safely call `syncUser` without tying up resources on the api request!
 
-Pass IDs or scalar values to background jobs, not model objects. Job arguments are serialized through Redis; model instances can go stale and lose type information. Inside the backgrounded implementation, look the record up with `find` and return early if it no longer exists.
+Pass IDs or scalar values to background jobs, not model objects. Job arguments are serialized through Redis; model instances can go stale, bloat Redis memory with a full JSON payload, and lose type information (a Dream date/time object becomes a plain string, an enum becomes an untyped value). Inside the backgrounded implementation, use `find` (not `findOrFail`) and return early if the record no longer exists — a record can be deleted between when the job is queued and when a worker picks it up, and `findOrFail` would throw and trigger the full retry budget (~20 attempts over ~6 days) against a record that will never exist again.
 
-If you enqueue from model hooks, use an after-commit hook such as `@deco.AfterCreateCommit`, `@deco.AfterUpdateCommit`, or `@deco.AfterSaveCommit`. This applies to any enqueue path: calling a backgrounded service, calling `this.background(...)` on a backgrounded model, or calling a helper that queues the job. Do not enqueue from inside an open transaction; the worker can race the commit and either look up a record before it exists or read stale persisted data after an update.
+A composed scalar argument can still be model-sourced data in spirit if it bakes in a secret. A string that embeds a live credential — a bearer token, a signed URL, a password-reset link — passes the letter of "simple scalar value" while still writing that secret into BullMQ/Redis job retention and any queue dashboard or error-monitoring tool that logs job arguments on failure. Defer minting the sensitive part to the implementation method instead: pass only the id(s) needed to look the record up, and construct the token or link from inside the backgrounded method, where it's never serialized as a job argument.
+
+```ts
+// Wrong — the signed URL (with its embedded token) is stored as a job argument
+class BookingMailerService extends ApplicationBackgroundedService {
+  public static async sendConfirmation(booking: Booking) {
+    const confirmationUrl = await booking.mintConfirmationUrl()
+    await this.background('_sendConfirmation', booking.guestId, confirmationUrl)
+  }
+}
+
+// Right — only the booking id crosses the queue; the token is minted inside the job
+class BookingMailerService extends ApplicationBackgroundedService {
+  public static async sendConfirmation(booking: Booking) {
+    await this.background('_sendConfirmation', booking.id)
+  }
+
+  public static async _sendConfirmation(bookingId: string) {
+    const booking = await Booking.find(bookingId)
+    if (!booking) return
+    const confirmationUrl = await booking.mintConfirmationUrl()
+    // ...email booking.guest the confirmationUrl
+  }
+}
+```
+
+If you enqueue from model hooks, use an after-commit hook such as `@deco.AfterCreateCommit`, `@deco.AfterUpdateCommit`, or `@deco.AfterSaveCommit`. This applies to any enqueue path: calling a backgrounded service, calling `this.background(...)` on a backgrounded model, or calling a helper that queues the job. Do not enqueue from inside an open transaction; the worker can race the commit and either look up a record before it exists or read stale persisted data after an update. A service that takes a `txn` parameter and also calls `background(...)` in its body is almost always this bug — enqueue after the transaction resolves instead, or let a commit hook do it.
+
+## `backgroundJobConfig` is class-level
+
+A backgrounded service exposes no per-method or per-call override. Both `background(method, ...args)` and `backgroundWithDelay(delay, method, ...args)` read `this.backgroundJobConfig`, and their only tail is the variadic `...args` — neither accepts a config argument. So the getter's `workstream` and `priority` govern *every* backgrounded method on the service, immediate and delayed alike; you cannot route one method to its own workstream, or make one method `urgent` and another `not_urgent`, from a single class. To isolate a subset of a service's jobs, extract those methods into a separate backgrounded service with its own `backgroundJobConfig` — splitting the class is the only mechanism.
+
+## Never catch-and-continue inside a backgrounded method
+
+The bar for adding a `try/catch` inside a class extending `ApplicationBackgroundedService` or `ApplicationBackgroundedModel` is higher than elsewhere in the app. BullMQ relies on thrown exceptions to detect failure, so a caught-and-not-rethrown error marks the job successful: no failed-job marker in BullMQ, no automatic retry, and the work is silently lost until someone reads worker logs.
+
+```ts
+// WRONG — log-and-continue inside a backgrounded service
+private static async _importAll(records: Record[]) {
+  for (const record of records) {
+    try {
+      await this.importOne(record)
+    } catch (error) {
+      console.error('Failed:', error) // BullMQ never sees this; job marks success
+    }
+  }
+}
+
+// ALSO RIGHT — fan out to per-record jobs, each retried independently by BullMQ
+public static async importAll(records: Record[]) {
+  for (const record of records) {
+    await this.background('_importOne', record.id)
+  }
+}
+```
+
+If your motivation is "I want to be resilient to one bad input out of many," the fix is separate background jobs per input, not a try/catch loop that fakes per-iteration success. See [Automatic retry](./retry) for the one narrow, justified exception — a service that owns its own retry budget for a specific expected error.
+
+## Fanning out across very large record sets
+
+Enqueuing millions of jobs up front runs into Redis memory pressure, interrupted-loop duplication, and unusable dashboards. For hundreds of thousands to millions of records, use the two-level fan-out pattern instead — see [Fanning out large record sets](./fan-out).

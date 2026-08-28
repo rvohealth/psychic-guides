@@ -1,0 +1,96 @@
+---
+sidebar_position: 4.5
+title: fanning out large record sets
+ai_summary: "For hundreds of thousands to millions of records, don't enqueue all jobs up front — use a two-level fan-out: a kickoff job pluckEach's IDs in batches and enqueues expander jobs at priority 'last', each expander enqueues individual worker jobs at priority 'not_urgent'. Priority creates backpressure that bounds queue depth; requires both tiers on the same BullMQ queue."
+---
+
+# Fanning out large record sets
+
+When you need to background work across a very large number of records (hundreds of thousands to millions), don't enqueue all individual jobs up front. Creating a million jobs at once has several problems:
+
+- **Redis memory pressure** from holding a million job payloads at once.
+- **Interruption risk** — the enqueuing loop itself can be killed by a deployment, `SIGTERM`, or a Node process crash, and if it restarts from the beginning it creates duplicate jobs.
+- **Queue observability collapses** — dashboards become unusable.
+
+## The two-level fan-out pattern
+
+The idiomatic pattern uses `pluckEach` and [priority](./priority) levels:
+
+1. A kickoff job uses `pluckEach` to pluck IDs in batches (default batch size is 1000).
+2. For each batch, it enqueues an **expander job** (priority `last`) with just that batch of IDs.
+3. Each expander job iterates its batch and enqueues an **individual worker job** (priority `not_urgent`) per ID.
+4. Each individual worker job loads the record and does the real work.
+
+Each service lives in its own file, as always:
+
+```ts
+// app/services/ReprocessAllPhotosService.ts
+export default class ReprocessAllPhotosService extends ApplicationBackgroundedService {
+  public static override get backgroundJobConfig() {
+    return { priority: 'last' as const }
+  }
+
+  // Step 1: kickoff — iterates the table in batches and enqueues one expander per batch
+  public static async reprocessAll() {
+    await this.background('_reprocessAll')
+  }
+
+  public static async _reprocessAll() {
+    let batch: string[] = []
+    await Photo.pluckEach('id', async (id: string) => {
+      batch.push(id)
+      if (batch.length >= 1000) {
+        await this.background('_expandBatch', batch)
+        batch = []
+      }
+    })
+    if (batch.length > 0) await this.background('_expandBatch', batch)
+  }
+
+  // Step 2: expander — fans the batch into individual worker jobs
+  public static async _expandBatch(ids: string[]) {
+    for (const id of ids) {
+      await PhotoProcessingService.processOne(id)
+    }
+  }
+}
+```
+
+```ts
+// app/services/PhotoProcessingService.ts
+export default class PhotoProcessingService extends ApplicationBackgroundedService {
+  public static override get backgroundJobConfig() {
+    return { priority: 'not_urgent' as const }
+  }
+
+  // Step 3: individual worker — loads the record and does the actual work
+  public static async processOne(id: string) {
+    await this.background('_processOne', id)
+  }
+
+  public static async _processOne(id: string) {
+    const photo = await Photo.find(id)
+    if (!photo) return
+    // ...do the real work
+  }
+}
+```
+
+## Why this bounds queue depth
+
+Keep both tiers of the fan-out below `default`. A bulk run's individual jobs vastly outnumber ordinary application work, and if they ran at `default` priority they'd compete directly with it — routine, more-important-than-bulk jobs would queue up behind however many thousand photos are left to reprocess. Bulk work belongs entirely under `not_urgent`/`last` so it only fills otherwise-idle worker slots.
+
+Because expanders run at `last` priority, they only claim worker slots when no `not_urgent`-priority individual jobs are pending. With 10 workers, that means at most ~10 batches are expanded at a time (producing ~10,000 individual jobs in flight), and the individual jobs drain before more batches are expanded. The queue depth stays bounded regardless of the total record count. Expander jobs are also infrequent relative to individual jobs — one per 1000 IDs — so sharing the `last` tier with a check-in/heartbeat job (see [Priority](./priority)) doesn't starve it outright; it just interleaves.
+
+- **`pluckEach` selects only the `id` column** — no hydration, minimal memory.
+- **Priorities create the backpressure.** Expanders (`last`) yield to individual jobs (`not_urgent`), so the in-flight count of individual jobs never exceeds roughly `worker_count * concurrency * batch_size`.
+- **The expander and individual-worker services must route to the same queue.** Priority is only meaningful within a single BullMQ queue — jobs in different queues have separate worker pools and never compete for the same slots, so putting expanders and individual jobs on different queues silently defeats the backpressure; each queue just drains independently and you're back to unbounded fan-out.
+- **If the kickoff is interrupted,** only the expanders already enqueued will run, and if the kickoff job itself is retried it re-plucks from the beginning — but because each individual job is independent and idempotent (via the `find`/early-return pattern), re-runs are safe.
+- **Individual jobs still follow the standard rule of passing IDs, not model instances** — hydrate inside `_processOne`. See [Services](./services).
+
+## Isolating the fan-out to its own queue
+
+To keep this fan-out off the default queue entirely — so it can't crowd out unrelated default-queue work even at `not_urgent`/`last` — the isolation mechanism differs by mode:
+
+- **Open-source BullMQ** — route both services to the same [native-mode](./config#native-bullmq-mode) `queue`, not a named [workstream](./named-workstreams). A workstream sets a job's BullMQ `group.id` to the workstream name, which moves `priority` into `group.priority` instead of the top-level field, and open-source BullMQ silently ignores `group.priority` (it's BullMQ Pro-only) — so the expander/individual backpressure stops working with no error or warning. A native-mode `queue` (with no `groupId` set) keeps `priority` top-level and the backpressure intact.
+- **BullMQ Pro** — a named `workstream` works fine instead, because Pro honors `group.priority`, so isolation and backpressure both hold. Pro is also the only way to rate-limit the individual jobs against an external dependency (see [Rate limiting](./rate-limiting)) — worth adopting for a bulk job that calls a rate-limited API or otherwise needs to throttle pressure on a shared resource (the database included), since `not_urgent`/`last` priority only affects worker-slot ordering, not the rate of requests once a job is running.

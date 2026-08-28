@@ -4,8 +4,11 @@ title: retry
 ai_summary: >-
   Failed jobs automatically retried with exponential backoff strategy.
   Configured via defaultBullMQQueueOptions in conf/initializers/workers.ts.
-  Default: 20 attempts with exponential backoff. See BullMQ retry documentation
-  for customization.
+  Default: 20 attempts over ~6.1 days with exponential backoff. There is no
+  per-service retry budget in backgroundJobConfig; a job that needs a smaller,
+  app-owned retry budget catches its one expected error and re-enqueues itself
+  with an incrementing attempt count. See BullMQ retry documentation for
+  customization.
 ---
 
 # Automatic retry of failed jobs
@@ -30,4 +33,37 @@ Jobs that throw an unhandled Error during execution are automatically retried. T
 
 This config is sent directly to BullMQ, so see [the BullMQ retry documentation](https://docs.bullmq.io/guide/retrying-failing-jobs) for details on how to customize the retry strategy.
 
-Do not wrap a backgrounded method in a broad `try/catch` just to log and continue. If the job cannot complete, let the error throw so BullMQ records the failure and applies retry/backoff. Catch only a specific, expected error when the correct outcome is genuinely to continue.
+Do not wrap a backgrounded method in a broad `try/catch` just to log and continue. A caught-and-not-rethrown error inside a backgrounded method marks the job successful: no failed-job marker in BullMQ, no automatic retry, and the work is silently lost until someone reads worker logs. If the job cannot complete, let the error throw so BullMQ records the failure and applies retry/backoff. Catch only a specific, expected error when the correct outcome is genuinely to continue — and when you do, report the event to your error-reporting service (Sentry, etc.) right there in the handling code, since a caught error that completes the job never reaches a place a human would otherwise see it.
+
+If your reason for adding a catch is "I want to be resilient to one bad input out of many" in a loop, the right fix is **separate background jobs per input** (see [Services](./services)) rather than a try/catch that fakes per-iteration success and gives up the retry property entirely.
+
+## App-owned retry budgets
+
+There is no per-service retry budget — `backgroundJobConfig` carries `priority` and a routing key, nothing more. When one job's expected failure is worth retrying, but not twenty times over six days (an external service billed per attempt, say), have the service own the budget itself: the `_` implementation method takes an `attempt` argument defaulting to `1`, catches its one expected error, and re-enqueues itself with the count incremented while it's under the threshold:
+
+```ts
+export class PlaceGeocodingService extends ApplicationBackgroundedService {
+  public static async geocodePlace(place: Place) {
+    await this.background('_geocodePlace', place.id)
+  }
+
+  public static async _geocodePlace(placeId: string, attempt: number = 1) {
+    const place = await Place.find(placeId)
+    if (!place) return
+
+    try {
+      await Geocoder.locate(place) // billed per call
+    } catch (error) {
+      if (!(error instanceof GeocoderUnavailableError)) throw error
+
+      if (attempt < 3) {
+        await this.backgroundWithDelay({ minutes: 5 * attempt }, '_geocodePlace', placeId, attempt + 1)
+      } else {
+        // report the exhausted failure to the app's error-reporting service
+      }
+    }
+  }
+}
+```
+
+This is the one kind of catch the guidance above allows: it matches a single expected error type and rethrows everything else, so an unexpected failure still propagates and still gets the full app-wide retry budget. Because the expected failure ends in a completed job, BullMQ's own retry never engages for it.

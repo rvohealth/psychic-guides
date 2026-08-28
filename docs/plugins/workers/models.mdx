@@ -1,12 +1,14 @@
 ---
 sidebar_position: 3
 title: models
-ai_summary: "Models extending ApplicationBackgroundedModel can call static and instance methods in background jobs. Use background('methodName', args) to background methods. For instance methods, Psychic stores primary key and looks up model when job executes."
+ai_summary: "Models extending ApplicationBackgroundedModel can call static and instance methods in background jobs. Use background('methodName', args) to background methods. For instance methods, Psychic stores primary key and looks up model when job executes. Prefer a backgrounded service for most use cases; reserve this for when the model itself needs to background its own methods."
 ---
 
 # Models
 
 Models extending the `ApplicationBackgroundedModel` will have the added capability of being able to call any of their underlying static and instance methods in a background job. Similar to the `ApplicationScheduledService` class, it will have both a static and instance `background` method, which will be used to call underlying methods in the background.
+
+Reach for this only when the model itself needs to background its own methods. For most use cases, prefer a [backgrounded service](./services) instead — it keeps the two-method (public entry point + `_`-prefixed implementation) pattern that most background work follows.
 
 ```ts
 class User extends ApplicationBackgroundedModel {

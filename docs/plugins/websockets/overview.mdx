@@ -2,14 +2,10 @@
 sidebar_position: 0
 title: overview
 pagination_prev: null
-ai_summary: "Websockets package (beta) enables real-time updates via permanent client-server connection. Uses Redis pub-sub for distributed system across multiple servers. Ws class simplifies registering users and emitting messages. Register users on connection in conf/app.ts. Emit from anywhere in application."
+ai_summary: "Websockets package enables real-time updates via a permanent client-server connection, built on Socket.IO with Redis pub-sub for distributing broadcasts across a clustered websocket fleet. Ws class simplifies registering users and emitting messages. Register users on connection in conf/initializers/websockets.ts. Emit from anywhere in the application, including background jobs."
 ---
 
 # websockets overview
-
-:::warning
-The websockets package is still in beta. It is not meant for official usage just yet, as the API is subject to change before we publish the official v1 for this package.
-:::
 
 Websockets enable you to create a permanent tether between your client applications and your backend server. They are useful for broadcasting real-time updates between your backend, and are almost ubiquitous amongst modern web technology stacks.
 
@@ -21,34 +17,28 @@ Psychic solves this complexity for you by providing you with two key features:
 
 2. The `Ws` class, a simple class to use for registering users and emitting to them from anywhere in your stack. This class abstracts away the complexity of connecting to redis adapters, making it easy to set up clean patterns for both registering and emitting to users.
 
-To utilize the Ws class to your advantage, you first need to leverage the `.register` method when websocket connections. This can be done within the `conf/app.ts` file like so:
+To utilize the Ws class to your advantage, you first need to leverage the `.register` method when websocket connections. This is done within the `conf/initializers/websockets.ts` file, which `create-psychic` scaffolds for you when you opt into websockets:
 
 ```ts
-// conf/app.ts
+// conf/initializers/websockets.ts
+import resolveWebsocketUser from '@conf/system/resolveWebsocketUser.js'
 
-export default async (psy: PsychicApp) => {
-  ...
-
-  psy.on('ws:start', io => {
+function initializeWebsockets(wsApp: PsychicAppWebsockets) {
+  wsApp.on('ws:start', io => {
     io.of('/').on('connection', async socket => {
-      const token = socket.handshake.auth.token as string
-      const userId = Encrypt.decrypt(token, {
-        algorithm: 'aes-256-gcm',
-        key: AppEnv.string('APP_ENCRYPTION_KEY'),
-      })
-      const user = await User.find(userId)
-
-      if (user) {
-        await Ws.register(socket, user)
+      const user = await resolveWebsocketUser(socket)
+      if (!user) {
+        socket.disconnect(true)
+        return
       }
+
+      await Ws.register(socket, user.id)
     })
   })
-
-  ...
-})
+}
 ```
 
-For this to work, of course, you would need that token you are capturing to have been generated during an authentication flow and provided to your front end, so that when it uses the `socket.io-client` library to establish a connection, it is able to hand that token back. To learn more about this flow, see the [Registering guides](./registering).
+`resolveWebsocketUser` is itself scaffolded boilerplate — a newly-generated app rejects every websocket connection until you replace its body with real auth logic. See [Registering](./registering) and [Config](./config#auth-resolvewebsocketuser) for the full pattern, including how the front end hands back the auth token that `resolveWebsocketUser` resolves.
 
 Once this is done, you are able to emit from anywhere in your application to this user using the `emit` method.
 

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: priority
-ai_summary: "Background job priority customizable via backgroundJobConfig getter. Options: urgent, default, not_urgent, last. Default is 'default'. Use 'last' for check-in jobs to ensure other jobs complete first."
+ai_summary: "Background job priority customizable via backgroundJobConfig getter. Options: urgent, default, not_urgent, last, mapped to BullMQ numeric priority 1-4. Default is 'default'. Use 'last' for check-in jobs and 'not_urgent'/'last' for bulk fan-out work. Priority and named workstreams are an either/or without a BullMQ Pro license."
 ---
 
 # Priority
@@ -17,9 +17,25 @@ class IntercomSync extends ApplicationBackgroundedService {
 }
 ```
 
+Each level maps to a BullMQ numeric priority — lower numbers run first:
+
+```ts
+type BackgroundQueuePriority = 'urgent' | 'default' | 'not_urgent' | 'last'
+// Maps to BullMQ numeric priority: 1 (urgent), 2 (default), 3 (not_urgent), 4 (last)
+```
+
+## Priority and named workstreams are an either/or without BullMQ Pro
+
+When a `backgroundJobConfig` sets a `workstream` (or a `groupId`), Psychic writes the priority number to the job's `group.priority` instead of the top-level `priority`, and open-source BullMQ ignores `group.priority` — it's a BullMQ Pro surface. So a service on a named workstream gets workstream isolation, not priority ordering within it, unless the app runs the `QueuePro`/`WorkerPro` providers described in [Rate limiting](./rate-limiting). A service with no `workstream` (routed to the default queue, or to a native-mode `queue`) keeps top-level `priority` and full ordering.
+
+## Bulk work belongs under `not_urgent`/`last`
+
+Keep any large-volume, lower-importance run off `default` priority, so it only fills otherwise-idle worker slots rather than competing with routine application work. The [large-record-set fan-out pattern](./fan-out) builds on this, using the gap between `not_urgent` and `last` to bound how much bulk work is queued at once.
+
 One use case for `last` is sending check-in events to a service such as https://deadmanssnitch.com so that you get notified when your background services stop working (uses [scheduled jobs](./scheduled) to schedule calling the check-in every 5 minutes). By working these jobs off last, you can be confident that all of your other jobs are being worked off.
 
 ```ts
+// app/services/ScheduledJobs.ts
 export default class ScheduledJobs extends ApplicationScheduledService {
   public static async scheduleAllJobs() {
     await this.schedule('*/5 * * * *', 'backgroundCheckin')
@@ -29,7 +45,10 @@ export default class ScheduledJobs extends ApplicationScheduledService {
     await BackgroundCheckin.checkIn()
   }
 }
+```
 
+```ts
+// app/services/BackgroundCheckin.ts
 export default class BackgroundCheckin extends ApplicationBackgroundedService {
   public static get backgroundJobConfig(): BackgroundJobConfig<ApplicationBackgroundedService> {
     return { priority: 'last' }

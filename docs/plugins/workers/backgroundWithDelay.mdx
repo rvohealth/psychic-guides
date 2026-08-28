@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: backgroundWithDelay
-ai_summary: "backgroundWithDelay backgrounds a job to run at least the specified time in the future. Supports seconds, minutes, hours, days. Supports debounce behavior via jobId to reduce duplicate jobs. See BullMQ debounce mode for details."
+ai_summary: "backgroundWithDelay backgrounds a job to run at least the specified time in the future. Supports seconds, minutes, hours, days. Supports debounce behavior via jobId to reduce duplicate jobs — the dedup key's TTL equals the delay, so re-arming the same jobId from inside the job's own handler is safe, and a delay of 0 attaches no dedup key at all. See BullMQ debounce mode for details."
 ---
 
 # backgroundWithDelay
@@ -28,7 +28,9 @@ class IntercomSync extends ApplicationBackgroundedService {
 
 `backgroundWithDelay` supports debounce behavior to reduce the number of times a background job is run. For example, if the application syncs user data to Intercom every time the user changes, and we know that users may make multiple changes in quick succession, we might debounce to reduce the number of times we hit the Intercom API.
 
-Debounce works by specifying a `jobId`. If a job with that `jobId` has already been backgrounded with a delay, then backgrounding with that same `jobId` will overwrite the previous job information, but with the a delay from the current time.
+Debounce works by specifying a `jobId`. If a job with that `jobId` has already been backgrounded with a delay, then backgrounding with that same `jobId` will overwrite the previous job information, but with a delay from the current time.
+
+The dedup key's TTL equals the delay, so it has expired by the time the delayed job fires — re-arming the same `jobId` from inside the job's own running handler is safe. A delay of `0` seconds attaches no dedup key at all, so if debouncing matters, floor the delay at 1 second or higher.
 
 See https://docs.bullmq.io/guide/jobs/deduplication#debounce-mode for implementation details.
 

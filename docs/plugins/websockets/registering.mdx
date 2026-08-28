@@ -75,6 +75,8 @@ function initializeWebsockets(wsApp: PsychicAppWebsockets) {
 }
 ```
 
+`resolveWebsocketUser` is the boilerplate auth helper `create-psychic` scaffolds at `conf/system/resolveWebsocketUser.ts` — the login-endpoint-plus-`Encrypt.decrypt` pattern shown above is exactly what belongs inside its body. A newly-generated app rejects every websocket connection until that body is filled in with real auth logic, so no socket connects as an unauthenticated or misattributed user by default. See [Config](./config#auth-resolvewebsocketuser) for the helper's full shape.
+
 Once this is done, you are able to emit from anywhere in your backend application to this user using the `#emit` method.
 
 ```ts
