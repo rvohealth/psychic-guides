@@ -2,7 +2,7 @@
 sidebar_position: 1
 title: overview
 pagination_prev: null
-ai_summary: "Psychic automatically generates OpenAPI specs using routes, serializers, and @OpenAPI decorator. Supports automatic response generation, request/response validation, and hand-written specs only when derivation is not practical. Types stay in sync with database schema changes."
+ai_summary: "Psychic automatically generates OpenAPI specs using routes, serializers, and @OpenAPI decorator. Supports automatic response generation, request/response validation, and hand-written specs only when derivation is not practical. Conf-level configuration covers outputFilepath, defaults (headers/responses/securitySchemes/security/components), validate, and syncTypes. Types stay in sync with database schema changes."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -17,17 +17,17 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 The [resource generator](/docs/cli/generators/resource) automatically adds `@OpenAPI` decorator declarations corresponding to each endpoint, and since serializer attributes are typed back to the database schema, these types will stay in sync as you add migrations. (For example, if you add a migration to change a column from not allowing `null` to allowing `null`, the OpenAPI spec will change to include `nullable: true` for the corresponding property.)
 
-Serializers and the `@OpenAPI` decorator also support hand-written specs when a shape is genuinely ad hoc. For model-shaped data, let Psychic derive the schema from the model and serializer: model responses should use serializers, model request bodies should use `requestBody.params` or `requestBody.including`, and computed response objects should use `ObjectSerializer`.
+Serializers and the `@OpenAPI` decorator also support hand-written specs when a shape is genuinely ad hoc. For model-shaped data, let Psychic derive the schema instead of hand-writing it: model responses should use serializers, model request bodies should use `requestBody.params` or `requestBody.including`, and computed response objects should use `ObjectSerializer`. Hand-written JSON Schema is reserved for inputs or outputs that genuinely cannot be represented by a Dream model, serializer, or `ObjectSerializer` — don't reach for it just because a serializer doesn't exist yet; create one instead. Because the spec is customizable centrally, fix drift at its source rather than working around it downstream: if every request needs a bearer header, declare a [security scheme](#declaring-a-security-scheme) once instead of attaching it by hand in the generated client, and if an endpoint's response shape is wrong, fix the serializer rather than hand-writing a `responses` block.
 
-OpenAPI validation is enabled on all requests (when a request doesn't match, it returns 400) and on all responses when running specs (to ensure that any hand-written OpenAPI specifications match the data being returned).
+OpenAPI validation is configured per spec via the `validate` option (`headers`, `requestBody`, `query`, `responseBody`) in `conf/app.ts`, and can be overridden per endpoint in the `@OpenAPI` decorator. A fresh application validates requests by default (a mismatch returns `400`) and validates responses only under test, so response-shape mistakes are caught before they reach production without paying the validation cost on every live request. See [OpenAPI - Validation](/docs/openapi/validation) for the full configuration and precedence rules.
 
 To generate the OpenAPI spec, simply run:
 
 <PackageManagerTabs
-  code={`{{PM}} psy sync:openapi`}
+  code={`{{PM}} psy sync`}
 />
 
-Psychic provides built-in support for generating OpenAPI schema to define your response payloads. Using the definitions you provide, Psychic will regenerate an `openapi.json` file at the root of your project whenever a sync occurs. Psychic will also use this to generate type files for your client app, facilitating easy synchronization of your API mechanisms to the current values provided by the backend.
+Psychic provides built-in support for generating OpenAPI schema to define your response payloads. Using the definitions you provide, Psychic will regenerate an `openapi.json` file (or one file per configured spec — see [Conf-level configuration](#conf-level-configuration)) whenever a sync occurs. Psychic will also use this to generate type files for your client app, facilitating easy synchronization of your API mechanisms to the current values provided by the backend.
 
 ## Automatic response generation
 
@@ -211,6 +211,87 @@ export default class V1HostPlacesController extends V1HostBaseController {
   }
 }
 ```
+
+## Conf-level configuration
+
+Spec-wide concerns — where the spec is written, default headers and responses, security schemes, and validation — are configured once in `conf/app.ts` rather than repeated on every controller action. The default (client-facing) spec is configured with `psy.set('openapi', { ... })`; named specs (for splitting endpoints by audience) use `psy.set('openapi', '<name>', { ... })`, covered in [Multiple specs](/docs/openapi/multiple-specs).
+
+### outputFilepath
+
+`outputFilepath` is where the spec JSON is written:
+
+```ts
+// conf/app.ts
+psy.set('openapi', {
+  outputFilepath: path.join('src', 'openapi', 'openapi.json'),
+})
+```
+
+### defaults
+
+`defaults` applies values to every endpoint in the spec unless a per-action `@OpenAPI` decorator overrides them. It holds `headers`, `responses`, `securitySchemes`, `security`, and `components`:
+
+```ts
+// conf/app.ts
+psy.set('openapi', {
+  outputFilepath: path.join('src', 'openapi', 'openapi.json'),
+  defaults: {
+    // applied to every endpoint
+    headers: {
+      locale: { type: 'string', enum: LocalesEnumValues },
+    },
+    // Psychic already supplies 400/401/403/404/409/500 — only override to change or add
+    responses: {
+      429: { description: 'Too many requests' },
+    },
+    securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer' } },
+    security: [{ bearerAuth: [] }],
+    // reusable schema components referenced elsewhere in the spec
+    components: {
+      schemas: {
+        HealthCheck: { type: 'object', properties: { ok: { type: 'boolean' } } },
+      },
+    },
+  },
+})
+```
+
+See [Customizing default error responses](/docs/openapi/controllers#customizing-default-error-responses) for how `defaults.responses` and `defaults.components.responses` interact with the per-action `responses` option and the framework's built-in defaults.
+
+### Declaring a security scheme
+
+Declaring a security scheme is conf-level customization: state the scheme once and Psychic stamps it across the spec, rather than wiring an `Authorization` header by hand into every generated client call.
+
+```ts
+// conf/app.ts
+psy.set('openapi', {
+  outputFilepath: path.join('src', 'openapi', 'openapi.json'),
+  defaults: {
+    securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer' } },
+    security: [{ bearerAuth: [] }],
+  },
+})
+```
+
+After `pnpm psy sync`, the spec gains `components.securitySchemes.bearerAuth` and a top-level `security: [{ bearerAuth: [] }]`, which Psychic stamps onto every operation. A client generated from the spec then honors the declared scheme and attaches the bearer token to requests automatically.
+
+:::note
+`defaults.security` is typed as an array of objects (`Record<string, string[]>[]`). Use the array form `[{ bearerAuth: [] }]`, not the bare object `{ bearerAuth: [] }`.
+:::
+
+### validate and syncTypes
+
+`validate` sets the request/response validation rules applied to every action tied to this spec, unless a per-action `@OpenAPI` decorator overrides them — see [OpenAPI - Validation](/docs/openapi/validation) for the full picture, including which validation options actually mutate the data your controller reads.
+
+When `syncTypes` is `true`, `pnpm psy sync` runs the spec through `openapi-typescript` and writes a declaration file exporting a `paths` type, which downstream request/response typing can consume. A fresh application only turns this on for an internal `tests` spec that aggregates every surface's endpoints into one document, so specs across the app can type-check against one source of truth.
+
+### The long tail
+
+`info` (version/title/description), `servers`, and `checkDiffs` are also configured in this block — see [Detect Breaking Changes](#detect-breaking-changes-in-your-openapi-specs) below for `checkDiffs`.
+
+## Relocating or renaming a controller is spec-neutral
+
+The spec is keyed by URL path plus HTTP method — no controller class name and no `operationId` is emitted. Moving a controller to a different base class, or renaming the controller class, while keeping its route the same produces zero diff in the generated spec, and the downstream-generated SDK function names track the path, not the class.
 
 ## Detect Breaking Changes in Your OpenAPI Specs
 

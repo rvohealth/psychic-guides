@@ -123,6 +123,31 @@ All options from `attribute` are supported on `delegatedAttribute`. The `default
 // { id: 1234, title: 'Untitled' }
 ```
 
+### delegatedAttribute.optional and delegatedAttribute.required
+
+When the delegated-through path can resolve to `undefined` or `null` — a missing `HasOne`, an absent JSON sub-key, and so on — `optional` and `required: false` control what consumers see. They govern different layers and aren't interchangeable:
+
+| Option | Runtime | OpenAPI |
+|---|---|---|
+| `optional: true` | No effect — the key always renders (`null` when the path is missing). | Schema becomes `anyOf: [schema, { type: 'null' }]`. |
+| `required: false` | The key is **omitted** from the response entirely when the resolved value is `undefined`. | The field is excluded from the containing schema's `required[]`. |
+| `default: <value>` | Substitutes the value when the resolved path is `undefined`. | No effect. |
+
+At render time, Dream resolves in this order: the first non-`null`/non-`undefined` value from the target path; else `default` if one was provided; else omit the key if `required: false`; else render `null`.
+
+Both options work the same way across regular columns, virtual columns, JSON/JSONB columns, and STI `type` discriminators — choose based on what you want consumers to see, not what kind of column sits behind the path. A `@deco.BelongsTo('Foo', { optional: true })` path already infers OpenAPI nullability on its own, so explicit `optional: true` is mostly needed for `HasOne` and other non-`BelongsTo` nullable paths. On an STI `type` discriminator, `default` isn't accepted — substituting a value there would make the response indistinguishable from an actual record of that type; use `required: false` instead so the response honestly signals absence.
+
+#### Layering two delegatedAttributes onto the same key
+
+Two `delegatedAttribute` calls can target the same output name, which gives you a "default value, optionally overridden by something more specific" pattern — a locale-specific translation falling back to a default-locale one, an org-level setting falling back to a global default, and so on. Attributes fold in declaration order, so a later directive overwrites an earlier one unless it's skipped:
+
+```ts
+.delegatedAttribute('fallbackAssociation', 'title', { openapi: 'string' })
+.delegatedAttribute('specificAssociation', 'title', { openapi: 'string', required: false })
+```
+
+The first call is required, so it always writes `title`. The second uses `required: false` rather than `optional: true`: when `specificAssociation` is absent, the key is omitted instead of being overwritten with `null`, leaving the fallback's value in place. (`optional: true` would still write `title: null` and blank out the fallback.) Because the fallback directive is required, the merged OpenAPI schema keeps `title` as a required string, so this pattern doesn't change the generated client type. Both associations are automatically discovered and loaded by [`preloadFor`](/docs/models/querying/preloadFor) — no controller change needed.
+
 ## customAttribute
 
 The `customAttribute` method is for arbitrary data transformation. It's especially handy for leveraging passthrough data. `customAttribute` always requires the `openapi` option:
@@ -158,3 +183,7 @@ const UserSerializer = (user: User) =>
 
 // renders { id: 1, age: 30, city: 'Metropolis' }
 ```
+
+### customAttribute and preloadFor
+
+`customAttribute` is for values computed from the model's own columns and passthrough data — a localized label, a formatted string, and so on. It is not discovered by [`preloadFor`](/docs/models/querying/preloadFor): `preloadFor` doesn't inspect the callback body, so if a `customAttribute` function reads an association (including a fallback like `() => current?.title ?? fallback.title`), that association won't be preloaded automatically, and rendering throws `NonLoadedAssociation`. Treat that error as the signal to reach for [`delegatedAttribute`](#delegatedattribute) or a flattened `rendersOne` instead — both are discovered by `preloadFor`, so the association is loaded without any extra controller wiring. See [layering two delegatedAttributes](#layering-two-delegatedattributes-onto-the-same-key) for the fallback-value case specifically.

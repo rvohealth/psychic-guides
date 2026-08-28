@@ -1,7 +1,7 @@
 ---
 sidebar_position: 4
 title: validation
-ai_summary: "OpenAPI validation validates requests (headers, requestBody, query) and responses (responseBody). Can be configured globally in conf/app.ts or per-endpoint in @OpenAPI decorator. Returns 400 for invalid requests. Supports detailedErrors option for development/test environments."
+ai_summary: "OpenAPI validation validates requests (headers, requestBody, query) and responses (responseBody). Can be configured globally in conf/app.ts or per-endpoint in @OpenAPI decorator. Returns 400 for invalid requests. Supports detailedErrors option for development/test environments. validate is a gate, not a sanitizer: it runs against a clone of the request, so controllers still read raw unvalidated params except for query array-wrapping, which does mutate what the controller reads."
 ---
 
 # OpenAPI - Validation
@@ -104,3 +104,11 @@ export default class PetsController {
 :::warning
 Psychic clones data before sending it into ajv, so attempting to use options which would mutate the incoming data will not take effect the way you would expect.
 :::
+
+## validate is a gate, not a sanitizer
+
+`validate` decides whether a request is accepted or rejected — it does not shape the data your controller reads. It runs against a clone of the incoming data, so your controller still reads the raw, unvalidated `this.params` regardless of whether validation is on. That means `useDefaults`, `coerceTypes`, and `removeAdditional` in the underlying Ajv validation never reach what the action actually uses.
+
+There is exactly one exception: query array-wrapping. With `query` validation on, a single `?tags=a` is rewritten in place to `['a']` (and `?tags=` to `[]`) for array-typed query params — that one case does mutate what the controller reads.
+
+Don't rely on `validate` to coerce or strip request data. Enforce shape and defaults explicitly in the action with `castParam` / `extractParams`, regardless of whether validation is on for that endpoint.

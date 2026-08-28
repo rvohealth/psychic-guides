@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: controllers
-ai_summary: 'The @OpenAPI decorator generates OpenAPI specifications for controller endpoints. It supports response configuration (serializerKey, many, nullable, status), request body configuration (for, params, including, combining), query parameters, path parameters, headers, security, and default behavior control.'
+ai_summary: 'The @OpenAPI decorator generates OpenAPI specifications for controller endpoints. It supports response configuration (serializerKey, many, nullable, status), request body configuration (for, params, including, combining, OpenAPI.forDream), query parameters, path parameters, headers, security, default response/header omission (including the controller-wide openapiConfig getter), and customizing default error responses via conf-level defaults. params/including must be literal arrays, never derived from the model. Custom response envelopes use ObjectSerializer, not hand-written responses blocks.'
 ---
 
 # OpenAPI - Controllers
@@ -99,7 +99,7 @@ export default class Place extends ApplicationModel {
   // ...
 }
 
-// controllers/V1/Host/PlacesController
+// controllers/V1/Host/PlacesController.ts
 export default class V1HostPlacesController extends PsychicController {
   // by specifying the "summary" serializerKey, we are telling OpenAPI
   // to use the `PlaceSummarySerializer`.
@@ -300,6 +300,36 @@ export default class PetsController extends PsychicController {
 }
 ```
 
+`combining` is for fields that are genuinely *not* on the model. Don't list real model columns inside it — that either silently duplicates the model-derived shape or shadows it with a hand-typed copy that drifts (an `{ enum: [...] }` redeclaration goes stale the moment the database enum changes, for example). When the value you're adding is itself a Dream-model shape — typically a parent create request that bundles a one-shot array of children — use the `for: Model` sentinel inside `combining` instead (or `combining.<key>.items` for arrays), which produces an inline object schema derived from that model's param-safe columns:
+
+```ts
+import { OpenAPI } from '@rvoh/psychic'
+
+@OpenAPI(Place, {
+  status: 201,
+  requestBody: {
+    params: ['name', 'style', 'sleeps'],
+    combining: {
+      rooms: {
+        type: 'array',
+        items: OpenAPI.forDream(Room, {
+          params: ['type', 'name'],
+        }),
+      },
+    },
+  },
+})
+public async create() {
+  // extract place params, then extract each room's params with its own allowlist
+}
+```
+
+`OpenAPI.forDream(Model, opts)` is the typed wrapper for this: `params` / `including` / `required` are constrained at compile time to that model's column names, so a misspelled column raises a TypeScript error instead of silently dropping out of the OpenAPI shape. The nested `for:` sentinel is request-only — response shapes for a bundled payload are modeled as a serializer and declared with `@OpenAPI(SerializerFn)` instead of hand-written; see [Custom Response Envelopes](#custom-response-envelopes) below.
+
+:::warning
+`params` and `including` (including inside `OpenAPI.forDream`) must be literal arrays you write out by hand — never compute them from the model. Backfilling them from a model's own `paramSafeColumns`, or from `Model.columns()`, dumps that model's *entire* writable column surface into the request body. For a model that declares no `paramSafeColumns`, that's every column on the table. This re-creates the implicit include-all default the `params` allowlist exists to prevent: the documented shape silently widens every time the model gains a column, the spec ends up advertising inputs the action's `extractParams` allowlist doesn't actually accept, and the full column surface leaks into the public OpenAPI shape.
+:::
+
 ## headers
 
 Provide the `headers` option to specify which headers are expected for this endpoint:
@@ -343,6 +373,102 @@ export default class PostsController extends PsychicController {
   }
 }
 ```
+
+## Custom Response Envelopes
+
+When an action returns a custom or compound shape — an envelope like `{ place, nearby }`, or a computed array alongside serialized models — don't reach for a hand-written `responses` block. Model the whole shape as one composing `ObjectSerializer` and pass it to `@OpenAPI`; see [A compound response is still one serializer](/docs/openapi/serializers#a-compound-response-is-still-one-serializer) for how to build it. The action renders the plain data with `this.ok(...)`:
+
+```ts
+export default class PlacesController extends PsychicController {
+  @OpenAPI(PlaceWithNearbySerializer, { status: 200 })
+  public async show() {
+    const place = await this.currentHost.associationQuery('places').findOrFail(this.castParam('id', 'bigint'))
+    const nearby = await place.nearbyPlaces()
+    this.ok(PlaceWithNearbySerializer(place, nearby))
+  }
+}
+```
+
+The schema is derived and validated under test, with no hand-maintained JSON Schema to drift. Even a one-off envelope is worth this — a composing serializer stays the single source of truth where a hand-written `responses` block does not.
+
+## Customizing default error responses
+
+Every operation gets the same default error-response set — `400`, `401`, `403`, `404`, `409`, `500` — merged in uniformly regardless of the controller's auth base. So an operation that genuinely can't return one of those (a truly public `GET` that never `401`s or `403`s) still advertises it in the spec unless you intervene.
+
+Psychic converts validation failures — param, request-body, and model validation — to a `400`, and every operation already documents the default `BadRequest` (400) response, so you don't add anything per-action just to document a validation error. If you also want a specific `{ errors }` body in the spec, reshape the shared `BadRequest` component once at conf level (`defaults.components.responses.BadRequest` — see [The levers](#the-levers) below) so every `400` carries it, rather than repeating a schema per action.
+
+### Precedence
+
+For any status, the value comes from the first source that defines it:
+
+1. per-action `@OpenAPI` `responses[status]`
+2. conf `defaults.responses[status]` (see [Conf-level configuration](/docs/openapi/overview#defaults))
+3. Psychic's built-in default responses
+
+Defaults fill a status only when nothing above already set it. Declaring a status replaces that whole status entry — there is no deep merge within a status.
+
+### The levers
+
+- **Override one status, keep the rest.** Declare the status in a per-action `responses` block, or in conf `defaults.responses` to apply it spec-wide. Your value wins for that status; every other default stays. No `omitDefaultResponses` needed.
+
+- **Reshape a shared response once.** When a response shape is cross-cutting — every authed endpoint can return it — redefine the component the default `$ref` points at instead of repeating it per action. Set `defaults.components.responses.Forbidden` (or `.Unauthorized`, `.BadRequest`, etc.) at conf level. Your key replaces the whole component, so every defaulted `403`'s `$ref: '#/components/responses/Forbidden'` resolves to your redefined body across the spec:
+
+  ```ts
+  // conf/app.ts — give the shared 403 a typed marker body once
+  psy.set('openapi', {
+    outputFilepath: path.join('src', 'openapi', 'openapi.json'),
+    defaults: {
+      components: {
+        responses: {
+          Forbidden: {
+            description: 'Forbidden',
+            content: {
+              'application/json': {
+                schema: { type: 'string', enum: ['terms_of_service_required'] },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  ```
+
+  Conf `defaults` apply to the whole spec, not "authed endpoints only." To scope a marker to the authed surface, give those controllers their own named spec via `openapiNames` (see [Multiple specs](/docs/openapi/multiple-specs)) and redefine `Forbidden` only there — otherwise public endpoints that default a `403` advertise the marker body too.
+
+- **Remove one status, keep the rest.** There's no direct mechanism for this. `omitDefaultResponses` is a boolean, all-or-nothing — it drops every default — so re-list the keepers yourself. Use it on a public action that can't `401`/`403`:
+
+  ```ts
+  // a truly public GET — drop the auth defaults, re-add the ones it can still return
+  @OpenAPI(Place, {
+    omitDefaultResponses: true,
+    responses: {
+      404: { $ref: '#/components/responses/NotFound' },
+      500: { $ref: '#/components/responses/InternalServerError' },
+    },
+  })
+  ```
+
+`omitDefaultResponses` and `omitDefaultHeaders` are **not** conf-level options — they live only on the per-action `@OpenAPI` decorator and on a controller's static `openapiConfig` getter (see [openapiConfig](#openapiconfig) below). There is no per-controller "add a response to every action" knob: a controller-wide response — say a `403` that a shared `@BeforeAction` can return — is declared per-action, or spec-wide via conf `defaults.responses`.
+
+Run `pnpm psy sync` after any of these changes so the spec files and generated clients update.
+
+## openapiConfig
+
+In addition to the per-action `omitDefaultHeaders` and `omitDefaultResponses` options, a controller can set these — plus `tags` — for every action on the controller at once, via a static `openapiConfig` getter:
+
+```ts
+export default class PublicPagesController extends PsychicController {
+  public static get openapiConfig() {
+    return {
+      omitDefaultResponses: true,
+      tags: ['public'],
+    }
+  }
+}
+```
+
+`openapiConfig` only toggles `{ omitDefaultHeaders, omitDefaultResponses, tags }` — it is not a place to add `responses`. A per-action `@OpenAPI` option always overrides the controller-wide `openapiConfig` value for that action.
 
 ## query
 
@@ -456,3 +582,20 @@ export default class PostsController extends PsychicController {
   }
 }
 ```
+
+## Debugging Unexpected 400s (and OpenAPI-triggered 500s in Specs)
+
+When an endpoint returns an unexpected `400` — or a spec fails with a `500` thrown by OpenAPI response validation — and it isn't clear whether OpenAPI validation or controller logic is the cause, temporarily disable validation on that action to isolate it:
+
+```ts
+@OpenAPI(Place, {
+  status: 200,
+  validate: { all: false },
+})
+```
+
+1. Add `validate: { all: false }` to the `@OpenAPI` decorator for the failing endpoint.
+2. Re-run the request or spec:
+   - For **400s on requests**, this reveals whether the failure was in OpenAPI request validation (the problem stops) or in controller logic (the problem persists).
+   - For **500s in specs**, this reveals whether OpenAPI response validation is rejecting a real shape mismatch versus something else failing.
+3. Remove the `validate` line from the decorator once the problem is identified. Leaving it disabled defeats the protection OpenAPI validation provides.

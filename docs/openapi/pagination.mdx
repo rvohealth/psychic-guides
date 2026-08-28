@@ -92,6 +92,6 @@ This produces a different OpenAPI shape optimized for cursor-based navigation:
 }
 ```
 
-Cusror pagination provides better performance than offset-based pagination by avoiding expensive OFFSET queries. It's ideal for infinite scroll UX patterns and remains consistent when new records are added during navigation. Use `cursor: null` for the first page, then pass the returned `cursor` value for subsequent pages.
+Cursor pagination provides better performance than offset-based pagination by avoiding expensive OFFSET queries. It's ideal for infinite scroll UX patterns and remains consistent when new records are added during navigation. Use `cursor: null` for the first page, then pass the returned `cursor` value for subsequent pages.
 
 _💡 **Note:** Changes to the pagination response schema may introduce breaking changes. To catch these automatically, enable [`checkDiffs`](https://psychicframework.com/docs/config/psychic#checkdiffs) in your Psychic app config._

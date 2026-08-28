@@ -17,7 +17,11 @@ Each model can have multiple serializers for different contexts (e.g. a `summary
 
 One important design decision: serializers are intentionally synchronous. They should not query. This prevents you from accidentally introducing N+1 query problems during serialization. Load your data upfront with [`preloadFor`](/docs/models/querying/preloadFor) or [`loadFor`](/docs/models/querying/loadFor), then let the serializer do its thing.
 
-Serializers are function-based and should use named exports. Avoid class-based serializers and default exports; named serializer functions give OpenAPI stable component names and make runtime registration explicit.
+Serializers are function-based and should use named exports. Avoid class-based serializers and default exports: Dream derives the runtime serializer global name from the serializer file path plus the export name, and a default export only has the file path to go on, which collides more easily with generated or path-normalized names and produces less explicit OpenAPI component names. Named exports keep the model's `serializers` getter, the OpenAPI component names, and your imports all aligned.
+
+:::caution
+Run `pnpm psy sync` after changing a serializer's attributes, field names, or any OpenAPI-visible response shape. It regenerates the OpenAPI specs, controller spec request/response typings, and any generated frontend API clients. Skipping it shows up as type errors against stale response fields in controller specs, or a generated client that doesn't reflect a renamed or added attribute.
+:::
 
 ## example
 
