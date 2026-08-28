@@ -1,0 +1,16 @@
+# pnpm 11 reads settings from this file; the `pnpm` field in package.json is ignored.
+# See https://pnpm.io/settings
+
+# Which dependencies may execute install scripts. Reviewed explicitly, per package.
+allowBuilds:
+  # needs its postinstall to link the platform-specific binary
+  esbuild: true
+  # postinstall only prints a funding banner
+  core-js: false
+
+# serialize-javascript is pinned by copy-webpack-plugin@11 inside @docusaurus/bundler
+# to a range with a known vulnerability; copy-webpack-plugin@14 fixes it but Docusaurus
+# has not upgraded yet, so this override is the minimum necessary intervention.
+overrides:
+  cheerio: 1.0.0-rc.12
+  serialize-javascript: '>=7.0.5'

@@ -21,11 +21,6 @@
   "resolutions": {
     "cheerio": "1.0.0-rc.12"
   },
-  "pnpm": {
-    "overrides": {
-      "serialize-javascript": ">=7.0.5"
-    }
-  },
   "dependencies": {
     "@cmfcmf/docusaurus-search-local": "^1.2.0",
     "@docusaurus/core": "^3.10.1",
