@@ -13,4 +13,12 @@ allowBuilds:
 # has not upgraded yet, so this override is the minimum necessary intervention.
 overrides:
   cheerio: 1.0.0-rc.12
+  # copy-webpack-plugin@11 (inside @docusaurus/bundler) pins this to a vulnerable range;
+  # copy-webpack-plugin@14 fixes it but Docusaurus has not upgraded yet.
   serialize-javascript: '>=7.0.5'
+  # ajv@8 pins fast-uri to a range vulnerable to host confusion (GHSA-4c8g-83qw-93j6).
+  fast-uri: '>=3.1.5 <4'
+  # postcss-svgo@6 pins svgo 3.3.3, whose removeScripts plugin leaves some executable
+  # scripts intact (GHSA-2p49-hgcm-8545). 3.3.5 is already resolved for @svgr/plugin-svgo,
+  # so this also dedupes to a single copy.
+  svgo: '>=3.3.5 <4'
