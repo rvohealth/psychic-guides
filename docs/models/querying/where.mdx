@@ -40,3 +40,25 @@ await User.where({ email: ['hi@hi', 'bye@bye'] }).all()
 ```ts
 await Pet.where({ user }).count()
 ```
+
+When you hold the associated instance, prefer filtering by it (`where({ user })`) over the foreign key (`where({ userId: user.id })`). For a polymorphic association this is a correctness fix, not just style: the id-only form omits the `_type` column, so it matches rows across every type that shares that id. Passing the instance sets both columns.
+
+## Referencing joined or preloaded columns
+
+After joining or preloading an association, you can reference its columns in `where` clauses using `'associationName.column'` syntax:
+
+```ts
+const posts = await user
+  .associationQuery('posts')
+  .preload('comments')
+  .whereAny([{ body: null }, { 'comments.body': null }])
+  .all()
+```
+
+## Array values on array columns
+
+A bare array passed to `where` always means `IN`, even against an array-typed column — it never becomes containment or array equality on its own. To check whether an array column contains an element, or is exactly equal to another array, use [`ops.any` / `ops.equal`](/docs/models/querying/ops#array-column-containment-and-equality).
+
+## Bounded ranges
+
+For a single column with a natural lower and/or upper bound, prefer the `range` helper from `@rvoh/dream/utils` over two separate comparison operators — see the [range guide](/docs/utils/range). For two-column interval overlap checks, [`ops.lessThan` / `ops.greaterThan`](/docs/models/querying/ops#comparison-operators) (and their `OrEqualTo` variants) are often clearer, since each boundary is visible at the call site.

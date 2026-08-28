@@ -1,9 +1,9 @@
 ---
-ai_summary: "The nestedSelect method returns a new Kysely SelectQueryBuilder instance for use in sub-queries. Useful for complex association queries that need nested conditions."
+ai_summary: "The nestedSelect method lets a Dream query stand in as a subquery while keeping that query's default scopes, projecting a single column. It cannot correlate to the outer query and cannot project an aggregate — for those, drop to toKysely while keeping the inner table scoped through a Dream query."
 ---
 # nestedSelect
 
-Returns a new Kysely `SelectQueryBuilder` instance to be used in a sub-query:
+Before reaching for a raw Kysely subquery, check whether `nestedSelect` covers it. It lets a Dream query stand in as a subquery while keeping that query's default scopes — the in-Dream alternative to a hand-rolled Kysely subquery over the raw table.
 
 ```ts
 const userRatingsForRecipesInMenu = user
@@ -12,3 +12,22 @@ const userRatingsForRecipesInMenu = user
   })
   .all()
 ```
+
+```ts
+// Places that have at least one booking. The subquery is a Dream query, so
+// Booking's default scopes still apply — a soft-deleted Booking won't surface
+// its Place. A hand-rolled Kysely subquery over the bookings table has no such
+// filter and would resurface Places whose only booking was soft-deleted.
+const bookedPlaces = await Place.where({
+  id: Booking.query().nestedSelect('placeId'),
+}).all()
+```
+
+## Limits
+
+`nestedSelect` projects a **single column** and cannot correlate to the outer query. That puts two shapes out of its reach:
+
+- a **correlated** subquery (one that references an outer row)
+- an **aggregate** subquery (`count`/`sum`/… as the projected value)
+
+For those, drop to [`toKysely`](/docs/models/querying/toKysely#correlated-and-aggregate-subqueries) — but keep sourcing the inner table from a scoped Dream query (`AssocModel.query().toKysely('select')`) rather than a raw `db().selectFrom('table')`, so the association's own default scopes stay in the compiled SQL.

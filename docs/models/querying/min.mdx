@@ -38,3 +38,13 @@ select min("id") from "users" where ("users"."email" ilike $1)
 `}
   </pre>
 </RoutesOutput>
+
+## Grouped minimums: `minBy`
+
+`min` collapses the whole query to a single value. When you need the minimum broken out per group in one query, use `minBy(groupColumn, aggregatedColumn)`. It stays entirely in Dream — no ejecting to Kysely and no hand-written `GROUP BY` — and returns `Map<groupValue, min>`:
+
+```ts
+const minIdByRole = await User.minBy('role', 'id')
+```
+
+Only groups with at least one matching row are present in the returned `Map` — seed absent keys as needed — and a nullable group column produces a real `null` key.

@@ -1,0 +1,23 @@
+---
+ai_summary: "query.delete() issues a single DELETE statement for every matched record. It bypasses the model entirely — no hooks, no dependent: 'destroy' cascade (though database-level FK cascades still fire), and no soft delete, so rows are permanently gone even on a @SoftDelete model. Use destroy() on the query or instance for those."
+---
+# delete
+
+Calling `delete` on a query issues a single `DELETE` statement for every record it matches:
+
+```ts
+// Single DELETE statement — bypasses the model: no hooks, no `dependent: 'destroy'`
+// cascade (database-level FK cascades still fire), and no soft delete, so the rows are
+// permanently gone even on a `@SoftDelete()` model.
+await LocalizedText.where({ localizable: host }).delete()
+```
+
+`delete` bypasses the model entirely — of the query-level writers, only `delete()` and the no-`lock` `update(attrs, { skipHooks: true })` do. That means:
+
+- No lifecycle hooks run.
+- No `dependent: 'destroy'` cascade runs (though a database-level foreign key `ON DELETE CASCADE`, if one exists, still fires).
+- No soft delete applies — rows are permanently removed from the database even on a model decorated `@SoftDelete()`.
+
+## When you want the model's lifecycle instead
+
+`query.destroy(...)`, `query.reallyDestroy(...)`, and `query.undestroy(...)` instantiate each matched record — even under `{ skipHooks: true }` — so default scopes and any `dependent: 'destroy'` cascade still apply. Reach for these instead of `delete` when you need soft-delete semantics, cascading destroys, or lifecycle hooks to run. See [destroying](/docs/models/destroying) for the full instance- and association-level destroy reference.

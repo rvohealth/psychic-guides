@@ -1,13 +1,50 @@
 ---
-ai_summary: "The @ReplicaSafe decorator directs read queries (find, findBy, first, all, etc.) to a read-only database replica. Useful for mostly-read, seldom-written models. Within transactions, all queries go to primary database. Requires replica database configuration in conf/dream.ts."
+ai_summary: "The @ReplicaSafe decorator directs select queries to a read-only database replica when one is configured. Mark a model by its dominant read traffic pattern; override per call with .connection('primary'|'replica') for reads that must see a just-made write. Writes and transactions always use primary; joining a non-ReplicaSafe model falls back to primary."
 ---
 # @deco.ReplicaSafe
 
 ```ts
 @ReplicaSafe()
-export default class Lesson extends ApplicationModel {
+export default class Place extends ApplicationModel {}
 ```
 
-If you have Dream models that are mostly read, seldom written, it can be advantageous to set up a read-only database replica. A model with the `@ReplicaSafe` decorator will send read queries (`find`/`findOrFail`, `findBy`/`findOrFailBy`, `first`/`firstOrFail`, `all`, etc.) to the read-only replica. (Note: within a transaction, all queries are directed to the primary database.)
+`@ReplicaSafe()` is a class decorator that opts a model into reading from a read replica when one is configured (see [database config](/docs/config/dream#database-connection)). Without it, every query against that model always hits the primary.
 
-See [database config](/docs/config/dream#database-connection) to configure Dream with your read replica.
+## Mark a model by its dominant traffic pattern
+
+Mark a model `@ReplicaSafe()` when the *bulk* of its read traffic can tolerate slightly stale data (replica lag) — don't rule it out just because *some* code path reads it right after a write. The narrower path can force `.connection('primary')` explicitly (see below); the model itself should be marked by its dominant traffic pattern.
+
+**Worked example.** In BearBnB, `Place`, `Room`, and `LocalizedText` are read constantly by the public-facing visitor controller — that's the bulk of the app's read traffic, and a visitor browsing listings tolerates a few seconds of staleness without issue. That makes all three excellent `@ReplicaSafe()` candidates. But the host-facing controllers — where a host creates or edits their own listing and expects to see the change reflected immediately — call `.connection('primary')` on the `show`/`update` actions that read back what the host just wrote, so the host never sees a stale pre-edit version. Mark the model for its dominant (visitor) traffic; handle the narrower (host, read-your-own-write) traffic explicitly at the call site.
+
+## How stale is "stale"?
+
+Aurora PostgreSQL replicas are usually under 100ms behind, but longer under heavy write load, and longer still on Aurora Serverless v2 if a reader's minimum capacity is set too low to keep up with the writer. RDS PostgreSQL has no typical figure documented — watch the `ReplicaLag` CloudWatch metric for your actual workload. Either way, don't assume the replica has caught up by request time — force `.connection('primary')` for any read that must see the write just made.
+
+## Only `select` queries are ever eligible for the replica
+
+`create`, `update`, and `destroy` always run against the primary, regardless of `@ReplicaSafe()` — there is no such thing as a replica write. Being inside `ApplicationModel.transaction(...)` also forces every query to the primary, `@ReplicaSafe()` or not, since a transaction is inherently a primary-only construct.
+
+## Joining a non-`@ReplicaSafe()` model falls back to primary
+
+`innerJoin`, `leftJoin`, and `leftJoinPreload` (which is `leftJoin` under the hood) track every model class joined into the query, and the query only reaches the replica if the base model **and every joined model** are `@ReplicaSafe()`. One non-`@ReplicaSafe()` model anywhere in the join graph sends the whole query to primary:
+
+```ts
+// Room is @ReplicaSafe(), Booking is not.
+await Room.innerJoin('bookings').all()   // primary — Booking isn't ReplicaSafe
+await Room.all()                          // replica — Room alone is ReplicaSafe
+```
+
+`preload` (and `preloadFor`) is different: it runs the base query and each preloaded association as **separate** queries, so each one is routed independently by its own model's `@ReplicaSafe()` status — a `@ReplicaSafe()` base model still reaches the replica even when a preloaded association isn't.
+
+## Override per call with `.connection()`
+
+Use `.connection('primary' | 'replica')` when a specific call needs different routing than the model's default — e.g., a `@ReplicaSafe()` model read immediately after a write in the same action, where replica lag could return stale data:
+
+```ts
+const place = await Place.create({ ... })
+// Force primary for a read that must see the write just made, even though
+// Place is @ReplicaSafe() and would otherwise be eligible for the replica.
+const fresh = await Place.connection('primary').findOrFail(place.id)
+```
+
+`.connection(...)` is available on `Model`, on any query object, and on `LoadBuilder` (`.load(...).connection(...)`). It has no effect inside a transaction — primary is forced regardless.

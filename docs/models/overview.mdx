@@ -36,6 +36,32 @@ class User extends ApplicationModel {
 }
 ```
 
+Never give a column field an `=` initializer (e.g. `public status: DreamColumn<Place, 'status'> = 'draft'`). Dream serves column reads through prototype accessors and deletes any shadowing instance property after construction, so an initializer like that is silently discarded — no error, the default just never takes effect. Set the default at the database layer (`col.defaultTo(value).notNull()`) instead, and fall back to a `BeforeCreate`/`BeforeSave` hook only for a caller-dependent value the database can't express.
+
+### Decorator setup
+
+Each model creates its own `Decorators` instance, conventionally named `deco`:
+
+```ts
+import { Decorators } from '@rvoh/dream'
+const deco = new Decorators<typeof User>()
+
+class User extends ApplicationModel {
+  @deco.Validates('presence')
+  public email: DreamColumn<User, 'email'>
+}
+```
+
+Generators leave this import commented out on a freshly generated model that has no field-level `@deco.*` decorators yet, since an unused `Decorators` import would otherwise trip ESLint:
+
+```ts
+// Uncomment when adding decorators (@deco.BelongsTo, @deco.Validates, etc.):
+// import { Decorators } from '@rvoh/dream'
+// const deco = new Decorators<typeof MyModel>()
+```
+
+Uncomment it as soon as you add the model's first field-level decorator. Class-level decorators such as `@STI` and `@SoftDelete` are imported directly from `@rvoh/dream` and are unaffected by this rule — they don't require a `deco` instance.
+
 With migrations run, and the above model in place, you can begin leveraging some of the powerful methods built into Dream to simplify your interactions with the database:
 
 ```ts
@@ -181,6 +207,7 @@ Dream provides a rich set of features for interacting with your database. We hav
 ### Advanced concepts
 
 - [transactions guide](/docs/models/transactions)
+- [locking guide](/docs/models/locking)
 - [STI guide](/docs/models/sti)
 - [hooks guide](/docs/models/hooks)
 - [scopes guide](/docs/models/scopes)

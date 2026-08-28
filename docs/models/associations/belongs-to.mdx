@@ -36,7 +36,15 @@ export default class Post extends ApplicationModel {
 }
 ```
 
-Required `BelongsTo` associations are a two-way non-nullable contract: the foreign key should be not-null in the database, the model property is not nullable, and serializers/request shapes infer that requiredness. If a required belongs-to is missing because an internal mechanism bypassed the contract, Dream raises `MissingRequiredBelongsToAssociation`; fix the model relationship (`dependent: 'destroy'` on the inverse or `optional: true`), not the serializer.
+### A required `BelongsTo` is a two-way non-nullable contract
+
+`optional` is the single source of truth for whether a `BelongsTo` can be null. A non-optional `BelongsTo` (the default) is typed non-null and serializes to a non-nullable OpenAPI field — "required" means "always present" — and Dream defends that contract at both ends:
+
+- **You may not conditionally load it.** A trailing constraint on a non-optional `BelongsTo` in `preload`/`load`/`leftJoinPreload`/`leftJoinLoad` is a compile error, since the constraint could filter the parent out and null a field the spec declares non-nullable. (`innerJoin`/`leftJoin` are exempt — they don't hydrate a value.)
+- **It registers a `requiredBelongsTo` validation for you.** Saving without the parent fails Dream validation before Postgres sees it, and `.errors` is keyed by the *association* name (`{ user: ['requiredBelongsTo'] }`), not the foreign key column. Never declare `@deco.Validates('requiredBelongsTo')` yourself.
+- **Accessing it when null throws `MissingRequiredBelongsToAssociation`.** When an *internal* mechanism nulls a required parent — a default scope (e.g. soft delete) filtered it out, an `and`/`on` baked into the association excluded it, or the parent row was hard-deleted leaving a dangling FK — the getter throws this error instead of returning a null the types say is impossible.
+
+The runtime error is a modeling bug, so the fix is a model change, not a looser spec: add `dependent: 'destroy'` to the inverse `HasOne`/`HasMany` so the parent can't be orphaned, or mark the `BelongsTo` `optional: true` if absence is legitimate.
 
 ### Foreign key (on option)
 
@@ -67,3 +75,61 @@ export default class Post extends ApplicationModel {
   public userId: number
 }
 ```
+
+`on` and `primaryKeyOverride` are independent knobs that can be combined to associate on any column pair, such as a natural key rather than the id-based FK. `on` names the column that **holds the reference** (here, on this model); `primaryKeyOverride` names the column it **matches against** on the other side, instead of the default `id`. The join becomes `<fk-holder>.[on] = <other-side>.[primaryKeyOverride]`:
+
+```ts
+// Associate Post and User by a public `uuid` instead of the numeric `user_id` → `id`.
+@deco.BelongsTo('User', { on: 'userUuid', primaryKeyOverride: 'uuid' })
+public user: User
+public userUuid: string
+// Resolves to: posts.user_uuid = users.uuid
+```
+
+This is distinct from `selfAnd` (see the [HasOne/HasMany guide](/docs/models/associations/has-one-and-has-many#selfand)): `on`/`primaryKeyOverride` change **which columns the join uses**, while `selfAnd` keeps the default FK join and **adds** a second condition on top of it.
+
+### Polymorphic
+
+A polymorphic `BelongsTo` points to one of several models. Pass an array of model names, `polymorphic: true`, and `on` for the id column; the type-discriminator column (`<on-prefix>Type`) is inferred:
+
+```ts
+export default class LocalizedText extends ApplicationModel {
+  ...
+
+  @deco.BelongsTo(['Host', 'Place', 'Room'], { polymorphic: true, on: 'localizableId' })
+  public localizable: Host | Place | Room
+  public localizableType: DreamColumn<LocalizedText, 'localizableType'>
+  public localizableId: DreamColumn<LocalizedText, 'localizableId'>
+}
+```
+
+See the full [polymorphism guide](/docs/models/associations/polymorphism) for a worked example, migration, and caveats.
+
+### withoutDefaultScopes
+
+To skip a model's default scopes (such as `dream:SoftDelete`) when loading a `BelongsTo`, pass the scope name(s):
+
+```ts
+export default class Booking extends ApplicationModel {
+  ...
+
+  @deco.BelongsTo('Place', { withoutDefaultScopes: ['dream:SoftDelete'] })
+  public place: Place
+  public placeId: DreamColumn<Booking, 'placeId'>
+}
+```
+
+## Anchor polymorphism to a stable model
+
+When a record participates polymorphically in more than one direction, don't stack the polymorphic ownership directly onto a model that also has to stay generic elsewhere — the association shape becomes ambiguous and call sites get hard to read. Introduce a stable join model that owns the participant polymorphism and acts as the fixed boundary; the other polymorphic axis hangs off that boundary instead of off the same generic model.
+
+```text
+ConversationParticipant         # stable table — the polymorphic boundary
+  ├── participant: polymorphic Guest | Host
+  └── conversationThreads
+ConversationThread
+  ├── conversationParticipantId  # plain BelongsTo to the stable model
+  └── context: polymorphic Booking | Place | ...
+```
+
+`ConversationParticipant` is the constant table: its `participant` association resolves to the domain record (`Guest` or `Host`), and the second polymorphic axis (`context`) lives on `ConversationThread` rather than being layered onto the participant. The call site stays readable — `conversationParticipant.participant` and `conversationThread.context` — and each model has exactly one polymorphic association to reason about.

@@ -36,3 +36,13 @@ select sum("score") from "games" where ("games"."type" ilike $1)
 `}
   </pre>
 </RoutesOutput>
+
+## Grouped sums: `sumBy`
+
+`sum` collapses the whole query to a single number. When you need the sum broken out per group in one query, use `sumBy(groupColumn, aggregatedColumn)`. It stays entirely in Dream — no ejecting to Kysely and no hand-written `GROUP BY` — and returns `Map<groupValue, sum>`:
+
+```ts
+const totalScoreByType = await Game.sumBy('type', 'score')
+```
+
+Only groups with at least one matching row are present in the returned `Map` — seed absent keys as needed — and a nullable group column produces a real `null` key.

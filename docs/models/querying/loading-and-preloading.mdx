@@ -21,6 +21,98 @@ console.log(posts.flatMap((post) => post.comments))
 
 By leveraging `associationQuery`, for example, we don't have to worry about manually applying a foreign key clause to target the correct userId on posts, that is done automatically for us by Dream. Additionally, by `preload`ing comments, we are ensuring that each post will have a `comments` property attached, pointing to a list of comments in the DB that have `null` bodies. Each of the loaded comments will only be loaded if the foreign key pointing to that post is present, and Dream will do this automatically without you needing to specify anything.
 
+## Association chaining
+
+**This is the most important concept to understand about Dream's query API.** It differs fundamentally from Rails' ActiveRecord.
+
+The string arguments passed to `preload`, `leftJoinPreload`, `innerJoin`, `leftJoin`, `load`, and `leftJoinLoad` form an **association chain** — a traversal path through related models. Multiple string arguments are **not** parallel associations; they describe a single path from one association to the next.
+
+```ts
+// Chain: User → posts → comments
+// Loads posts on each user, AND comments on each post — NOT both posts and
+// comments as separate associations on User.
+const users = await User.preload('posts', 'comments').all()
+users[0].posts[0].comments // [Comment{}, Comment{}, ...]
+```
+
+To load multiple unrelated associations, use separate calls instead — this loads `posts` and `pets` in parallel, not chained:
+
+```ts
+const users = await User.preload('posts').preload('pets').all()
+users[0].posts // [Post{}, ...]
+users[0].pets  // [Pet{}, ...]
+```
+
+The last argument in a chain can be an array, branching the chain into multiple associations at the same level:
+
+```ts
+// Chain through posts, then branch to load comments, ratings, AND images on each post
+const users = await User.preload('posts', ['comments', 'ratings', 'images']).all()
+```
+
+Chaining and parallel calls combine for more complex loading — two separate chains through `posts`:
+
+```ts
+const users = await User
+  .preload('posts', ['comments', 'ratings'])
+  .preload('posts', 'images', ['credits', 'captions'])
+  .all()
+```
+
+### Conditions on associations in the chain
+
+`preload`, `leftJoinPreload`, `innerJoin`, `leftJoin`, `load`, and `leftJoinLoad` all accept `and`, `andNot`, and `andAny` condition objects placed after an association name in the chain. The condition applies to the association immediately before it:
+
+```ts
+// Condition on just the last association in the chain
+const hosts = await Host.innerJoin('places', 'rooms', {
+  and: { type: 'Bedroom' },
+}).all()
+
+// A condition on each association in the chain
+const hosts = await Host.innerJoin(
+  'places', { and: { style: 'cabin' } },
+  'rooms', { and: { type: 'Bedroom' } },
+).all()
+
+// andAny follows whereAny semantics: each object is OR'd, keys within one
+// object are AND'd
+const users = await User.preload('posts', {
+  andAny: [
+    { title: ops.like('Dream%') },
+    { title: ops.like('Psychic%'), published: true },
+  ],
+}).all()
+
+// andNot follows whereNot semantics
+const users = await User.preload('posts', {
+  andNot: { archived: true },
+}).all()
+```
+
+Conditions attach to the association itself, not to the chain that reached it: when several chains reach the same association, they share a single condition node. A later chain that repeats a key (`and` / `andNot` / `andAny`) overwrites it, and a later chain carrying no conditions still inherits the earlier chain's. Set an association's conditions in one place.
+
+### Constraints on a required `BelongsTo` are forbidden
+
+A condition object on a **non-optional** `BelongsTo` (the default) is a **compile error** in the hydrating loaders — `preload`, `load`, `leftJoinPreload`, and `leftJoinLoad`. A constraint could filter the parent row out and leave the slot `null`, breaking the non-nullable field the OpenAPI spec promises for a required `BelongsTo`:
+
+```ts
+// Room.place is a required BelongsTo (optional defaults to false).
+// COMPILE ERROR: the constraint could null a non-nullable field.
+await room.load('place', { and: { name: 'Cabin 4' } }).execute()
+
+// Allowed — load the required parent unconditionally:
+await room.load('place').execute()
+```
+
+Still allowed, because these can legitimately be empty or absent so a constraint can't violate a non-nullable contract:
+
+- a constraint on an **optional** `BelongsTo` (`{ optional: true }`)
+- a constraint on a `HasOne` or `HasMany`
+- a constraint on `innerJoin` / `leftJoin` — these don't hydrate a value, so there's no nullability contract to break
+
+If a parent can legitimately be absent, declare the association `optional: true` on the model — the OpenAPI field becomes nullable and the constraint is allowed again.
+
 ## Preloading to serialize
 
 Serializing, in short, is the act of representing your backend models to some kind of client. In most systems, there will be many different serializers in place all to represent a single model. For example, you might have a `PostSerializer`, and then an `AdminPostSerializer`. You may find that you need to sync these posts to an RSS feed, so you build another `RSSPostSerializer`. You may want to partition your serializers out based on if you are rendering them for an index endpoint, vs a show. In Dream, we will automatically encourage this pattern in generators by auto-generating both a summary and detail variant for each serializer we generate. We encourage you to lean into this practice, withholding from rendering deeply-nested model chains onto your summary serializers, since this can force you to eager-load a mind-bending number of associations beforehand to make it happen.

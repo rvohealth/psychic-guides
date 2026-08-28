@@ -37,6 +37,28 @@ Run `psy g:model --help` or see [the g:model documentation](/docs/cli/generators
 
 <PackageManagerTabs code={`{{PM}} psy g:model --help`} />
 
+## Choosing a generator
+
+In preference order:
+
+1. **`g:resource`** — the default for almost all new models. It is rare for a model to not be exposed via *some* API — end-user facing, internal, or admin — and `g:resource` generates the controller, controller specs, and route scaffolding that `g:model` does not. It's easier to delete unused controller actions later than to retrofit them.
+2. **`g:sti-child`** — for STI child models building on an existing STI base.
+3. **`g:model`** — only for models that will never be exposed via any API (join tables, audit logs, and the like).
+4. **`g:migration`** — for schema-only changes to existing tables, when you're not generating a new model.
+
+If a model has a `type` column and different types will have different behavior, validations, serializers, or child-specific columns, prefer STI (`--sti-base-serializer` on the parent resource, then `g:sti-child` for each child) over hand-rolling the distinction. The STI generators handle scaffolding — check constraints, per-type serializers, type-discriminated OpenAPI schemas — that's much easier to get right at generation time than to refactor in later. See the [STI guide](/docs/models/sti).
+
+:::caution
+`g:resource` unconditionally regenerates the model file, unit spec, factory, and serializer for the given model name — it does not check whether those files already exist, and there's no flag to skip them. Running `g:resource` again for a model that already has hand-edited associations, hooks, validations, or serializer fields will silently discard those edits. This mainly comes up when a model already exists (from `g:model` or a prior `g:resource`) and you need to add the missing controller/routes after the fact: commit or stash first, run the generator, then restore the hand-edited model/spec/factory/serializer files and cherry-pick only the newly generated controller, controller spec, route entry, and migration.
+:::
+
+## After the generator runs
+
+1. **Update the migration file as needed** (e.g., add `.unique()` to a column) before running it.
+2. **Run migrations**: `pnpm psy db:migrate`. Under the default test environment this also runs `sync` automatically — don't follow it with a separate `pnpm psy sync` in that case; see the [migrations guide](/docs/migrations/overview) for the development-environment case.
+3. **If it was a resource generator**, update the generated controller spec first, then the corresponding controller. Generated action code starts commented out, so a controller spec will hang if an action returns no response.
+4. **Commit the generated code as its own commit**, separate from your hand-written follow-up edits.
+
 ## Enum types
 
 As demonstrated above, you can use the `enum` type as a column type when specifying your column, provided you give a little bit more information about the enum you are designing. Looking closer at the `type` field generated for the `Room` model in the above example, we see some extra information being provided:
@@ -64,3 +86,20 @@ Doing this will produce the same enum type in PostgreSQL, but the column definit
 ## snake_casing column, table, and enum names
 
 Since sql is a case-insensitive language, it is encouraged that you write your columns and tables using snake case. Dream leverages a Kysely setting to automatically convert snake case to camel case so that your Typescript will use the conventional camel case while the database retains the database convention of snake case.
+
+## Model organization & namespacing
+
+A model's file path under `src/app/models/` becomes its class name, table name, and namespace, so where you place it is a domain-modeling decision, not just a generator mechanic. This is a separate concern from the route path or `--owning-model` argument a resource is generated with — those control the endpoint and the query scoping, not the model's namespace.
+
+**Namespace a model by what it *is*, not by where it is routed or what owns it.** Don't namespace a model under its route or association parent just because the endpoint is nested: a `Booking` routed at `v1/host/places/{}/bookings --owning-model=Place` is **not** `Place/Booking`. The nested route and `--owning-model` already give you parent-scoped queries; they say nothing about the model's namespace.
+
+Use a `Parent/Child` namespace in two cases:
+
+- **STI subtypes** — `Room/Bedroom`, `Room/Bathroom`. The namespace expresses "is a kind of." See the [STI guide](/docs/models/sti).
+- **Subdomain / bounded-context modules** — `Reservations/Booking`, `Billing/Invoice`. The namespace expresses which part of the application's domain the model belongs to.
+
+**Flat when small, grouped by subdomain when large.** A small application is commonly flat — most models sit directly under `src/app/models/`, and that's fine. As the model set grows, group models into subdomain modules rather than leaving dozens of unrelated top-level peers; a sprawling flat directory is a sign the domain hasn't been carved into bounded contexts yet. Don't pre-create a one-model subdomain on day one either — introduce the module when there are models to put in it. Organize on the subdomain axis, never on the owning model or the route.
+
+**A model that belongs to multiple parents is its own aggregate root.** When a model `belongsTo` two parents — a `Booking` belongs to both a `Place` and a `Guest` — it's usually its own organizing concept, not a sub-part of either. Namespacing it under one parent (`Place/Booking`) wrongly couples a two-parent model to that parent. Leave it top-level, or place it in its subdomain module (`Reservations/Booking`) — never under one of its parents.
+
+Getting the namespace wrong is expensive to undo: the model file path bakes into the class name, the table name, every import, the serializer/controller paths, and the migration. A later rename touches all of those plus generated types, OpenAPI, and front-end clients. Decide the namespace deliberately at generation time.

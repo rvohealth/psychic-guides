@@ -9,18 +9,16 @@ pagination_next: null
 
 # custom
 
-Use custom validators for needs that are more specific than can be handled with provided validators:
+Use custom validators for needs that are more specific than can be handled with provided validators. Add a validation error with `this.addError(column, message)` rather than throwing or assigning directly to `this.errors`:
 
 ```ts
-export default class User extends ApplicationModel {
+export default class Sandbag extends ApplicationModel {
   ...
 
   @deco.Validate()
-  public ensureEmailValid() {
-    if (...) {
-      throw new ValidationError(this.constructor.name, {
-        email: ['email is not valid'],
-      })
+  public validateWeightConsistency(this: Sandbag) {
+    if (this.weight && this.weightKgs) {
+      this.addError('weight', 'cannot include both weight and weightKgs')
     }
   }
 }

@@ -1,6 +1,6 @@
 ---
 ai_summary: >-
-  Passthrough associations require data to be passed via passthrough method to load. Useful for localization patterns where locale changes per user. Use DreamConst.passthrough in association where clause, then call .passthrough(&#123; key: value &#125;) before loading.
+  Passthrough associations require data to be passed via the passthrough method to load. Useful for localization patterns where locale changes per request. Use DreamConst.passthrough in an association's `and:` clause, then call .passthrough(&#123; key: value &#125;) before loading or preloading. A model can pair a passthrough-conditioned association with a fixed-condition association to the same target for a fallback value, and both resolve independently in the same preload tree.
 ---
 # passthrough
 
@@ -22,16 +22,71 @@ const reloadedUser = await user
   .execute()
 ```
 
-For serializer-driven responses, pass the same value through both channels when needed:
+The `DreamConst.passthrough` value means `locale` is resolved from the query's passthrough context at query time rather than from a value fixed on the association itself. If you call `.load('currentLocalizedText')` (or `preloadFor` it) without first calling `.passthrough({ locale })`, Dream has no value to satisfy the `and:` clause and the association will not load.
+
+## Pairing a passthrough condition with a fixed fallback
+
+A model can declare more than one association to the same target with different `and:` conditions — one driven by passthrough, one fixed to a constant value — and both resolve independently in the same preload tree. This is the shape behind a localization fallback: a `LocalizedText` row for the requested locale might not exist yet, so a second association pinned to your default locale gives you something to fall back to.
 
 ```ts
-const locale = this.castParam('Accept-Language', 'string', { enum: LocalesEnumValues })
+export default class Place extends ApplicationModel {
+  // HasMany for all localized texts (used by hosts for CRUD)
+  @deco.HasMany('LocalizedText', { polymorphic: true, on: 'localizableId', dependent: 'destroy' })
+  public localizedTexts: LocalizedText[]
 
+  // HasOne with a passthrough condition for the current request's locale
+  @deco.HasOne('LocalizedText', {
+    polymorphic: true,
+    on: 'localizableId',
+    and: { locale: DreamConst.passthrough },
+  })
+  public currentLocalizedText: LocalizedText
+
+  // HasOne fixed to the always-present default locale, used as a fallback
+  // when the requested locale has no LocalizedText row
+  @deco.HasOne('LocalizedText', {
+    polymorphic: true,
+    on: 'localizableId',
+    and: { locale: 'en-US' },
+  })
+  public fallbackCurrentLocalizedText: LocalizedText
+}
+```
+
+Guarantee the fallback row exists by creating it whenever the parent record is created:
+
+```ts
+@deco.AfterCreate()
+public async createDefaultLocalizedText(this: Place) {
+  await this.createAssociation('localizedTexts', { locale: 'en-US', title: `My ${this.style}` })
+}
+```
+
+On the serializer side, layer a `delegatedAttribute('fallbackCurrentLocalizedText', ...)` under a `delegatedAttribute('currentLocalizedText', ...)` so a record with no translation for the requested locale still renders the default-locale value instead of going blank. See [serializers — layering two `delegatedAttribute`s onto the same key](/docs/serializers/attributes#layering-two-delegatedattributes-onto-the-same-key) for that pattern, and [preloadFor](/docs/models/querying/preloadFor) for how both associations get loaded automatically.
+
+A unique index on the polymorphic + locale columns keeps this one-row-per-locale invariant enforced at the database level:
+
+```ts
+await db.schema
+  .createIndex('localized_texts_localizable_for_locale')
+  .on('localized_texts')
+  .columns(['localizable_type', 'localizable_id', 'locale'])
+  .unique()
+  .execute()
+```
+
+## Passing the same value through both channels
+
+A passthrough association is satisfied by `.passthrough(...)` on the query, which is a separate channel from `serializerPassthrough`, which feeds serializer callbacks like `customAttribute`. A locale-aware endpoint typically needs to set both from the same resolved value:
+
+```ts
 const place = await Place
-  .passthrough({ locale })      // association constraints
+  .passthrough({ locale: this.locale })      // association constraints
   .preloadFor('forGuests')
   .findOrFail(this.castParam('id', 'uuid'))
 
-this.serializerPassthrough({ locale }) // serializer callbacks
+this.serializerPassthrough({ locale: this.locale }) // serializer callbacks
 this.ok(place)
 ```
+
+`this.locale` here is a getter that reads the `Accept-Language` header — see [i18n — usage](/docs/utils/i18n/usage#passing-locale-from-controllers) for the full pattern, including validating the header against your supported locales before trusting it.

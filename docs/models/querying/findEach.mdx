@@ -29,3 +29,7 @@ await User.whereNot({ email: null }).findEach(async (user) => {
   if (user.email.includes('burpcollaborator')) await user.destroy()
 })
 ```
+
+:::tip
+Because it processes records in batches by primary key, `findEach` always visits matched records in ascending primary-key order and ignores any `order` applied to the query. This is also why a default (non-`skipHooks`) [`query.update`](/docs/models/querying/update) call — which goes through `findEach` internally — can't honor an arbitrary order either.
+:::

@@ -10,6 +10,10 @@ const users = await User.leftJoinPreload('posts', 'comments').all()
 const firstComments = users[0].posts[0].comments
 ```
 
+:::tip
+Multiple string arguments describe a single traversal path (an **association chain**), not parallel associations — see [Association chaining](/docs/models/querying/loading-and-preloading#association-chaining) for the full concept, including `and`/`andNot`/`andAny` conditions and the required-`BelongsTo` restriction.
+:::
+
 ## Arrays
 
 If one needs to gain access to multiple resources, the last argument can always be an array. In this case, everything in the final array will be attached to the previous association, in this case `posts`:

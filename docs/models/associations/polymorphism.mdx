@@ -57,9 +57,7 @@ erDiagram
 And this is the way the associations are modeled in Dream:
 
 ```ts
-//////////
-// Host //
-//////////
+// models/Host.ts
 export default class Host extends ApplicationModel {
   public override get table() {
     return 'hosts' as const
@@ -79,9 +77,7 @@ export default class Host extends ApplicationModel {
 // end:Host //
 //////////////
 
-///////////
-// Place //
-///////////
+// models/Place.ts
 export default class Place extends ApplicationModel {
   public override get table() {
     return 'places' as const
@@ -107,9 +103,7 @@ export default class Place extends ApplicationModel {
 // end:Place //
 ///////////////
 
-//////////
-// Room //
-//////////
+// models/Room.ts
 export default class Room extends ApplicationModel {
   public override get table() {
     return 'rooms' as const
@@ -235,9 +229,7 @@ erDiagram
 And this is the way the associations are modeled in Dream:
 
 ```ts
-//////////
-// User //
-//////////
+// models/User.ts
 export default class User extends ApplicationModel {
   public override get table() {
     return 'users' as const
@@ -263,9 +255,7 @@ export default class User extends ApplicationModel {
 // end:User //
 //////////////
 
-//////////
-// Task //
-//////////
+// models/Task.ts
 export default class Task extends ApplicationModel {
   public override get table() {
     return 'tasks' as const
@@ -287,9 +277,7 @@ export default class Task extends ApplicationModel {
 // end:Task //
 //////////////
 
-///////////
-// Chore //
-///////////
+// models/Chore.ts
 export default class Chore extends ApplicationModel {
   public override get table() {
     return 'chores' as const
@@ -302,9 +290,7 @@ export default class Chore extends ApplicationModel {
 // end:Chore //
 ///////////////
 
-/////////////
-// Workout //
-/////////////
+// models/Workout.ts
 export default class Workout extends ApplicationModel {
   public override get table() {
     return 'workouts' as const

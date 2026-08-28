@@ -1,0 +1,33 @@
+---
+ai_summary: "query.update() writes every matched record. By default it iterates with findEach and calls instance update() on each — running hooks and validations — and its return value is the number of records visited and written. Pass { skipHooks: true } for a single bulk UPDATE statement with no hooks or validations. { lock: true } keeps the lifecycle while safely reading-then-writing under a per-row lock."
+---
+# update
+
+Calling `update` on a query writes every record the query matches:
+
+```ts
+// Update matching records — loads each record and calls instance update(), running
+// lifecycle hooks and validations
+await LocalizedText.where({ localizable: host, locale: 'en-US' }).update({ title: 'New Title' })
+```
+
+This is **not** a Rails-style `update_all`. By default it iterates the matched records with [`findEach`](/docs/models/querying/findEach) and calls instance `.update()` on each one, running per-record hooks and validations. This distinction matters in both directions: hook-enforced invariants are still enforced by default query updates, and a default update issues one `UPDATE` per matched row.
+
+Because it goes through `findEach`, a default (non-`skipHooks`) query update always visits matched records in ascending primary-key order and ignores any `order` you applied to the query — see [findEach](/docs/models/querying/findEach) for why batch processing can't honor an arbitrary order.
+
+`update` resolves to the number of records it wrote. In the default form that's how many records it visited and wrote through — one already holding the incoming values still counts.
+
+## Skipping hooks
+
+Pass `{ skipHooks: true }` to suppress the callback lifecycle and issue a single `UPDATE ... WHERE` statement instead — no model instantiated, no hooks, no validations:
+
+```ts
+// One UPDATE ... WHERE statement — no hooks, no validations
+await LocalizedText.where({ localizable: host, locale: 'en-US' }).update({ title: 'New Title' }, { skipHooks: true })
+```
+
+`skipHooks` is the bulk path, and its price is the lifecycle. It's the idiomatic way to write many rows in one SQL statement — there is no other way, short of dropping to [`toKysely`](/docs/models/querying/toKysely) for the same statement. What it removes is the callback lifecycle, so before reaching for it, confirm that the model's hooks carry no business logic that applies to *this* write. The safety judgment is per write, not per model: a hook guarding a `status` transition makes a bulk `status` write unsafe to skip, but says nothing about a bulk write to an unrelated column on the same model. When the hooks do apply, the fix isn't to skip them — keep the default per-record update, or narrow the query. Under `{ skipHooks: true }`, the count returned is the number of rows the single `UPDATE ... WHERE` statement matched.
+
+## Claiming a record safely: `{ lock: true }`
+
+When the value you're writing depends on a value you just read — claiming a record out of a state, where a concurrent writer must not clobber the result — reach for `{ lock: true }` instead of `skipHooks`. It's a compare-and-set that keeps the lifecycle: hooks are skipped, but custom setters still run. The single-statement `{ skipHooks: true }` form is also a compare-and-set — its one `UPDATE ... WHERE` re-checks the conditions under each row's lock — but choosing it means skipping the hooks, per the rule above.

@@ -29,6 +29,10 @@ console.log(userWithPosts.posts) // [Post{}, Post{}, ...]
 
 This is useful if you have an instance and decide you need more data for it.
 
+:::tip
+Multiple string arguments describe a single traversal path (an **association chain**), not parallel associations — see [Association chaining](/docs/models/querying/loading-and-preloading#association-chaining) for the full concept, including `and`/`andNot`/`andAny` conditions and the required-`BelongsTo` restriction.
+:::
+
 ## Chaining `leftJoinLoad` Calls
 
 You can chain multiple `leftJoinLoad` calls to load several associations at once, or even nested associations:

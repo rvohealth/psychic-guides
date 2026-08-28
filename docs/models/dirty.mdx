@@ -48,3 +48,24 @@ console.log(user.changedAttributes())
 //   email: 'new@email',
 // }
 ```
+
+`changedAttributes()` works before the first save too. `User.new({ name: 'Alice' })` marks `name` dirty immediately, so `changedAttributes()` is populated on the unpersisted instance.
+
+## isClean and hasChanges
+
+`isClean` is the inverse of `isDirty`. `hasChanges` checks a single attribute:
+
+```ts
+const user = await User.first()
+user.isClean() // true
+
+user.email = 'new@email'
+user.hasChanges('email') // true
+user.hasChanges('name') // false
+```
+
+## Dirty tracking is against the last load or save, not the current DB row
+
+The comparison `isDirty`/`changes`/`changedAttributes`/`hasChanges` report is against the instance's own snapshot from its last load or save — not against whatever the row currently holds in the database. A persisted instance with nothing dirty issues no `UPDATE` on `save()` or `update()`, and leaves `updatedAt` unstamped: `update({})`, or an `update()` assigning values equal to the current ones, is a no-op rather than a touch. Before-save hooks and validations still run first, so a hook that dirties the record turns it back into a real write.
+
+Re-assigning the same plaintext to an [`@deco.Encrypted()`](/docs/models/decorators/encrypted) property is always a real write, since each assignment re-encrypts to fresh ciphertext. For an encrypted field, `changedAttributes()` reports the persisted `encrypted<Name>` key, not the plaintext virtual property — `getAttribute('<plaintext>')` returns `undefined` because it isn't the decrypting accessor, while `getAttribute('encrypted<Name>')` returns ciphertext. Read the decrypted value via the instance property (`instance.<plaintext>`) instead.

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 0
 pagination_prev: null
-ai_summary: "Dream validations prevent invalid records from being saved. Use isValid/isInvalid to check validity. Validation decorators include contains, length, numericality, presence, inclusion, exclusion, and custom validators. Failed validations raise exceptions that Psychic converts to 400 errors with errors payload."
+ai_summary: "Dream validations prevent invalid records from being saved. Use isValid/isInvalid to check validity. Validation decorators include contains, length, numericality, presence, and custom validators. Failed validations raise exceptions that Psychic converts to 400 errors with errors payload."
 ---
 
 # overview
@@ -27,3 +27,16 @@ console.log(user.isInvalid) // false
 ```
 
 If a `save` is attempted against a record, each of its validations will be called. If any of the validations fail, an exception will raise which prevents the record from being saved. When Psychic intercepts this error, it will automatically trigger a `400` error code, delivering an `errors` payload describing the list of validation failures.
+
+## Built-in validators
+
+- [`presence`](/docs/models/validations/presence)
+- [`length`](/docs/models/validations/length)
+- [`contains`](/docs/models/validations/contains)
+- [`numericality`](/docs/models/validations/numericality)
+
+For anything these don't cover, write a [custom validator](/docs/models/validations/custom).
+
+:::note
+A non-optional `BelongsTo` association is validated for its presence automatically — Dream registers a `requiredBelongsTo` validation for you. Never declare `@deco.Validates('requiredBelongsTo')` yourself. See [BelongsTo — a required association is a two-way non-nullable contract](/docs/models/associations/belongs-to#a-required-belongsto-is-a-two-way-non-nullable-contract).
+:::

@@ -40,7 +40,7 @@ user.nameTags
 
 ## source option
 
-In some cases, the association name on the base model may be different than the association name on the child model. In these cases, you can specify which association name to travel through on the associated model by specifying the `source` option:
+`source` defaults to the association's own name, matched by name (not by target model) — Dream looks up an association literally named after the property. In some cases, the association name on the base model may be different than the association name on the child model. In these cases, you can specify which association name to travel through on the associated model by specifying the `source` option:
 
 ```ts
 class User extends ApplicationModel {
@@ -51,3 +51,64 @@ class User extends ApplicationModel {
   public petCollars: Collar[]
 }
 ```
+
+`source` also disambiguates an intermediate that has two associations of the *same* target model (e.g. a `Room` with both `host` and `substituteHost`, both `BelongsTo('Host')`) — the name match otherwise picks whichever association shares the property's name. Pass `source: '...'` only when the intermediate's association name differs from the name you want on this model.
+
+## `through` traverses `BelongsTo` hops too, and can chain through another `through`
+
+`through` names an association declared on the *same* model — Dream resolves it against this model's own association metadata, so the named association must exist here or the through has nothing to walk. Every hop in a chain is therefore an ordinary association on the model at that hop; a multi-hop reach is built by declaring one through per model, each naming the next model's association.
+
+The classic case reaches *down* a many-to-many (as above); the same mechanism reaches *up* an ownership tree over `BelongsTo` intermediates, and a `through` can point at another `through` to span any number of hops. Reaching the owning `Host` from a `Booking` (`Booking →(BelongsTo) Room →(BelongsTo) Place →(BelongsTo) Host`) is one association per model, each pointing at the next:
+
+```ts
+// Place.ts — the concrete top of the chain
+@deco.BelongsTo('Host')
+public host: Host
+
+// Room.ts — `place` is the local association `through: 'place'` names;
+// `host` here is itself a through, so it can be the target of a further hop
+@deco.BelongsTo('Place')
+public place: Place
+@deco.HasOne('Host', { through: 'place' })
+public host: Host
+
+// Booking.ts — `through: 'room'` names Booking's own `room` association, whose
+// `host` is a through; Dream keeps unwinding until it hits Place's concrete BelongsTo
+@deco.BelongsTo('Room')
+public room: Room
+@deco.HasOne('Host', { through: 'room' })
+public host: Host
+```
+
+`host` is now one association name on `Booking`, usable with `preload`, `associationQuery`, `association`, or a serializer, replacing a per-hop preload of `room` and `place` and the `booking.room?.place?.host` walk. A chain over an optional `BelongsTo` is nullable — type it `Host | null`.
+
+Condition and shaping clauses (`and`, `andNot`, `andAny`, `selfAnd`, `selfAndNot`, `order`, `distinct`) work on `through` associations too, at any position in a chain — on the association you load directly, or on an intermediate that a further through reaches across, whether the hop's source is a concrete association or itself another `through`. Each hop's clauses shape the join of that hop's own target model, referencing the target's columns, never an intermediate join table's; for `selfAnd`/`selfAndNot`, the "self" columns come from the model the clause is declared on. Multiple hops' `order`s compose rather than override — each is appended to the `ORDER BY` in join order.
+
+Two limits: a hop whose `and` uses `DreamConst.required` cannot be bridged across (see [DreamConst in association conditions](/docs/models/associations/has-one-and-has-many#dreamconst-in-association-conditions)), and a `distinct`-carrying through association loads with `preload` or `innerJoin` but not `leftJoinPreload` (Postgres rejects `leftJoinPreload`'s hydration `ORDER BY` alongside the association's `DISTINCT ON`).
+
+## Where a hop belongs: compose across models, or stack on the origin
+
+A deep reach can be built two ways, and they're capability-equivalent — same joins, same `source` resolution on the destination model. The choice is only *where the intermediate `through`s are declared*.
+
+**Compose across models** (the default) — declare each `through` on the model whose relationship it describes, then let higher models point their `source` at it. A `Host.guests` reach running `Host.places` → `Place.guests` (itself a through over the `Booking` join) → `Guest` puts each hop on its natural model. `Place.guests` is then reusable: `Host.guests`, a future `City.guests`, and any other consumer inherit one definition, and a change to how `Booking` links `Place` and `Guest` lands in one place.
+
+**Stack on the origin** — declare the intermediate `through`s on the origin model instead. This is the *correct* choice when a middle hop carries an **origin-relative** condition or order — a filter describing how this origin views the path, not an intrinsic fact about the middle model:
+
+```ts
+// Host.ts — recent bookings' guests. The "recent" filter belongs to the host's view,
+// so the filtered intermediate (`recentBookings`) is declared here, not on Place.
+@deco.HasMany('Booking', { and: { createdAt: () => range(DateTime.now().minus({ week: 1 })) } })
+public recentBookings: Booking[]
+@deco.HasMany('Guest', { through: 'recentBookings', source: 'guest' })
+public recentGuests: Guest[]
+```
+
+Default to composing; stack on the origin only when the intermediate would exist solely for this one reach, or a hop needs an origin-relative filter/order. The two mix freely within a chain.
+
+## Every hop applies its own default scopes, including soft delete
+
+A `through` chain joins each intermediate under that model's default scopes, so a soft-deleted intermediate makes the chain resolve `null` (`HasOne`) or `[]` (`HasMany`) with no error — as if the row never existed. `through` cannot take `withoutDefaultScopes`, so when you need to traverse a soft-deleted intermediate, walk the hops as explicit queries under `removeDefaultScope('dream:SoftDelete')` instead of a single `through` association.
+
+## What `through` cannot use
+
+A `through` association cannot use: `dependent`, `primaryKeyOverride`, `withoutDefaultScopes`, `on`, or `polymorphic`.

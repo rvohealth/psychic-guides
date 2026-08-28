@@ -24,14 +24,20 @@ where "place_photos"."id" is null
   </pre>
 </RoutesOutput>
 
+:::tip
+Multiple string arguments describe a single traversal path (an **association chain**) through your associations, not parallel joins — see [Association chaining](/docs/models/querying/loading-and-preloading#association-chaining) for the full concept.
+:::
+
 ## Join conditions
 
-Attach `and`, `andNot`, and `andAny` condition objects to the join:
+Attach `and`, `andNot`, and `andAny` condition objects to the join. `andNot` and `andAny` follow `whereNot` / `whereAny` semantics, respectively:
 
 ```ts
 const hosts = await Host.leftJoin('places', {
   and: { style: 'cabin' },
 }).all()
+
+const hosts = await Host.leftJoin('places', { andNot: { style: 'dump' } }).all()
 ```
 
 Chain multiple associations and conditions in a single call:

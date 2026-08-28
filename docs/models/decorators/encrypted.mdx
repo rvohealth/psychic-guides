@@ -51,3 +51,27 @@ If Dream is unable to decrypt a value using the `current` encryption key, it wil
 :::note
 Adding `@deco.Encrypted` to a column that already has data requires more than a rename. A plain rename leaves existing rows as plaintext, which the decorator's getter will fail to decrypt. Use [`DreamMigrationHelpers.encryptColumn`](/docs/migrations/helpers#encryption) to transform the existing data in the same migration.
 :::
+
+Generate encryption keys with `pnpm psy g:encryption-key`.
+
+## Sync after adding the decorator
+
+After adding `@deco.Encrypted()` and its migration, run `pnpm psy sync` so the `encrypted<Column>` column is reflected in the generated types. The plaintext property (e.g. `secret`) is not assignable in `.create()`/`UpdateableProperties` until sync lists it under the model's `virtualColumns`; until then `tsc` reports `TS2353 ... 'secret' does not exist` even though the model declares the field.
+
+`extractParams` and model-derived OpenAPI request bodies use the public property name (the plaintext, e.g. `secret`), not the encrypted DB column name. The accepted type is `string` or `string | null` depending on whether the backing encrypted column is nullable; `extractParams` enforces that type at runtime and in TypeScript.
+
+## The encrypted column's own setter throws
+
+The raw encrypted column (`encryptedSecret`) has a setter that throws if you try to assign it directly — write through the plaintext property (`secret`) instead. That guard is itself a custom setter, so it only fires on the setter path (`create`/`update`/`assignAttribute(s)`/`this.secret = ...`). [`setAttribute`/`setAttributes`](/docs/models/attributes#which-writes-run-the-setter) bypass custom setters entirely and will write an unencrypted value straight into `encryptedSecret` with no error — never use `setAttributes`/`updateAttributes` to touch an `@deco.Encrypted` column.
+
+## Not queryable in a `where` clause
+
+An `@deco.Encrypted` column is not queryable in a `where` clause. The plaintext property is virtual, not a DB column, so it isn't in the model's `Whereable` type — `where({ secret: ... })` is a compile error. This is correct: the plaintext never exists in the database, and the stored ciphertext is non-deterministic (a fresh IV per write), so even matching the raw `encryptedSecret` column can't find a row by its plaintext value, and no single-statement compare-and-set `UPDATE ... WHERE` can filter on the value being replaced.
+
+For an existence/idempotency check, fetch candidate rows by their queryable columns and compare the decrypted property in memory. A true server-side equality lookup needs a separate deterministic (blind-index) column you maintain yourself; Dream does not add one.
+
+## Structured content: `:encrypted` vs `:jsonb`
+
+A column that needs both encryption and structured content uses the `:encrypted` type (which generates a `text` backing column), not `:jsonb`. JSONB earns its place by being queryable — GIN indexes, path operators, an index on `field->>'key'` — and ciphertext is opaque, so none of that survives; what's left is a value you can only read whole.
+
+The encrypted column carries structured content directly — Dream JSON-serializes the value on write and parses it on read, so the plaintext property round-trips objects and arrays as-is, with no model-layer parse/stringify. The generated declaration types the plaintext property from its `text` backing column (`DreamColumn<Model, 'encryptedHouseRules'>`, i.e. `string | null`), so widen it by hand to the structured type (`public houseRules: HouseRules | null`). The decision is whether the data warrants encryption at all: if it does, use `:encrypted`; if not, it stays `jsonb` and keeps its query ergonomics.

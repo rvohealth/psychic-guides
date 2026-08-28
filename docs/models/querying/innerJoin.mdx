@@ -21,6 +21,10 @@ inner join "rooms" on "places"."id" = "rooms"."place_id"
   </pre>
 </RoutesOutput>
 
+:::tip
+Multiple string arguments describe a single traversal path (an **association chain**) through your associations, not parallel joins — see [Association chaining](/docs/models/querying/loading-and-preloading#association-chaining) for the full concept.
+:::
+
 ## Join conditions
 
 You can also attach `and`, `andNot`, and `andAny` clauses to join statements. The second argument (the object) in the following code generates an `and` condition on the join:
@@ -52,5 +56,17 @@ const hosts = await Host.innerJoin(
 // An `and` statement on just `rooms`
 const hosts = await Host.innerJoin('places', 'rooms', {
   and: { type: 'Bedroom' },
+}).all()
+```
+
+`andNot` and `andAny` follow the same `whereNot` / `whereAny` semantics, respectively, and can appear anywhere `and` can:
+
+```ts
+// andNot: negate a condition on the join
+const hosts = await Host.innerJoin('places', { andNot: { style: 'dump' } }).all()
+
+// andAny: OR several conditions on the join (keys within one object are AND'd)
+const hosts = await Host.innerJoin('places', {
+  andAny: [{ style: 'cabin' }, { style: 'treehouse' }],
 }).all()
 ```

@@ -44,3 +44,11 @@ export async function down(db: Kysely<any>): Promise<void> {
   })
 }
 ```
+
+## Under `@SoftDelete`
+
+If a `@deco.Sortable` model is also decorated with `@SoftDelete()`, the position column must be nullable — see the [destroying guide](/docs/models/destroying) for why.
+
+## Inside a transaction, always bind with `.txn(txn)`
+
+A sortable write computes its position under a lock on its sort scope. If a write against a `@deco.Sortable` model happens inside a transaction without being bound via `.txn(txn)`, it opens a second transaction on another connection and waits on a lock the enclosing transaction is holding — since only one side is waiting, Postgres's deadlock detector never sees it, and the call hangs until `sortableScopeLockTimeout` expires and throws `SortableScopeLockWaitTimedOut`. That error advises retrying, but a retry can't help here; the fix is adding the missing `.txn(txn)`. See the [transactions guide](/docs/models/transactions).
