@@ -15,55 +15,184 @@ In order for a controller's methods to be reached, a corresponding route entry m
 
 ## Authentication architecture
 
-The controller directory structure **is** the authentication and authorization architecture. Each directory branch has its own `AuthedController` (and optionally `UnauthedController`, `MaybeAuthedController`) at its root. Every controller in that branch extends downward from it — looking at the `@BeforeAction` methods in any directory's base controller tells you exactly what auth rules are in force for the entire subtree.
+The controller directory structure **is** the authentication and authorization architecture. Each directory branch has its own `AuthedController` (and optionally `UnauthedController`, `MaybeAuthedController`) at its root, and every controller in that branch extends downward from it. Looking at the `@BeforeAction` methods in any directory's base controller tells you exactly what auth rules are in force for the entire subtree.
 
 **Cardinal rule: authentication flows downhill — it gets stricter, never weaker.** Never introduce a looser authentication pattern deeper in a directory hierarchy.
 
-Each application surface (client-facing, admin, internal) gets its own directory branch with its own auth base controllers:
+This tree is the *controller* auth architecture only. It's a separate, identity-based decision from how you namespace models — don't mirror this controller tree into model names.
+
+### Directory structure
+
+Each application surface — the authed client API, a public browse/bootstrap surface, external webhooks, a partner API, admin, internal — gets its own top-level directory branch with its own auth base controllers. **Any surface that loosens authentication is its own top-level namespace, with its version nested inside** — never buried a level down inside an authed branch:
 
 ```
 controllers/
-├── ApplicationController.ts       (base — universal methods, openapi namespaces)
-├── AuthedController.ts            (client auth — @BeforeAction, 401 if no user)
-├── MaybeAuthedController.ts       (client auth — currentUser null if absent)
-├── UnauthedController.ts          (no auth)
+├── ApplicationController.ts          (base — universal methods; sets openapi namespaces)
+├── AuthedController.ts               (client auth — @BeforeAction, 401 if no user)
+├── MaybeAuthedController.ts          (client auth — currentUser null if absent)
+├── UnauthedController.ts             (no auth)
+├── StatusController.ts               (health check — extends UnauthedController)
 │
-├── V1/
-│   ├── SignInController.ts        (extends UnauthedController)
-│   ├── Visitor/                   (public browse with optional auth)
-│   │   ├── BaseController.ts      (extends MaybeAuthedController)
-│   │   └── PlacesController.ts    (extends Visitor/BaseController)
-│   ├── Guest/                     (authed Guest endpoints)
-│   │   ├── BaseController.ts      (extends AuthedController, loads currentGuest)
-│   │   └── PlacesController.ts    (extends Guest/BaseController)
-│   └── Host/                      (authed Host endpoints)
-│       ├── BaseController.ts      (extends AuthedController, loads currentHost)
-│       ├── PlacesController.ts    (extends Host/BaseController)
+├── V1/                                (client API — AUTHED ONLY)
+│   ├── BaseController.ts             (extends AuthedController)
+│   ├── Guest/                        (authed Guest endpoints)
+│   │   ├── BaseController.ts         (extends V1/BaseController, loads currentGuest)
+│   │   └── BookingsController.ts     (extends V1/Guest/BaseController)
+│   └── Host/                         (authed Host endpoints)
+│       ├── BaseController.ts         (extends V1/BaseController, loads currentHost)
+│       ├── PlacesController.ts       (extends V1/Host/BaseController)
 │       └── Places/
-│           ├── BaseController.ts  (extends Host/BaseController, loads currentPlace)
-│           └── RoomsController.ts (extends Host/Places/BaseController)
+│           ├── BaseController.ts     (extends V1/Host/BaseController, loads currentPlace)
+│           └── RoomsController.ts    (extends V1/Host/Places/BaseController)
 │
-├── Admin/                         (admin surface — separate auth chain)
-│   ├── AuthedController.ts        (admin auth — validates admin user)
+├── Visitor/                          (MAYBE-AUTHED — public browse + bootstrap; its own top-level namespace, NOT V1/Visitor)
+│   ├── BaseController.ts             (reparented: extends MaybeAuthedController)
+│   └── V1/
+│       ├── BaseController.ts         (extends Visitor/BaseController)
+│       └── PlacesController.ts       (public browse; varies when logged in)
+│
+├── Webhooks/                         (external callbacks — UNAUTHED; each provider verifies its own signature)
+│   ├── BaseController.ts             (reparented: extends UnauthedController — auth level only)
+│   └── V1/
+│       ├── BaseController.ts         (extends Webhooks/BaseController)
+│       ├── ZoomController.ts         (verifies the Zoom signature in a @BeforeAction)
+│       └── TwilioController.ts       (verifies the Twilio signature in a @BeforeAction)
+│
+├── Api/                               (server-to-server partner API — UNAUTHED session, API-key auth)
+│   ├── BaseController.ts             (reparented: extends UnauthedController; verifies the API key in a @BeforeAction)
+│   └── V1/
+│       ├── BaseController.ts         (extends Api/BaseController)
+│       └── ReservationsController.ts (extends Api/V1/BaseController)
+│
+├── Admin/                             (admin surface — separate auth chain, unversioned)
+│   ├── AuthedController.ts           (admin auth — validates AdminUser)
 │   ├── UnauthedController.ts
-│   └── UsersController.ts         (extends Admin/AuthedController)
+│   └── CitiesController.ts           (extends Admin/AuthedController)
+│
+└── Internal/                          (internal employee surface — separate auth chain, unversioned)
+    ├── AuthedController.ts           (internal auth — validates InternalUser)
+    ├── UnauthedController.ts
+    └── PlacesController.ts           (extends Internal/AuthedController)
 ```
 
-Key principles:
+### Key principles
 
-- **`Admin/AuthedController` does NOT extend the client `AuthedController`.** Each surface authenticates its own user type independently.
+- **Each surface has its own auth controllers.** `Admin/AuthedController` and `Internal/AuthedController` each extend `ApplicationController` directly — they do **not** extend the client `AuthedController`. Each authenticates its own user type (`AdminUser`, `InternalUser`, etc.).
 - **Every controller extends the base controller in its own directory** (or the authed/unauthed controller at the top of its branch). Controllers never reach across branches or skip levels.
-- **Use generators** to create controllers. `pnpm psy g:resource` and `pnpm psy g:controller` set up the correct inheritance chain automatically.
+- **Loosened auth lives in its own top-level namespace; versions nest inside it.** An authed surface may be versioned at the top (`V1/Guest/`, `V1/Host/` — all authed). Any surface that *loosens* auth — maybe-authed, unauthed, or server-to-server — is its own top-level namespace (`Visitor/`, `Webhooks/`, `Api/`) with the version nested inside (`Visitor/V1/`), never `V1/Visitor/`, which would bury an auth change deep in the authed client branch. `Admin/` and `Internal/` likewise get their own top-level namespace with their own `AuthedController` / `UnauthedController`.
+- **Use generators.** `pnpm psy g:resource` and `pnpm psy g:controller` set up the correct inheritance chain automatically, creating a `BaseController.ts` for every namespace segment that doesn't already exist and wiring the leaf controller through it. Because an existing base is reused, re-parenting a namespace base is a one-time edit — later controllers generated into that namespace inherit it automatically. Hand-writing a controller skips this chain, which is exactly where shared auth belongs. See the [generating guide](/docs/controllers/generating).
+- **Generate every surface; reparent the namespace base once when it loosens auth.** The generator defaults each new namespace base to the client `AuthedController`, so an *authed* surface needs nothing extra — `pnpm psy g:resource v1/host/places Place` chains straight down to `AuthedController` with no reparenting. `Admin` / `Internal` are special-cased to their own `AuthedController`, also with no reparenting needed. A surface that *loosens* auth is reparented once, at its top-level namespace base:
+  - A partner API keyed by a shared secret: reparent `Api/BaseController` to `UnauthedController` and verify the API key in a `@BeforeAction` there — one API, one key scheme, so it belongs on the shared base.
+  - Webhooks: reparent `Webhooks/BaseController` to `UnauthedController` (auth level only). Verify each provider's payload signature in a `@BeforeAction` on that *provider's* controller, not the shared base — a later provider added under the same namespace reuses the base, and signature schemes differ per provider.
+  - A public/optionally-authed surface: reparent `Visitor/BaseController` to `MaybeAuthedController` (public reads that vary when logged in; bootstrap endpoints self-guard on `currentUser`).
+
+### Cross-cutting authorization gates
+
+The auth base controller is also where a cross-cutting *authorization* precondition belongs — a check that must hold for every authenticated request, not just "is there a user." Accepted terms of service, completed onboarding, an active subscription, a verified email: any condition that gates an entire authed surface belongs in **one** `@BeforeAction` on that surface's `AuthedController`, declared *after* `authenticate` so `currentUser` is already populated:
+
+```typescript
+export default class AuthedController extends ApplicationController {
+  protected currentUser: User
+
+  @BeforeAction()
+  protected async authenticate() {
+    // ...resolves and sets this.currentUser, or this.unauthorized()
+  }
+
+  // Declared after authenticate, so currentUser is set. Inherited by every
+  // authed namespace symmetrically — Guest/, Host/, and their nested bases.
+  @BeforeAction()
+  protected async requireCurrentTermsOfService() {
+    if (!this.currentUser.hasAcceptedCurrentTermsOfService) {
+      return this.forbidden('terms_of_service_required')
+    }
+  }
+}
+```
+
+Because hooks inherit ancestor-to-descendant and can't be un-registered by a descendant (see [`@BeforeAction`](./before-action)), this one declaration is the single, authoritative place the precondition applies to the whole subtree.
+
+**Exempt bootstrap endpoints structurally, not with a per-action skip.** A few endpoints can't be subject to the gate, because they're how a user *clears* it or *discovers* they haven't — the endpoint that records consent, and a not-yet-cleared probe (typically `GET /me`). Put those endpoints in their own namespace and reparent that namespace's base controller to a looser base:
+
+- `MaybeAuthedController` when the endpoint still wants optional auth (the `/me` probe, a consent-recording action that self-guards on `currentUser`).
+- `UnauthedController` when there's no app-user auth at all (webhooks).
+
+Every controller in that namespace inherits the looser base, so the exemption is a single edit and is visible in the directory tree rather than hidden in an override. Self-guard inside the action itself for a null `currentUser`:
+
+```typescript
+public async update() {
+  if (!this.currentUser) return this.unauthorized()
+  await this.currentUser.update({ acceptedTermsOfServiceVersion: CURRENT_TOS_VERSION })
+  this.noContent()
+}
+```
+
+Keep the URL clean by routing to the reparented controller with an explicit `controller:` reference — the directory says `MaybeAuthed`, the URL shouldn't (see below).
+
+### Verifying the hierarchy
+
+```bash
+# Visually inspect the controller inheritance tree
+pnpm psy inspect:controller-hierarchy
+
+# CI check — exits 1 if a controller extends too far up the tree
+# or crosses into another branch
+pnpm psy check:controller-hierarchy
+```
 
 ### Routing when directory names shouldn't appear in URLs
 
-Controller directory names reflect the auth architecture, not URL structure. When the directory name shouldn't appear in the URL (e.g. `Visitor/` is the auth context, but `/v1/visitor/places` isn't a natural public URL), use an explicit `controller` reference:
+Controller directory names reflect the auth architecture, not URL structure. When the directory name shouldn't appear in the URL (e.g. `Visitor/` is the auth context, but `/v1/visitor/places` isn't a natural public URL), use an explicit `controller` reference instead of a namespace:
 
 ```typescript
-// GOOD — clean URL: /v1/places, controller in Visitor/ directory for auth
-import V1VisitorPlacesController from '@controllers/V1/Visitor/PlacesController.js'
-r.resources('places', { only: ['index', 'show'], controller: V1VisitorPlacesController })
+// BAD — "visitor" leaks into the URL: /v1/visitor/places
+r.namespace('visitor', r => {
+  r.resources('places', { only: ['index', 'show'] })
+})
+
+// GOOD — clean URL: /v1/places, controller explicitly specified
+import VisitorV1PlacesController from '@controllers/Visitor/V1/PlacesController.js'
+r.resources('places', { only: ['index', 'show'], controller: VisitorV1PlacesController })
 ```
+
+The controller directory structure still enforces the auth inheritance chain; only the URL changes. Three concerns are independent here and shouldn't be collapsed into one tree: the **URL namespace** (an API-contract concern, e.g. version-first `/v1/...`), the **controller file namespace**, and the **auth inheritance chain**. A versioned URL doesn't require a matching controller ancestry — don't make `Visitor/BaseController` extend `V1/BaseController` merely because the URL starts with `/v1`. Express auth boundaries through ancestry, and let the route file map a versioned URL onto whatever controller has the correct ancestry.
+
+### Nested resource base controller pattern
+
+A namespace base controller is also where you load and authorize the resource that every nested controller depends on. Each level's `@BeforeAction` loads its own resource off the level above it, so a doubly-nested resource is authorized one hop at a time:
+
+```typescript
+// controllers/V1/Host/BaseController.ts
+export default class V1HostBaseController extends V1BaseController {
+  protected currentHost: Host
+
+  @BeforeAction()
+  protected async loadCurrentHost() {
+    const host = await this.currentUser.associationQuery('host').first()
+    if (!host) return this.forbidden()
+    this.currentHost = host
+  }
+}
+
+```
+
+For doubly-nested resources (e.g. `/places/:placeId/rooms`):
+
+```typescript
+// controllers/V1/Host/Places/BaseController.ts
+export default class V1HostPlacesBaseController extends V1HostBaseController {
+  protected currentPlace: Place
+
+  @BeforeAction()
+  protected async loadCurrentPlace() {
+    this.currentPlace = await this.currentHost
+      .associationQuery('places')
+      .findOrFail(this.castParam('placeId', 'uuid'))
+  }
+}
+```
+
+Scoping each lookup through the association chain from `currentUser` (rather than a bare `Place.findOrFail(...)`) means the record load and the authorization check are the same query — a place that exists but doesn't belong to `currentHost` 404s instead of leaking whether the id exists.
 
 ## Routes and Controllers
 

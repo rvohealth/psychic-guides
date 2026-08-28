@@ -1,6 +1,6 @@
 ---
 sidebar_position: 3
-ai_summary: "Psychic provides status code methods (ok, created, noContent, badRequest, unauthorized, forbidden, notFound, unprocessableEntity, etc.) that automatically apply HTTP status codes and render JSON. Methods correspond to HTTP status codes for intuitive API responses."
+ai_summary: "Psychic provides status code methods (ok, created, accepted, noContent, redirect, movedPermanently, badRequest, unauthorized, forbidden, notFound, conflict, unprocessableContent, serverError) that automatically apply HTTP status codes and render JSON. Error-status methods accept an optional message that becomes a runtime discriminator (an error marker), optionally typed via @OpenAPI responses."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -98,6 +98,71 @@ export default class V1HostPlacesController extends V1HostBaseController {
 ```
 
 Note that in the example above, there is no return statement encapsulating the `this.notFound` call. This may seem like a mistake, since this request looks like it would render both a 404 _and_ a 200 response. However, calling the `notFound` method carefully raises an exception, which is then rescued within the request thread and rendered with the appropriate status. This is done so that any code after the `notFound` will not be run, guaranteeing that you don't mistakenly double-render your responses, which is a common problem in web applications.
+
+## Full list of response methods
+
+```ts
+// Success
+this.ok(data)               // 200 - serializes Dream models automatically
+this.created(data)          // 201
+this.accepted(data)         // 202
+this.noContent()            // 204
+
+// Redirects
+this.redirect(path)         // 302
+this.movedPermanently(path) // 301
+
+// Client errors
+this.badRequest()           // 400
+this.unauthorized()         // 401
+this.forbidden()            // 403
+this.notFound()             // 404
+this.conflict()             // 409
+this.unprocessableContent() // 422
+
+// Server errors
+this.serverError()          // 500
+```
+
+A same-origin relative path (starting with a single `/`) always works with `redirect`/`movedPermanently`. An absolute-URL target is checked against `redirectAllowedHosts` — an empty allowlist by default — and throws a `500` (not a silent no-op) if the host isn't listed. Allowlist matching is host-only: case-insensitive and both port- and scheme-insensitive. Add external redirect targets explicitly:
+
+```ts
+psy.set('redirectAllowedHosts', ['oauth.example.com'])
+```
+
+## Error markers: distinguishing two same-status causes
+
+When one endpoint can return the same status for two different reasons, the message you pass to a response helper becomes a runtime discriminator the frontend can switch on.
+
+**The marker itself (untyped, zero-config).** `this.forbidden(msg)` / `this.unauthorized(msg)` (and the rest) throw an error whose argument is JSON-stringified as the response body, so `this.forbidden('not_your_place')` produces the body `"not_your_place"`. The default error responses are description-only — no schema — so the marker never appears in the generated OpenAPI spec or client; it's a runtime-only discriminator with no schema change and no regeneration needed:
+
+```ts
+// A Host editing a Place they don't own
+if (!place.hostedBy(this.currentUser)) this.forbidden('not_your_place')
+```
+
+```ts
+// frontend
+if (err.response.status === 403 && err.response.data === 'not_your_place') { /* ... */ }
+```
+
+Two caveats. Pass a non-empty string — calling `forbidden()` with a falsy argument sends no body, so the discriminator check fails on the frontend. And the marker is always sent to the client verbatim at runtime, so keep it a coarse, stable cause code (`not_your_place`, `terms_of_service_required`) and never put sensitive detail in it.
+
+**The typed-enum upgrade.** The body stays a string; attaching an `enum` to the action's `@OpenAPI` `responses` makes the generated client type it as a literal union instead of bare `string`:
+
+```ts
+@OpenAPI(Place, {
+  status: 204,
+  responses: {
+    403: { type: 'string', enum: ['not_your_place'] },
+  },
+})
+public async update() { /* ... this.forbidden('not_your_place') ... */ }
+```
+
+This changes only the spec and the generated types — it doesn't enforce the enum at runtime. You still write the `forbidden('not_your_place')` throw yourself and have to keep it in sync with the declared `enum` by hand.
+
+**Where the typed response lives depends on where the cause is raised.** An action-specific cause (raised only inside one action) gets its typed `responses` override on that action's `@OpenAPI`. A cross-cutting cause raised from a shared `@BeforeAction` (e.g. `terms_of_service_required`, returnable by every authed endpoint) shouldn't be repeated per action — see [OpenAPI: customizing default error responses](/docs/openapi/controllers#customizing-default-error-responses) for redefining the shared response component once at the conf level instead.
 
 ## Implicit status codes
 

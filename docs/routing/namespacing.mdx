@@ -38,7 +38,7 @@ Namespacing will always enforce the folder structure when presented with multipl
 r.namespace('api', (r) => {
   r.namespace('v1', (r) => {
     // providing an explicit controller to the namespace
-    r.namespace('users', { controller: HelloWorldController } (r) => {
+    r.namespace('users', { controller: HelloWorldController }, (r) => {
       r.get('hi')
 
       // you can even provide nested koa middleware
@@ -82,6 +82,30 @@ GET api/v1/users/hi HelloWorld#hi
 `}
   </pre>
 </RoutesOutput>
+
+## Keeping an auth-context directory out of the URL
+
+Controller directories don't only exist to name a URL segment — a directory branch is also how Psychic expresses its authentication architecture (see [controller overview — authentication architecture](/docs/controllers/overview#authentication-architecture)). Sometimes the two disagree: a controller needs to live under a directory like `Visitor/` so it inherits the right auth base controller, but `Visitor` isn't a segment that should appear in the URL.
+
+Rather than using `r.namespace('visitor', ...)` — which would enforce both the folder *and* the URL segment — pass the controller class explicitly to `resources`/`resource`/a verb method, inside a namespace that only covers the URL segments you actually want:
+
+```ts
+// BAD — "visitor" leaks into the URL: /v1/visitor/places
+r.namespace('v1', r => {
+  r.namespace('visitor', r => {
+    r.resources('places', { only: ['index', 'show'] })
+  })
+})
+
+// GOOD — clean URL: /v1/places; controller comes from the auth-context directory
+import VisitorV1PlacesController from '@controllers/Visitor/V1/PlacesController.js'
+
+r.namespace('v1', r => {
+  r.resources('places', { only: ['index', 'show'], controller: VisitorV1PlacesController })
+})
+```
+
+The controller's directory (`Visitor/V1/`) still enforces the auth inheritance chain; only the URL changes. Treat the URL namespace, the controller file namespace, and the auth inheritance chain as three independent concerns — a versioned URL doesn't require a matching controller ancestry, and an auth-context directory doesn't require a matching URL segment.
 
 ## scope
 

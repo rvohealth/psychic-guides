@@ -25,6 +25,7 @@ Out of the box, a generated app gets:
 - **Weak-key boot rejection.** A missing or short cookie encryption key throws at production boot rather than at the first encryption call.
 - **Open-redirect protection.** Every framework redirect helper funnels through a validator; absolute URLs fail closed unless the destination host appears in your `redirectAllowedHosts` allowlist.
 - **Mass-assignment safety.** `this.extractParams(Model, [...])` is a type-checked, runtime-intersected primitive; the explicit allowlist is required at every call site and is the framework's canonical mass-assignment defense.
+- **Boundary-level input bounding.** `castParam`/`extractParams` accept `minLength`/`maxLength` on strings and `minimum`/`maximum` on numeric types, checked after type coercion and applied element-wise on array casts. Use these to bound untrusted input at the controller boundary rather than validating size later in a model or service — see [Params — Bounding length and range](/docs/controllers/params#bounding-length-and-range).
 - **Prototype-pollution-safe param parsing.** The merge target is `Object.create(null)`; `__proto__` / `constructor` / `prototype` arriving as own keys cannot pollute `Object.prototype`.
 - **Content-type-agnostic security headers.** `X-Content-Type-Options: nosniff`, `Cross-Origin-Resource-Policy`, and HSTS in production are defaults. Document-scoped headers (CSP, XFO, COOP, Permissions-Policy, Referrer-Policy) are deliberately not shipped — Psychic emits JSON, not HTML, so those headers are no-ops on framework responses. See [Output Encoding & i18n](/docs/security/output-encoding) for the boundary.
 - **CORS off by default.** `@koa/cors` is not mounted unless you call `psy.set('cors', ...)`. Apps that need cross-origin opt in.
@@ -44,7 +45,7 @@ Things the framework cannot do for you, listed here so you do not assume any of 
 - **Reset / verification token generation.** Use `crypto.randomBytes(32).toString('base64url')` for tokens; compare with `crypto.timingSafeEqual` after decoding.
 - **Rate limiting.** Edge tier first (WAF / CDN / nginx); app tier with `rate-limiter-flexible` for per-route / per-user / cost-based limits. See [Rate Limiting](/docs/security/rate-limiting).
 - **OpenAPI exposure gating.** `OpenapiAppRenderer.sync()` writes a build artifact; if you serve the resulting JSON, you own the auth decision on that route.
-- **Database TLS.** The boilerplate ships `ssl: { rejectUnauthorized: true }` (verified TLS via Node's system CA store), which works out of the box with managed providers that present a public-CA-signed certificate (Supabase, Neon, Render, Azure Database for PostgreSQL Flexible Server). For providers that present a private-CA certificate (AWS RDS, GCP Cloud SQL), add a `ca` bundle: `ssl: { rejectUnauthorized: true, ca: readFileSync('/path/to/ca.pem') }`. For providers that present a self-signed certificate (Heroku Hobby, some local Docker images), set `ssl: { rejectUnauthorized: false }` — encrypted but **not** authenticated. The legacy `useSsl: true` shorthand is deprecated; new code should set `ssl` explicitly.
+- **Database TLS.** The boilerplate ships `ssl: { rejectUnauthorized: true }` (verified TLS via Node's system CA store), which works out of the box with managed providers that present a public-CA-signed certificate (Supabase, Neon, Render, Azure Database for PostgreSQL Flexible Server). For providers that present a private-CA certificate (AWS RDS, GCP Cloud SQL), add a `ca` bundle: `ssl: { rejectUnauthorized: true, ca: readFileSync('/path/to/ca.pem') }`. For providers that present a self-signed certificate (Heroku Hobby, some local Docker images), set `ssl: { rejectUnauthorized: false }` — encrypted but **not** authenticated.
 - **Redis credentials & TLS.** See [Workers & Redis](/docs/security/workers-and-redis); `tls: {}` in ioredis enables verified TLS by default — never set `rejectUnauthorized: false` in production.
 
 ## Per-topic guides
@@ -111,6 +112,8 @@ Rotation workflow:
 4. Drop `legacy`. Deploy.
 
 Two-key rotation is sufficient for any sensible cookie TTL. The framework throws on a missing or undersized key in production at boot — use `Encrypt.generateKey` to produce keys, never hand-typed strings.
+
+Koa middleware that runs outside the controller layer (e.g. gating a Bull Board dashboard) can't call `this.getCookie()` and has to decrypt with `Encrypt.decrypt` directly — including deciding how to treat `DecryptionError` versus `DecryptionRotationError`. See [Cookies — Decrypting cookies outside a controller](/docs/controllers/cookies#decrypting-cookies-outside-a-controller) for the full error-handling contract; the short version is: log-and-treat-as-unauthenticated for a single bad cookie, but rethrow if both the current and legacy keys fail, since that signals a broken rotation rather than a forged cookie.
 
 ### Redirect allowlist
 

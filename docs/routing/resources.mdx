@@ -112,6 +112,8 @@ GET     /users/:id/edit  Users#edit
   </pre>
 </RoutesOutput>
 
+A route declared directly inside the `resources`/`resource` callback — outside a `collection` block — is **member-scoped**: Psychic automatically prepends `:id` to it, as with `edit` above. There is no `r.member` method; use the existing verb methods (`r.get`/`r.post`/etc.) for a member route, and read the id inside the action with `this.castParam('id', 'uuid')` — cast it to whatever type your app's primary key actually is (`uuid`, `bigint`, or `integer`), never `'string'`.
+
 If you do not wish for your nested endpoint to contain the id as part of its signature, you can use the `collection` method, like so:
 
 ```ts
