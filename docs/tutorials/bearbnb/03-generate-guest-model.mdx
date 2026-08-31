@@ -20,10 +20,10 @@ pnpm psy g:model Guest User:belongs_to
 
 ``````
 diff --git a/.prettierignore b/.prettierignore
-index 885cc95..dea0610 100644
+index 885cc95..00a5bda 100644
 --- a/.prettierignore
 +++ b/.prettierignore
-@@ -20,3 +20,7 @@ api/.yarnrc.yml
+@@ -20,3 +20,9 @@ api/.yarnrc.yml
  
  pnpm-lock.yaml
  package-lock.json
@@ -31,6 +31,8 @@ index 885cc95..dea0610 100644
 +# only adding so that diffs are clearer for demo app
 +api/src/app/serializers/**/*.ts
 +api/src/db/migrations/*.ts
++api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
++api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 diff --git a/api/.prettierignore b/api/.prettierignore
 index 885cc95..072ade1 100644
 --- a/api/.prettierignore
@@ -120,12 +122,12 @@ index 0000000..1fa3936
 +
 +export const GuestSerializer = (guest: Guest) =>
 +  GuestSummarySerializer(guest)
-diff --git a/api/src/db/migrations/1782835165844-create-guest.ts b/api/src/db/migrations/1782835165844-create-guest.ts
+diff --git a/api/src/db/migrations/1782925846214-create-guest.ts b/api/src/db/migrations/1782925846214-create-guest.ts
 new file mode 100644
-index 0000000..c56e682
+index 0000000..c99a337
 --- /dev/null
-+++ b/api/src/db/migrations/1782835165844-create-guest.ts
-@@ -0,0 +1,29 @@
++++ b/api/src/db/migrations/1782925846214-create-guest.ts
+@@ -0,0 +1,34 @@
 +import { Kysely, sql } from 'kysely'
 +
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -148,11 +150,16 @@ index 0000000..c56e682
 +    .on('guests')
 +    .column('user_id')
 +    .execute()
++
++  await db.schema
++    .createIndex('guests_deleted_at')
++    .on('guests')
++    .column('deleted_at')
++    .execute()
 +}
 +
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +export async function down(db: Kysely<any>): Promise<void> {
-+  await db.schema.dropIndex('guests_user_id').execute()
 +  await db.schema.dropTable('guests').execute()
 +}
 \ No newline at end of file

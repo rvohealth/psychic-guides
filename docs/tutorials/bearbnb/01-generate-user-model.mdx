@@ -92,12 +92,12 @@ index 0000000..6a43a29
 +  @deco.Encrypted()
 +  public phone: DreamColumn<User, 'encryptedPhone'>
 +}
-diff --git a/api/src/db/migrations/1782834969185-create-user.ts b/api/src/db/migrations/1782834969185-create-user.ts
+diff --git a/api/src/db/migrations/1782925721266-create-user.ts b/api/src/db/migrations/1782925721266-create-user.ts
 new file mode 100644
-index 0000000..3135e21
+index 0000000..7be5e55
 --- /dev/null
-+++ b/api/src/db/migrations/1782834969185-create-user.ts
-@@ -0,0 +1,26 @@
++++ b/api/src/db/migrations/1782925721266-create-user.ts
+@@ -0,0 +1,32 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely, sql } from 'kysely'
 +
@@ -117,6 +117,12 @@ index 0000000..3135e21
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
 +    .addColumn('deleted_at', 'timestamp')
++    .execute()
++
++  await db.schema
++    .createIndex('users_deleted_at')
++    .on('users')
++    .column('deleted_at')
 +    .execute()
 +}
 +

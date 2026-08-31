@@ -263,12 +263,12 @@ index 0c5dc6a..ff6749b 100644
        r.resources('places', r => {
          r.resources('rooms')
  
-diff --git a/api/src/db/migrations/1782836308128-create-localized-text.ts b/api/src/db/migrations/1782836308128-create-localized-text.ts
+diff --git a/api/src/db/migrations/1782926483300-create-localized-text.ts b/api/src/db/migrations/1782926483300-create-localized-text.ts
 new file mode 100644
-index 0000000..978878c
+index 0000000..1e455cd
 --- /dev/null
-+++ b/api/src/db/migrations/1782836308128-create-localized-text.ts
-@@ -0,0 +1,46 @@
++++ b/api/src/db/migrations/1782926483300-create-localized-text.ts
+@@ -0,0 +1,52 @@
 +import { Kysely, sql } from 'kysely'
 +
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -305,6 +305,12 @@ index 0000000..978878c
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
 +    .addColumn('deleted_at', 'timestamp')
++    .execute()
++
++  await db.schema
++    .createIndex('localized_texts_deleted_at')
++    .on('localized_texts')
++    .column('deleted_at')
 +    .execute()
 +}
 +

@@ -420,12 +420,12 @@ index 35b824d..b91ad5b 100644
    adminRoutes(r)
    internalRoutes(r)
    // add routes here, perhaps by running `pnpm psy g:resource v1/pets Pet name:citext birthdate:date species:enum:pet_species:dog,cat,fish`
-diff --git a/api/src/db/migrations/1782835396157-create-place.ts b/api/src/db/migrations/1782835396157-create-place.ts
+diff --git a/api/src/db/migrations/1782925986336-create-place.ts b/api/src/db/migrations/1782925986336-create-place.ts
 new file mode 100644
-index 0000000..4270fd8
+index 0000000..6c0a5c0
 --- /dev/null
-+++ b/api/src/db/migrations/1782835396157-create-place.ts
-@@ -0,0 +1,42 @@
++++ b/api/src/db/migrations/1782925986336-create-place.ts
+@@ -0,0 +1,48 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely, sql } from 'kysely'
 +
@@ -459,6 +459,12 @@ index 0000000..4270fd8
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
 +    .addColumn('deleted_at', 'timestamp')
++    .execute()
++
++  await db.schema
++    .createIndex('places_deleted_at')
++    .on('places')
++    .column('deleted_at')
 +    .execute()
 +}
 +
