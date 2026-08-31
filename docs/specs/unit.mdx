@@ -492,7 +492,7 @@ export async function session(user: Dream) {
 ```
 
 :::tip Generate resourceful controllers first
-`pnpm psy g:resource` generates the controller spec already wired up this way — the typed `session` request, `RequestBody<...>` bodies, and per-action blocks with status-code generics. A bare controller generator emits only a placeholder spec (`it.todo(...)`) with none of the typing, so build resourceful controllers before non-resourceful ones — it seeds the codebase with the correct, fully-typed pattern that people and agents then mimic when hand-writing the specs a bare controller leaves as a stub.
+`pnpm psy g:resource` generates the controller spec already wired up this way — the typed `session` request, `RequestBody<...>` bodies, and per-action blocks with status-code generics. A bare controller generator emits only a placeholder spec (`it.todo(...)`) with none of the typing, so build resourceful controllers before non-resourceful ones, since the generated spec gives you a correct, fully-typed pattern to follow when hand-writing the specs a bare controller leaves as a stub.
 :::
 
 ### Request and response types come from the `tests` spec

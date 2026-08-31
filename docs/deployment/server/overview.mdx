@@ -51,7 +51,7 @@ Always use `AppEnv` (defined in `src/conf/AppEnv.ts`) to access environment vari
 For variables that are only present in some environments, use `AppEnv.string(name, { optional: true })`, which returns `string | undefined` instead of throwing.
 
 :::warning
-Every new environment variable name must be registered in `AppEnv.ts`'s typed union before `AppEnv.string(name)` (or `.boolean` / `.integer`) will compile for it. Adding an env var is a two-part change: add the name to the appropriate union, then read it through `AppEnv`. The gotcha is where the omission surfaces — a Vitest run (`pnpm uspec`) doesn't type-check, so a spec exercising the new variable passes green, and the missing-name error only appears at the `pnpm build:spec` type-check gate. Add the union entry in the same change, and don't treat a green spec run as done until the build gate has run.
+Every new environment variable name must be registered in `AppEnv.ts`'s typed union before `AppEnv.string(name)` (or `.boolean` / `.integer`) will compile for it. Adding an env var is a two-part change: add the name to the appropriate union, then read it through `AppEnv`. The gotcha is where the omission surfaces — a Vitest run (`pnpm uspec`) doesn't type-check, so a spec exercising the new variable passes green, and the missing-name error only appears at the `pnpm build:spec` type-check gate. Add the union entry in the same change; `pnpm build:spec` is what catches the omission.
 :::
 
 ## Build output

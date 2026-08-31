@@ -214,7 +214,7 @@ Case carries no meaning in rendered copy, so this is the outcomes-not-implementa
 
 Keep this separate from **specificity**. Case-insensitivity does not make a match looser on its own; an over-broad pattern does — `/error/i` also matches `no errors found`. Choose a pattern specific enough to avoid accidental substring hits, independent of case.
 
-**Split label/value markup matches contiguously.** Because per-element text is joined with spaces, `<dt>Sleeps</dt><dd>4</dd>` lands in the matched string as `Sleeps 4`, so `toMatchTextContent('Sleeps 4')` matches a label/value split with no `page.$eval` workaround. A more complex layout — a flex container around the `<dt>`/`<dd>` pair, for instance — can break that contiguity, landing extra whitespace between what look like adjacent elements in the source. If a literal contiguous match fails unexpectedly on markup that looks equivalent, fall back to a whitespace-tolerant regex (`/Sleeps\s+4/`) rather than assuming the assertion itself is broken.
+**Split label/value markup matches contiguously.** Because per-element text is joined with spaces, `<dt>Sleeps</dt><dd>4</dd>` lands in the matched string as `Sleeps 4`, so `toMatchTextContent('Sleeps 4')` matches a label/value split with no `page.$eval` workaround. A more complex layout — a flex container around the `<dt>`/`<dd>` pair, for instance — can break that contiguity, landing extra whitespace between what look like adjacent elements in the source. If a literal contiguous match fails unexpectedly on markup that looks equivalent, fall back to a whitespace-tolerant regex (`/Sleeps\s+4/`).
 
 ### What the selector matchers actually assert
 

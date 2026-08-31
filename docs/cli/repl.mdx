@@ -63,5 +63,3 @@ For code that isn't auto-imported, use a dynamic import with a path relative to 
 ```ts
 myHelper = (await import('./app/services/Host/pricingHelpers.js')).default
 ```
-
-For non-interactive scripts, prefer a scratch TypeScript file that imports `conf/loadEnv.js`, initializes the app, runs the code, and exits. That gives you the same boot path as the console without relying on interactive `stdout`.

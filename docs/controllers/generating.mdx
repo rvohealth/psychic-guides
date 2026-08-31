@@ -17,8 +17,6 @@ In preference order:
 3. **`g:model`** — only for models that will never be exposed via any API (join tables, audit logs).
 4. **`g:migration`** — for a database change that isn't accompanied by a new model.
 
-Always run `pnpm psy <command> --help` before using a generator — argument formats vary between commands and versions; don't infer syntax from examples here or from prior experience.
-
 ## Generated controller inheritance chain
 
 Both the resource generator and the controller generator create base controllers in every nested directory along the path to the target controller being generated:
@@ -61,7 +59,7 @@ Run `pnpm psy g:resource --help` or see [the g:resource documentation](/docs/cli
 :::danger `g:resource` unconditionally overwrites existing model, spec, factory, and serializer files
 `g:resource` always regenerates the model file, unit spec, factory, and serializer for the given model name — it does not check whether those files already exist, and there is no flag to skip them (`--only` controls which controller actions are scaffolded, not which files are written). Running it again for a model that already has hand-edited associations, hooks, validations, or serializer fields will silently discard those edits.
 
-This mainly bites when a model already exists (from `g:model` or a prior `g:resource`) and you need to add the missing controller/routes after the fact. Commit or stash first, run the generator, then restore the hand-edited model/spec/factory/serializer files and cherry-pick only the newly generated controller, controller spec, route entry, and migration.
+This mainly bites when a model already exists (from `g:model` or a prior `g:resource`) and you need to add the missing controller/routes after the fact. Commit your work first, so you can review the regenerated model, spec, factory, and serializer and discard those changes.
 :::
 
 ### Nested resource routes
@@ -72,7 +70,7 @@ In this example, we'll generate a Places resource and then a nested Rooms resour
   code={`{{PM}} psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer`}
 />
 
-Before using a generator, run its `--help` output in the local project. `g:resource` and `g:model` include `id`, timestamps, `deleted_at`, and `@SoftDelete()` by default; only pass `deleted_at` when you are adding soft delete to an existing model through a migration.
+`g:resource` and `g:model` include `id`, timestamps, `deleted_at`, and `@SoftDelete()` by default; only pass `deleted_at` when you are adding soft delete to an existing model through a migration.
 
 The routes file will be modified with a namespaced resource.
 
@@ -153,7 +151,6 @@ Additionally, a spec file will be generated, which is empty by default, but read
 1. **Update the migration file as needed** (e.g., add `unique()` to a column) — see the [migrations guide](/docs/migrations/overview).
 2. **Run migrations**: `pnpm psy db:migrate`. Under the default `NODE_ENV=test` this also runs `sync` automatically — don't follow it with a separate `pnpm psy sync` in that environment.
 3. **For a resource generator**, update the generated controller spec first, then the corresponding controller. Generated action code starts commented out, so a spec that hits it will hang waiting on a response until you fill in the implementation.
-4. **Commit generated code as its own commit**, separate from your hand-written follow-up changes, so the scaffold is easy to review and revert independently.
 
 Run `pnpm psy sync` again any time you change an association, a serializer, an `@OpenAPI` decorator, a route, or add a decorator that declares a virtual column (`@deco.Virtual()`, `@deco.Encrypted()`) outside of a migration. A controller spec with type errors about what an endpoint accepts or returns is the usual symptom of a stale sync.
 

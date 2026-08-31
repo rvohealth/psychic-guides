@@ -43,7 +43,7 @@ Migrations are always created by the [migration](/docs/cli/generators/migration)
 
 ## Editing a migration file
 
-**Never modify a migration file that has already been merged into `main`.** Production data already reflects the original migration's effect; rewriting its history would skip the new behavior entirely on machines that already recorded the original as applied. Any change to a merged migration's behavior must be expressed as a new migration instead. Run `git diff --name-only origin/main -- api/src/db/migrations/` to confirm a migration is still only on your branch before editing it.
+**Never modify a migration file that has already been merged into `main`.** Production data already reflects the original migration's effect; rewriting its history would skip the new behavior entirely on machines that already recorded the original as applied. Any change to a merged migration's behavior must be expressed as a new migration instead.
 
 A migration that is still on a feature branch — not yet merged — may be freely edited in place. There's no production data to protect, so add the correct constraints (`NOT NULL`, etc.) directly rather than writing a backfill for data that doesn't exist yet.
 
@@ -253,7 +253,7 @@ export default class Place extends ApplicationModel {
 
 Two preconditions:
 
-- **`ignoredColumns` is consumed by `sync`, not at runtime.** A model that declares it without a regenerated types file isn't protected — have CI verify `psy sync` produces no diff.
+- **`ignoredColumns` is consumed by `sync`, not at runtime.** A model that declares it without a regenerated types file isn't protected, so run `psy sync` and commit the regenerated types as part of deploy 1.
 - **The column must be nullable or carry a database default before deploy 1 ships.** An image built with the declaration never puts the column in an `INSERT` column list, so a `NOT NULL` column with no default fails every create.
 
 See also the deploy-time summary of this two-deploy rule in [server deployment](/docs/deployment/server/overview).

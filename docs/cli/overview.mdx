@@ -18,7 +18,7 @@ Psychic and Dream both provide a CLI for interfacing with underlying bin scripts
 Every `psy` command defaults to `NODE_ENV=test`. To run a command against your development database, prefix it explicitly, e.g. `NODE_ENV=development pnpm psy db:migrate` (substitute your project's package manager). See [migrate/rollback](/docs/cli/migrate) for why this matters for type syncing.
 :::
 
-Always run `psy <command> --help` before using a generator or any command whose exact flags you're unsure of — never guess at syntax.
+Every `psy` command supports `--help`, which prints its full list of flags, e.g. `psy g:resource --help`.
 
 ## Commands
 

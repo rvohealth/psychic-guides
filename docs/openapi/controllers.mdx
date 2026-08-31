@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: controllers
-ai_summary: 'The @OpenAPI decorator generates OpenAPI specifications for controller endpoints. It supports response configuration (serializerKey, many, nullable, status), request body configuration (for, params, including, combining, OpenAPI.forDream), query parameters, path parameters, headers, security, default response/header omission (including the controller-wide openapiConfig getter), and customizing default error responses via conf-level defaults. params/including must be literal arrays, never derived from the model. Custom response envelopes use ObjectSerializer, not hand-written responses blocks.'
+ai_summary: 'The @OpenAPI decorator generates OpenAPI specifications for controller endpoints. It supports response configuration (serializerKey, many, nullable, status), request body configuration (for, params, including, combining, OpenAPI.forDream), query parameters, path parameters, headers, security, default response/header omission (including the controller-wide openapiConfig getter), and customizing default error responses via conf-level defaults. params/including are an explicit allowlist, not derived from the model's columns. Custom response envelopes use ObjectSerializer, not hand-written responses blocks.'
 ---
 
 # OpenAPI - Controllers
@@ -327,7 +327,7 @@ public async create() {
 `OpenAPI.forDream(Model, opts)` is the typed wrapper for this: `params` / `including` / `required` are constrained at compile time to that model's column names, so a misspelled column raises a TypeScript error instead of silently dropping out of the OpenAPI shape. The nested `for:` sentinel is request-only — response shapes for a bundled payload are modeled as a serializer and declared with `@OpenAPI(SerializerFn)` instead of hand-written; see [Custom Response Envelopes](#custom-response-envelopes) below.
 
 :::warning
-`params` and `including` (including inside `OpenAPI.forDream`) must be literal arrays you write out by hand — never compute them from the model. Backfilling them from a model's own `paramSafeColumns`, or from `Model.columns()`, dumps that model's *entire* writable column surface into the request body. For a model that declares no `paramSafeColumns`, that's every column on the table. This re-creates the implicit include-all default the `params` allowlist exists to prevent: the documented shape silently widens every time the model gains a column, the spec ends up advertising inputs the action's `extractParams` allowlist doesn't actually accept, and the full column surface leaks into the public OpenAPI shape.
+`params` and `including` (including inside `OpenAPI.forDream`) are an explicit allowlist. Deriving them from a model's own `paramSafeColumns`, or from `Model.columns()`, dumps that model's *entire* writable column surface into the request body. For a model that declares no `paramSafeColumns`, that's every column on the table. This re-creates the implicit include-all default the `params` allowlist exists to prevent: the documented shape silently widens every time the model gains a column, the spec ends up advertising inputs the action's `extractParams` allowlist doesn't actually accept, and the full column surface leaks into the public OpenAPI shape.
 :::
 
 ## headers

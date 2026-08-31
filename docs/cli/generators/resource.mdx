@@ -66,7 +66,7 @@ Nested resources — any `<path>` containing a `{}` parent-id placeholder — **
 :::
 
 :::caution
-`g:resource` unconditionally regenerates the model file, unit spec, factory, and serializer for the given model name — it does not check whether those files already exist, and there is no flag to skip them (`--only` controls which controller actions are scaffolded, not which files are written). Running `g:resource` for a model name that already has hand-edited associations, hooks, validations, or serializer fields will silently discard those edits. If you need to add a controller/routes to a model that already exists, commit or stash first, run the generator, then restore the hand-edited model/spec/factory/serializer files and cherry-pick only the newly generated controller, controller spec, route entry, and migration.
+`g:resource` unconditionally regenerates the model file, unit spec, factory, and serializer for the given model name — it does not check whether those files already exist, and there is no flag to skip them (`--only` controls which controller actions are scaffolded, not which files are written). Running `g:resource` for a model name that already has hand-edited associations, hooks, validations, or serializer fields will silently discard those edits. To add a controller and routes to a model that already exists, commit your work first, so you can review the regenerated model, spec, factory, and serializer and discard those changes.
 :::
 
 ### Options
@@ -87,10 +87,7 @@ Nested resources — any `<path>` containing a `{}` parent-id placeholder — **
 
 ## After generating
 
-Run `pnpm psy <command> --help` before running any generator — argument formats vary between commands and between Dream/Psychic versions, so don't infer syntax from these examples or prior experience.
-
 Once the resource is generated:
 
 1. Update the migration file as needed (e.g., add `unique()` to a column), then run `pnpm psy db:migrate`.
 2. Update the generated controller spec first, then the corresponding generated controller — controller specs will hang if there is no response within a controller action, since generated action code starts commented out.
-3. Commit the generated code as its own commit before hand-editing it, so the hand edits are easy to review separately.

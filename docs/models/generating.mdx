@@ -19,7 +19,7 @@ The `psy` CLI provides three commands for generating Dream models and their acco
 
 The resource generator is used when a model will be displayed and/or manipulated via an API endpoint. The model generator is used to generate a model without an API endpoint. And, as the name indicates, the STI child generator is used to generate STI children.
 
-Run the generator's `--help` output before using it. Prefer `g:resource` for models that will be HTTP-accessible, `g:model` for models that will never be exposed directly through an API, and `g:migration` for schema-only changes to existing tables. `g:resource` and `g:model` generate `id`, timestamps, `deleted_at`, and `@SoftDelete()` by default; do not pass those columns yourself for new models.
+Prefer `g:resource` for models that will be HTTP-accessible, `g:model` for models that will never be exposed directly through an API, and `g:migration` for schema-only changes to existing tables. `g:resource` and `g:model` generate `id`, timestamps, `deleted_at`, and `@SoftDelete()` by default; do not pass those columns yourself for new models.
 
 Resource generator commands can be found in the [resource generator documentation](/docs/controllers/generating#resources), and the [sti-child has its own, dedicated documentation](/docs/cli/generators/sti-child), but here are some examples of the model and STI child generator:
 
@@ -49,7 +49,7 @@ In preference order:
 If a model has a `type` column and different types will have different behavior, validations, serializers, or child-specific columns, prefer STI (`--sti-base-serializer` on the parent resource, then `g:sti-child` for each child) over hand-rolling the distinction. The STI generators handle scaffolding — check constraints, per-type serializers, type-discriminated OpenAPI schemas — that's much easier to get right at generation time than to refactor in later. See the [STI guide](/docs/models/sti).
 
 :::caution
-`g:resource` unconditionally regenerates the model file, unit spec, factory, and serializer for the given model name — it does not check whether those files already exist, and there's no flag to skip them. Running `g:resource` again for a model that already has hand-edited associations, hooks, validations, or serializer fields will silently discard those edits. This mainly comes up when a model already exists (from `g:model` or a prior `g:resource`) and you need to add the missing controller/routes after the fact: commit or stash first, run the generator, then restore the hand-edited model/spec/factory/serializer files and cherry-pick only the newly generated controller, controller spec, route entry, and migration.
+`g:resource` unconditionally regenerates the model file, unit spec, factory, and serializer for the given model name — it does not check whether those files already exist, and there's no flag to skip them. Running `g:resource` again for a model that already has hand-edited associations, hooks, validations, or serializer fields will silently discard those edits. This mainly comes up when a model already exists (from `g:model` or a prior `g:resource`) and you need to add the missing controller/routes after the fact: make sure your existing work is committed before re-running it, so you can keep only the newly generated controller, controller spec, route entry, and migration.
 :::
 
 ## After the generator runs
@@ -57,7 +57,6 @@ If a model has a `type` column and different types will have different behavior,
 1. **Update the migration file as needed** (e.g., add `.unique()` to a column) before running it.
 2. **Run migrations**: `pnpm psy db:migrate`. Under the default test environment this also runs `sync` automatically — don't follow it with a separate `pnpm psy sync` in that case; see the [migrations guide](/docs/migrations/overview) for the development-environment case.
 3. **If it was a resource generator**, update the generated controller spec first, then the corresponding controller. Generated action code starts commented out, so a controller spec will hang if an action returns no response.
-4. **Commit the generated code as its own commit**, separate from your hand-written follow-up edits.
 
 ## Enum types
 

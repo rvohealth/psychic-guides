@@ -35,7 +35,7 @@ Both runners accept one or more path arguments, which are passed straight throug
 It's fine to pass multiple file patterns to a single `uspec` or `fspec` invocation — the runner manages that suite's lifecycle internally.
 
 :::caution Path filters match by prefix, not by directory
-vitest's positional path filters match by prefix/substring against file paths, not by real path-scoping. `{{PM}} fspec spec/features/host` also runs a sibling directory like `spec/features/host-verification/`, because `host` is a prefix match on both paths. Check the reported file count rather than assuming a filter scoped the run to what its path implies.
+vitest's positional path filters match by prefix/substring against file paths, not by real path-scoping. `{{PM}} fspec spec/features/host` also runs a sibling directory like `spec/features/host-verification/`, because `host` is a prefix match on both paths. Pass a full file path when you need an exact single-file run.
 :::
 
 ## Running specific specs within a file
@@ -48,7 +48,7 @@ it.skip('returns the index of Places', async () => { ... })  // Skip this
 // Also works on describe and context blocks
 ```
 
-Don't leave a `.skip` in place to paper over a flaky spec — if a spec is unreliable enough that skipping it is tempting, that's an unfinished item; record it explicitly as a follow-up rather than letting the skip rot in the file.
+`.only` and `.skip` are meant for narrowing a local run, so take care not to commit them.
 
 ## Prerequisites
 
