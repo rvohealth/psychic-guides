@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: installation
-ai_summary: "Install @rvoh/psychic-workers package. Can be selected during app provisioning or installed after. Add conf/workers.ts configuration file with background settings, named workstreams, and BullMQ options."
+ai_summary: "Install @rvoh/psychic-workers package. Can be selected during app provisioning or installed after. Add conf/initializers/workers.ts configuration file with background settings, named workstreams, and BullMQ options, registered as a psy.plugin()."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -18,15 +18,25 @@ However, if this is not the case for you and you are looking to install websocke
   code={`{{PM}} add @rvoh/psychic-workers`}
 />
 
-2. Add the missing configuration file to `src/conf/workers.ts`:
+2. Add the missing configuration file to `conf/initializers/workers.ts`:
 
 ```ts
-import os from 'os'
-import { PsychicAppWorkers } from '@rvoh/psychic-workers'
-import Redis, { Cluster } from 'ioredis'
-import AppEnv from './AppEnv'
+// conf/initializers/workers.ts
 
-export default (workersApp: PsychicAppWorkers) => {
+import os from 'os'
+import { PsychicApp } from '@rvoh/psychic'
+import { PsychicAppWorkers } from '@rvoh/psychic-workers'
+import { Queue, Worker } from 'bullmq'
+import Redis, { Cluster } from 'ioredis'
+import AppEnv from '../AppEnv.js'
+
+export default (psy: PsychicApp) => {
+  psy.plugin(async () => {
+    await PsychicAppWorkers.init(psy, initializeWorkers)
+  })
+}
+
+function initializeWorkers(workersApp: PsychicAppWorkers) {
   workersApp.set('background', {
     defaultWorkstream: {
       // https://docs.bullmq.io/guide/parallelism-and-concurrency
@@ -156,26 +166,7 @@ export default (workersApp: PsychicAppWorkers) => {
 }
 ```
 
-3. You will need to register this plugin as part of the `initializePsychicApp.ts` file within your project. It will need to look something like this:
-
-```ts
-// initializePsychicApp.ts
-
-import { PsychicApp, PsychicAppInitOptions } from '@rvoh/psychic'
-import { PsychicAppWorkers } from '@rvoh/psychic-workers'
-import psychicConf from '../../conf/app'
-import dreamConf from '../../conf/dream'
-import workersConf from '../../conf/workers'
-
-export default async function initializePsychicApp(opts: PsychicAppInitOptions = {}) {
-  const psychicApp = await PsychicApp.init(psychicConf, dreamConf, opts)
-
-  // add this line to integrate psychic workers with your app
-  await PsychicAppWorkers.init(psychicApp, workersConf)
-
-  return psychicApp
-}
-```
+3. Nothing further is needed to register the plugin. `conf/app.ts` calls `psy.load('initializers', …)`, which auto-loads every file in `conf/initializers/`, including `workers.ts` above — its default export calls `psy.plugin(...)`, which is what wires `PsychicAppWorkers.init(...)` into app boot. This is the same plugin-registration mechanism used elsewhere in Psychic; no changes to `initializePsychicApp.ts` are required.
 
 4. You will need to add some base classes to your system. These are the classes that end up providing all the backgrounding and scheduling functionality throughout your app, and they are also necessary to bridge types across your application.
 

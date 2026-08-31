@@ -12,3 +12,47 @@ Dream provides two CLI commands for scaffolding models and their associated seri
 - [generate:resource](/docs/cli/generators/resource)
 
 The generated serializers are only intended as a starting point; they almost always need to be modified to return the shape of the data needed by a real world application.
+
+## file organization
+
+Serializers typically live alongside one file per model, with STI children nested under a subdirectory named for the parent:
+
+```
+src/app/serializers/
+  PlaceSerializer.ts          # PlaceSummarySerializer, PlaceSerializer, PlaceForGuestsSerializer
+  HostSerializer.ts           # HostSummarySerializer, HostSerializer
+  RoomSerializer.ts           # RoomSummarySerializer, RoomSerializer (STI base)
+  Room/
+    BedroomSerializer.ts      # RoomBedroomSummarySerializer, RoomBedroomSerializer
+    KitchenSerializer.ts      # RoomKitchenSummarySerializer, RoomKitchenSerializer
+  LocalizedTextSerializer.ts  # LocalizedTextSerializer
+```
+
+Keep every serializer variant for a model in that model's file (or subdirectory, for STI children) rather than scattering them — the `summary` → `default` → other-key composition chain reads best when the whole family is in one place.
+
+## action-specific serializer keys
+
+Some virtual attributes only make sense in the context of one action — an upload URL and headers that are populated during creation, for example, but never present when the record is later loaded from the database. Don't add those attributes to the general-purpose serializer; an unrelated action (`show`, `index`) that returns the record without them would then fail OpenAPI response validation.
+
+Instead, create a serializer that extends the base one and adds the action-specific attributes, and register it under its own key:
+
+```ts
+// serializers/Place/PhotoSerializer.ts — base serializer omits context-specific fields
+export const PlacePhotoSerializer = (placePhoto: PlacePhoto) => PlacePhotoSummarySerializer(placePhoto)
+
+// Create-specific serializer adds upload fields only present after creation
+export const PlacePhotoCreateSerializer = (placePhoto: PlacePhoto) =>
+  PlacePhotoSerializer(placePhoto).attribute('uploadUrl').attribute('uploadHeaders')
+```
+
+```ts
+// models/Place/Photo.ts
+public get serializers(): DreamSerializers<PlacePhoto> {
+  return {
+    default: 'Place/PhotoSerializer',
+    create: 'Place/PhotoCreateSerializer',
+  }
+}
+```
+
+The controller action then selects that key explicitly (for example via `@OpenAPI(PlacePhoto, { status: 201, serializerKey: 'create' })`). After adding a new serializer key, run `pnpm psy sync` so the generated types pick it up.

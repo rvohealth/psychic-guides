@@ -23,3 +23,21 @@ Additionally, you can use the `removeDefaultScope` method to target a particular
 ```ts
 await Pet.removeDefaultScope('dream:SoftDelete').count() // 1
 ```
+
+## Which one to use
+
+Prefer `removeDefaultScope` over `removeAllDefaultScopes` whenever you're querying for a plurality of records, because it removes only the named scope and preserves every other default scope the model (or an association's model) carries. For example, an STI child also has a `dream:STI` default scope restricting it to its own type — `removeAllDefaultScopes` would drop that too, returning sibling types you didn't ask for:
+
+```ts
+// Removes only the soft-delete scope; dream:STI still restricts results to Bedroom rows
+await Bedroom.removeDefaultScope('dream:SoftDelete').all()
+
+// Also works through an association
+await user.associationQuery('places').removeDefaultScope('dream:SoftDelete').all()
+```
+
+Reach for `removeAllDefaultScopes` when you're targeting one specific record by its identity — typically a `findOrFail` — where no other default scope should be allowed to filter it out:
+
+```ts
+await Place.removeAllDefaultScopes().findOrFail(id)
+```

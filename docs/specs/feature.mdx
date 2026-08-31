@@ -2,7 +2,7 @@
 sidebar_position: 2
 title: feature
 pagination_next: null
-ai_summary: "Feature specs (end-to-end/e2e) test interactions outside backend using headless browser (Puppeteer). Written from backend context but drive frontend client. Uses Vitest. Configuration in spec/features/vite.config.ts. Launches Vite dev server for client. Programmatically starts/stops Psychic server."
+ai_summary: "Feature specs (end-to-end/e2e) test interactions outside backend using headless browser (Puppeteer). Written from backend context but drive frontend client. Uses Vitest. Configuration in spec/features/vite.config.ts. Launches Vite dev server for client. Programmatically starts/stops Psychic server in-process, so vi.spyOn stubs the backend boundary directly (vi.mock is unreliable due to boot-time controller loading). Covers organizing specs by actor/scenario, visual debugging, native date inputs, and waiting on network idle / DB polling instead of relying on toHavePath alone."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -91,6 +91,31 @@ To run feature specs, Psychic automatically provides a script in your package.js
 {{PM}} fspec`}
 />
 
+## The API server runs in-process
+
+Feature specs start the `PsychicServer` inside the same Vitest worker as the test (the generated `spec/features/setup/hooks.ts` calls `server.start(...)` in `beforeEach`, then the browser is launched). The browser talks to that server over `localhost:<port>`, but the server runs the *same module instances* the spec can see. So `vi.spyOn(SomeService, 'method')` on backend modules intercepts server-side code that runs while the browser drives the front end — exactly as in a unit or controller spec. There's no separate process and no IPC barrier.
+
+`vi.mock` is the exception. The setup file's static import of the app config pulls in `conf/routes.ts` and every controller a route file names as an argument (`r.get('/places', PlacesController, 'show')`), loading them before a spec's mock registry exists — so the mock is silently ignored and you end up spying on the runtime object instead. A controller only the boot-time loader reaches later does get mocked, which is why the same `vi.mock` can be live on one route namespace and inert on another.
+
+A common (wrong) assumption is "a feature spec runs a real server I can't reach into, so I must use a live API key or record HTTP." Not so — to make a feature spec deterministic and offline, stub the backend boundary (an external API gateway, the clock, a third-party client) with `vi.spyOn` in the feature spec, the same way you would anywhere else. Reserve HTTP recording (Polly) for cases where you genuinely want to exercise the real client code path.
+
+:::tip
+For a spy shared across specs (a `let` assigned in `beforeEach`, restored in `afterEach`), type it `MockInstance<typeof Obj.method>` (`import type { MockInstance } from 'vitest'`), not `ReturnType<typeof vi.spyOn>` — the latter resolves to `any` and passes `pnpm build:spec` but fails lint's `no-unsafe-call`/`no-unsafe-member-access` rules.
+:::
+
+### Running a real external service
+
+Occasionally a feature spec needs a real external dependency running rather than a stub — most often an emulator the front end and API both talk to (for example, a Firebase Auth emulator). The harness assumes any such dependency is already listening: `globalSetup` launches the front-end dev servers, then `hooks.ts`'s `beforeEach` starts the in-process `PsychicServer` and the browser. None of that starts external services, and all of it may depend on them being up.
+
+Supply the service from outside the harness by wrapping the existing spec command with the service's own runner, rather than editing `globalSetup` / `hooks.ts`. Prefer an `exec`-style launcher — one that starts the service, runs the wrapped command to completion, then tears it down — over a long-running "start" command, so each run owns a fresh instance and nothing leaks between runs:
+
+```jsonc
+// package.json — wrap the whole command; the harness is untouched
+"fspec": "<service> exec '<existing fspec command>'"
+```
+
+Leave `uspec` unwrapped — unit specs don't drive the browser or the dev servers, so they shouldn't pay the startup cost or depend on the service's port.
+
 ## Custom assertion matchers
 
 Psychic doesn't know much about your UI, so the assertion helpers it provides out of the box are fairly basic. That being said, this suite of tools is generally enough to get the job done for most apps.
@@ -173,6 +198,162 @@ the global helpers available to you are:
 - uncheck
 - select
 - visit
+
+### What the text matchers actually read
+
+`toMatchTextContent` / `toNotMatchTextContent` assert on what the page **renders**, not its DOM source. They collect each element's `innerText` (joined with spaces, with `input`/`textarea` values included), so they see CSS `text-transform`, visibility, and other rendered output. Two consequences follow.
+
+**Default to a case-insensitive regex for text content.** A label whose source is `5 out of 5` but is rendered with an `uppercase` class matches as `5 OUT OF 5`. The literal string fails, and hardcoding `'5 OUT OF 5'` couples the spec to cosmetic styling. Match on meaning instead:
+
+```ts
+await expect(page).toMatchTextContent(/5 out of 5/i)   // robust
+// not '5 out of 5' (fails on the transform), not '5 OUT OF 5' (pins the spec to CSS)
+```
+
+Case carries no meaning in rendered copy, so this is the outcomes-not-implementation stance applied to text. The exception is when the displayed string is an identifier whose case is part of its value — a coupon code `SAVE20`, an invite token, a case-sensitive ID. There, assert the exact case, because `/save20/i` would pass on the wrong value.
+
+Keep this separate from **specificity**. Case-insensitivity does not make a match looser on its own; an over-broad pattern does — `/error/i` also matches `no errors found`. Choose a pattern specific enough to avoid accidental substring hits, independent of case.
+
+**Split label/value markup matches contiguously.** Because per-element text is joined with spaces, `<dt>Sleeps</dt><dd>4</dd>` lands in the matched string as `Sleeps 4`, so `toMatchTextContent('Sleeps 4')` matches a label/value split with no `page.$eval` workaround. A more complex layout — a flex container around the `<dt>`/`<dd>` pair, for instance — can break that contiguity, landing extra whitespace between what look like adjacent elements in the source. If a literal contiguous match fails unexpectedly on markup that looks equivalent, fall back to a whitespace-tolerant regex (`/Sleeps\s+4/`).
+
+### What the selector matchers actually assert
+
+`toHaveSelector` is a **presence-only** assertion: it checks that the selector is attached to the DOM, regardless of visibility. A matching element hidden with `display: none` or `visibility: hidden` still passes `toHaveSelector`, the same as a visible one.
+
+`toNotHaveSelector` requires true DOM absence. A present-but-hidden element — still in the DOM but invisible via CSS — **fails** `toNotHaveSelector`; only an element that's actually unmounted or never rendered passes it.
+
+The rest of the matcher set is presence/interaction-only — `toCheck`, `toClick`/`toClickButton`/`toClickLink`/`toClickSelector`, `toFill`, `toHaveChecked`, `toHaveLink`, `toHavePath`, `toHaveSelector`, `toHaveUnchecked`, `toHaveUrl`, `toNotHaveSelector`, `toSelect`, `toUncheck` — none of these assert visibility directly. `toMatchTextContent`/`toNotMatchTextContent` are the exception: as covered above, they read rendered `innerText`, so they're visibility-sensitive by construction.
+
+When a spec genuinely needs to distinguish hidden-but-mounted from truly absent, assert the mechanism that hides the element rather than reaching for a visibility matcher that doesn't exist. If a booking confirmation banner is toggled with an `invisible` CSS class instead of being unmounted, assert the class directly:
+
+```ts
+await expect(page).toHaveSelector('.booking-confirmation')                 // still mounted either way
+const classAttr = await page.$eval('.booking-confirmation', el => el.className)
+expect(classAttr).toMatch(/\binvisible\b/)                                 // actually hidden
+```
+
+### Full example
+
+```ts
+import City from '@models/City.js'
+import createAdminUser from '@spec/factories/AdminUserFactory.js'
+import adminSignIn from '@spec/features/helpers/adminSignIn.js'
+
+describe('Cities create', () => {
+  it('allows an admin to create a new city from the index', async () => {
+    const adminUser = await createAdminUser()
+
+    await adminSignIn(adminUser, '/cities')
+
+    await expect(page).toClickLink('New City')
+    await expect(page).toHavePath('/cities/new')
+
+    await expect(page).toFill('#name', 'Denver')
+    await expect(page).toFill('#stateOrProvince', 'Colorado')
+    await expect(page).toSelect('#country', 'united_states')
+    await expect(page).toClickButton('Create City')
+
+    await expect(page).toHavePath('/cities')
+    await expect(page).toMatchTextContent('Denver')
+    await expect(page).toMatchTextContent('Colorado')
+  })
+})
+```
+
+## Organize feature specs by actor and scenario
+
+Follow the BDD convention from Cucumber/RSpec: organize by **actor** (role/persona), with filenames as **third-person verb phrases** that describe what the actor does. The directory provides the subject; the filename completes the sentence — read as "**guest** browses places", "**host** creates a place".
+
+```
+spec/features/
+  guest/
+    places/
+      browses-places.spec.ts
+      views-place.spec.ts
+      searches-places.spec.ts
+      books-place.spec.ts
+    favorites/
+      manages-favorites.spec.ts
+  host/
+    places/
+      creates-place.spec.ts
+      updates-place.spec.ts
+      deletes-place.spec.ts
+      views-places.spec.ts
+    rooms/
+      creates-room.spec.ts
+      updates-room.spec.ts
+      deletes-room.spec.ts
+      views-rooms.spec.ts
+  visitor/
+    places/
+      browses-places.spec.ts
+      searches-places.spec.ts
+      views-place.spec.ts
+    sign-up/
+      signs-up-from-booking.spec.ts
+      signs-up-from-favorite.spec.ts
+```
+
+Avoid flat naming like `guest-browses-places.spec.ts` — the directory structure already carries the actor context. Avoid bare CRUD names like `create.spec.ts` or `index.spec.ts` — those are resource-oriented, not behavior-oriented.
+
+## Debugging feature specs visually
+
+When a feature spec fails, seeing what the browser is actually rendering is much faster than guessing from assertion failure messages.
+
+- Run `pnpm fspec:visible` and watch the browser.
+- Or add `await page.screenshot({ path: '/tmp/debug.png' })` before the failing assertion, run the spec, then open the screenshot — it will show validation errors, missing elements, or unexpected page state.
+
+## Native date inputs
+
+Native `<input type="date">` inputs don't accept programmatic value setting via `toFill`, `$eval` setter tricks, or React state manipulation. The browser renders separate mm/dd/yyyy segments that must be typed through individually.
+
+Use `page.keyboard.type('MMDDYYYY')` after clicking the input:
+
+```ts
+const dateInput = await page.$('input[name="arriveOn"]')
+await dateInput!.click()
+await page.keyboard.type('06012026')  // types 06/01/2026 through segments
+```
+
+## Waiting for the browser
+
+The test process and the browser run concurrently. Before asserting on the database or interacting with the page, wait for the browser to be ready. Use `page.waitForNetworkIdle({ idleTime: 500 })` as the general-purpose wait — it covers hydration, API calls, and navigation:
+
+```ts
+// After sign-in or navigation — wait for React hydration before interacting
+await hostSignIn(page, user)
+await page.waitForNetworkIdle({ idleTime: 500 })
+
+// After a browser action that triggers an API call — wait before asserting on the database
+await clickButton(page, 'Add Comment')
+await page.waitForNetworkIdle({ idleTime: 500 })
+const comment = await post.associationQuery('comments').firstOrFail()
+expect(comment.body).toEqual('Great post!')
+```
+
+When the UI visibly changes after the API call (for example, navigation to a new path), waiting on that UI change is a cleaner signal:
+
+```ts
+await clickButton(page, 'Create Place')
+await expect(page).toHavePath('/places')        // proves the response completed
+const place = await Place.firstOrFail()          // safe to query now
+```
+
+:::caution `toHavePath` only proves completion when the path actually changes
+`toHavePath` compares the pathname only (internally `new URL(href).pathname`), so it ignores the query string. A spec that starts on `/places?placeId=123`, triggers a delete, and asserts `await expect(page).toHavePath('/places')` passes the moment it runs — the pathname was already `/places` before the mutation, so nothing was waited for and the row may still exist.
+
+When the path doesn't change, wait on the eventual state instead. Poll the database for the actual outcome:
+
+```ts
+await clickButton(page, 'Delete')
+await expect
+  .poll(async () => await Place.find(place.id))
+  .toBeNull()                                   // waits for the delete to land
+```
+
+Or wait on a UI signal genuinely tied to the mutation finishing (a removed row, a success banner) — not on a `toHavePath` that was already true.
+:::
 
 ## Cleanup
 

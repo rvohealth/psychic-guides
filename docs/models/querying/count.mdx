@@ -44,3 +44,22 @@ await User.where({ active: true }).whereNot({ email: null }).count() // 5
 :::info
 Did you know that `count` can be pretty expensive to execute if you have a lot of data in your table? Consider using [`exists`](/docs/models/querying/exists) instead, if it can fit your use case.
 :::
+
+## Grouped counts: `countBy`
+
+`count` collapses the whole query to a single number. When you need a count broken out per group instead — a booking count for each place on a dashboard, in one query — use `countBy`. It stays entirely in Dream, so there's no ejecting to Kysely and no hand-written `GROUP BY`:
+
+```ts
+const placeIds = places.map(place => place.id)
+
+// One query, grouped on the FK. Query the associated model directly so its own
+// default scopes still apply.
+const pendingByPlaceId = await Booking.where({ placeId: placeIds, confirmedAt: null }).countBy('placeId')
+
+// Only groups with a matching row appear in the Map, so seed absent places to 0.
+places.forEach(place => (place.pendingBookingCount = pendingByPlaceId.get(place.id) ?? 0))
+```
+
+`countBy(groupColumn)` runs one query, grouping on that column, and returns `Map<groupValue, number>`. Only groups with at least one matching row are present in the returned `Map` — seed absent keys with `map.get(key) ?? 0` — and a nullable group column produces a real `null` key. The counts arrive already coerced to `number`, with no manual `Number(...)` cast needed. Grouping also works over a joined association column (`Place.query().innerJoin('bookings').countBy('bookings.status')`) and inside an `associationQuery`.
+
+Reach for [`toKysely('select')`](/docs/models/querying/toKysely) only when the grouping is beyond this family — multiple group columns, `HAVING`, or a distinct-count.

@@ -25,6 +25,8 @@ NODE_ENV=test {{PM}} psy db:migrate`}
 - `--skip-sync`: Skips syncing local schema after running migrations.
 - `-h, --help`: Display help for command.
 
+Type sync only runs when `NODE_ENV=test` — generated types (`src/types/db.ts`, `src/types/dream.ts`) are only ever built from the test database. Running `db:migrate` against development migrates that database but does not update `src/types/`; run it under the default test environment as well so the types stay current. If sync fails after a migration (for example, a model still references a renamed table), Dream reverts the generated type files to their pre-sync content. The migration itself is unaffected — it already committed and is recorded as applied — so there's no need to `db:rollback` on the assumption the two are out of sync; fix the underlying problem and run `psy sync` to regenerate the types.
+
 ## db\:rollback
 
 Rolls back the specified number of migration steps (defaults to 1):
@@ -102,5 +104,9 @@ Fails if migrations need to be run.
 ### Options
 
 - `-h, --help`: Display help for command.
+
+## Troubleshooting
+
+**"Corrupted migrations" error**: switching between branches with different migrations can leave the migration table out of sync with the files on disk, and `db:migrate` fails with a "corrupted migrations" error. Fix it with `db:reset`.
 
 For full details, see the [migration documentation](/docs/migrations/overview)

@@ -19,6 +19,16 @@ select distinct on ("users"."name") "users".* from "users"
   </pre>
 </RoutesOutput>
 
+## Distinct on the primary key, or clearing distinct
+
+Calling `distinct()` with no argument, or `distinct(true)`, distincts on the primary key. `distinct(false)` clears a `distinct` applied earlier in the chain:
+
+```ts
+await Host.query().distinct().all()       // DISTINCT on the primary key
+await Host.query().distinct(true).all()   // same as above
+await Host.query().distinct('familyName').distinct(false).all()  // distinct cleared
+```
+
 ## Chaining
 
 Similar to other execution methods, `distinct` is chainable to other query-building methods, such as `where`:

@@ -1,16 +1,83 @@
 ---
-ai_summary: "The toKysely method returns the current query converted to a Kysely query builder. Useful for debugging and low-level Kysely manipulation. Can also convert queries to SQL using sql method."
+ai_summary: "The toKysely method converts a Dream query (or model class) into a Kysely query builder, for select, update, or delete. It is the preferred escape hatch when Dream's public API cannot express part of a query. Because association traversal, not toKysely, is what applies association 'and' clauses and associated default scopes, always build the full Dream query and traverse every association first, then call toKysely as the last step."
 ---
+
 # toKysely
 
-The `toKysely` method returns the current query, converted to a Kysely query:
+Always prefer Dream's built-in query and association APIs first. Only reach for `toKysely` when the SQL you need genuinely isn't covered by Dream's public API, or as a final low-level step once a Dream query has already done everything it can. Don't jump straight to Kysely for routine filtering, joining, eager loading, aggregation, pagination, or association traversal — Dream covers all of these natively.
+
+The `toKysely` method returns the current query, converted to a Kysely query builder:
 
 ```ts
 const selectQuery = User.where({ email: 'howyadoin' }).toKysely('select')
 // SelectQueryBuilder{}
 ```
 
-This is generally useful for debugging purposes, since it is often useful to tinker around in low level Kysely to compare to queries being executed in Dream.
+You can also convert directly from the model class:
+
+```ts
+await Place.toKysely('select').where('name', '=', 'Cozy Cabin').execute()
+```
+
+Supported forms:
+
+- `Model.toKysely('select')`
+- `Model.toKysely('update')`
+- `Model.toKysely('delete')`
+- `query.toKysely('select' | 'update' | 'delete')`
+
+## Eject late, never early
+
+`toKysely` carries the base model's own default scopes (including `dream:SoftDelete`), but the danger is associations. `and` clauses on `HasOne`/`HasMany` associations, and the default scopes of associated tables (soft-delete, STI), are applied by Dream's association traversal — not by `toKysely` on the base query. If you eject early and hand-join an associated table in raw Kysely (or hand-roll the whole query from a typed `db()`, which drops even the base scope), those associated tables get no soft-delete filter and no `and` clause, and soft-deleted or otherwise excluded rows can silently reappear.
+
+The rule: build the full Dream query and traverse every association first, then call `toKysely` as the final step for the one thing Dream can't express.
+
+```ts
+const query = Place.query()
+  .where({ style: 'cabin' })
+  .leftJoin('rooms as r')
+
+// Keeps Dream's scopes and association-aware join setup in play until the
+// low-level SQL step
+const rows = await query
+  .toKysely('select')
+  .select(['places.id', 'r.type as roomType'])
+  .where('r.type', '=', 'Bedroom')
+  .execute()
+```
+
+## Correlated and aggregate subqueries
+
+[`nestedSelect`](/docs/models/querying/nestedSelect) covers most in-Dream subqueries, but it projects a single column and can't correlate to the outer query. When a subquery must reference the outer row (correlated) or project an aggregate (`count`/`sum`/…), build it in Kysely — but source the inner table from a scoped Dream query (`AssocModel.query().toKysely('select')`), never a raw `db().selectFrom('table')`. This keeps the association's own default scopes in the compiled SQL instead of hand-rolling something like `deleted_at is null`, which silently rots the day the model gains another default scope.
+
+Correlate the standalone subquery to the outer row with `sql.ref('outer_table.col')` (from `kysely`) as the `whereRef` right-hand side — a standalone builder's table context only includes its own `FROM` tables, so a bare string won't type-check against the outer table.
+
+```ts
+import { sql } from 'kysely'
+
+// Places with more than five non-soft-deleted bookings. A correlated aggregate
+// can't be a nestedSelect, so drop to Kysely — but source the inner count from
+// Booking.query() so Booking's soft-delete scope is applied by Dream, not
+// hand-written as `deleted_at is null`.
+const rows = await Place.query()
+  .toKysely('select')                          // carries Place's own default scopes
+  .where(eb =>
+    eb(
+      Booking.query()                          // scoped Dream query, not db().selectFrom('bookings')
+        .toKysely('select')
+        .clearSelect()
+        .whereRef('bookings.placeId', '=', sql.ref('places.id'))
+        .select(eb2 => eb2.fn.countAll<number>().as('count')),
+      '>',
+      5,
+    ),
+  )
+  .execute()
+```
+
+## Starting from scratch with typed `db()`
+
+Every Psychic project provides a typed Kysely entrypoint in `src/db/index.ts`, exported as `db`. Reach for `db()` only when a query is genuinely SQL-first and doesn't naturally begin from a Dream model or association — database-specific functions, CTE-heavy construction, unions, window functions, and similar cases. If a Dream model is the natural anchor, prefer `Model.query().toKysely(...)` over starting from `db()`. Don't use `db()` for anything already covered cleanly by Dream — `where`, joins, `order`, `pluck`, `pluckEach`, aggregates, pagination, preloading, or association queries.
 
 :::tip
 Did you know that you can convert your Dream queries to SQL? See the [`sql` guide](/docs/models/querying/sql) for more info.

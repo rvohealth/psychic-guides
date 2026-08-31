@@ -119,3 +119,36 @@ DELETE   /v1/host/places/:id  V1/Host/Places#destroy
 </RoutesOutput>
 
 To learn more about techniques for namespacing, see the [namespacing guide](/docs/routing/namespacing).
+
+## Namespacing and authentication
+
+A namespace's top-level segment isn't just a URL grouping — it lines up with the controller directory tree, which **is** Psychic's authentication architecture (see [controller overview — authentication architecture](/docs/controllers/overview#authentication-architecture)). Authed client endpoints live under `v1/...`. Any surface that *loosens* authentication — public/maybe-authed reads, external webhooks, a server-to-server partner API — gets its **own top-level namespace**, with its version nested inside, never nested a level down inside `v1/`:
+
+```ts // conf/routes.ts
+import { PsychicRouter } from '@rvoh/psychic'
+
+export default function routes(r: PsychicRouter) {
+  // Authed client API — everything under v1/ is authenticated.
+  r.namespace('v1', r => {
+    r.namespace('host', r => {
+      r.resources('places')
+    })
+  })
+
+  // A surface that LOOSENS auth is its OWN top-level namespace, version nested inside —
+  // never under v1/. The directory tree is the auth architecture.
+  r.namespace('webhooks', r => {     // unauthed external callbacks: /webhooks/v1/zoom
+    r.namespace('v1', r => {
+      r.post('zoom', WebhooksV1ZoomController, 'create')
+    })
+  })
+
+  r.namespace('api', r => {          // server-to-server partner API: /api/v1/reservations
+    r.namespace('v1', r => {
+      r.resources('reservations', { only: ['index', 'show', 'create'] })
+    })
+  })
+}
+```
+
+`v1/webhooks/...` would bury an auth change deep inside the authed client branch, which is exactly what the directory-based auth model is meant to prevent. The maybe-authed `Visitor` surface follows the same rule — it's top-level too, and can still map to a clean `/v1/...` URL via an explicit `controller:` reference; see [Keeping an auth-context directory out of the URL](/docs/routing/namespacing#keeping-an-auth-context-directory-out-of-the-url).

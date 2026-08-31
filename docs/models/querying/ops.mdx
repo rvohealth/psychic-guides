@@ -1,5 +1,5 @@
 ---
-ai_summary: "The ops object provides query operators for building complex WHERE conditions. Includes pattern matching (like, ilike), membership (in), comparison operators (expression, gte, lte, gt, lt, eq, neq), and similarity operators for fuzzy text searching."
+ai_summary: "The ops object provides query operators for building complex WHERE conditions. Includes pattern matching (like, ilike), membership (in), comparison operators (expression, lessThan, lessThanOrEqualTo, greaterThan, greaterThanOrEqualTo), array containment/equality (any, equal), and similarity operators for fuzzy text searching. escapeLikePattern escapes user input used inside a LIKE/ILIKE pattern."
 ---
 # ops
 
@@ -14,3 +14,46 @@ await User.where({ email: ops.like('%burpcollaborator.net%') }).destroy()
 await User.where({ email: ops.ilike('%burpcollaborator.net%') }).destroy()
 await User.where({ id: ops.expression('<=', 23) }).destroy()
 ```
+
+## Comparison operators
+
+`ops.lessThan` / `ops.lessThanOrEqualTo` and `ops.greaterThan` / `ops.greaterThanOrEqualTo` express bounded comparisons directly. They're especially useful for two-column interval overlap checks, where each boundary needs to be visible at the call site — choose `<` vs `<=` (and `>` vs `>=`) based on whether touching interval boundaries count as overlap in your domain:
+
+```ts
+const overlaps = await Booking.where({
+  place,
+  startsOn: ops.lessThanOrEqualTo(requestedEndsOn),
+  endsOn: ops.greaterThan(requestedStartsOn),
+}).exists()
+```
+
+When a single column has a natural lower and/or upper bound instead, prefer the `range` helper from `@rvoh/dream/utils` — see the [range guide](/docs/utils/range).
+
+## Escaping user input in LIKE / ILIKE patterns
+
+`%` and `_` are SQL wildcards inside `LIKE` / `ILIKE` patterns. When the pattern is built from user input, wrap the variable in `escapeLikePattern` so those characters match literally instead of acting as wildcards:
+
+```ts
+import { ops, escapeLikePattern } from '@rvoh/dream'
+
+// User-controlled search term — escape it before interpolating into the pattern
+const term = this.castParam('search', 'string')
+query = query.where({ name: ops.ilike(`%${escapeLikePattern(term)}%`) })
+```
+
+Escape only the user-controlled portion. The wildcard markers (`%` and `_`) you add yourself are not passed through the helper.
+
+## Array column containment and equality
+
+A bare array in `where()` (`where({ status: [...] })` → `IN`) means the same thing for every column, array-typed or not — Dream never special-cases it into containment or array equality. "The column contains this array" is ambiguous on its own (does order matter? duplicates?), so rather than guess, a bare array always means `IN`, and `ops` says which array comparison you actually want:
+
+| What you want | How you write it | SQL |
+| --- | --- | --- |
+| The column contains this element | `where({ tags: ops.any('quiet') })` | `"tags" @> ARRAY[$1]::text[]` |
+| The column is exactly this array | `where({ tags: ops.equal(['quiet', 'walkable']) })` | `"tags" = $1` |
+
+`ops.any` throws `AnyRequiresArrayColumn` if the target column isn't an array type. `ops.equal` is order-sensitive — `ops.equal(['quiet', 'walkable'])` does not match a `tags` value of `['walkable', 'quiet']` — and its element types are constrained by the column, so passing a value outside an enum array column's allowed members is a compile-time error. `ops.equal` doesn't support `json[]` columns (Postgres defines no equality operator for `json`, only `jsonb`); use `jsonb[]` if you need array equality on JSON data.
+
+## Similarity operators
+
+`ops.similarity`, `ops.wordSimilarity`, and `ops.strictWordSimilarity` provide fuzzy text matching backed by PostgreSQL's `pg_trgm` extension. See the [similarity guide](/docs/models/querying/similarity) for setup and usage.

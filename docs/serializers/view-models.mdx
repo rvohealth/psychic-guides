@@ -66,3 +66,41 @@ public async show() {
 ```
 
 Since `ObjectSerializer` doesn't have access to any database schema, you'll need to provide the `openapi` option for every attribute.
+
+## export every ObjectSerializer used by another serializer
+
+When one serializer passes an `ObjectSerializer` function to another serializer's `rendersOne` or `rendersMany` (via the `serializer` option), export that `ObjectSerializer` function. Exported serializers register as named OpenAPI schemas; a local, non-exported nested serializer can generate an anonymous `Unnamed` schema instead, and multiple anonymous shapes can collapse into the same anonymous type — which causes generated clients to silently lose fields.
+
+Runtime serializer global names are built from the file path plus the export name, so the same exported function name in two different directories doesn't by itself cause a naming conflict at runtime. OpenAPI component names for named exports, though, are based on the export name alone, so two OpenAPI-visible serializers sharing an export name can still collide in the generated schema. When a view-model or computed-shape serializer's export name overlaps a Dream model serializer's domain noun, give it a distinct name — a `ViewSerializer` suffix is a reasonable convention.
+
+## a compound response is still one serializer
+
+When a controller action returns a hand-shaped envelope — a record plus a related collection (`{ place, nearby }`), or a computed array alongside serialized models — model the whole envelope as one composing `ObjectSerializer` rather than reaching for a hand-written `responses` block. `rendersOne`/`rendersMany` accept a serializer function via `{ serializer }`, or a Dream-model field by key via `{ dreamClass, serializerKey }`:
+
+```ts
+// Action returns { place: Place; nearby: Place[] }
+export const PlaceWithNearbySerializer = (place: Place, nearby: Place[]) =>
+  ObjectSerializer({ place, nearby })
+    .rendersOne('place', { serializer: PlaceSummarySerializer })
+    .rendersMany('nearby', { serializer: PlaceSummarySerializer })
+```
+
+The action is then `@OpenAPI(PlaceWithNearbySerializer, { status: 200 })` over `this.ok(PlaceWithNearbySerializer(place, nearby))`. The schema is derived and validated under test instead of hand-maintained, so it can't drift from the actual response. This is worth doing even for a one-off envelope — a composing serializer stays the single source of truth where a hand-written `responses` block does not.
+
+## rendering an async-computed shape on the model
+
+`rendersOne`/`rendersMany` accept any declared property, not only associations, so a shape that has to be computed asynchronously can be assigned in the controller and rendered as a field of the model itself. Prefer the compound-envelope pattern above when you can; reach for this instead only when the computed shape needs to sit *inside* the model's own object — typically because the models render as a collection, where an envelope can't reach individual items:
+
+```ts
+// Place.ts — a declared property, not a column
+public availabilitySummary: PlaceAvailabilitySummaryView | null = null
+
+// PlaceSerializer.ts — `serializer` is required for a non-Dream, non-view-model value
+.rendersOne('availabilitySummary', { serializer: PlaceAvailabilitySummaryViewSerializer, optional: true })
+
+// PlacesController.ts
+place.availabilitySummary = await PlaceAvailabilityService.summarize(place)
+this.ok(place)
+```
+
+`optional: true` keeps actions that leave the property unassigned from failing response validation. Export the nested `ObjectSerializer` so it registers as a named OpenAPI component, per the rule above. Either way, don't hand-write the `openapi` shape for the nested object — build it as an `ObjectSerializer` instead.

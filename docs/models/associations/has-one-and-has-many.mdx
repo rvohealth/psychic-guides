@@ -163,6 +163,7 @@ class Balloon extends ApplicationModel {
 When an association is defined with an `order`, that ordering is automatically applied whenever `loading` or [`preloading`](/docs/models/querying/preload) models. Association `order` supports the same options as query [`order`](/docs/models/querying/order).
 
 ```ts
+// models/GraphNode.ts
 export default class GraphNode extends ApplicationModel {
   // ...
 
@@ -193,6 +194,7 @@ export default class GraphNode extends ApplicationModel {
   public edgesOrderedByWeight: GraphEdge[]
 }
 
+// models/EdgeNode.ts
 export default class EdgeNode extends ApplicationModel {
   // ...
 
@@ -208,6 +210,7 @@ export default class EdgeNode extends ApplicationModel {
   public nodeId: DreamColumn<EdgeNode, 'nodeId'>
 }
 
+// models/GraphEdge.ts
 export default class GraphEdge extends ApplicationModel {
   // ...
   public weight: DreamColumn<GraphEdge, 'weight'>
@@ -283,6 +286,7 @@ For example, suppose we have an ArtExhibit, and that each day, we want to featur
 const exhibits = await ArtExhibit.preload('featuredArtwork`).all()
 // each exhibit now has its `featureArtwork` loaded and ready to serialize, etc.
 
+// models/ArtExhibit.ts
 export default class ArtExhibit extends ApplicationModel {
   // ...
 
@@ -299,6 +303,7 @@ export default class ArtExhibit extends ApplicationModel {
   public featuredArtwork: Artwork
 }
 
+// models/Artwork.ts
 export default class Artwork extends ApplicationModel {
   // ...
 
@@ -311,6 +316,26 @@ export default class Artwork extends ApplicationModel {
 }
 ```
 
+### withoutDefaultScopes
+
+To skip a model's default scopes (such as `dream:SoftDelete`) when loading the association, pass the scope name(s):
+
+```ts
+class Place extends ApplicationModel {
+  @deco.HasMany('Booking', { withoutDefaultScopes: ['dream:SoftDelete'] })
+  public allBookings: Booking[] // includes soft-deleted bookings
+}
+```
+
+### DreamConst in association conditions
+
+The `and` option supports two special `DreamConst` values instead of a fixed value, both covered above under [And](#and):
+
+- **`DreamConst.passthrough`** — the value is supplied at query time via `.passthrough({ column: value })`. Throws `MissingRequiredPassthroughForAssociationAndClause` if the value is `undefined` — pass `null` instead when there's genuinely no value.
+- **`DreamConst.required`** — the value must be provided via `{ and: { column: value } }` conditions whenever the association is used in any query (`load`, `preload`, `innerJoin`, `leftJoin`, `associationQuery`, `association`, etc.). Throws `MissingRequiredAssociationAndClause` if not provided. Because the value can only be supplied for the association actually named in the query, an association carrying `DreamConst.required` cannot serve as an intermediate hop of a `through` chain — bridging across it always throws.
+
+Both are required — the difference is *how* the value is supplied. Use `passthrough` when the value comes from broad query context (e.g. locale from a request header); use `required` when the value is specific to a particular association-loading call. **Neither can be combined with `dependent: 'destroy'`.**
+
 ### SelfAndNot
 
 `selfAndNot` adds a `andNot` clause to an association between a column on the associated model and a column on this model.
@@ -321,6 +346,7 @@ For example, the below `siblings` association matches all EdgeNodes attached to 
 const siblingEdgeNodes = await edgeNode.load('siblings').execute()
 // siblingEdgeNodes is all of edgeNode's siblings
 
+// models/EdgeNode.ts
 export default class EdgeNode extends ApplicationModel {
   // ...
 
@@ -336,6 +362,7 @@ export default class EdgeNode extends ApplicationModel {
   public siblings: EdgeNode[]
 }
 
+// models/GraphNode.ts
 export default class GraphNode extends ApplicationModel {
   // ...
 

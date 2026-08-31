@@ -97,7 +97,7 @@ Drop a value from an enum and replace it with null (if a nullable column) or a d
 
 ```ts
 export async function up(db: Kysely<any>): Promise<void> {
-  await DreamMigrationHelpers.dropEnumValue(_db, {
+  await DreamMigrationHelpers.dropEnumValue(db, {
     enumName: 'room_types_enum',
     value: 'WaterCloset',
     replacements: [
@@ -121,7 +121,7 @@ export async function down(db: Kysely<any>): Promise<void> {
 
 ```ts
 export async function up(db: Kysely<any>): Promise<void> {
-  await DreamMigrationHelpers.dropEnumValue(_db, {
+  await DreamMigrationHelpers.dropEnumValue(db, {
     enumName: 'appliance_types_enum',
     value: 'crockpot',
     replacements: [
@@ -143,7 +143,7 @@ export async function down(db: Kysely<any>): Promise<void> {
 }
 ```
 
-New enum values cannot be both added and used as a replacement in a single transaction, and new migration files are generally run in a single transaction. To both add a new enum and replace existing values with that new value, use two migration files, and include both `newTransaction` and the `dropEnumValue` in the second file, e.g.:
+New enum values cannot be both added and used as a replacement in a single transaction, and new migration files are generally run in a single transaction. This isn't specific to `dropEnumValue` replacements — **any** migration that adds an enum value and then uses that value (an insert, an update, a `dropEnumValue` replacement) needs the addition committed in its own transaction before a later migration can use it. To both add a new enum and replace existing values with that new value, use two migration files, and include both `newTransaction` and the `dropEnumValue` in the second file, e.g.:
 
 <PackageManagerTabs
   code={`{{PM}} psy g:migration add-bathroom-to-room-types
@@ -169,7 +169,7 @@ export async function down(): Promise<void> {}
 export async function up(db: Kysely<any>): Promise<void> {
   DreamMigrationHelpers.newTransaction()
 
-  await DreamMigrationHelpers.dropEnumValue(_db, {
+  await DreamMigrationHelpers.dropEnumValue(db, {
     enumName: 'room_types_enum',
     value: 'WaterCloset',
     replacements: [
@@ -190,6 +190,12 @@ export async function down(db: Kysely<any>): Promise<void> {
   })
 }
 ```
+
+Dream detects the transaction boundary with a plain string search for `DreamMigrationHelpers.dropEnumValue` or `DreamMigrationHelpers.newTransaction()` in the migration file's contents — it isn't parsing the AST. Don't rename the import (e.g. `import { DreamMigrationHelpers as DMH } from '@rvoh/dream/db'`), or Dream won't detect the boundary and the migration runs in the shared transaction anyway.
+
+**A column `DEFAULT` or a check constraint referencing the enum blocks `dropEnumValue`.** Internally it retypes each replacement column to `text`, drops and re-creates the enum type, then retypes back with `USING column::enum`. A `DEFAULT` on that column fails the retype-to-text step, and a check constraint comparing against the enum's values fails the same way (a type-agnostic check such as `column IS NOT NULL` doesn't block it). Drop the default before the first `dropEnumValue` and re-establish it after; drop each value-comparing check constraint with [`dropConstraint`](#dropconstraint) before the first `dropEnumValue`, re-adding whichever should survive.
+
+**A fully-restoring rollback must be split across the pair, exactly like the forward pass.** The minimal `down()` shown above only re-adds the dropped value, which is safe on its own. But a `down()` that also maps rows back with `dropEnumValue` can't `addEnumValue` and `dropEnumValue` in the same file — same one-transaction constraint as the forward pass. Mirror the split: put the re-`addEnumValue` calls in the second migration's `down()`, and the row-mapping `dropEnumValue` calls in the first migration's `down()`. The pair then rolls back together with `db:rollback --steps 2`.
 
 ## Encryption
 

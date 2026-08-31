@@ -79,6 +79,37 @@ DateTime.fromISO('2024-01-15T10:30:45.123456Z')
 import { DateTime, CalendarDate, ClockTime, ClockTimeTz } from '@rvoh/dream'
 ```
 
+## Parsers Throw on Invalid Input
+
+Every parser on every one of these four classes — `fromISO`, `fromSQL`, `fromFormat`, `fromObject` — throws on unparsable or calendar-impossible input rather than returning a value or a null-ish sentinel. There is no "invalid instance" to inspect: `DateTime.fromISO('garbage')` throws immediately, so a guard like `if (!DateTime.fromISO(v).toISODate()) { ... }` never reaches its check. A calendar-clean-but-impossible string (`'2026-02-31'`) throws just like `'garbage'` does.
+
+Each class throws its own error, exported from `@rvoh/dream/errors` (not from `@rvoh/dream`):
+
+| Class          | Error thrown         |
+| -------------- | --------------------- |
+| `DateTime`     | `InvalidDateTime`     |
+| `CalendarDate` | `InvalidCalendarDate` |
+| `ClockTime`    | `InvalidClockTime`    |
+| `ClockTimeTz`  | `InvalidClockTimeTz`  |
+
+To validate an untrusted date string (a query param, a value from an external system), parse it and catch the specific error you expect — never a bare `catch` that swallows anything:
+
+```ts
+import { DateTime } from '@rvoh/dream'
+import { InvalidDateTime } from '@rvoh/dream/errors'
+
+function parseISODateOrNull(v: string): DateTime | null {
+  try {
+    return DateTime.fromISO(v)
+  } catch (e) {
+    if (e instanceof InvalidDateTime) return null
+    throw e
+  }
+}
+```
+
+See each class's own "Error Handling" section ([`DateTime`](./date-time.mdx#error-handling), [`CalendarDate`](./calendar-date.mdx#error-handling), [`ClockTime`](./clock-time.mdx#error-handling), [`ClockTimeTz`](./clock-time-tz.mdx#error-handling)) for class-specific examples.
+
 ## JavaScript Date Interop
 
 Use JavaScript `Date` only at platform or third-party API boundaries. Convert incoming `Date` values to Dream classes immediately, and convert out only when an external API explicitly requires a native `Date`.

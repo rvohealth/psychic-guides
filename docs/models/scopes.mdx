@@ -1,6 +1,6 @@
 ---
 sidebar_position: 10
-ai_summary: "Scopes capture recurring query behavior into reusable functions. Use @deco.Scope() decorator. Default scopes automatically apply to all queries. Scope functions receive Query instance and return modified query (usually via where)."
+ai_summary: "Scopes capture recurring query behavior into reusable functions. Use @deco.Scope() decorator. Default scopes automatically apply to all queries. Scope functions receive Query instance and return modified query (usually via where). Two default scopes are built in: dream:SoftDelete and dream:STI. Bypass with removeDefaultScope (plurality) or removeAllDefaultScopes (single record)."
 ---
 
 # scopes
@@ -36,3 +36,16 @@ export default class Post extends ApplicationModel {
   }
 }
 ```
+
+### Built-in default scopes
+
+Two default scopes are built into Dream and applied automatically — you don't declare either one yourself:
+
+- **`dream:SoftDelete`** — added by the `@SoftDelete()` decorator, hides records where `deletedAt` is not null. See [destroying](/docs/models/destroying#softdelete).
+- **`dream:STI`** — added by the `@STI()` decorator, restricts a child model's queries to rows of its own type. See [single table inheritance](/docs/models/sti).
+
+An STI child of a soft-deletable parent carries both: the inherited `dream:SoftDelete` scope plus its own `dream:STI` scope.
+
+### Bypassing default scopes
+
+Use `removeDefaultScope('name')` to bypass one named default scope while querying for a plurality of records — it leaves other default scopes (including any other model's default scopes reached through an association) in place. Use `removeAllDefaultScopes()` when targeting one specific record, where no other scope should filter it out. See [removeDefaultScope and removeAllDefaultScopes](/docs/models/querying/removeDefaultScope) for the full rationale and examples.

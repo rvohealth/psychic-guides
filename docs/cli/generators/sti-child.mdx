@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: sti-child
-ai_summary: 'The generate:sti-child command creates STI (Single Table Inheritance) child models that extend a parent model. Requires parent model to be created first with --sti-base-serializer flag. Supports same column types as model generator, plus --model-name, --admin-serializers, and --internal-serializers options.'
+ai_summary: 'The generate:sti-child command creates STI (Single Table Inheritance) child models that extend a parent model. Requires parent model to be created first with --sti-base-serializer flag. Supports same column types as model generator, plus --model-name, --admin-serializers, and --internal-serializers options. ALTERs the parent table (no migration if no columns), rejects belongs_to columns, and never accepts --no-soft-delete.'
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -105,4 +105,15 @@ Then create an STI child:
 
 ## Supported Column Types
 
-STI child models support the same column types as the [model generator](/docs/models/generating). Child-specific columns are added to the parent table; STI children should not declare their own associations, `@SoftDelete()`, `@Sortable()`, or `@ReplicaSafe()` decorators.
+STI child models support the same column types as the [model generator](/docs/models/generating). Child-specific columns are added to the parent table; STI children should not declare their own associations, `@SoftDelete()`, `@Sortable()`, or `@ReplicaSafe()` decorators. `g:sti-child` enforces the associations rule at generation time by rejecting `belongs_to` columns — declare the association on the parent instead.
+
+## What Gets Generated
+
+- A Dream STI child model decorated with `@STI(ParentClass)`
+- Child serializers that extend the parent's serializers
+- A migration that **ALTERs the parent table** (never a new table) to add any child-specific columns, plus check constraints that require those columns to be non-null only for rows of that child type. **When the child declares no additional columns, no migration is emitted at all** — STI children share the parent's table, so a columnless child needs no schema change.
+- Factory and spec skeletons
+
+STI children never receive `@SoftDelete()` — soft delete is enforced at the STI parent level — and `g:sti-child` does not accept a `--no-soft-delete` flag.
+
+`@STI()` always names the base model, even when the child's TypeScript `extends` chain runs deeper than one level (e.g. a `Bunkroom extends Bedroom` must still be decorated `@STI(Room)`, not `@STI(Bedroom)`). See [single table inheritance](/docs/models/sti#sti-is-exactly-one-level-deep) for what breaks when this rule is missed.

@@ -73,6 +73,22 @@ export default class V1HostPlacesController extends V1HostBaseController {
 }
 ```
 
+### Bounding length and range
+
+Beyond `enum`/`allowNull`, `castParam` also enforces size bounds: `minLength`/`maxLength` on a `'string'`, and `minimum`/`maximum` on a `'number'`/`'integer'`/`'bigint'`. All four are inclusive and checked *after* type coercion; a violation throws and Psychic renders it as a `400`. Bound untrusted request input at the boundary rather than validating it later in a model or service:
+
+```ts
+this.castParam('title', 'string', { minLength: 1, maxLength: 200 })
+this.castParam('nightlyRateCents', 'integer', { minimum: 0, maximum: 100_000_000 })
+this.castParam('sleeps', 'integer', { minimum: 1, maximum: 20, allowNull: true })
+```
+
+For array casts (`'string[]'`, `'integer[]'`, …) the bounds apply **element-wise** — each element must satisfy them — and `bigint` range checks compare without precision loss.
+
+### String params are trimmed automatically
+
+Psychic strips leading and trailing whitespace from string params before validation and casting — `'  Cozy Cabin  '` arrives as `'Cozy Cabin'`. This applies to scalar `'string'` params, `enum` strings, and the elements of string and enum arrays. Both `castParam` and `extractParams` resolve strings through the same path, so there's no need to re-trim in a controller, a model setter, or a hook.
+
 ### casting openapi shapes
 
 The `castParam` method is also able to interpret OpenAPI shapes, and will return types data back to you based on the provided shape.
@@ -117,7 +133,29 @@ The `allowed` array is compile-time constrained to the model's param-safe column
 
 `extractParams` is the canonical primitive for controllers handling user-editable models. The generator emits it for every scaffolded create / update action.
 
-## paramSafeColumns
+### Always-excluded columns
+
+Some columns are stripped from `extractParams` regardless of what the allowlist names, because they should never be mass-assignable:
+
+- The primary key (defaults to `id`)
+- `createdAt` / `updatedAt` / `deletedAt`
+- The `type` field of STI models
+- Foreign keys of BelongsTo associations
+- The polymorphic type field of polymorphic BelongsTo associations
+
+Since foreign keys are excluded, find the parent resource explicitly and pass it as an association instead of pulling the id through `extractParams`:
+
+```ts
+const place = await Place.findOrFail(this.castParam('placeId', 'uuid'))
+const favoritePlace = await this.currentUser.createAssociation('favoritePlaces', {
+  ...this.extractParams(FavoritePlace, ['rating', 'note']),
+  place,
+})
+```
+
+Scope that lookup through the current user where you can (`this.currentUser.associationQuery('places').findOrFail(...)`) rather than a bare `Place.findOrFail(...)`, so the record load and the authorization check are the same query.
+
+## paramSafeColumns and paramUnsafeColumns
 
 The attributes that may be updated via params can be further restricted by providing a `paramSafeColumns` getter on any Dream model (see [paramSafeColumns](/docs/models/paramSafeColumns)):
 
@@ -130,6 +168,63 @@ export default class User extends ApplicationModel {
 ```
 
 `extractParams(User, ['email'])` intersects the explicit allowlist with the declared safe columns; passing a column the model doesn't permit is a no-op at runtime (and a TypeScript error at compile time).
+
+Reach for `paramSafeColumns` when you want to enumerate a model's *whole* safe set. When you only need to block one or two columns from ever being bulk-assignable — an admin/role flag, an internal payout-account id — use `paramUnsafeColumns` instead; it layers on top of the always-excluded set above without you having to re-enumerate every other safe column:
+
+```ts
+public get paramUnsafeColumns(): DreamColumnNames<Friend>[] {
+  return ['bff']
+}
+```
+
+Neither getter is something to add reflexively to every model — only where a column genuinely must never be assignable no matter what a controller's own allowlist says.
+
+### Generator output: a shared `paramSafeColumns` const
+
+`g:resource` (and related generators) emit a shared `paramSafeColumns` const at the top of the controller file and reference it from every `create` / `update` action — and from those actions' `@OpenAPI` `requestBody` — so the allowlist stays visible at the call site without duplicating the array per action:
+
+```ts
+import { OpenAPI } from '@rvoh/psychic'
+import { DreamParamSafeColumnNames } from '@rvoh/dream/types'
+import Post from '@models/Post.js'
+
+const paramSafeColumns: DreamParamSafeColumnNames<Post>[] = ['title', 'body']
+
+export default class PostsController extends AuthedController {
+  @OpenAPI(Post, {
+    status: 201,
+    requestBody: { params: paramSafeColumns },
+  })
+  public async create() {
+    const post = await Post.create(this.extractParams(Post, paramSafeColumns))
+    this.created(post)
+  }
+
+  @OpenAPI(Post, {
+    status: 204,
+    requestBody: { params: paramSafeColumns },
+  })
+  public async update() {
+    await (await this.post()).update(this.extractParams(Post, paramSafeColumns))
+    this.noContent()
+  }
+}
+```
+
+Narrowing `paramSafeColumns` this way updates both the runtime `extractParams` allowlist *and* the documented `@OpenAPI` request body in one place — the two can't silently drift apart. The const is emitted only when the controller has a `create` and/or `update` action and the model is known; when no columns survive the param-safe filter it's still emitted, typed and empty.
+
+## Request body size limits
+
+`@koa/bodyparser` caps request bodies via `jsonLimit` and `formLimit`; a request over the limit is rejected with a `413` before reaching the action. Tune it in `conf/app.ts` to the largest legitimate payload your endpoints accept:
+
+```ts
+psy.set('json', {
+  jsonLimit: '5mb',
+  formLimit: '500kb',
+})
+```
+
+See the [`@koa/bodyparser` README](https://github.com/koajs/bodyparser) for the full option surface. DoS protection against oversized payloads belongs at the edge (see the [rate limiting guide](/docs/security/rate-limiting)), not at the body-parser layer.
 
 ## Options
 

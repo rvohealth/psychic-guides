@@ -94,12 +94,12 @@ index 0000000..9ccbada
 +
 +export const HostSerializer = (host: Host) =>
 +  HostSummarySerializer(host)
-diff --git a/api/src/db/migrations/1782835306884-create-host.ts b/api/src/db/migrations/1782835306884-create-host.ts
+diff --git a/api/src/db/migrations/1782925912760-create-host.ts b/api/src/db/migrations/1782925912760-create-host.ts
 new file mode 100644
-index 0000000..edc2a99
+index 0000000..f1445a9
 --- /dev/null
-+++ b/api/src/db/migrations/1782835306884-create-host.ts
-@@ -0,0 +1,29 @@
++++ b/api/src/db/migrations/1782925912760-create-host.ts
+@@ -0,0 +1,34 @@
 +import { Kysely, sql } from 'kysely'
 +
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -122,11 +122,16 @@ index 0000000..edc2a99
 +    .on('hosts')
 +    .column('user_id')
 +    .execute()
++
++  await db.schema
++    .createIndex('hosts_deleted_at')
++    .on('hosts')
++    .column('deleted_at')
++    .execute()
 +}
 +
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
 +export async function down(db: Kysely<any>): Promise<void> {
-+  await db.schema.dropIndex('hosts_user_id').execute()
 +  await db.schema.dropTable('hosts').execute()
 +}
 \ No newline at end of file

@@ -1,60 +1,89 @@
 ---
 sidebar_position: 4
 title: multiple specs
-ai_summary: "Multiple OpenAPI specs can be configured for different audiences (admin, mobile, web). Each spec has its own outputFilename. Supports suppressResponseEnums option for mobile clients. Update ApplicationController#openapiNames getter to include all spec names."
+ai_summary: "Multiple OpenAPI specs can be configured for different audiences (admin, mobile, internal, tests) via psy.set('openapi', '<name>', {...}) with its own outputFilepath. A fresh app ships default, mobile, admin, internal, and tests specs. Controllers opt into a spec via the openapiNames getter, which must always include 'tests'. Supports suppressResponseEnums for mobile clients and syncTypes for generating request/response types from the tests spec."
 ---
 
 # Multiple specs
 
-For some applications, it may be desirable to split your OpenAPI definitions into multiple, separate files. To do this, you can specify in `conf/app.ts` a second OpenAPI configuration under a different name (e.g. `admin`), like so:
+For some applications, it may be desirable to split your OpenAPI definitions into multiple, separate files. To do this, specify in `conf/app.ts` a second OpenAPI configuration under a different name (e.g. `admin`), like so:
 
 ```ts
 export default (psy: PsychicApp) => {
   psy.set('openapi', {
+    outputFilepath: path.join('src', 'openapi', 'openapi.json'),
     // ...
   })
 
   psy.set('openapi', 'admin', {
-    // you must include a custom filename for all non-default openapi specs
-    outputFilename: 'admin.openapi.json',
+    // every non-default spec needs its own outputFilepath
+    outputFilepath: path.join('src', 'openapi', 'admin.openapi.json'),
     // ...
   })
 }
 ```
 
-This can also be useful, if, say, you have an API which services both a mobile team, and a web team, and you need each of them to be configured differently. This could be critical for you, since if a response payload contains a string enum, that string enum is treated strictly as a string, and the description will contain all the possible values. This is important, since currently many mobile environments will raise exceptions when encountering unexpected enums (which can happen if your database enums shift over time), forcing you to have to version your backend to serve different enums to different versions of a mobile app, which would be absolutely horrible for you.
+A fresh application ships five specs out of the box: `default` (client/web), `mobile`, `admin`, `internal`, and `tests`. There are two distinct reasons to add or keep a spec split out like this:
 
-The following approach does away with these concerns, since you can suppress response enums with a single config line. This enables you to deliver two identical OpenAPI files, except that one will suppress response enums, while the other will not:
+- **Separate by access domain.** Publish admin, internal, and public endpoints as their own specs so endpoints meant for one audience never appear in a document meant for another. Add new specs as the app grows — for example a public server-to-server `partner` spec published alongside the client, admin, and internal specs, which stay private.
+- **Shape the schema per consumer.** The same endpoints can emit a different schema shape into different specs to fit how each client consumes them. The built-in `mobile` spec below is this case: it documents the same endpoints as `default`, just shaped differently for a strongly-typed client.
+
+## The mobile spec and strongly-typed consumers
+
+If a response payload contains a string enum, a strongly-typed mobile client compiles that enum into a closed type. This can be critical for you: when the backend later adds an enum value, an older app version that hasn't been rebuilt crashes on the unrecognized value, which makes the API rigid — every new value becomes a breaking change for anyone who hasn't updated.
+
+`suppressResponseEnums` does away with this concern. With it set, a response enum is emitted as a plain `string` whose description lists the allowed values instead of a closed set — this lets a client ignore values it doesn't recognize, and often handle the set dynamically (rendering whatever options the backend sends into a select, for instance). Web front ends compile to JavaScript, which isn't strongly typed, so the `default` spec keeps real enums since front-end tooling benefits from them and production doesn't break when the backend adds a value.
 
 ```ts
 export default (psy: PsychicApp) => {
-  psy.set('openapi', 'web', {
-    outputFilename: 'web.openapi.json',
+  psy.set('openapi', {
+    outputFilepath: path.join('src', 'openapi', 'openapi.json'),
   })
 
   psy.set('openapi', 'mobile', {
-    outputFilename: 'mobile.openapi.json',
-    // if a response payload contains a string enum, that string enum is treated strictly
-    // as a string, and the description will contain all the possible values. This is important,
-    // since currently many mobile environments will raise exceptions when encountering unexpected
-    // enums (which can happen if your database enums shift over time), forcing you to have to version your
-    // backend to serve different enums to different versions of a mobile app, which would be absolutely
-    // horrible for you.
+    outputFilepath: path.join('src', 'openapi', 'mobile.openapi.json'),
+    // identical endpoints to `default`, except enums are emitted as
+    // described strings instead of a closed set of values
     suppressResponseEnums: true,
   })
 }
 ```
 
-When taking this strategy, make sure to update your `ApplicationController#openapiNames` getter to include both `web` and `mobile`, like so:
+## Opting controllers into a spec
+
+Each surface's controllers are routed to one or more OpenAPI specs via the `openapiNames` getter, so endpoints land in the specs meant for their audience. A controller is documented into *every* spec it lists:
 
 ```ts
 class ApplicationController extends PsychicController {
-  ...
+  public static override get openapiNames(): PsychicOpenapiNames<ApplicationController> {
+    return ['default', 'tests']
+  }
+}
 
-  public static get openapiNames(): PsychicOpenapiNames<ApplicationController> {
-    return ['web', 'mobile']
+class AdminApplicationController extends ApplicationController {
+  public static override get openapiNames(): PsychicOpenapiNames<ApplicationController> {
+    return ['admin', 'tests']
   }
 }
 ```
 
-This will automatically compile all `OpenAPI` decorators used in controllers that extend `ApplicationController` to both `mobile.openapi.json` and `web.openapi.json`.
+All controllers inheriting from a base controller automatically inherit the same `openapiNames`. Run `pnpm psy sync` after adding a new namespace so the `openapiNames` types update.
+
+:::warning
+Always keep `'tests'` in any `openapiNames` override you write. A controller whose list omits `'tests'` is left out of the aggregated tests spec (see below), so its endpoints get no generated request/response types — the typed request helper won't recognize their paths and the controller spec can't type-check. When adding a new surface or namespace, the list is `['<surface>', 'tests']`, never `['<surface>']` alone.
+:::
+
+## The tests spec
+
+Every base controller includes `'tests'` in its `openapiNames`, so the `tests` spec aggregates endpoints from every surface (client, admin, internal, and any custom namespace) into one document:
+
+```ts
+psy.set('openapi', 'tests', {
+  outputFilepath: path.join('src', 'openapi', 'tests.openapi.json'),
+  syncTypes: true,
+})
+```
+
+With `syncTypes: true`, `pnpm psy sync` runs this spec through `openapi-typescript` and writes a declaration file exporting a `paths` type. Those generated types make controller specs type-safe on both the request and the response, without hand-maintaining separate request/response types per surface.
+
+This automatically compiles all `OpenAPI` decorators used in controllers that extend a given base into every spec that base's `openapiNames` lists.

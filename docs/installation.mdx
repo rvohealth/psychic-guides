@@ -13,10 +13,30 @@ To create a new psychic app, you can use the psychic app provisioner via npx, li
 
 ```sh
 # if you would like your app's name to be "howyadoin"
-npx @rvoh/create-psychic howyadoin
+npx @rvoh/create-psychic new howyadoin
 ```
 
 This will prompt you to ask a few questions, and then provision a new psychic app for you in the "howyadoin" folder of your current directory. All of your dependencies will be automatically installed (for both your server and client apps, if you are generating with a client) and committed to a new git repo.
+
+Every provisioning question can also be answered up front with a flag, skipping the interactive prompts entirely. If any option is omitted, `create-psychic` falls back to interactive mode to ask for it. Boolean flags can be negated with `--no-` (e.g. `--no-workers`).
+
+| Option | Description |
+|--------|-------------|
+| `--package-manager <pm>` | `pnpm`, `yarn`, or `npm` |
+| `--primary-key-type <type>` | `uuid7`, `uuid4`, `bigint`, or `integer` |
+| `--workers` / `--no-workers` | Include or exclude background workers (`@rvoh/psychic-workers`) |
+| `--websockets` / `--no-websockets` | Include or exclude websockets (`@rvoh/psychic-websockets`) |
+| `--client <type>` | Client app: `nextjs`, `react`, `vue`, `nuxt`, or `none` |
+| `--admin-client <type>` | Admin client app (same options as `--client`) |
+| `--internal-client <type>` | Internal client app (same options as `--client`) |
+| `--claude-psychic-skill` / `--no-claude-psychic-skill` | Install or exclude psychic-skill for Claude Code |
+| `--agents-psychic-skill` / `--no-agents-psychic-skill` | Install or exclude psychic-skill for Codex / .agents-compatible agents |
+
+The two skill flags install [psychic-skill](https://github.com/daniel-nelson/psychic-skill), a Dream and Psychic skill for AI coding agents.
+
+```sh
+npx @rvoh/create-psychic new my-app --package-manager pnpm --primary-key-type uuid7 --workers --no-websockets --client react --admin-client none --internal-client none --claude-psychic-skill --no-agents-psychic-skill
+```
 
 ## init
 

@@ -122,7 +122,27 @@ const post = await Post.create({ user })
 
 This approach will automatically connect the `userId` field on the new `Post` model to the primary key field of the `User` model. This approach will also work with STI or polymorphic BelongsTo associations, since Dream is smart enough to autoset type fields in both cases.
 
-> Note: This approach will not work for `HasOne` or `HasMany` associations.
+> Note: This approach will not work for `HasOne` or `HasMany` associations. Only `BelongsTo` associations are assignable through `create`/`update` params — the write path is the model holding the foreign key, so a `HasOne`/`HasMany` (including `through`) is neither in the param type nor accepted at runtime.
+
+## Passing associations: use the instance, not the foreign key
+
+When you hold a model instance and are creating or updating a record with an association, pass the **instance** — never the foreign-key id (or id + type for a polymorphic association):
+
+```ts
+await Booking.create({ place, guest })  // not { placeId: place.id, guestId: guest.id }
+await review.update({ booking })        // not { bookingId: booking.id }
+```
+
+This works the same **regardless of the association's shape** — polymorphic or not, and whether the model you pass is a plain model or an STI child. Dream derives the foreign key from the instance's primary key and, for a polymorphic association, the type discriminator from the instance's `referenceTypeString` (which resolves an STI child such as a `Bathroom` to its base, `'Room'`). One form covers every case, so the call site never has to know which case it's in.
+
+Why this matters:
+
+1. **Polymorphic filters/writes are wrong without it.** Hand-assigning `localizableId: host.id` never sets the paired type discriminator. With integer/serial primary keys, a `Host` and a `Place` can share id `1`, so an id-only reference is ambiguous between types; passing the instance sets the type discriminator for you.
+2. **STI type strings resolve correctly.** Creating through an STI child records the base type (`'Room'`, not `'Bathroom'`), because the association is declared on the base — a hand-written type string gets this wrong with nothing at the call site to warn you.
+3. **Holding the instance means you loaded it.** The authorized way to obtain a record is to load it — usually through an association chain from the current user that proves they may touch it. Passing the instance keeps that step in the code path; hand-assigning a raw id from a request param skips it.
+4. **Factories create an orphan from an id.** Generated factories guard on the association (`host: attrs.host ?? (await createHost())`) with `...attrs` spread after, so `createHostPlace({ hostId: host.id })` creates a second `Host` and then overwrites `hostId` with the one passed — a stray row and an extra insert per call, silently.
+
+**Pass ids when you don't hold an instance**: an array of ids for a bulk filter, a cross-type polymorphic batch load that falls back to explicit type/id groups, and background-job arguments, which must serialize to a queue and therefore pass ids that the job re-hydrates on the other end.
 
 Additionally, Dream provides the `createAssociation` method for creating associations, which can be used like so:
 

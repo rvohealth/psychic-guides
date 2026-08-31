@@ -95,6 +95,70 @@ There are many failable lookup methods within dream, and taking advantage of the
 
 Setting up [validations](/docs/models/validations/overview) on your models will automatically cause 400 errors to be thrown if any of the validations fails.
 
+All of Psychic's automatic conversions above — `castParam`, `extractParams`, model validation, `findOrFail`/`firstOrFail` — return a **bare 400 with no body** by design for param, request-body, and model-validation failures. This is deliberate: it prevents an attacker from distinguishing which validation layer rejected a request.
+
+| Error source | HTTP status | When |
+|---|---|---|
+| `castParam` fails | 400 | Invalid parameter type/value |
+| `extractParams` fails | 400 | Invalid model attributes |
+| Model validation fails | 400 | `isInvalid` with errors |
+| `findOrFail` / `firstOrFail` no match | 404 | Record not found |
+
+### Surfacing field-level validation errors
+
+To deliberately show field-level validation errors to the end user, return a 400 that carries the error shape yourself, via `this.badRequest({ errors: { ... } })`. The natural source of that shape is a Dream model's `.errors` getter, keyed `{ field: ['message'], ... }`:
+
+```ts
+const place = Place.new(this.extractParams(Place, ['name', 'style', 'sleeps']))
+if (place.isInvalid) this.badRequest({ errors: place.errors })   // { name: ['must be present'], ... }
+await place.save()
+```
+
+Without the explicit check, an invalid `save()` / `create()` still returns 400, but with no body — the framework only logs the errors. Conveying the error shape to the client is an explicit, deliberate act.
+
+## 409 from a database constraint
+
+Some invariants live only in the database — a unique index, or an `ON DELETE` action that blocks a delete. Converting one into a status code is the narrow, specific catch that's allowed: match on `pgErrorType`, which maps a `pg.DatabaseError` to a string literal, rather than on message text.
+
+```ts
+import { pgErrorType } from '@rvoh/dream/errors'
+
+try {
+  await city.destroy()
+} catch (error) {
+  switch (pgErrorType(error)) {
+    case 'RESTRICT_VIOLATION':
+    case 'FOREIGN_KEY_VIOLATION':
+      return this.conflict()   // Places still reference this City
+    default:
+      throw error
+  }
+}
+
+this.noContent()
+```
+
+**A delete guard must accept both literals.** Postgres raises `'RESTRICT_VIOLATION'` under `.onDelete('restrict')` and `'FOREIGN_KEY_VIOLATION'` under `no action`. Since `restrict` is the recommended foreign key action, a guard written for `'FOREIGN_KEY_VIOLATION'` alone never fires, and the endpoint 500s — only a spec that creates a referencing child row first reaches the branch. `'UNIQUE_VIOLATION'` on create follows the same pattern.
+
+## Debugging unexpected 400s (and OpenAPI-triggered 500s in specs)
+
+When an endpoint returns an unexpected 400 (or a spec fails with a 500 thrown by OpenAPI response validation) and you can't tell whether OpenAPI validation or controller logic is the cause, temporarily disable validation to isolate it:
+
+```ts
+@OpenAPI(Place, {
+  status: 200,
+  validate: { all: false },   // TEMPORARY — remove once debugged
+})
+```
+
+`validate` accepts `requestBody`, `responseBody`, `headers`, `query`, and `all` booleans. Setting `all: false` disables every validation segment:
+
+- **For a 400 on request**, if the failure stops, the problem was in the payload — log `this.params` (`console.dir(this.params, { depth: null })`) and compare it against what the endpoint expects.
+- **For a 500 in a spec from response validation**, disabling validation lets the real response body reach the test so you can inspect what actually came back, instead of an opaque validation error message.
+- If the failure persists with validation off, the problem is in controller logic — a `castParam`/`extractParams` failure, a DB constraint violation, or an unhandled application error.
+
+Remove the `validate` line once the problem is identified — leaving it disabled defeats the protection OpenAPI validation provides. `NODE_DEBUG=psychic` also surfaces validation info, but disabling validation is usually more useful because it lets the real response through for direct inspection.
+
 ## try/catch in controllers
 
 Because Psychic converts common errors to appropriate HTTP responses automatically, adding `try/catch` to controller actions is usually wrong and actively harmful:
@@ -123,3 +187,40 @@ public async show() {
 ```
 
 The bad example also bypasses normal control flow: logging does not make the HTTP response fail, and swallowing the error prevents Psychic from returning the correct status code.
+
+## Reacting to unhandled server errors
+
+Genuine server errors — anything Psychic doesn't render as a 4xx — fire the `server:error` hook. This is the place to ship failures to Sentry, Datadog, structured alerting, or whatever your error pipeline is:
+
+```ts
+psy.on('server:error', (err, ctx) => {
+  PsychicApp.logWithLevel('error', 'unhandled server error', {
+    err,
+    method: ctx.method,
+    path: ctx.path,
+    requestId: ctx.state.requestId,
+  })
+  // ...ship to Sentry / Datadog / etc.
+
+  if (!ctx.headerSent) ctx.status = 500
+  else if (AppEnv.isDevelopmentOrTest) throw err
+})
+```
+
+The handler signature is `(err: Error, ctx: Koa.Context) => void | Promise<void>`. The scaffold registers a default that sets `ctx.status = 500` if a response hasn't already been sent, and re-throws in development/test so the failure surfaces loudly.
+
+`server:error` is the surface for every **shapeable** 5xx — one the boundary catches while the response can still be formed. Psychic mounts an error boundary as its outermost middleware, so the body parser, CORS origin callbacks, your own `psy.use(...)` middleware, and controller actions all escalate their uncaught genuine errors to this one hook. A 4xx-shaped error never reaches it — that renders as its own status — so don't filter by status inside the hook; it only ever sees 5xx-class errors.
+
+One registration does not, however, give you every 5xx. A residual class bypasses `server:error` and surfaces only on Koa's app-level `'error'` event: an error thrown **after** headers were already sent, a response-stream failure, or an error the router re-throws to Koa. Psychic's own `koaApp.on('error')` listener logs this class through the configured logger but does not run your `server:error` hooks for it. If your error-tracking pipeline — not just your logs — must capture those post-response failures too, register your own app-level listener from a `server:init` hook:
+
+```ts
+psy.on('server:init:after-middleware', psychicServer => {
+  psychicServer.koaApp.on('error', err => {
+    // ship err to Sentry / Datadog / etc.
+  })
+})
+```
+
+This won't double-report the shapeable errors — those are handled inside the boundary and never reach this event.
+
+Use `PsychicApp.log` / `PsychicApp.logWithLevel` for all application logging rather than `console.log`, so output respects the configured log level, transports, and structured format. See the [Security Overview — Logging & error disclosure](/docs/security#logging--error-disclosure) for the request-logger redaction knobs (`headerBlocklist`, `bodyBlocklist`, `ignoredRoutes`).

@@ -9,9 +9,13 @@ Dream exposes a powerful, type-driven query building engine to make talking to y
 
 ```ts
 const users = await User.innerJoin('posts', {
-  content: ops.ilike('howyadoin'),
+  and: { content: ops.ilike('howyadoin') },
 }).all()
 ```
+
+:::tip
+Always prefer Dream's built-in query and association APIs over dropping to raw SQL. Only reach for [`toKysely`](/docs/models/querying/toKysely) when the SQL you need genuinely isn't covered by Dream's public API, or as a final low-level step once a Dream query has traversed every association it needs.
+:::
 
 A range of methods can be used to drill queries down to a selective grouping:
 
@@ -47,8 +51,8 @@ const user = await User.find(123)
 // Find by specific field
 const user = await User.findBy({ email: 'user@example.com' })
 
-// Process records one by one
-await User.findEach({ active: true }, (user) => {
+// Process records one by one, in batches (filter first with where)
+await User.where({ active: true }).findEach((user) => {
   console.log(user.email)
 })
 
@@ -170,7 +174,7 @@ Ensures only unique records are returned by eliminating duplicates.
 
 ```ts
 // Get distinct user roles
-const roles = await User.distinct().pluck('role')
+const roles = await User.distinct('role').pluck('role')
 
 // Get distinct active users
 const uniqueActiveUsers = await User.where({ active: true }).distinct().all()
@@ -188,14 +192,15 @@ const usersWithPosts = await User.innerJoin('posts').all()
 
 // Get users with posts containing specific content
 const users = await User.innerJoin('posts', {
-  content: ops.ilike('tutorial')
+  and: { content: ops.ilike('tutorial') },
 }).all()
 
-// Multiple joins
+// Chain through an association path: string arguments describe a single
+// traversal (User → posts → comments), not two parallel joins — see
+// "Association chaining" in the loading and preloading guide.
 const activeUsersWithComments = await User
   .where({ active: true })
-  .innerJoin('posts')
-  .innerJoin('posts.comments')
+  .innerJoin('posts', 'comments')
   .all()
 ```
 
@@ -263,18 +268,18 @@ Eagerly loads associated records to avoid N+1 query problems.
 // Preload user posts
 const usersWithPosts = await User.preload('posts').all()
 
-// Preload nested associations
+// Preload a nested association chain: User → posts → comments
 const usersWithPostsAndComments = await User
-  .preload('posts.comments')
+  .preload('posts', 'comments')
   .all()
 
-// Preload with conditions
+// Preload with a condition on the association
 import { DateTime } from '@rvoh/dream'
 
 const usersWithRecentPosts = await User
-  .preload('posts', (query) => 
-    query.where({ createdAt: ops.gte(DateTime.fromISO('2024-01-01T00:00:00Z')) })
-  )
+  .preload('posts', {
+    and: { createdAt: ops.greaterThanOrEqualTo(DateTime.fromISO('2024-01-01T00:00:00Z')) },
+  })
   .all()
 ```
 
@@ -288,11 +293,11 @@ Performs a left join while preloading associated records, including records with
 // Left join preload posts (includes users without posts)
 const allUsersWithPosts = await User.leftJoinPreload('posts').all()
 
-// Left join with conditions
+// Left join with a condition on the association
 const usersWithOptionalRecentPosts = await User
-  .leftJoinPreload('posts', (query) => 
-    query.where({ createdAt: ops.gte(DateTime.fromISO('2024-01-01T00:00:00Z')) })
-  )
+  .leftJoinPreload('posts', {
+    and: { createdAt: ops.greaterThanOrEqualTo(DateTime.fromISO('2024-01-01T00:00:00Z')) },
+  })
   .all()
 ```
 
@@ -300,24 +305,14 @@ const usersWithOptionalRecentPosts = await User
 
 ## passthrough
 
-Adds additional data to be passed through with query results.
+Supplies the value an association's `and: { column: DreamConst.passthrough }` constraint needs at query time — most commonly locale for a data-driven i18n association.
 
 ```ts
-// Add computed values
-const usersWithExtra = await User
-  .passthrough({ 
-    isVip: true,
-    computedAt: DateTime.now()
-  })
-  .all()
-
-// Dynamic passthrough data
-const usersWithMetadata = await User
-  .passthrough((user) => ({
-    displayName: `${user.firstName} ${user.lastName}`,
-    accountAge: DateTime.now().diff(user.createdAt, 'days').days
-  }))
-  .all()
+// Post.currentLocalizedText requires a `locale` to be passed through
+const reloadedUser = await user
+  .passthrough({ locale: 'es-ES' })
+  .load('posts', 'currentLocalizedText')
+  .execute()
 ```
 
 [Learn more about passthrough data](/docs/models/querying/passthrough)
@@ -357,4 +352,11 @@ Query building methods are those that do not execute a query, but instead modify
 - [preload guide](/docs/models/querying/preload)
 - [leftJoinPreload guide](/docs/models/querying/leftJoinPreload)
 - [passthrough guide](/docs/models/querying/passthrough)
+
+### Query-level write methods
+
+These write directly from a query, without first loading records into application code — easy to miss, since most write examples in this guide start from an instance.
+
+- [update guide](/docs/models/querying/update)
+- [delete guide](/docs/models/querying/delete)
 :::

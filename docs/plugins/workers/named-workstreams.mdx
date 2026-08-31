@@ -1,7 +1,7 @@
 ---
 sidebar_position: 9
 title: named wokstreams
-ai_summary: "Named workstreams isolate work within dedicated BullMQ queues. Configure in conf/workers.ts namedWorkstreams array. Set workstream via backgroundJobConfig getter. Enables resource control and better visualization in BullMQ dashboards."
+ai_summary: "Named workstreams isolate work within dedicated BullMQ queues. Configure in conf/initializers/workers.ts namedWorkstreams array, optionally with their own Redis connections. Set workstream via backgroundJobConfig getter. A workstream's name becomes its jobs' group.id, which moves priority into group.priority — ignored by open-source BullMQ. Enables resource control and better visualization in BullMQ dashboards."
 ---
 
 # Named workstreams
@@ -14,7 +14,7 @@ Bull Board provides monitoring dashboards for BullMQ. For Psychic 3.0 (Koa-based
 
 ![Bull Dashboard](/img/background-workers/bull-dashboard.png 'Bull Dashboard')
 
-Configure named workstreams in `conf/workers.ts` by adding a `namedWorkstreams` key:
+Configure named workstreams in `conf/initializers/workers.ts` by adding a `namedWorkstreams` key:
 
 ```ts
   workersApp.set('background', {
@@ -49,3 +49,24 @@ class IntercomSync extends ApplicationBackgroundedService {
   }
 }
 ```
+
+## Priority and workstreams are an either/or without BullMQ Pro
+
+A workstream's `name` also becomes the `group.id` on that workstream's jobs. Assigning a service to a workstream therefore moves its `priority` onto BullMQ's `group.priority` instead of the top-level `priority` field — and open-source BullMQ ignores `group.priority` entirely, since group priority is a BullMQ Pro surface. So a service gets workstream isolation *or* priority ordering, not both, unless the app runs the `QueuePro`/`WorkerPro` providers (see [Rate limiting](./rate-limiting)). See [Priority](./priority) for the full detail.
+
+## Per-workstream connections
+
+A named workstream can carry its own `queueConnection` and `workerConnection`:
+
+```ts
+namedWorkstreams: [
+  {
+    name: 'Intercom',
+    workerCount: 1,
+    queueConnection: intercomRedis,
+    workerConnection: intercomWorkerRedis,
+  },
+],
+```
+
+Without them, the workstream shares the app-wide default connection, and the isolation it provides is limited to queue and worker counts — not a separate Redis instance.

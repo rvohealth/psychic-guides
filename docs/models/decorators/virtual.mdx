@@ -6,6 +6,8 @@ ai_summary: "The @deco.Virtual decorator enables setting fields as if they corre
 
 The `@deco.Virtual` decorator enables setting of fields as if they corresponded to columns in the model's table so they can be passed to [`new`](../creating#new-and-save), [`create`](../creating#create), and [`update`](../updating). It requires an OpenAPI type argument that defines both the serializer OpenAPI shape and the request body OpenAPI shape (in Psychic).
 
+Run `pnpm psy sync` after adding a `@deco.Virtual()` decorator (or changing its type argument) — that sync is separate from the one a migration triggers, and without it `create()`/`update()` reject the virtual attribute at build time while every runtime spec passes.
+
 ## Rules
 
 **Getters and setters must be synchronous.** Dream calls them inline during attribute access and assignment — an `async` getter will return a `Promise` instead of the value, and Dream has no mechanism to await it.
@@ -66,4 +68,10 @@ class User extends ApplicationModel {
 }
 ```
 
-The type argument accepts any OpenAPI shorthand primitive type (like `'string'`, `'number'`, `'integer'`, `'boolean'`) or a more complex OpenAPI schema body shorthand for representing objects and arrays.
+The type argument accepts any OpenAPI shorthand primitive type (like `'string'`, `'number'`, `'integer'`, `'boolean'`) or a more complex OpenAPI schema body shorthand for representing objects and arrays. The full set of virtual types: `'boolean'`, `'date-time'`, `'date'`, `'integer'`, `'null'`, `'number'`, `'string'`, `'decimal'`, `'json'`, and their array variants (`'boolean[]'`, `'date-time[]'`, `'date[]'`, `'decimal[]'`, `'integer[]'`, `'number[]'`, `'string[]'`). Use an array pairing with `'null'` (e.g. `['string', 'null']`) for a nullable virtual.
+
+The type argument to `@deco.Virtual(...)` sets the OpenAPI shape wherever the attribute is surfaced in a serializer or model-derived OpenAPI request body, and it's the type `extractParams` enforces at runtime and in TypeScript — just as a real column's OpenAPI shape is derived from the database schema, a virtual's shape is derived from the decorator's type argument. Don't pass an explicit `openapi:` option to `.attribute(...)` or `.delegatedAttribute(...)` when surfacing a virtual — it overrides the auto-inferred shape and creates a place for the spec to drift when the virtual's declared type changes.
+
+## Virtual getters and setters must be synchronous — reach for an association instead
+
+Dream reads a virtual getter as a plain attribute, not as a `Promise`. An `async` getter returns a `Promise` instead of the declared type, which silently breaks serialization and is invisible to `preloadFor`'s DSL introspection. If you need data that requires an `await` (a DB lookup, a remote URL, a cross-association walk), express it as a real association (`@deco.HasOne`/`@deco.BelongsTo`) and surface it via `.delegatedAttribute(...)` or `.rendersOne(...)` in the serializer instead — never via a virtual.

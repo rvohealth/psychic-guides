@@ -2,12 +2,17 @@
 sidebar_position: 0
 title: overview
 pagination_prev: null
-ai_summary: "i18n provides a lightweight TypeScript-forward translation engine for delivering multiple translations. Use i18n('locale', 'key.path') to get translated text. See config and usage guides for setup and usage details."
+ai_summary: "Psychic supports two complementary i18n patterns: code-driven (i18n('locale', 'key.path'), for static enum values and UI strings) and data-driven (the polymorphic LocalizedText model, for user-generated content). Both read the Accept-Language header and flow to serializers and queries via passthrough. See config and usage guides for the code-driven setup, and the passthrough guide for the data-driven pattern."
 ---
 
 # i18n - overview
 
-When designing an application, you will often find a need to have a translation layer within your app, where text that is delivered to your user can be carefully translated based on their preferred language. Since this need is very common, Psychic provides a very light-weight, typescript-forward translation engine for delivering multiple translations from your app.
+When designing an application, you will often find a need to have a translation layer within your app, where text that is delivered to your user can be carefully translated based on their preferred language. Psychic supports two complementary patterns for this:
+
+1. **Code-driven i18n** — translate static values that are the same for every user (enum labels, UI strings) using locale files and a light-weight, typescript-forward `i18n` function.
+2. **Data-driven i18n** — translate user-generated content that's unique per record (a place's title, a listing's description) using the polymorphic `LocalizedText` model.
+
+Both patterns resolve the locale from the same source — typically the `Accept-Language` request header — and pass it down through `passthrough`, so a single resolved locale can drive both an enum label and a record's translated title in the same response.
 
 ```ts
 const text = i18n('en-US', 'labels.nutrition.calories')
@@ -15,7 +20,8 @@ const text = i18n('en-US', 'labels.nutrition.calories')
 
 :::tip
 
-- For guides on setting up i18n, see the [config guides](/docs/utils/i18n/config).
-- For guides on using i18n, see the [usage guides](/docs/utils/i18n/usage).
+- For guides on setting up code-driven i18n, see the [config guides](/docs/utils/i18n/config).
+- For guides on using code-driven i18n, see the [usage guides](/docs/utils/i18n/usage).
+- For the data-driven `LocalizedText` pattern, see [passthrough](/docs/models/querying/passthrough).
 
   :::

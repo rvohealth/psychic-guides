@@ -1,0 +1,19 @@
+---
+sidebar_position: 4
+ai_summary: "The length validator ensures a string field's length falls within a min/max range before saving. Use @deco.Validates('length', { min, max }) decorator."
+---
+
+# length
+
+Use the `length` validator to constrain a field to a minimum and/or maximum length before saving:
+
+```ts
+export default class User extends ApplicationModel {
+  ...
+
+  @deco.Validates('length', { min: 4, max: 64 })
+  public email: DreamColumn<User, 'email'>
+}
+```
+
+Either bound may be omitted to constrain only the other side.

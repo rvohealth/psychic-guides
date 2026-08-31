@@ -38,6 +38,12 @@ if (thing1) {
 await user.save()
 ```
 
+You can skip lifecycle hooks on either form — useful for bulk imports and historical data backfills where the new-record side effects shouldn't fire:
+
+```ts
+await User.create({ email: 'imported@example.com' }, { skipHooks: true })
+```
+
 Dream also provides two methods to use for a locate-or-create pattern:
 
 ## findOrCreateBy
@@ -48,11 +54,29 @@ Utilizing `findOrCreateBy`, we can either collect a record if it exists, or else
 const user = await User.findOrCreateBy({ email: 'how@yadoin' }, { createWith: { password: 'mypassword' } })
 ```
 
+There is a race condition between the find and create steps — if concurrent requests could match the same lookup attributes, prefer `createOrFindBy` below.
+
 ## createOrFindBy
 
-The `createOrFindBy` method is very similar to [`findOrCreateBy`](./querying/findOrCreateBy), except it will attempt to create the record first. This pattern relies on unique constraints at the DB level to reject the create statement if another record already exists with those fields. Since the create action will fail at the database level when a matching record already exists, `createOrFindBy` may not be used in a transaction:
+The `createOrFindBy` method is very similar to [`findOrCreateBy`](./querying/findOrCreateBy), except it will attempt to create the record first. This pattern relies on unique constraints at the DB level to reject the create statement if another record already exists with those fields, which avoids the race condition in `findOrCreateBy`. Since the create action will fail at the database level when a matching record already exists, `createOrFindBy` may not be used in a transaction:
 
 ```ts
 // this expects that the `email` column will have a unique constraint in the DB
 const user = await User.createOrFindBy({ email: 'how@yadoin' }, { createWith: { password: 'mypassword' } })
 ```
+
+:::caution
+On the unique-violation fallback, `createOrFindBy` re-finds using that same first argument, so it must hold exactly the unique index's attributes and nothing more. An extra attribute narrows the lookup, and if a submitted value differs from the stored row the re-find comes back empty and `CreateOrFindByFailedToCreateAndFind` turns the duplicate case into a 500. Everything else — including a field that carries its own separate unique constraint — belongs in `createWith`, since any unique violation lands in the same fallback and the first argument can't identify the row that field collided with.
+
+```ts
+// unique index on (place_id, guest_id, check_in_month)
+const booking = await Booking.createOrFindBy(
+  { place, guest, checkInMonth },
+  { createWith: { nights: 3 } }
+)
+```
+:::
+
+Without a real unique index on the lookup attribute(s), `createOrFindBy` can silently insert duplicate rows — it only detects an existing record via a uniqueness violation on the insert, and has no lookup attributes indexed to violate.
+
+Dream also provides `updateOrCreateBy` and `createOrUpdateBy` for an upsert-style find-or-update pattern — see the [`updateOrCreateBy`](/docs/models/querying/updateOrCreateBy) and [`createOrUpdateBy`](/docs/models/querying/createOrUpdateBy) guides.

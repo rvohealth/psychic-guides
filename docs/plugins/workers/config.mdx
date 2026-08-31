@@ -1,12 +1,25 @@
 ---
 sidebar_position: 2
 title: config
-ai_summary: 'Workers configuration uses BullMQ. Psychic scans config on sync to capture workstream names for types. Extend ApplicationBackgroundedService and ApplicationScheduledService. Workstreams are groups containing a queue and workers. Multiple workstreams useful for rate-limited APIs. Supports BullMQ Pro for rate limiting.'
+ai_summary: 'Workers configuration uses BullMQ, configured in conf/initializers/workers.ts. Two mutually exclusive modes: simple (workstream) mode, which Psychic scans on sync to capture workstream names for types, or native BullMQ mode for raw per-queue BullMQ options. Extend ApplicationBackgroundedService and ApplicationScheduledService. Workstreams are groups containing a queue and workers. Multiple workstreams useful for rate-limited APIs. Supports BullMQ Pro for rate limiting and transitional workstreams for Redis migrations.'
 ---
 
 # Workers - config
 
 Psychic workers leverages [BullMQ](https://bullmq.io) under the hood to drive the background job systems. The configuration largely revolves around arguments which would be directly provided to bullmq, but with some nuance, which is both due to the nature of the system being wrapped, as well as the fact that we desired a simpler configuration path for those not looking to leverage every possible bell and whistle, and really just looking to set up something simple.
+
+Configuration lives in `conf/initializers/workers.ts`, which is auto-loaded and registered as a plugin — see the [installation guide](./installation) for the file's full shape.
+
+## Two configuration modes
+
+`workersApp.set('background', { ... })` accepts one of two mutually exclusive shapes, and the type system enforces the split:
+
+- **Simple (workstream) mode** — Psychic builds the queues and workers from a workstream description. This is what the CLI provisions by default, and what the rest of this guide (and the [Named workstreams](./named-workstreams) guide) documents. Services route to a queue via `backgroundJobConfig.workstream`. Selected by omitting `nativeBullMQ`.
+- **Native BullMQ mode** — you hand Psychic raw BullMQ queue and worker options per queue, and Psychic does little beyond constructing them and wiring the job handler. Services route via `backgroundJobConfig.queue` and `groupId` instead of `workstream`. Selected by supplying `nativeBullMQ` — even `nativeBullMQ: {}` selects it.
+
+`pnpm psy sync` generates the routing union (`workstream` vs. `queue`) from whichever mode is configured, so the mode decides which key a service can use. `priority` is legal in both modes.
+
+Most apps only need simple mode. Reach for native mode when you need per-queue BullMQ options simple mode doesn't expose — a distinct Redis instance or cluster node per queue, or BullMQ Pro group settings — see [Native BullMQ mode](#native-bullmq-mode) below.
 
 ## Types
 
@@ -48,12 +61,12 @@ Psychic superimposes a new concept, called a `workstream`, on top of BullMQ's ex
 
 Many applications will only need one workstream, but multiple workstreams are extremely useful when, for example, you have background jobs responsible for hitting external APIs which are rate limited. Having a background system that doesn't respect rate limits can lead to real chaos in your systems, so it is useful to partition those out into their own workstreams. By doing so, you can ensure that only one worker is working off that queue, and you can either manually ensure that it breathes a certain amount of time before issuing another request, or else leverage [BullMQ Pro](https://docs.bullmq.io/bullmq-pro/introduction), which provides rate limiting tools out of the box that would enable you to spin up multiple workers on this workstream without concern of rate limit abuse.
 
-To set up workstreams in Psychic, all you need to do is add a basic workstream setup to your `conf/workers.ts` file:
+To set up workstreams in Psychic, all you need to do is add a basic workstream setup to your `conf/initializers/workers.ts` file:
 
 ```ts
-// conf/workers.ts
+// conf/initializers/workers.ts
 
-export default (workersApp: PsychicAppWorkers) => {
+function initializeWorkers(workersApp: PsychicAppWorkers) {
   workersApp.set('background', {
     defaultWorkstream: {
       // https://docs.bullmq.io/guide/parallelism-and-concurrency
@@ -187,9 +200,104 @@ At first glance, this configuration might seem overwhelming to you, but most of 
 
 With this done, any service in your application extending the `ApplicationBackgroundedService` or `ApplicationScheduledService` classes will automatically send their jobs to the queue belonging to the default workstream.
 
+`defaultBullMQWorkerOptions` — the worker-side counterpart to `defaultBullMQQueueOptions` — also belongs in this block. In simple mode, a `concurrency` or `connection` placed inside it is always overwritten by the workstream's own value, so set concurrency on the workstream itself rather than here.
+
+### Redis TLS
+
+Pass `tls: {}` (or a full `tls.ConnectionOptions` object) to the `ioredis` constructor in both `defaultQueueConnection` and `defaultWorkerConnection` to opt into TLS:
+
+```ts
+new Redis({
+  host: AppEnv.string('BG_JOBS_REDIS_HOST'),
+  port: AppEnv.integer('BG_JOBS_REDIS_PORT'),
+  tls: {},
+})
+```
+
+See the [ioredis README](https://github.com/redis/ioredis) and Node's [`tls.connect`](https://nodejs.org/api/tls.html#tlsconnectoptions-callback) docs for the option shape and the connection-trust defaults.
+
+### Process-level error semantics
+
+`background.work()` installs the worker process's `uncaughtException` and `unhandledRejection` handlers itself: each logs at error level, runs a bounded (~15s) graceful shutdown — `workers:shutdown` hooks, then close DB connections, close workers, and quit Redis — and finally calls `process.exit(1)` so an orchestrator restarts the process. `SIGTERM`/`SIGINT` go through the same bounded shutdown, exiting `0` on a clean stop and `1` on a failed or timed-out one. This has a few consequences:
+
+- **Do not add your own `process.on('uncaughtException' | 'unhandledRejection')` handler in the worker entry point** — a second exiting handler would race the framework's. This is a deliberate asymmetry with the web and websocket entry points, which do install their own handlers.
+- **`workers:shutdown` is the only lifecycle hook** on the workers plugin — there is no `job:failed` / `workers:error` hook, by design (workers is a thin wrapper over BullMQ, and Psychic doesn't duplicate BullMQ's own event surface). Wire job-failure observability directly on the BullMQ objects once `background.work()` creates them: `background.workers.forEach(w => w.on('failed' | 'error' | 'stalled', ...))` and `background.queues.forEach(q => q.on('error', ...))`. To feed a fatal-error pipeline (Sentry, Datadog, etc.), read from logging or the orchestrator's restart signal — there is no fatal-error hook.
+- **A job whose class no longer resolves by global name fails loud**, throwing a typed `NoClassForSpecifiedGlobalName` (exported from `@rvoh/psychic-workers`'s errors module) and landing in BullMQ's `failed` set. This is the designed signal to clean up a stale repeating scheduler after renaming or removing a backgroundable class. A model-instance job whose record was legitimately deleted still completes quietly — that case is `find`-and-return, not a resolution failure.
+
+**Redis is a trust boundary equal to the app process.** Dispatch reads `{ globalName, method, args }` off the job payload and invokes the resolved class method with no allow-list — anyone who can write to the jobs Redis instance can run any registered method with full application privileges. Lock down write access to the jobs Redis instance accordingly.
+
+## Native BullMQ mode
+
+Native mode is for apps that need to hand BullMQ its own options per queue — a distinct Redis instance or cluster node per queue, or BullMQ Pro group settings the workstream shape above doesn't express. Queues are declared by name, and workers are declared separately against those names:
+
+```ts
+workersApp.set('background', {
+  defaultQueueConnection: bookingRedis,
+  defaultWorkerConnection: !AppEnv.boolean('WORKER_SERVICE') ? undefined : bookingWorkerRedis,
+
+  nativeBullMQ: {
+    defaultQueueOptions: {
+      defaultJobOptions: { attempts: 20, backoff: { type: 'exponential', delay: 1000 } },
+    },
+    defaultWorkerCount: os.cpus().length,
+    defaultWorkerOptions: { concurrency: 100 },
+
+    namedQueueOptions: {
+      BookingNotifications: {
+        queueConnection: notificationsRedis,
+        workerConnection: notificationsWorkerRedis,
+      },
+    },
+
+    namedQueueWorkers: {
+      BookingNotifications: { workerCount: 1, concurrency: 10 },
+    },
+  },
+})
+```
+
+Run `pnpm psy sync` after changing the queue names, then route a service to one with `queue` instead of `workstream`:
+
+```ts
+export class BookingNotificationService extends ApplicationBackgroundedService {
+  public static get backgroundJobConfig(): BackgroundJobConfig<ApplicationBackgroundedService> {
+    return { queue: 'BookingNotifications' }
+  }
+}
+```
+
+A few sharp edges specific to this mode:
+
+- **A queue in `namedQueueOptions` with no matching key in `namedQueueWorkers` gets zero workers.** The queue is created and accepts jobs; nothing ever works them. There is no warning and no error — jobs simply accumulate in Redis. Give every named queue an entry in both maps.
+- **A named queue's `defaultJobOptions` replaces the app-wide bag rather than merging with it.** The two option objects are combined with one shallow spread, so a queue that sets `defaultJobOptions: { attempts: 3 }` drops the app-wide `backoff`, `removeOnComplete`, and `removeOnFail` entirely. Restate every key you still want.
+- **There is no concurrency default here.** Simple mode always writes the workstream's `concurrency` (10 when the workstream omits it), which is why it overrides `defaultBullMQWorkerOptions`. Native mode writes none, so BullMQ's own default applies unless you set it.
+- **A named queue's worker connection goes on its `namedQueueOptions` entry, not its `namedQueueWorkers` entry.** A `connection` set on the worker entry typechecks (it's a plain `WorkerOptions` key) but is ignored. Each connection falls back to `nativeBullMQ.defaultQueueOptions`/`defaultWorkerOptions` and then to the app-wide default. Because `pnpm psy sync` connects to background to generate types, a missing *queue* connection surfaces at sync time, not only at boot.
+
+See the [BullMQ Queue](https://api.docs.bullmq.io/classes/v5.Queue.html) and [Worker](https://api.docs.bullmq.io/classes/v5.Worker.html) option references for the full shape of `QueueOptions` and `WorkerOptions` — native mode passes these through largely unmodified.
+
+## Transitional workstreams
+
+Moving background work to a different Redis instance strands whatever the old one still holds — repoint the app's connections and nothing is attached to work those jobs. `transitionalWorkstreams` describes the legacy topology alongside the current one (the same `defaultWorkstream` / `namedWorkstreams` shape, with its own connections) so Psychic builds queues and workers for both:
+
+```ts
+workersApp.set('background', {
+  defaultQueueConnection: bookingRedis,
+  defaultWorkerConnection: bookingRedis,
+  namedWorkstreams: [{ name: 'BookingReminders' }],
+
+  transitionalWorkstreams: {
+    defaultQueueConnection: legacyRedis,
+    defaultWorkerConnection: legacyRedis,
+    namedWorkstreams: [{ name: 'BookingReminders' }],
+  },
+})
+```
+
+Workers attach to the legacy queues and work them down, while enqueueing reaches only the top-level workstreams, so every new job lands on the new instance. The old side can only drain, never be added to, which is what makes the cutover finish. Delete the `transitionalWorkstreams` key once those queues are empty.
+
 ## Named workstreams
 
-If your app demands multiple queues, you will want to leverage multiple workstreams. This will enable you to segment off groups of workers to work on one queue, and one group to work on the other. To do this, you can add a named workstream to the `conf/workers.ts` file:
+If your app demands multiple queues, you will want to leverage multiple workstreams. This will enable you to segment off groups of workers to work on one queue, and one group to work on the other. To do this, you can add a named workstream to the `conf/initializers/workers.ts` file:
 
 ```ts
     defaultWorkstream: {

@@ -14,6 +14,17 @@ await User.whereNot({
 }).all()
 ```
 
+`whereNot` takes a single condition object; all keys within it are AND'd together and the whole group is negated:
+
+```ts
+// WHERE NOT (status = 'archived' AND role = 'guest')
+query.whereNot({ status: 'archived', role: 'guest' })
+```
+
+:::tip
+Negation also matches rows whose column is `NULL`.
+:::
+
 ## Chaining
 
 You can chain multiple `whereNot` calls together, as well as chain them with other calls to `where`. This is useful for conditional query building:

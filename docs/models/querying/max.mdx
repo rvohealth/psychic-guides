@@ -38,3 +38,13 @@ select max("id") from "users" where ("users"."email" ilike $1)
 `}
   </pre>
 </RoutesOutput>
+
+## Grouped maximums: `maxBy`
+
+`max` collapses the whole query to a single value. When you need the maximum broken out per group in one query, use `maxBy(groupColumn, aggregatedColumn)`. It stays entirely in Dream — no ejecting to Kysely and no hand-written `GROUP BY` — and returns `Map<groupValue, max>`:
+
+```ts
+const maxIdByRole = await User.maxBy('role', 'id')
+```
+
+Only groups with at least one matching row are present in the returned `Map` — seed absent keys as needed — and a nullable group column produces a real `null` key.

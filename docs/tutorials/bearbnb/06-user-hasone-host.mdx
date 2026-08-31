@@ -52,10 +52,10 @@ index 9b05776..55cf5f8 100644
 +  @deco.HasOne('Host')
 +  public host: Host
  }
-diff --git a/api/src/db/migrations/1782835306884-create-host.ts b/api/src/db/migrations/1782835306884-create-host.ts
-index edc2a99..4a62da0 100644
---- a/api/src/db/migrations/1782835306884-create-host.ts
-+++ b/api/src/db/migrations/1782835306884-create-host.ts
+diff --git a/api/src/db/migrations/1782925912760-create-host.ts b/api/src/db/migrations/1782925912760-create-host.ts
+index f1445a9..4302ccf 100644
+--- a/api/src/db/migrations/1782925912760-create-host.ts
++++ b/api/src/db/migrations/1782925912760-create-host.ts
 @@ -9,7 +9,7 @@ export async function up(db: Kysely<any>): Promise<void> {
          .primaryKey()
          .defaultTo(sql`uuidv7()`),

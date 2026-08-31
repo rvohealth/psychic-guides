@@ -50,14 +50,28 @@ See the [resource generator documentation](/docs/controllers/generating) for det
   - `belongs_to`: not only adds a foreign key to the migration, but also adds a BelongsTo association to the generated model:
     - Include the fully qualified model name, e.g., if the Coach model is in `src/app/models/Health/Coach`:
       `Health/Coach:belongs_to`
+    - **Aliased FK shorthand** — append `@alias` to generate a foreign key with a custom column name. This is the canonical pattern for `_by` columns (e.g. `canceled_by_id`) and for multiple foreign keys to the same model:
+      `InternalUser@canceled_by:belongs_to:optional`
+      produces a `canceled_by_id` column, a `canceledById` model property, and a `canceledBy` association — all from one token. Examples:
+      - `User@created_by:belongs_to` — `created_by_id` FK, `createdBy` association
+      - `Message@last_inbound:belongs_to:optional` — `last_inbound_id` FK, `lastInbound` association
+      - `Message@last_outbound:belongs_to:optional` — `last_outbound_id` FK, `lastOutbound` association
 
 `<path>`, `<modelName>`, and `--owning-model` are independent. A nested route path such as `v1/host/places/{}/rooms` does not mean the model should be namespaced under `Place`; the model name should still describe what the record is. Nested `{}` paths must pass `--owning-model` so the generated controller can query and create through the parent association.
 
 The generator includes `id`, `created_at`, `updated_at`, `deleted_at`, and `@SoftDelete()` by default. Use `--no-soft-delete` only when hard deletion is an intentional part of the model design.
 
+:::caution
+Nested resources — any `<path>` containing a `{}` parent-id placeholder — **must** pass `--owning-model` set to the fully-qualified parent model name (e.g. `--owning-model=Post` for `v1/posts/{}/comments`). This makes the generated controller scope every query and write through `associationQuery`/`createAssociation` on the owning model, and scaffolds the parent correctly throughout, including the generated controller spec. Omitting it produces a controller that doesn't scope to the parent, and a spec that references an unconstructed parent path param — the symptom is a spec that 404s on the missing parent instead of exercising the action. For `admin`/`internal` paths, which drop `currentUser` scoping, `--owning-model` is also how you reintroduce ownership scoping.
+:::
+
+:::caution
+`g:resource` unconditionally regenerates the model file, unit spec, factory, and serializer for the given model name — it does not check whether those files already exist, and there is no flag to skip them (`--only` controls which controller actions are scaffolded, not which files are written). Running `g:resource` for a model name that already has hand-edited associations, hooks, validations, or serializer fields will silently discard those edits. To add a controller and routes to a model that already exists, commit your work first, so you can review the regenerated model, spec, factory, and serializer and discard those changes.
+:::
+
 ### Options
 
-- `--singular`: Generates a "resource" route instead of "resources", along with the necessary controller and spec changes.
+- `--singular`: Generates a "resource" route instead of "resources", along with the necessary controller and spec changes. Choose it by association shape, not naming convention: pass `--singular` when the owning side has-one of the resource (e.g. a `User` `HasOne` `Host`). It generates `r.resource` instead of `r.resources` and omits the `index` action — `r.resource` declares the path without `:id` because there's only one, so there's nothing to disambiguate by ID. Getting this wrong produces a controller/spec that don't match reality: a plural resource generated against a `HasOne` parent calls `associationQuery('hosts')` when the model only has a singular `host` association, which won't compile.
 - `--only <onlyActions>`: Comma separated list of resourceful endpoints (e.g. `--only=create,show`); any of:
   - `index`
   - `create`
@@ -65,7 +79,15 @@ The generator includes `id`, `created_at`, `updated_at`, `deleted_at`, and `@Sof
   - `update`
   - `delete`
 - `--sti-base-serializer`: Generates an STI-aware base serializer that child serializers can extend. Use this when the generated model is an STI parent.
-- `--owning-model <modelName>`: The model class of the object that `associationQuery`/`createAssociation` will be performed on in the created controller and spec (e.g., "Host", "Guest", "Ticketing/Ticket"). Defaults to the current user for non-admin/internal namespaced controllers. For admin/internal namespaced controllers, this defaults to null, meaning every admin/internal user can access the model.
+- `--owning-model <modelName>`: The model class of the object that `associationQuery`/`createAssociation` will be performed on in the created controller and spec (e.g., "Host", "Guest", "Ticketing/Ticket"). Defaults to the current user for non-admin/internal namespaced controllers. For admin/internal namespaced controllers, this defaults to null, meaning every admin/internal user can access the model. Required for nested resources — see the caution above.
+- `--no-soft-delete`: Skip the default `@SoftDelete()` decorator and `deleted_at` column, so `destroy()` permanently removes rows instead of marking them removed.
 - `--connection-name <connectionName>`: The name of the db connection you would like to use for your model. Defaults to "default" (default: "default").
 - `--model-name <modelName>`: Explicit model class name to use instead of the auto-generated one (e.g. `--model-name=Kitchen` for `Room/Kitchen`).
 - `-h, --help`: Display help for command.
+
+## After generating
+
+Once the resource is generated:
+
+1. Update the migration file as needed (e.g., add `unique()` to a column), then run `pnpm psy db:migrate`.
+2. Update the generated controller spec first, then the corresponding generated controller — controller specs will hang if there is no response within a controller action, since generated action code starts commented out.

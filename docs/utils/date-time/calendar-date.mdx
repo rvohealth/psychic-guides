@@ -395,10 +395,11 @@ const daysInMonth = lastDayOfMonth.diff(firstDayOfMonth, 'days').days + 1
 
 ## Error Handling
 
-CalendarDate throws `InvalidCalendarDate` errors for invalid operations:
+CalendarDate throws `InvalidCalendarDate` errors for invalid operations. There is no "invalid instance" to inspect — every parser throws immediately on unparsable or calendar-impossible input, so catch the specific error rather than probing the result. `InvalidCalendarDate` is exported from `@rvoh/dream/errors`, not `@rvoh/dream`:
 
 ```ts
-import { CalendarDate, InvalidCalendarDate } from '@rvoh/dream'
+import { CalendarDate } from '@rvoh/dream'
+import { InvalidCalendarDate } from '@rvoh/dream/errors'
 
 try {
   const date = CalendarDate.fromISO('invalid-date')

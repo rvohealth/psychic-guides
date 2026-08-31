@@ -2,7 +2,7 @@
 sidebar_position: 2
 title: usage
 pagination_next: null
-ai_summary: "Use I18nProvider.provide() to create curried i18n function with type completion. Call i18n('locale', 'key.path'). Recommended for use in serializer layer. Supports passthrough data for locale-aware serialization."
+ai_summary: "Use I18nProvider.provide() to create curried i18n function with type completion. Call i18n('locale', 'key.path'). Recommended for use in serializer layer. Validate Accept-Language against supportedLocales() in a controller getter, then pass the resolved locale through both query passthrough and serializerPassthrough."
 ---
 
 # i18n - usage
@@ -14,13 +14,16 @@ Within `src/utils/i18n.ts`, you will find some boilerplate code provided for you
 
 import locales from '@conf/locales/index.js'
 import { I18nProvider } from '@rvoh/psychic/system'
+import { LocalesEnumValues } from '@src/types/db.js'
 
-const i18n = I18nProvider.provide(locales, 'en')
+export function supportedLocales() {
+  return LocalesEnumValues
+}
 
-export default i18n
+export default I18nProvider.provide(locales, 'en')
 ```
 
-When calling `I18nProvider.provide`, the first argument will be the entire payload of locales from your application config, and the second argument will be the specific locale that you are treating as your base locale. This is used to provide type completion as you use the i18n helper.
+When calling `I18nProvider.provide`, the first argument will be the entire payload of locales from your application config, and the second argument will be the specific locale that you are treating as your base locale. This is used to provide type completion as you use the i18n helper — `i18n()` only accepts dotted keys that exist in that base locale file, so pass the most complete one. At call time, the locale you pass is matched to a locale key by its language prefix (`'en-US'` matches the `en` locale file), and anything unmatched falls back to the base locale.
 
 ```ts
 // elsewhere, in your app
@@ -28,7 +31,7 @@ When calling `I18nProvider.provide`, the first argument will be the entire paylo
 const text = i18n('en-US', 'labels.nutrition.calories')
 ```
 
-We recommend that you leverage i18n within your serializer layer, since this can be an incredibly conventient place to make translations before delivering your endpoint results.
+We recommend that you leverage i18n within your serializer layer, since this can be an incredibly convenient place to make translations before delivering your endpoint results.
 
 See the [passthrough setting documentation](/docs/serializers/render#serializer-passthrough-data) for details on how to set passthrough data on automatically rendered serializers.
 
@@ -46,18 +49,40 @@ export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: Lo
     .rendersMany('rooms', { serializerKey: 'forGuests' })
 ```
 
-For locale-aware endpoints, validate the `Accept-Language` header against your generated database enum values and pass the locale through both serializer passthrough and any query passthrough associations:
+This is **code-driven** i18n: translating static values — enum labels, UI strings — that come from your code, not from a user. Treat any user-facing label baked into an enum (a place style, a room type, a status) as an i18n concern from the start, with an entry in your locale files, rather than reaching for an ad hoc `Record<EnumValue, string>` lookup map next to the enum. A hand-rolled label map duplicates what `i18n()` already gives you — locale coverage, type-checked keys, and one lookup path for both static and user-generated content — and it silently stops working the moment you add a second locale. For translating user-generated content (a place's title, a listing's description), see [passthrough](/docs/models/querying/passthrough) for the `LocalizedText` pattern, which is the data-driven counterpart to this page.
+
+## Passing locale from controllers
+
+Read the `Accept-Language` header once, validate it against your supported locales, and fall back to a default when the header is missing or unsupported. A getter on a shared base controller is a convenient place for this:
 
 ```ts
-const locale = this.castParam('Accept-Language', 'string', { enum: LocalesEnumValues })
+export default class AuthedController extends ApplicationController {
+  @BeforeAction()
+  public configureSerializers() {
+    this.serializerPassthrough({ locale: this.locale })
+  }
 
-const place = await Place
-  .passthrough({ locale })
-  .preloadFor('forGuests')
-  .findOrFail(this.castParam('id', 'uuid'))
-
-this.serializerPassthrough({ locale })
-this.ok(place)
+  protected get locale() {
+    const locale = this.header('Accept-Language')
+    const locales = supportedLocales()
+    return locales.includes(locale as (typeof locales)[number]) ? locale : 'en-US'
+  }
+}
 ```
+
+`this.header(...)` reads a request header — it isn't a `castParam` concern, since `castParam` casts and validates route, query, and body params, not headers.
+
+When querying models that use passthrough-conditioned associations (like `currentLocalizedText`), pass the same resolved locale on the query, in addition to `serializerPassthrough`:
+
+```ts
+const places = await Place
+  .passthrough({ locale: this.locale })
+  .preloadFor('forGuests')
+  .all()
+```
+
+`serializerPassthrough` and `.passthrough(...)` are two separate channels that happen to want the same value here — the former feeds serializer callbacks like `customAttribute`, the latter satisfies `and: { locale: DreamConst.passthrough }` conditions on associations. See [passthrough](/docs/models/querying/passthrough) for the association side of this pattern, including how to pair it with a fixed-locale fallback association.
+
+## Output encoding
 
 `I18nProvider` interpolation does not HTML-escape values. Psychic is a JSON API, so encode output in the frontend context that renders it. See [output encoding](/docs/security/output-encoding).

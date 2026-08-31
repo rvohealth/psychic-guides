@@ -15,6 +15,27 @@ export const RoomWithPlaceSerializer = (room: Room) =>
   DreamSerializer(Room, room).attribute('id').attribute('name').rendersOne('place')
 ```
 
+### rendersOne.optional
+
+Pass `optional: true` when the association can be `null` at render time — but only when there's no other way for `rendersOne` to know that. For a `BelongsTo` association, the model's own `@deco.BelongsTo('User', { optional: true })` declaration is already the canonical source of truth for nullability, and `rendersOne` auto-infers the same `anyOf: [{ $ref: ... }, { type: 'null' }]` OpenAPI shape from it:
+
+```ts
+// Model
+@deco.BelongsTo('User', { optional: true })
+public approver: User | null
+
+// Serializer — no `optional` needed; auto-inferred from the BelongsTo declaration.
+.rendersOne('approver')
+```
+
+Don't restate `optional: true` on a `rendersOne` for a `BelongsTo` — it duplicates the model's declaration, and changing it (passing `optional: true` when the `BelongsTo` isn't optional, or vice versa) is almost always a mistake, since the model governs what can actually be `null` at runtime. Reach for explicit `optional: true` only when the association isn't a `BelongsTo` — a `HasOne` that may be absent, for example — where there's no model-side nullability for `rendersOne` to infer:
+
+```ts
+.rendersOne('approver', { optional: true })
+```
+
+`optional` is purely an OpenAPI nullability marker — the key is always rendered, and `rendersOne` has no `required: false` counterpart. If you need the key omitted entirely, reshape the serializer (a `customAttribute`, or a different serializer variant) instead. `optional: true` also has no effect on an association that was never loaded: rendering a `NonLoadedAssociation` still throws regardless of `optional`, so load it with [`preloadFor`](/docs/models/querying/preloadFor) or [`loadFor`](/docs/models/querying/loadFor) either way. See [the BelongsTo `optional` contract](/docs/models/associations/belongs-to#optional) for the model-side rules this defers to.
+
 ## rendersMany
 
 Use `.rendersMany()` to include an array of associated models:
@@ -135,10 +156,68 @@ export const PlaceSerializer = (place: Place) =>
 
 When you only need a property or two from an association, a [delegatedAttribute](./attributes#delegatedattribute) is usually simpler than creating a new named serializer just to flatten it.
 
+### attribute shadowing
+
+Flattening merges the associated record's attributes directly into the parent response. When the flattened association has an attribute with the same name as one on the parent serializer, **the flattened association's attribute wins** — it overwrites the parent's. The most common collision is `id`: both the parent and the flattened association typically have one, and the flattened one takes over.
+
+This shows up as the API response returning the associated record's `id` instead of the parent's, frontend routing or specs picking up the wrong identity, or other same-named attributes (`name`, `createdAt`, …) having unexpected values.
+
+There are two ways to fix it, depending on which attribute you actually need:
+
+**When the flattened association's colliding attribute isn't needed**, give it a dedicated flattenable serializer that omits the attribute, and build the normal (non-flattened) serializer from that flattenable one, adding the attribute back:
+
+```ts
+// GuestSerializer.ts
+export const GuestSummarySerializer = (guest: Guest) =>
+  DreamSerializer(Guest, guest).attribute('id').attribute('name')
+
+export const FlattenableGuestSerializer = (guest: Guest) =>
+  DreamSerializer(Guest, guest).attribute('name').attribute('bio')
+
+export const GuestSerializer = (guest: Guest) => FlattenableGuestSerializer(guest).attribute('id')
+
+// BookingSerializer.ts — flattens guest data without the guest's id
+export const BookingSerializer = (booking: Booking) =>
+  DreamSerializer(Booking, booking)
+    .attribute('id')
+    .rendersOne('guest', { serializer: FlattenableGuestSerializer, flatten: true })
+```
+
+This breaks the usual pattern where the default serializer extends the summary serializer, so some attributes may need to be duplicated across the flattenable and non-flattenable variants.
+
+**When the parent's colliding attribute isn't needed**, simply omit it from the parent serializer instead. This is the common case for join models, where the join model's own `id` isn't useful to the consumer and the real identity is the flattened association's `id`:
+
+```ts
+// HostPlace only contributes `position`; Place's attributes (including id) are flattened in
+export const HostPlaceSerializer = (hostPlace: HostPlace) =>
+  DreamSerializer(HostPlace, hostPlace).attribute('position').rendersOne('place', { flatten: true })
+```
+
+When a serializer flattens, write controller specs against the serialized API contract (the flattened shape), not the underlying model's property names.
+
+## rendersOne, rendersMany, and STI
+
+A serializer built for an [STI](/docs/models/sti) base class typically takes the STI child class as a generic type parameter, so it can resolve the correct schema per child. When a child serializer extends that base and calls `rendersOne`, `rendersMany`, or [`delegatedAttribute`](./attributes#delegatedattribute), pass the STI child class explicitly as the generic parameter — without it, TypeScript can't resolve the association's types, because the base serializer's generic context is lost at the call site:
+
+```ts
+// Correct — <Bedroom> lets rendersMany resolve Bedroom's associations
+export const RoomBedroomForGuestsSerializer = (bedroom: Bedroom, passthrough: { locale: LocalesEnum }) =>
+  RoomForGuestsSerializer(Bedroom, bedroom, passthrough).rendersMany<Bedroom>('bedTypes', {
+    serializer: BedTypeSerializer,
+  })
+
+// Wrong — omitting the generic causes type errors
+  .rendersMany('bedTypes', { serializer: BedTypeSerializer })
+```
+
+`.attribute()` infers its type without a generic argument, and `.customAttribute()` doesn't do type inference at all, so neither one needs this. See [single table inheritance](/docs/models/sti) for the base/child serializer pattern itself.
+
 ## loading associations
 
-Associations need to be loaded before serialization. The easiest way is with [`preloadFor`](/docs/models/querying/preloadFor), which automatically figures out what to load based on the serializer:
+Associations need to be loaded before serialization. The easiest way is with [`preloadFor`](/docs/models/querying/preloadFor), which automatically figures out what to load based on the serializer — including nested `rendersOne`, `rendersMany`, and `delegatedAttribute` associations:
 
 ```ts
 const places = await Place.preloadFor('forGuests').all()
 ```
+
+Prefer `preloadFor` (or [`loadFor`](/docs/models/querying/loadFor) on an existing instance) over a hand-written `preload(...)` chain. Manual preload is fragile — it's easy to miss a nested dependency, which surfaces as a `NonLoadedAssociation` error at serialization time rather than at the query. `preloadFor` also adapts automatically as serializers evolve: add a `rendersMany` to a serializer, and every controller using `preloadFor` picks it up without a code change. A manual preload chain won't. Manual `preload`/`load` is still the right tool outside of serialization — for example, loading associations to support business logic in a service.

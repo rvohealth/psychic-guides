@@ -1,7 +1,7 @@
 ---
 sidebar_position: 10
 title: rate limiting
-ai_summary: "Rate limiting for named workstreams requires BullMQ Pro license. Add rateLimit configuration (max, duration) to named workstream. Must use QueuePro and WorkerPro providers. See BullMQ Pro rate limiting documentation."
+ai_summary: "Rate limiting for named workstreams requires BullMQ Pro license. Add rateLimit configuration (max, duration) to named workstream. Must use QueuePro and WorkerPro providers. Pro is also what lets a named workstream honor group.priority, so it's the only way to combine rate limiting with priority-ordered fan-out work. See BullMQ Pro rate limiting documentation."
 ---
 
 # Rate Limiting
@@ -52,3 +52,5 @@ Note that in order to use BullMQ Pro, `providers` must be configured to pass `Qu
   ...
 })
 ```
+
+Rate limiting is also the reason to reach for BullMQ Pro when [fanning out background jobs for a very large record set](./fan-out) that calls a rate-limited external API: `not_urgent`/`last` priority only affects worker-slot ordering, not the rate of requests once a job is running, and only Pro honors a named workstream's `group.priority` (open-source BullMQ ignores it) — so Pro is what lets that fan-out's backpressure and its rate limit both hold on the same named workstream.

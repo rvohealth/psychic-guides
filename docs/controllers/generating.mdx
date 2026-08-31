@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-ai_summary: 'Controller generators create inheritance chains with base controllers. Resource generator creates model, migration, serializer, controller with CRUD routes, routes, and specs. Supports nested resources and --only option to customize endpoints. All generated actions are commented out by default.'
+ai_summary: 'Controller generators (g:resource preferred, then g:sti-child, g:model, g:migration) create inheritance chains with base controllers, reparented once per surface to loosen auth. Resource generator creates model, migration, serializer, controller with CRUD routes, routes, and specs, but unconditionally overwrites existing model/spec/factory/serializer files. Supports nested resources (requires --owning-model) and --only option to customize endpoints. All generated actions are commented out by default; run db:migrate then pnpm psy sync after generating.'
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -8,16 +8,37 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 # generating
 
+## Choosing a generator
+
+In preference order:
+
+1. **`g:resource`** — the default for almost all new models. It generates the controller, controller specs, and route scaffolding that `g:model` does not, and it's easier to delete an unused controller action later than to retrofit one.
+2. **`g:sti-child`** — for STI child models building on an existing STI base.
+3. **`g:model`** — only for models that will never be exposed via any API (join tables, audit logs).
+4. **`g:migration`** — for a database change that isn't accompanied by a new model.
+
 ## Generated controller inheritance chain
 
 Both the resource generator and the controller generator create base controllers in every nested directory along the path to the target controller being generated:
 
 - The controller will extend the base controller in its directory
 - The base controller will extend the base controller in its parent directory
-- The base controller in the outermost controller directory should be one of the following: the `AuthedController`, `UnauthedController`, or `MaybeAuthedController` (the default for generated routes is always the `AuthedController` to ensure that generated routes never accidentally expose controllers at unauthenticated routes)
-- When generating within the `admin` namespace (e.g., via `pnpm psy g:controller admin/content/lessons`), the root controller in the inheritance chain will be the `AuthedAdminController`
+- The base controller in the outermost controller directory should be one of the following: the `AuthedController`, `UnauthedController`, or `MaybeAuthedController` (the default for generated routes is always the client `AuthedController`, to ensure that generated routes never accidentally expose controllers at unauthenticated routes)
+- When generating within the `admin` or `internal` namespace (e.g., via `pnpm psy g:controller admin/content/lessons`), the generator special-cases those namespaces and roots the chain at `Admin/AuthedController` or `Internal/AuthedController` instead of the client `AuthedController` — each surface authenticates its own user type
 
 By using resource and controller generators and following these conventions, access controls will be automatically applied to new resources. To apply different access controls to all controllers rooted at a particular directory, simply add a [`@BeforeAction`](./before-action) method that calls `this.forbidden()` when the currently authenticated user does not have the necessary permissions.
+
+### Reparenting when a surface loosens auth
+
+Because an existing namespace base is reused rather than regenerated, reparenting one is a one-time edit — controllers generated into that namespace afterward inherit the new base automatically. This is how you scaffold a surface that is intentionally **not** authenticated the same way the client API is:
+
+- Public/optionally-authed reads (e.g. `pnpm psy g:controller Visitor/V1/Places index`): generate normally, then reparent `Visitor/BaseController.ts` to extend `MaybeAuthedController`.
+- Webhooks (e.g. `pnpm psy g:controller Webhooks/V1/Zoom create`): generate normally, then reparent `Webhooks/BaseController.ts` to extend `UnauthedController`, and verify the payload signature in a `@BeforeAction` on the *provider's* controller — not the shared base, since each provider's signature scheme differs.
+- A server-to-server partner API (e.g. `pnpm psy g:resource api/v1/reservations Booking`): generate normally, then reparent `Api/BaseController.ts` to extend `UnauthedController` and verify the API key in a `@BeforeAction` there.
+
+Always reparent at the surface's **top-level** namespace base, never a nested one — see [Directory structure](./overview#directory-structure) for why a surface that loosens auth must be its own top-level namespace rather than nested inside `V1/`. After generating, verify the tree with `pnpm psy inspect:controller-hierarchy` or `pnpm psy check:controller-hierarchy` (the latter exits non-zero if a controller extends too far up the tree or crosses branches).
+
+Note that `g:controller` wires the inheritance chain and creates the unit spec, but it does **not** add routes — you're free to wire the route in `conf/routes.ts` however the URL contract requires, including with an explicit `controller:` reference when the directory name shouldn't leak into the URL (see [Routing when directory names shouldn't appear in URLs](./overview#routing-when-directory-names-shouldnt-appear-in-urls)).
 
 ## Resources
 
@@ -35,6 +56,12 @@ All of the controller action implementations generated by this command are by de
 
 Run `pnpm psy g:resource --help` or see [the g:resource documentation](/docs/cli/generators/resource) for details of the generator API.
 
+:::danger `g:resource` unconditionally overwrites existing model, spec, factory, and serializer files
+`g:resource` always regenerates the model file, unit spec, factory, and serializer for the given model name — it does not check whether those files already exist, and there is no flag to skip them (`--only` controls which controller actions are scaffolded, not which files are written). Running it again for a model that already has hand-edited associations, hooks, validations, or serializer fields will silently discard those edits.
+
+This mainly bites when a model already exists (from `g:model` or a prior `g:resource`) and you need to add the missing controller/routes after the fact. Commit your work first, so you can review the regenerated model, spec, factory, and serializer and discard those changes.
+:::
+
 ### Nested resource routes
 
 In this example, we'll generate a Places resource and then a nested Rooms resource within Places (so that when a Room is created, it will be associated with the specified Place, and the index will return Rooms for a given Place).
@@ -43,7 +70,7 @@ In this example, we'll generate a Places resource and then a nested Rooms resour
   code={`{{PM}} psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer`}
 />
 
-Before using a generator, run its `--help` output in the local project. `g:resource` and `g:model` include `id`, timestamps, `deleted_at`, and `@SoftDelete()` by default; only pass `deleted_at` when you are adding soft delete to an existing model through a migration.
+`g:resource` and `g:model` include `id`, timestamps, `deleted_at`, and `@SoftDelete()` by default; only pass `deleted_at` when you are adding soft delete to an existing model through a migration.
 
 The routes file will be modified with a namespaced resource.
 
@@ -118,3 +145,15 @@ To generate a controller, use the provided cli tool as demonstrated below:
 The controller produced will automatically have the methods specified provided for you, with `OpenAPI` decorators automatically registered on your methods, but no implementation.
 
 Additionally, a spec file will be generated, which is empty by default, but ready for you to add spec examples.
+
+## After the generator runs
+
+1. **Update the migration file as needed** (e.g., add `unique()` to a column) — see the [migrations guide](/docs/migrations/overview).
+2. **Run migrations**: `pnpm psy db:migrate`. Under the default `NODE_ENV=test` this also runs `sync` automatically — don't follow it with a separate `pnpm psy sync` in that environment.
+3. **For a resource generator**, update the generated controller spec first, then the corresponding controller. Generated action code starts commented out, so a spec that hits it will hang waiting on a response until you fill in the implementation.
+
+Run `pnpm psy sync` again any time you change an association, a serializer, an `@OpenAPI` decorator, a route, or add a decorator that declares a virtual column (`@deco.Virtual()`, `@deco.Encrypted()`) outside of a migration. A controller spec with type errors about what an endpoint accepts or returns is the usual symptom of a stale sync.
+
+## Generator gotcha: duplicate route namespaces
+
+Running `g:resource` for a resource in an existing namespace (e.g., generating `v1/guest/reviews` when `v1/guest/bookings` already exists) may add a second `r.namespace('guest', ...)` block to `conf/routes.ts` instead of reusing the existing one. Always check `routes.ts` after running a generator and consolidate duplicate namespace blocks by hand.

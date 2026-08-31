@@ -32,3 +32,5 @@ Additionally, you can perform bulk updates like so:
 ```ts
 await User.where({ email: ops.ilike('%chalupatowne%') }).update({ email: '' })
 ```
+
+When the value you are writing depends on a value you just read, a plain update is not enough — see the [locking guide](/docs/models/locking) for guarded (compare-and-set) writes.

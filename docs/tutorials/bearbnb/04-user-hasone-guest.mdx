@@ -83,10 +83,10 @@ index 6a43a29..9b05776 100644
 +  @deco.HasOne('Guest')
 +  public guest: Guest
  }
-diff --git a/api/src/db/migrations/1782835165844-create-guest.ts b/api/src/db/migrations/1782835165844-create-guest.ts
-index c56e682..8b47182 100644
---- a/api/src/db/migrations/1782835165844-create-guest.ts
-+++ b/api/src/db/migrations/1782835165844-create-guest.ts
+diff --git a/api/src/db/migrations/1782925846214-create-guest.ts b/api/src/db/migrations/1782925846214-create-guest.ts
+index c99a337..8e5d3fa 100644
+--- a/api/src/db/migrations/1782925846214-create-guest.ts
++++ b/api/src/db/migrations/1782925846214-create-guest.ts
 @@ -9,7 +9,7 @@ export async function up(db: Kysely<any>): Promise<void> {
          .primaryKey()
          .defaultTo(sql`uuidv7()`),

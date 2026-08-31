@@ -50,7 +50,7 @@ export default async function (dreamApp: DreamApp) {
 }
 ```
 
-The `ssl` field accepts `{ rejectUnauthorized: true }` (verified TLS, the default), `{ rejectUnauthorized: false }` (unverified TLS, for providers that don't serve a public-CA-signed certificate), or `false` (TLS off, for local development without TLS). The bare `useSsl` boolean shorthand is deprecated — use an explicit `ssl` value instead.
+The `ssl` field accepts `{ rejectUnauthorized: true }` (verified TLS, the default), `{ rejectUnauthorized: false }` (unverified TLS, for providers that don't serve a public-CA-signed certificate), or `false` (TLS off, for local development without TLS).
 
 Most managed Postgres providers (Supabase, Neon, Render, Azure Database for PostgreSQL Flexible Server) present a public-CA-signed certificate and work with the default. Providers that require a pinned CA certificate (AWS RDS, GCP Cloud SQL) need an additional `ca` field:
 
@@ -180,11 +180,11 @@ export default async function (dreamApp: DreamApp) {
 
 ### setting your primary key type
 
-The primaryKeyType configuration informs the cli how to generate your migrations for you when building out models using the cli generators provided by dream.
+The primaryKeyType configuration informs the cli how to generate your migrations for you when building out models using the cli generators provided by dream. Valid values are `uuid7`, `uuid4`, `bigint`, and `integer` (this is also the same set of choices offered by `--primary-key-type` when provisioning a new app — see [installation](/docs/installation)).
 
 ```ts
 export default async function (dreamApp: DreamApp) {
-  dreamApp.set('primaryKeyType', 'bigserial')
+  dreamApp.set('primaryKeyType', 'uuid7')
   ...
 }
 ```

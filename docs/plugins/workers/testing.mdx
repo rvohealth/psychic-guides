@@ -13,6 +13,8 @@ pagination_next: null
 
 By default, your backgrounded methods will be immediately invoked during tests. This reduces the headache of understanding how your system would behave. However, this may in certain cases be undesirable for you, and you may instead want to opt into pushing things into BullMQ queues and utilizing special controls to manually work those jobs off.
 
+This default applies to `schedule(...)`, `background(...)`, and `backgroundWithDelay(...)` alike — a spec that calls any of them executes the work immediately and synchronously, with the delay ignored, and no queue flush needed. The flip side: any environment guard inside the method (e.g. `if (serverEnvironment !== 'production') return`) also fires in tests, so a guarded method needs a `force`-style override to be exercised in a spec.
+
 ## config
 
 To do this, you will first need to set the `testInvocation` to `manual`. This can be done by setting it in your workers config, like so:

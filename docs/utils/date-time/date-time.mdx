@@ -338,15 +338,6 @@ const dt = DateTime.now({ locale: 'fr-FR' })
 dt.locale // 'fr-FR'
 ```
 
-### Validity
-
-```ts
-const dt = DateTime.fromISO('invalid')
-
-dt.invalidReason // 'unparsable'
-dt.invalidExplanation // detailed error message
-```
-
 ## Timezone Operations
 
 ```ts
@@ -523,20 +514,25 @@ Settings.throwOnInvalid = true
 
 ## Error Handling
 
-Dream's DateTime throws `InvalidDateTime` errors for invalid operations:
+Every parser on `DateTime` — `fromISO`, `fromSQL`, `fromFormat`, `fromObject` — throws `InvalidDateTime` on unparsable or calendar-impossible input rather than returning a value you can probe. There is no "invalid instance" to inspect: `DateTime.fromISO('garbage')` throws immediately, so a guard like `if (!DateTime.fromISO(v).toISODate()) { ... }` never reaches its check — the throw happens first. To validate untrusted input (an API param, an LLM-emitted value), parse it and catch the specific error instead:
+
+`InvalidDateTime` is exported from `@rvoh/dream/errors`, not `@rvoh/dream`:
 
 ```ts
-import { DateTime, InvalidDateTime } from '@rvoh/dream'
+import { DateTime } from '@rvoh/dream'
+import { InvalidDateTime } from '@rvoh/dream/errors'
 
-try {
-  const dt = DateTime.fromISO('invalid-date')
-} catch (e) {
-  if (e instanceof InvalidDateTime) {
-    console.error(e.message)
-    console.error(e.cause) // original error
+function parseISODateTimeOrNull(v: string): DateTime | null {
+  try {
+    return DateTime.fromISO(v)
+  } catch (e) {
+    if (e instanceof InvalidDateTime) return null
+    throw e
   }
 }
 ```
+
+Catch only the specific parse error you expect, not every error — an unguarded catch hides bugs that have nothing to do with parsing.
 
 ## Usage with Models
 

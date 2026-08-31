@@ -14,6 +14,12 @@ Psychic and Dream both provide a CLI for interfacing with underlying bin scripts
   code={`{{PM}} psy --help`}
 />
 
+:::tip
+Every `psy` command defaults to `NODE_ENV=test`. To run a command against your development database, prefix it explicitly, e.g. `NODE_ENV=development pnpm psy db:migrate` (substitute your project's package manager). See [migrate/rollback](/docs/cli/migrate) for why this matters for type syncing.
+:::
+
+Every `psy` command supports `--help`, which prints its full list of flags, e.g. `psy g:resource --help`.
+
 ## Commands
 
 ### Generators
@@ -32,7 +38,7 @@ Psychic and Dream both provide a CLI for interfacing with underlying bin scripts
 - `db:migrate [options]` - Runs any outstanding database migrations.
 - `db:rollback [options]` - Rolls back the specified number of migration steps (defaults to 1).
 - `db:drop` - Drops the database.
-- `db:reset` - Runs db:drop (safely), db:create, db:migrate, and db:seed.
+- `db:reset` - Runs db:drop (safely), db:create, db:migrate (which syncs types and OpenAPI specs when `NODE_ENV=test`, the default), and db:seed.
 - `db:seed` - Seeds the database using the file located in db/seed.ts.
 
 ### Inspection & Utilities

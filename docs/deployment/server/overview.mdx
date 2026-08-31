@@ -4,9 +4,12 @@ title: overview
 pagination_prev: null
 ai_summary: >-
   Deployment overview: runtime roles (web, websocket, worker, console/migrator),
-  environment variables via AppEnv, TLS configuration, Postgres TLS provider
-  matrix, health checks (API vs WebSocket differences), running migrations in
-  production, and debugging a deployed service.
+  environment variables via AppEnv (including registering new vars in AppEnv's
+  typed union), TLS configuration, Postgres TLS provider matrix and the
+  MissingDbSslDirective gotcha, read replica configuration,
+  health checks (API vs WebSocket differences), running migrations in
+  production (migrate-as-smoke-test, combining migrate+seed, the two-deploy
+  column-drop rule), and debugging a deployed service.
 ---
 
 # deployment overview
@@ -43,9 +46,13 @@ If using background workers:
 
 ## Environment variables
 
-Always use `AppEnv` (defined in `src/conf/AppEnv.ts`) to access environment variables — never `process.env` directly. `AppEnv` validates that required variables are present at boot time and provides a clear error when one is missing. This also decouples the application from the container environment: secrets can be loaded from AWS Secrets Manager or AWS SSM Parameter Store at boot time and injected into `AppEnv` before anything else runs.
+Always use `AppEnv` (defined in `src/conf/AppEnv.ts`) to access environment variables — never `process.env` directly. `AppEnv` validates that required variables are present at boot time and provides a clear error when one is missing. This also decouples the application from the container environment: secrets can be loaded from AWS Secrets Manager or AWS SSM Parameter Store at boot time and injected into `AppEnv` before anything else runs, so the container itself doesn't need every secret baked into its environment, and secrets can be rotated without redeploying.
 
 For variables that are only present in some environments, use `AppEnv.string(name, { optional: true })`, which returns `string | undefined` instead of throwing.
+
+:::warning
+Every new environment variable name must be registered in `AppEnv.ts`'s typed union before `AppEnv.string(name)` (or `.boolean` / `.integer`) will compile for it. Adding an env var is a two-part change: add the name to the appropriate union, then read it through `AppEnv`. The gotcha is where the omission surfaces — a Vitest run (`pnpm uspec`) doesn't type-check, so a spec exercising the new variable passes green, and the missing-name error only appears at the `pnpm build:spec` type-check gate. Add the union entry in the same change; `pnpm build:spec` is what catches the omission.
+:::
 
 ## Build output
 
@@ -61,7 +68,7 @@ If the proxy terminates TLS and forwards plain HTTP to the container, no additio
 
 ### Postgres TLS
 
-Configure TLS posture explicitly in `conf/dream.ts` via the `ssl` field on each credential. The bare `useSsl` boolean is deprecated. The scaffolded boilerplate uses verified TLS by default:
+Configure TLS posture explicitly in `conf/dream.ts` via the `ssl` field on each credential. The scaffolded boilerplate uses verified TLS by default:
 
 ```ts
 const dbSsl: { rejectUnauthorized: true } | false = AppEnv.boolean('DB_NO_SSL')
@@ -78,6 +85,18 @@ Provider reference:
 | GCP Cloud SQL | `{ rejectUnauthorized: true, ca: readFileSync('server-ca.pem') }` |
 | Heroku Hobby, some local Docker images | `{ rejectUnauthorized: false }` |
 | Local dev with no TLS | `ssl: false` or `DB_NO_SSL=true` |
+
+:::warning
+Setting `app.set('db', ...)` throws `MissingDbSslDirective` at setter time — in every environment, not just production — if a credential has no `ssl` value, so a deploy can't silently boot with an unspecified TLS posture.
+:::
+
+See [conf/dream.ts — database connection](/docs/config/dream#database-connection) for the full credential shape.
+
+## Read replicas
+
+`app.set('db', { primary, replica })` accepts an optional `replica` credential alongside `primary`, using the same shape (`host`, `port`, `user`, `password`, `name`, `ssl`) pointed at your read replica instance. Configuring `replica` only makes the connection available — it doesn't route any traffic there by itself. A model only reads from the replica when it's decorated [`@ReplicaSafe()`](/docs/models/decorators/replica-safe), and even then only for `select` queries outside a transaction (joins fall back to primary, `create`/`update`/`destroy` always go to primary, and a per-call `.connection(...)` override is available).
+
+Omit `replica` (or pass `undefined`) for environments with no replica — every model, `@ReplicaSafe()` or not, then reads from `primary`.
 
 ## Health checks
 
@@ -119,6 +138,10 @@ sh -c "node ./dist/src/conf/system/cli.js db:migrate && node ./dist/src/conf/sys
 ```
 
 If migrate fails, seed never runs and the task exits non-zero. If migrate succeeds and seed fails, the task exits non-zero with seed's error.
+
+### Dropping a column takes two deploys
+
+A rolling deploy runs the migration while containers built from the previous image are still serving traffic. If that migration drops a column, containers still running the old code can fail mid-request the moment the column disappears out from under them. Dropping a column is therefore a two-deploy process: first deploy declares the column ignored in the model (so the old code stops depending on it while the column still exists), and only the following deploy's migration actually drops it.
 
 ## Debugging a deployed service
 

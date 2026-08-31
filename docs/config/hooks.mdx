@@ -8,6 +8,10 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 Psychic and Dream expose hooks to enable developers to tap into core internal events. The majority of these events are lifecycle event hooks that fire off internally as the web server is bootstrapped, but there are other useful hooks to discuss as well. Due to the fact that Psychic and Dream are separate libraries, some of the hooks you will tap into will be in the `conf/dream.ts` file, while others will be in the `conf/app.ts` file.
 
+:::tip
+Reach for `PsychicApp.log(message, ...meta)` (or `PsychicApp.logWithLevel(level, message, ...meta)`) inside a hook callback rather than `console.log` — these route through the app's configured logger instead of writing unstructured strings straight to stdout.
+:::
+
 ## Psychic hooks
 
 Psychic hooks can be tapped into in your `conf/app.ts` file, or in one of your initializers.
@@ -97,7 +101,7 @@ This hook is run after the web server has started.
 
 export default async (app: PsychicApp) => {
   app.on('server:start', (psychicServer: PsychicServer) => {
-    console.log('hello world!')
+    PsychicApp.log('hello world!')
   })
 }
 ```
@@ -111,7 +115,7 @@ This hook is run after the web server has stopped.
 
 export default async (app: PsychicApp) => {
   app.on('server:shutdown', (psychicServer: PsychicServer) => {
-    console.log('goodbye world!')
+    PsychicApp.log('goodbye world!')
   })
 }
 ```

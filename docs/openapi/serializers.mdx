@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: serializers
-ai_summary: "Serializers automatically infer OpenAPI types from database schema. DreamSerializer reads column types and associations. Supports date/DateTime inference (iso8601 format), enum inference, and manual OpenAPI overrides. Type inference automatically responds to migrations."
+ai_summary: "Serializers automatically infer OpenAPI types from database schema. DreamSerializer reads column types and associations; overrides pass an `openapi` option (full shape or shorthand string) to attribute/customAttribute/delegatedAttribute. Supports date/DateTime inference (iso8601 format), enum inference, delegatedAttribute optional vs required:false nullability, rendersOne/rendersMany nullability inference from BelongsTo, ObjectSerializer for non-Dream view models (explicit openapi types required, export nested serializers), and compound response envelopes composed from ObjectSerializer instead of hand-written responses blocks."
 ---
 
 # OpenAPI - Serializers
@@ -118,22 +118,23 @@ schema: {
 
 ## Custom attribute definitions
 
-If the inferred types will not work for your use case, then overrides can be provided directly to the `attribute` method, enabling you to specify custom OpenAPI types to fit your needs:
+If the inferred types will not work for your use case — for instance a `@deco.Virtual()` column, or a shape inference can't reach — override the OpenAPI type directly on the `attribute` call via the `openapi` option:
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
   DreamSerializer(Place, place)
     .attribute('description', {
-      type: 'object',
-      required: ['en-US', 'en-ES']
-      properties: {
-        'en-US': 'Cozy mountain cottage',
-        'en-ES': 'Cabaña acogedora en la montaña',
-      }
+      openapi: {
+        type: 'object',
+        required: ['en-US', 'en-ES'],
+        properties: {
+          'en-US': { type: 'string' },
+          'en-ES': { type: 'string' },
+        },
+      },
     })
     .attribute('name', {
-      type: 'string',
-      nullable: true
+      openapi: { type: 'string', nullable: true },
     })
 ```
 
@@ -147,10 +148,10 @@ schema: {
     properties: {
       description: {
         type: 'object',
-        required: ['en-US', 'en-ES']
+        required: ['en-US', 'en-ES'],
         properties: {
-          'en-US': 'Cozy mountain cottage',
-          'en-ES': 'Cabaña acogedora en la montaña',
+          'en-US': { type: 'string' },
+          'en-ES': { type: 'string' },
         }
       },
       name: {
@@ -161,6 +162,8 @@ schema: {
   }
 }
 ```
+
+Every attribute-defining method — `attribute`, `customAttribute`, `delegatedAttribute` — accepts `openapi` as an option alongside its other options (`as`, `precision`, `default`, `flatten`, and so on), rather than taking the OpenAPI shape as a bare second argument. For a `@deco.Virtual()` column that already carries an OpenAPI type annotation on the decorator, use plain `.attribute('name')` without an `openapi` option — the type is inferred from the `Virtual` decorator itself, and adding one here would be redundant hand-written schema for something Psychic can already derive.
 
 Psychic and dream are currently fixed to OpenAPI `3.1.0`, and plan to march forward with later versions. We attempt to support the full depth of their api (and if you notice anything that isn't, please open up an issue and we will correct it promptly!), which means you will be able to get typed support and autocomplete to aid you as you define your custom openapi definitions. This includes support for the following types:
 
@@ -200,13 +203,13 @@ Manually typing OpenAPI specs can be _pretty_ annoying after a while, so we have
 - 'date-time'
 - 'date-time[]'
 
-Any of these shorthand representations can be wrapped in an array with 'null' to represent a nullable attribute, e.g., `['string', 'null']`.
+Any of these shorthand representations can be wrapped in an array with 'null' to represent a nullable attribute, e.g., `['string', 'null']`. Like the full object form, the shorthand is passed via the `openapi` option:
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
   DreamSerializer(Place, place)
-    .attribute('name', 'string')
-    .attribute('amenities', ['string[]', 'null'])
+    .attribute('name', { openapi: 'string' })
+    .attribute('amenities', { openapi: ['string[]', 'null'] })
 ```
 
 which would produce:
@@ -233,3 +236,68 @@ schema: {
   }
 }
 ```
+
+## Nullability on delegated attributes
+
+`delegatedAttribute` reads a property on a loaded association (`.delegatedAttribute('profile', 'avatarUrl', ...)` reads `place.profile.avatarUrl`). When the delegated-through path may resolve to `undefined`/`null` — a missing `HasOne`, an absent JSON sub-key — choose between `optional: true` and `required: false`. They are not aliases; they govern different layers and can be combined:
+
+| Option | Runtime | OpenAPI |
+|---|---|---|
+| `optional: true` | No effect — key always rendered (`null` when missing). | Schema wrapped in `anyOf: [schema, { type: 'null' }]`. |
+| `required: false` | Key **omitted** from the response when the resolved value is `undefined`. | Field excluded from the containing schema's `required[]`. |
+| `default: <value>` | Substitutes the value when the resolved path is `undefined`. | (No effect.) |
+
+```ts
+// Key always present; null when the association is missing.
+.delegatedAttribute('profile', 'avatarUrl', { openapi: 'string', optional: true })
+
+// Key omitted from the response when the association/path is missing.
+.delegatedAttribute('profile', 'avatarUrl', { openapi: 'string', required: false })
+```
+
+A `.attribute(...)` for a `@deco.BelongsTo('Foo', { optional: true })` column auto-infers OpenAPI nullability from that association metadata, so `optional: true` is most often needed explicitly for `HasOne` or other non-`BelongsTo` nullable paths.
+
+## rendersOne / rendersMany nullability
+
+**Don't pass `optional: true` to `rendersOne` for a `BelongsTo` association.** The `BelongsTo` declaration on the model — `optional: true` or the default `false` — is the canonical source of truth for whether the association can be `null`. The renderer auto-infers nullability from that metadata: a `rendersOne('approver')` whose `BelongsTo('User', { optional: true })` declaration says nullable already produces the same `anyOf: [{ $ref: ... }, { type: 'null' }]` shape you'd get by passing `optional: true` explicitly.
+
+`optional` on `rendersOne` is purely an OpenAPI nullability marker — the key is always rendered. `rendersOne` does not support `required: false`; if the key needs to be absent from the response, reshape the serializer (a custom attribute, or a different serializer variant) rather than reaching for an option that doesn't exist. `optional: true` also has no effect on an association that was never preloaded or loaded — rendering it still throws regardless of `optional`.
+
+## ObjectSerializer (for non-Dream objects)
+
+For plain objects — computed / view-model shapes with no backing Dream model — use `ObjectSerializer` instead of `DreamSerializer`. **All attributes require an explicit `openapi` type**, since there's no database column to infer from. When a controller returns a stable computed / view-model object, create an `ObjectSerializer` and pass that serializer function to `@OpenAPI(SerializerFn, { status })` instead of hand-writing `responses[status].properties`:
+
+```ts
+import { ObjectSerializer } from '@rvoh/dream'
+
+export const BedTypeSerializer = (bedType: BedTypesEnum, passthrough: { locale: LocalesEnum }) =>
+  ObjectSerializer({ bedType }, passthrough)
+    .attribute('bedType', {
+      as: 'value',
+      openapi: { type: 'string', enum: BedTypesEnumValues },
+    })
+    .customAttribute('label',
+      () => i18n(passthrough.locale, `rooms.Bedroom.bedTypes.${bedType}`),
+      { openapi: 'string' }
+    )
+```
+
+For OpenAPI-visible nested computed/view-model response shapes, **export** every `ObjectSerializer` that is passed to another serializer's `rendersOne` or `rendersMany`. Exported serializers are registered as named OpenAPI schemas; local non-exported nested `const` serializers can generate anonymous `Unnamed` schemas, and multiple nested shapes can collapse into the same anonymous type, causing generated clients to lose fields.
+
+Runtime serializer global names include the serializer's file path, so the same exported function name in different directories doesn't by itself cause a naming conflict. OpenAPI component names for named exports are based on the export name alone, though, so two OpenAPI-visible serializers with the same exported function name can still collide in the generated schema. Give computed/view-model serializers distinct export names — a `ViewSerializer` suffix, for instance — when the domain noun overlaps a Dream model serializer.
+
+### A compound response is still one serializer
+
+When an action returns a hand-shaped envelope — say a record plus a related collection, `{ place, nearby }`, or a computed array alongside serialized models — model the whole envelope as one composing `ObjectSerializer` that renders each part, and pass it to `@OpenAPI(SerializerFn)`. Don't reach for a hand-written `responses` block. `rendersOne` / `rendersMany` take a serializer function via `{ serializer }`, or render a Dream-model field by key via `{ dreamClass, serializerKey }`:
+
+```ts
+// Action returns { place: Place; nearby: Place[] }
+export const PlaceWithNearbySerializer = (place: Place, nearby: Place[]) =>
+  ObjectSerializer({ place, nearby })
+    .rendersOne('place', { serializer: PlaceSummarySerializer })
+    .rendersMany('nearby', { serializer: PlaceSummarySerializer })
+```
+
+The action is then `@OpenAPI(PlaceWithNearbySerializer, { status: 200 })` over `this.ok(PlaceWithNearbySerializer(place, nearby))`. The schema is derived and validated under test, with no hand-maintained JSON Schema to drift. Even a one-off envelope is worth this — a composing serializer stays the single source of truth where a hand-written `responses` block does not. See [Custom Response Envelopes](/docs/openapi/controllers#custom-response-envelopes) for the controller side.
+
+`rendersOne` / `rendersMany` also accept any declared property on a model, not only associations, so a shape that must be computed asynchronously can be assigned in the controller and rendered as a field of the model itself. Prefer the compound envelope above; reach for this only when the computed shape has to sit *inside* the model's own object — typically when those models render as a collection, where an envelope can't reach individual items. Either way, don't hand-write `openapi` for the nested shape — export the nested `ObjectSerializer` and reference it, and pass `optional: true` so actions that leave the field unassigned don't fail response validation.

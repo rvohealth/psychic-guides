@@ -58,12 +58,28 @@ class DataProcessingService extends ApplicationBackgroundedService {
 The `Job` parameter is optional and always comes last in the method signature. Job logs are accessible through the BullMQ dashboard and can be retrieved programmatically. Let unexpected errors throw so BullMQ can retry the job; catching and continuing marks the job successful.
 
 
-:::tip
+## Where to go next
 
-- To learn how to install Psychic Workers, see the [installation](/docs/plugins/workers/installation) guide
-- To learn how to configure Psychic Workers, see the [config](/docs/plugins/workers/config) guide
-- To learn how to use background services, see the [services](/docs/plugins/workers/services) guide
-- To learn how to use backgrounding functions within models, see the [models](/docs/plugins/workers/models) guide
-- To learn how to schedule your services to run at specific times, see the [scheduled](/docs/plugins/workers/scheduled) guide
+**Getting set up**
 
-  :::
+- [installation](/docs/plugins/workers/installation) — adding Psychic Workers to an application
+- [config](/docs/plugins/workers/config) — workstreams, queues, and Redis connections
+- [testing](/docs/plugins/workers/testing) — testing backgrounded and scheduled work
+
+**Where background work is defined**
+
+- [services](/docs/plugins/workers/services) — backgrounded services, the primary home for background work
+- [models](/docs/plugins/workers/models) — backgrounding a method directly on a model
+
+**Capabilities** — knobs each backgrounded service can set
+
+- [scheduled](/docs/plugins/workers/scheduled) — running work on a cron-like cadence
+- [backgroundWithDelay](/docs/plugins/workers/backgroundWithDelay) — running work once, after a delay
+- [retry](/docs/plugins/workers/retry) — how failed jobs are retried
+- [priority](/docs/plugins/workers/priority) — running some work ahead of other work
+- [named workstreams](/docs/plugins/workers/named-workstreams) — isolating work into its own queue
+- [rate limiting](/docs/plugins/workers/rate-limiting) — throttling work against an external dependency
+
+**Patterns** — techniques composed from the capabilities above
+
+- [fanning out large record sets](/docs/plugins/workers/fan-out) — backgrounding work across hundreds of thousands of records without flooding the queue

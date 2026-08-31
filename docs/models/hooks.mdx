@@ -1,6 +1,6 @@
 ---
 sidebar_position: 7
-ai_summary: "Dream lifecycle hooks include BeforeCreate, BeforeUpdate, BeforeSave, AfterCreate, AfterUpdate, AfterSave, AfterCreateCommit, AfterSaveCommit, AfterUpdateCommit, AfterDestroy, AfterDestroyCommit. Use before hooks to change the record being persisted. Use commit hooks for any hook that queues background work."
+ai_summary: "Dream lifecycle hooks include BeforeCreate, BeforeUpdate, BeforeSave, AfterCreate, AfterUpdate, AfterSave, AfterCreateCommit, AfterSaveCommit, AfterUpdateCommit, AfterDestroy, AfterDestroyCommit. Use before hooks to change the record being persisted. Use commit hooks for any hook that queues background work. Non-commit hooks receive a DreamTransaction<Dream> | null argument to pass through to services. dependent: 'destroy' cascades run after BeforeDestroy and before AfterDestroy; undestroy() restores children before parents."
 ---
 
 # lifecycle hooks
@@ -24,6 +24,7 @@ export default class User extends ApplicationModel {
 `BeforeUpdate` hooks are run whenever an existing (meaning, previously-saved) record is updated, and can be leveraged like so:
 
 ```ts
+// models/Post.ts
 export default class Post extends ApplicationModel {
   ...
 
@@ -156,6 +157,42 @@ export default class Post extends ApplicationModel {
   }
 }
 ```
+
+## Hook signature and the transaction argument
+
+Non-commit hooks (`AfterCreate`, `AfterUpdate`, `AfterSave`, `AfterDestroy`, and their `Before*` counterparts) receive the current transaction as a single argument. Type it as `DreamTransaction<Dream> | null` (imported from `@rvoh/dream`), and pass it through to any service the hook delegates to so all of that service's writes participate in the same transaction:
+
+```ts
+import { Dream, DreamTransaction } from '@rvoh/dream'
+
+export default class Post extends ApplicationModel {
+  @deco.AfterCreate()
+  public async seedDefaults(this: Post, txn: DreamTransaction<Dream> | null) {
+    await SeedDefaultComments.seed(this, txn)
+  }
+}
+```
+
+```ts
+// app/services/SeedDefaultComments.ts
+export default class SeedDefaultComments {
+  public static async seed(post: Post, txn: DreamTransaction<Dream> | null = null) {
+    await Comment.txn(txn).create({ post, body: 'Welcome!' })
+  }
+}
+```
+
+`txn` is `null` unless the caller explicitly started a transaction — Dream does not automatically wrap `Model.create()` in one. `Model.txn(null).create(...)` is a no-op variant, so the same service can be called from a hook (with `txn` possibly null) or from a controller (with `null`) using one code path.
+
+Commit hooks (below) do not receive a `txn` argument, because the transaction has already committed by the time they run.
+
+**Gating on an encrypted field.** When the gated field is an [`@deco.Encrypted`](/docs/models/decorators/encrypted) field, list the persisted column name `encrypted<Name>` in `ifChanged`/`ifChanging` (e.g. `ifChanged: ['encryptedPhone']`), not the plaintext virtual (`phone`) — change detection runs over the real persisted columns, and setting the virtual marks the underlying `encrypted<Name>` column dirty.
+
+## Hook order around a `dependent: 'destroy'` cascade
+
+A destroy runs the record's own `BeforeDestroy` hooks **first**, then the `dependent: 'destroy'` cascade, then `AfterDestroy` — so a `BeforeDestroy` on `Place` still sees its `Room` records present, and an `AfterDestroy` sees them gone. Work that must read, count, or archive the children belongs in `BeforeDestroy`; work that assumes they're already deleted belongs in `AfterDestroy`, which still runs inside the destroy's transaction.
+
+`undestroy()` (on a `@SoftDelete()` model) goes the other way: the deepest descendants are restored first, and the record itself last. A child's `AfterUpdate` therefore runs while its parent still carries a non-null `deletedAt`, so an association read back to the parent through the parent's own default scopes finds nothing. Read it with `removeAllDefaultScopes()`, or move the work to the parent's `AfterUpdate`, which runs after the whole cascade.
 
 ## after commit hooks
 

@@ -5,6 +5,9 @@ ai_summary: >-
   Emit to registered users from anywhere in application (including background
   jobs). Create Ws instance with allowed routes array. Recommended to set up
   singleton helper function. Call ws.emit(user, route, data) to send messages.
+  Covers the PsychicAppWebsockets per-process init requirement and the
+  cross-process delivery gotcha when a job completes but the browser shows
+  stale data.
 ---
 
 # Emitting
@@ -12,13 +15,17 @@ ai_summary: >-
 Once you have successfully built a registration flow for your users (see the [Registering guides](./registering) if you have not), you are able to emit to those registered users anywhere in your application (yes, including within background jobs!).
 
 :::warning Each process must initialize `PsychicAppWebsockets`
-`Ws.emit()` boots a `PsychicAppWebsockets` instance on its first call. Each Node process has its own module cache — the websocket app instance is **not** shared across processes. If any process skips `PsychicAppWebsockets.init()` (e.g. via a service-role guard that is too narrow), the call throws:
+`Ws.emit()` boots a `PsychicAppWebsockets` instance on its first call, via `PsychicAppWebsockets.getOrFail()`. Each Node process has its own module cache — the websocket app instance is **not** shared across processes. If any process skips `PsychicAppWebsockets.init()` (e.g. via a service-role guard that is too narrow), the call throws:
 
 ```
 must call `cachePsychicAppWebsockets` before loading cached psychic application websockets
 ```
 
-By default the generated initializer runs in all processes. See [Config](./config) for details and the optional role guard.
+BullMQ marks the job failed and retries — the error looks like a framework cache problem rather than an application configuration problem. By default the generated initializer runs in all processes; if a role guard was added that excludes `'worker'`, that's the usual cause. See [Config](./config) for details and the optional role guard.
+:::
+
+:::note If the job completes but the browser shows stale data until refresh
+The initializer isn't the problem here, and neither is the client transport. The likely cause is cross-process delivery: an emit from a web or worker process only reaches a socket held by the websocket-server process through the Redis adapter. A process emitting on the in-process adapter (the `test` default, or a misconfigured non-`test` process) fans out only within its own process, so the browser's socket never receives it. See [Adapter](./config#adapter) in Config.
 :::
 
 To establish a new Ws instance, we need to provide it with a set of routes that the application allows, like so:
@@ -46,4 +53,35 @@ Once this has been established, you can now emit to your users with any of the p
 
 ```ts
 await ws.emit(user, '/users/ping', { hello: 'world' })
+```
+
+## Emitting from a background job
+
+Since `Ws.emit()` works from any process that initializes `PsychicAppWebsockets`, a common pattern is a backgrounded service that sends a websocket notification once a job completes, then triggers it from a model lifecycle hook:
+
+```ts
+export class NotificationService extends ApplicationBackgroundedService {
+  public static async placeBooked(placeId: string, guestId: string) {
+    await this.background('_placeBooked', placeId, guestId)
+  }
+
+  public static async _placeBooked(placeId: string, guestId: string) {
+    const place = await Place.findOrFail(placeId)
+    const hosts = await place.associationQuery('hosts').all()
+
+    const ws = new Ws(['/notifications/booking'] as const)
+    for (const host of hosts) {
+      await ws.emit(host.userId, '/notifications/booking', {
+        placeName: place.name,
+        guestId,
+      })
+    }
+  }
+}
+
+// Triggered from a model hook
+@deco.AfterCreateCommit()
+public async notifyBooking(this: Booking) {
+  await NotificationService.placeBooked(this.placeId, this.guestId)
+}
 ```

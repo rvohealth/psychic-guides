@@ -1,6 +1,6 @@
 ---
 sidebar_position: 5
-ai_summary: "Methods for destroying records include destroy (instance method) and destroyAssociation (for associations). Supports cascading deletes via dependent: 'destroy'. SoftDelete decorator enables soft deletion with deleted_at column, hiding records from queries by default."
+ai_summary: "Methods for destroying records include destroy (instance method) and destroyAssociation (for associations). Supports cascading deletes via dependent: 'destroy'. SoftDelete decorator enables soft deletion with deleted_at column, hiding records from queries by default. Covers undestroy/reallyDestroy, restrict foreign keys, partial unique indexes, and Sortable position columns."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -30,7 +30,7 @@ await place.destroyAssociation('rooms', { and: { name: 'my room' } })
 
 ## Cascading
 
-Deletion will cascade through associations declared `dependent: 'destroy'`. If each associated model is decorated with `@SoftDelete` (see below), then the models corresponding to that association will be soft deleted:
+Both `destroy()` and `undestroy()` (see below) cascade through associations declared `dependent: 'destroy'`. If each associated model is decorated with `@SoftDelete` (see below), then the models corresponding to that association will be soft deleted:
 
 ```ts
 const deco = new Decorators<typeof Place>()
@@ -52,17 +52,25 @@ await Room.count()
 // 0
 ```
 
+**Every model in a `dependent: 'destroy'` chain must also carry `@SoftDelete()`, or those associated records are permanently deleted when the parent is destroyed.** Dream does not check this for you — if a `dependent: 'destroy'` association points to a model without `@SoftDelete`, calling `destroy()` on the parent irreversibly deletes those associated records from the database rather than soft-deleting them.
+
 ## SoftDelete
 
-The `@SoftDelete` decorator enables a model to be hidden, by default, from all queries, without actually being deleted from the database. This is useful for providing a "undo" deletion and "trash" functionality.
+The `@SoftDelete` decorator enables a model to be hidden, by default, from all queries, without actually being deleted from the database. This is useful for providing an "undo" deletion, or a "trash can" that retains records for a period before permanent removal, or for retaining records for auditing, analytics, or compliance while removing them from the application's active data.
 
-To activate soft deletion, first create a migration to add a `deleted_at` column to the database:
+**Don't hand-roll a deactivate/delete mechanism.** When you need "removed but recoverable / auditable" semantics, that's exactly what `@SoftDelete()` provides. A custom `removed` / `isDeleted` / `deactivatedAt` column is almost always redundant and fights the lifecycle — it won't be honored by `destroy()` / `undestroy()`, the `dream:SoftDelete` default scope, or `dependent: 'destroy'` cascades. Reach for a domain status flag only when it means something *other than* deletion — e.g. an `active` flag meaning "currently bookable" on a row that's still live and queryable. If the flag's real meaning is "this record is gone," delete the flag and use `@SoftDelete` instead.
+
+The `g:resource` and `g:model` generators include `@SoftDelete()` and a `deleted_at` column automatically. The setup below is only needed when adding soft delete to an existing model that was generated with `--no-soft-delete`, or to a model that predates the decorator.
+
+### Setup
+
+First create a migration to add a `deleted_at` column to the database:
 
 <PackageManagerTabs
   code={`{{PM}} psy g:migration add-deleted-at-to-rooms deleted_at:datetime:optional`}
 />
 
-Then apply the `@SoftDelete` decorator to the Dream model class:
+Then apply the `@SoftDelete` decorator to the Dream model class, and run `pnpm psy sync` — this regenerates `src/types/dream.ts` with the model's default scopes, which is where `removeDefaultScope('dream:SoftDelete')` gets its type:
 
 ```ts
 @SoftDelete()
@@ -71,20 +79,49 @@ export default class Place extends ApplicationModel {
 }
 ```
 
-NOTE: when using soft deletion, use the default foreign key deletion constraint of `'restrict'`. If a parent association uses `dependent: 'destroy'`, every model in that destroy chain should also use `@SoftDelete()`; otherwise destroying the parent can permanently delete children.
+**STI children never receive `@SoftDelete()`.** It belongs on the STI parent only, and every child inherits it, layering the inherited `dream:SoftDelete` scope alongside the child's own `dream:STI` default scope. See [single table inheritance](/docs/models/sti) for STI generation and model patterns.
+
+### Foreign key constraints
+
+When using soft deletion, use the default foreign key deletion constraint of `'restrict'`, not `'cascade'`. Since the parent row is never actually deleted, a `cascade` constraint never fires — `restrict` is what correctly prevents deletion of rows that still have references:
 
 ```ts
-  await db.schema
-    .createTable('rooms')
-    .addColumn('id', 'bigserial', col => col.primaryKey())
-    .addColumn('place_id', 'bigint', col => col.references('places.id').onDelete('restrict').notNull())
-    .execute()
-}
+await db.schema
+  .createTable('rooms')
+  .addColumn('id', 'bigserial', col => col.primaryKey())
+  .addColumn('place_id', 'bigint', col => col.references('places.id').onDelete('restrict').notNull())
+  .execute()
 ```
+
+### Natural-key unique indexes
+
+If you add `@SoftDelete()` to a model with a **unique index on a natural key** — a slug, a code, a `(host_id, name)` pair, anything other than the primary key — migrate that index to a **partial** unique index with `WHERE deleted_at IS NULL`. Soft-deleted rows stay in the table, so a plain unique index keeps reserving the natural key after deletion, blocking a new live row from reusing it:
+
+```ts
+import { sql, type SqlBool } from 'kysely'
+
+await db.schema.dropIndex('places_slug_unique').execute()
+
+await db.schema
+  .createIndex('places_slug_unique')
+  .unique()
+  .on('places')
+  .column('slug')
+  .where(sql<SqlBool>`deleted_at IS NULL`)
+  .execute()
+```
+
+Without the predicate, soft-deleting a `Place` with `slug: 'cozy-cabin'` and then creating a new one with the same slug fails on the unique constraint, even though no *live* row holds it. One consequence to expect: `undestroy()` can then fail if a live row claimed the natural key while the original row was soft-deleted — restoring would create two live rows sharing that key, which the partial index correctly rejects.
+
+### Sortable position columns
+
+If you add `@SoftDelete()` to a model that also has `@deco.Sortable()`, make the position column nullable. Soft-deleting a record sets every `@Sortable` field's position column to `null` in the same update as `deletedAt`, clearing the record's slot in its sortable scope — a `NOT NULL` position column throws a not-null violation, including when the sortable model is only a `dependent: 'destroy'` cascade target of a parent being destroyed, not just on a direct `destroy()` call.
+
+`undestroy()` sets the position column back to `MAX(position) + 1` within its sortable scope, in the same update that clears `deletedAt` — the record is re-appended to the *end* of its sortable scope, not restored to its original position. If you need the original ordering back, re-position the record explicitly after undestroying.
 
 ## Loading soft deleted models
 
-Soft deleted models can be included in queries by removing all default scopes or specfically the soft delete scope:
+Soft deleted models can be included in queries by removing all default scopes or specifically the soft delete scope. Use `removeDefaultScope` when querying for a plurality (it preserves other default scopes) and `removeAllDefaultScopes` when targeting one specific record — see [removeDefaultScope and removeAllDefaultScopes](/docs/models/querying/removeDefaultScope) for the full rationale:
 
 ```ts
 await Place.create({ name: 'My Place' })
@@ -99,9 +136,38 @@ await Place.removeDefaultScope('dream:SoftDelete').count()
 // 1
 ```
 
+## Restoring soft deleted models (undestroy)
+
+Soft-deleted records can be restored with `undestroy()`, which sets `deletedAt` back to `null`. Because the record is hidden by the `dream:SoftDelete` default scope, you must bypass it to find the record first:
+
+```ts
+const place = await Place.removeAllDefaultScopes().findOrFail(id)
+await place.undestroy()
+// place.deletedAt is now null; the record is visible again in normal queries
+```
+
+`undestroy()` cascades through `dependent: 'destroy'` associations just like `destroy()` does, restoring associated soft-deleted records along with the parent:
+
+```ts
+await place.undestroy()
+// restores the place AND its rooms and hostPlaces
+```
+
+Associations can be restored directly with `undestroyAssociation`:
+
+```ts
+await place.undestroyAssociation('rooms')
+```
+
+Query-level undestroy is also available, for restoring a plurality of records in one call:
+
+```ts
+await Place.removeAllDefaultScopes().where({ id }).undestroy()
+```
+
 ## Deleting @SoftDelete models from the database
 
-A model marked `@SoftDelete` can be deleted from the database with `reallyDestroy`:
+A model marked `@SoftDelete` can be permanently deleted from the database with `reallyDestroy`:
 
 ```ts
 await Place.create({ name: 'My Place' })
@@ -112,6 +178,8 @@ await Place.removeAllDefaultScopes().count()
 // 0
 ```
 
+`reallyDestroy()` cascades through the record's `dependent: 'destroy'` associations, hard-deleting each one depth-first (children before the parent) instead of soft-deleting it. It bypasses the `dream:SoftDelete` default scope while loading that cascade, so children that were already soft-deleted are loaded and hard-deleted too. A `restrict`-FK child that isn't reachable through a `dependent: 'destroy'` association is never touched by the cascade — if such a row still references the parent, `reallyDestroy()` throws a foreign key violation instead of silently deleting it.
+
 There is an analogous method for deleting associated models marked `@SoftDelete` from the database:
 
 ```ts
@@ -120,3 +188,5 @@ await place.reallyDestroyAssociation('rooms')
 // OR
 await place.reallyDestroyAssociation('rooms', { and: { name: 'my room' } })
 ```
+
+`destroy()` and `reallyDestroy()` both accept `{ lock: true }`, which makes the destroy a guarded (compare-and-set) removal. That's a concurrency concern rather than a soft-delete one; see the [locking guide](/docs/models/locking).

@@ -24,3 +24,28 @@ or can be removed from particular actions via `except`:
 ```ts
 @BeforeAction({ except: ['index'] })
 ```
+
+## Scoping filters by action name, not by controller
+
+`only`/`except` filter by action method **name**, not by controller. The hook still runs on every controller that inherits it — `only`/`except` only decide which action methods it fires for, matched by name. So `except: ['create']` on a base controller suppresses the hook for *every* descendant action named `create`, not just one controller's:
+
+```ts
+export default class AuthedController extends ApplicationController {
+  // Skips the gate for any inherited action named `create`, in every
+  // namespace below — not just one controller's create.
+  @BeforeAction({ except: ['create'] })
+  protected async requireCurrentTermsOfService() {
+    if (!this.currentUser.hasAcceptedCurrentTermsOfService) {
+      return this.forbidden('terms_of_service_required')
+    }
+  }
+}
+```
+
+## There is no `skipBeforeAction`
+
+A descendant can't un-register or re-scope an inherited `@BeforeAction`. Redeclaring a `@BeforeAction` with the same method name in a subclass is a no-op for *registration* — the ancestor's hook (including its `only`/`except`) is kept, and the redeclaration is dropped.
+
+The one thing a subclass *can* change is the hook's behavior, by overriding the method body itself (a same-named method runs in place of the ancestor's, since the hook is invoked by name). Avoid doing this — it changes what the gate does while leaving the registration intact, which reintroduces exactly the kind of hidden override the directory-based auth model (see [controller overview](./overview#authentication-architecture)) is meant to rule out.
+
+To vary auth — or any cross-cutting `@BeforeAction` — for a subtree, re-parent that subtree to a different base controller instead. The change is then visible in the directory tree, which is what keeps a base controller's `@BeforeAction`s authoritative for its whole subtree. See [Cross-cutting authorization gates](./overview#cross-cutting-authorization-gates) for the pattern this enables — a single terms-of-service or onboarding gate declared once on an auth base controller, with bootstrap endpoints exempted by re-parenting rather than by a per-action skip.

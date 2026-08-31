@@ -2,28 +2,28 @@
 sidebar_position: 1
 title: Monorepos
 pagination_prev: null
-ai_summary: "Monorepo option during provisioning creates api, client, and/or admin directories. Psychic doesn't couple backend with frontend. Uses Vite or Next.js for client provisioning. Provides helper scripts and feature test bindings. Loose coupling allows easy replacement of client directories."
+ai_summary: "Monorepo option during provisioning creates api, client, admin, and/or internal directories, each independently set to nextjs, react, vue, nuxt, or none. Psychic doesn't couple backend with frontend. Provides helper scripts and feature test bindings. Loose coupling allows easy replacement of client directories."
 ---
 
 When provisioning a new Psychic application, you will be asked if you want to build a monorepo or not. You may be wondering what this means and why you've been asked.
 
 Psychic is strictly speaking a back end web framework. It does not make any attempts to bind together the back end application you are building in psychic with the front end framework you are using to leverage it, meaning we do not deliver any HTML from the back end, and provide no tools for server side rendering of your front end web frameworks.
 
-However, if you opt into a monorepo, psychic will ask you some more questions about what stack you want to use to provision your client application. You will be asked about provisioning both a "client", as well as an "admin" application. If you opt into either of these by choosing one of the provided front end frameworks, psychic will use either `vite` or `nextjs` (depending on your choice) to provision a boilerplate client for you.
+However, if you opt into a monorepo, psychic will ask you some more questions about what stack you want to use to provision your client application. You will be asked about provisioning up to three separate front end apps: a "client", an "admin" app, and an "internal" app. Each is answered independently (or, non-interactively, via its own `--client`, `--admin-client`, and `--internal-client` flag — see [installation](/docs/installation)), and each accepts the same set of frameworks: `nextjs`, `react`, `vue`, `nuxt`, or `none` to skip it.
 
 Psychic makes no adjustments to the client application that is built, and does not tamper with, nor attempt to import or hoist, the client code in any way as you develop your application. Instead, it does the following:
 
 - creates an `api` directory, and provisions your Psychic application within it
-- creates either a `client` directory, `admin` directory, or both, depending on your selection, and provisions the requested frameworks into those folders
-- adds helper scripts for launching your client and admin apps to the `api/package.json` file
+- creates a `client` directory, `admin` directory, and/or `internal` directory for whichever of the three you opted into, and provisions the requested frameworks into those folders
+- adds helper scripts for launching your client, admin, and internal apps to the `api/package.json` file
 - provides back end feature test bindings to launch your front end applications in `spec/features/setup/globalSetup.ts`
 - provides bindings in `src/conf/app.ts` to start your front end application servers whenever you run `CLIENT=1 pnpm dev`
 
 ## Customization
 
-The front end application options provided during app provisioning may not be ideal for your application's needs. In this case, you can select any option and allow Psychic to provision a client anyways. Once the provisioning is complete, simply delete the client/admin directory and re-provision using whatever tool you want to build a new version of that directory.
+The front end application options provided during app provisioning may not be ideal for your application's needs. In this case, you can select any option and allow Psychic to provision a client anyways. Once the provisioning is complete, simply delete the client/admin/internal directory and re-provision using whatever tool you want to build a new version of that directory.
 
-Since psychic's coupling mechanisms are so loose, there is hardly anything left to do once this is done. You may need to adjust the commands for starting your dev server. To do this, open the `api/package.json` file, and edit the corresponding scripts (`client`, `client:fspec`, `admin`, `admin:fspec`) to make adjustments to the way that those clients are launched from the back end.
+Since psychic's coupling mechanisms are so loose, there is hardly anything left to do once this is done. You may need to adjust the commands for starting your dev server. To do this, open the `api/package.json` file, and edit the corresponding scripts (`client`, `client:fspec`, `admin`, `admin:fspec`, `internal`, `internal:fspec`) to make adjustments to the way that those clients are launched from the back end.
 
 ## Opting out
 

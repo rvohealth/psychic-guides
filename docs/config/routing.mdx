@@ -13,11 +13,9 @@ In addition to configuration for building your Koa app, a separate configuration
 // conf/routes.ts
 import { PsychicRouter } from '@rvoh/psychic'
 export default (r: PsychicRouter) => {
-  r.namespace('api', r => {
-    r.namespace('v1', r => {
-      r.namespace('host', r => {
-        r.resources('places')
-      })
+  r.namespace('v1', r => {
+    r.namespace('host', r => {
+      r.resources('places')
     })
   })
 }
@@ -26,14 +24,14 @@ export default (r: PsychicRouter) => {
 <RoutesOutput>
   <pre style={{ backgroundColor: 'transparent' }}>
     {`
-GET    api/v1/host/places      Api/V1/Host/Places#index
-POST   api/v1/host/places      Api/V1/Host/Places#create
-GET    api/v1/host/places/:id  Api/V1/Host/Places#show
-PUT    api/v1/host/places/:id  Api/V1/Host/Places#update
-PATCH  api/v1/host/places/:id  Api/V1/Host/Places#update
-DELETE api/v1/host/places/:id  Api/V1/Host/Places#destroy
+GET    v1/host/places      V1/Host/Places#index
+POST   v1/host/places      V1/Host/Places#create
+GET    v1/host/places/:id  V1/Host/Places#show
+PUT    v1/host/places/:id  V1/Host/Places#update
+PATCH  v1/host/places/:id  V1/Host/Places#update
+DELETE v1/host/places/:id  V1/Host/Places#destroy
 `}
   </pre>
 </RoutesOutput>
 
-The routes API is quite robust. For more information on available methods, see the [routing guides](/docs/routing/overview).
+The routes API is quite robust. For more information on available methods, and on how the top-level namespace you choose (`v1/`, `admin/`, `webhooks/`, ...) doubles as your auth architecture, see the [routing guides](/docs/routing/overview) and the [controller guides](/docs/controllers/overview).
