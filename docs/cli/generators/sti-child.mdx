@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: sti-child
-ai_summary: 'The generate:sti-child command creates STI (Single Table Inheritance) child models that extend a parent model. Requires parent model to be created first with --sti-base-serializer flag. Supports same column types as model generator, plus --model-name, --admin-serializers, and --internal-serializers options. ALTERs the parent table (no migration if no columns), rejects belongs_to columns, never accepts --no-soft-delete, and chains with && for batch generation.'
+ai_summary: 'The generate:sti-child command creates STI (Single Table Inheritance) child models that extend a parent model. Requires parent model to be created first with --sti-base-serializer flag. Supports same column types as model generator, plus --model-name, --admin-serializers, and --internal-serializers options. ALTERs the parent table (no migration if no columns), rejects belongs_to columns, and never accepts --no-soft-delete.'
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -117,15 +117,3 @@ STI child models support the same column types as the [model generator](/docs/mo
 STI children never receive `@SoftDelete()` — soft delete is enforced at the STI parent level — and `g:sti-child` does not accept a `--no-soft-delete` flag.
 
 `@STI()` always names the base model, even when the child's TypeScript `extends` chain runs deeper than one level (e.g. a `Bunkroom extends Bedroom` must still be decorated `@STI(Room)`, not `@STI(Bedroom)`). See [single table inheritance](/docs/models/sti#sti-is-exactly-one-level-deep) for what breaks when this rule is missed.
-
-## Batch Invocation for Many Children
-
-When you need to create many children at once — a fixed taxonomy of room types, say — run the generator once per child and chain the invocations with `&&` so a failure on any one stops the batch:
-
-<PackageManagerTabs
-  code={`{{PM}} psy g:sti-child Room/Den extends Room && \\
-{{PM}} psy g:sti-child Room/LivingRoom extends Room && \\
-{{PM}} psy g:sti-child Room/Kitchen extends Room appliances:enum[]:appliance_types:stove,oven,microwave`}
-/>
-
-Children with no additional columns produce only a model file (no migration), so a batch like this is fast. Always use the generator, even when children "all look the same" — it keeps enum updates, check-constraint additions, factory wiring, and serializer scaffolding consistent; hand-crafted STI files drift.

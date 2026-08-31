@@ -29,11 +29,11 @@ Then generate each child with `g:sti-child`:
 STI children alter the parent table rather than creating their own. When a child declares no additional columns, `g:sti-child` emits no migration at all, since there is no schema change to make. `g:sti-child` also generates check constraints that require child-specific columns to be non-null only for the rows of that child type, so a batch of children with no shared columns is fast to run:
 
 <PackageManagerTabs
-  code={`{{PM}} psy g:sti-child Room/Den extends Room && \\
+  code={`{{PM}} psy g:sti-child Room/Den extends Room
 {{PM}} psy g:sti-child Room/LivingRoom extends Room`}
 />
 
-Chain invocations with `&&` so a failure on one child stops the batch instead of leaving a partial set behind. Always use the generator, even for children that look identical to one another — it keeps the enum, check constraints, factories, and serializers consistent, and hand-crafted STI files drift.
+Reach for the generator even when a child looks trivial, since it keeps the enum, check constraints, factories, and serializers in sync for you.
 
 STI children never receive `@SoftDelete()`. Soft delete is enforced at the STI parent level, and `g:sti-child` does not accept a `--no-soft-delete` flag.
 
