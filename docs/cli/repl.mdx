@@ -1,6 +1,6 @@
 ---
 sidebar_position: 4
-ai_summary: "The REPL (console) enables database inspection through the application. All models and services are loaded into the global namespace, namespaced by folder path. Additional globals can be added via conf/repl.ts. Exit with ESC twice. For non-interactive use, write a scratch script that mirrors conf/repl.ts's boot order instead of piping into the REPL."
+ai_summary: "The REPL (console) enables database inspection through the application. All models and services are loaded into the global namespace, namespaced by folder path. Additional globals can be added via conf/repl.ts. Exit with ESC twice."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -64,31 +64,4 @@ For code that isn't auto-imported, use a dynamic import with a path relative to 
 myHelper = (await import('./app/services/Host/pricingHelpers.js')).default
 ```
 
-## Non-interactive use
-
-`pnpm console` is interactive by design — it's meant for a human who launches it, waits for it to finish booting, then types or pastes queries. Piping commands into its stdin is unreliable: the REPL starts reading before auto-imports finish, each newline is evaluated separately (so a variable declared on one line isn't visible on the next), and the process can exit before pending async work resolves.
-
-For non-interactive or scripted work, write a scratch TypeScript file instead. It should mirror `conf/repl.ts`'s boot order — load env, initialize the Psychic app, then import models — but skip the REPL-specific `DreamCLI.loadRepl(...)` call and import what it needs directly:
-
-```ts
-// scratch-cleanup.ts
-import './conf/loadEnv.js'
-import initializePsychicApp from './conf/system/initializePsychicApp.js'
-
-await initializePsychicApp()
-
-const { default: Place } = await import('./app/models/Place.js') // dynamic — must come after init
-console.log(await Place.count())
-
-process.exit(0)
-```
-
-Run it with `tsx` from the `api/` directory, since both the boot-time path aliases and the relative model import resolve from there. `APP_NAME` / `APP_VERSION` are read at boot by some projects' environment setup; the `console` script sets these from the package manifest automatically, so a standalone `tsx` invocation needs to set them explicitly:
-
-```bash
-APP_NAME=$(node -p "require('./package.json').name") \
-  APP_VERSION=$(node -p "require('./package.json').version") \
-  npx tsx scratch-cleanup.ts
-```
-
-This defaults to the test database. Prefix with `NODE_ENV=development` only when you intend to run the script against your development database — see [Key Commands](/docs/cli/overview) for the risks of running destructive commands against `development`. Treat scratch scripts as throwaway: add `scratch-*.ts` to `.gitignore` and delete them after use.
+For non-interactive scripts, prefer a scratch TypeScript file that imports `conf/loadEnv.js`, initializes the app, runs the code, and exits. That gives you the same boot path as the console without relying on interactive `stdout`.

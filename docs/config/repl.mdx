@@ -59,7 +59,3 @@ When in the REPL, you may find you need to import something into the REPL contex
 ```ts
 myHelper = (await import('./src/app/services/Host/pricingHelpers.js')).default
 ```
-
-## Non-interactive use
-
-`conf/repl.ts` is built for an interactive session — piping input into `pnpm console` races the boot sequence above and is unreliable. For scripted or agent-driven work against the database, write a standalone script that mirrors this file's boot order (load env, initialize the app, then import models) but skips the REPL-specific `DreamCLI.loadRepl(...)` call. See [CLI &rarr; repl](/docs/cli/repl#non-interactive-use) for the boilerplate.
