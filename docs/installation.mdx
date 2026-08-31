@@ -32,6 +32,8 @@ Every provisioning question can also be answered up front with a flag, skipping 
 | `--claude-psychic-skill` / `--no-claude-psychic-skill` | Install or exclude psychic-skill for Claude Code |
 | `--agents-psychic-skill` / `--no-agents-psychic-skill` | Install or exclude psychic-skill for Codex / .agents-compatible agents |
 
+The two skill flags install [psychic-skill](https://github.com/daniel-nelson/psychic-skill), a Dream and Psychic skill for AI coding agents.
+
 ```sh
 npx @rvoh/create-psychic new my-app --package-manager pnpm --primary-key-type uuid7 --workers --no-websockets --client react --admin-client none --internal-client none --claude-psychic-skill --no-agents-psychic-skill
 ```
