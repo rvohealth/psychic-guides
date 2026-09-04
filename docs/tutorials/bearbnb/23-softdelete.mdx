@@ -68,23 +68,23 @@ index c4f54f5..6185ecc 100644
 +
 +      const placeQuery = Place.where({ id: place.id })
 +      expect(await placeQuery.exists()).toBe(false)
-+      expect(await placeQuery.removeAllDefaultScopes().exists()).toBe(true)
++      expect(await placeQuery.removeDefaultScope('dream:SoftDelete').exists()).toBe(true)
 +
 +      const hostPlaceQuery = HostPlace.where({ id: hostPlace.id })
 +      expect(await hostPlaceQuery.exists()).toBe(false)
-+      expect(await hostPlaceQuery.removeAllDefaultScopes().exists()).toBe(true)
++      expect(await hostPlaceQuery.removeDefaultScope('dream:SoftDelete').exists()).toBe(true)
 +
 +      const roomQuery = Room.where({ id: room.id })
 +      expect(await roomQuery.exists()).toBe(false)
-+      expect(await roomQuery.removeAllDefaultScopes().exists()).toBe(true)
++      expect(await roomQuery.removeDefaultScope('dream:SoftDelete').exists()).toBe(true)
 +
 +      const placeTextQuery = LocalizedText.where({ id: placeText.id })
 +      expect(await placeTextQuery.exists()).toBe(false)
-+      expect(await placeTextQuery.removeAllDefaultScopes().exists()).toBe(true)
++      expect(await placeTextQuery.removeDefaultScope('dream:SoftDelete').exists()).toBe(true)
 +
 +      const roomTextQuery = LocalizedText.where({ id: roomText.id })
 +      expect(await roomTextQuery.exists()).toBe(false)
-+      expect(await roomTextQuery.removeAllDefaultScopes().exists()).toBe(true)
++      expect(await roomTextQuery.removeDefaultScope('dream:SoftDelete').exists()).toBe(true)
 +    })
 +  })
  })

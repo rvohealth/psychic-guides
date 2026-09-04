@@ -121,7 +121,7 @@ If you add `@SoftDelete()` to a model that also has `@deco.Sortable()`, make the
 
 ## Loading soft deleted models
 
-Soft deleted models can be included in queries by removing the soft delete scope by name. `removeDefaultScope('dream:SoftDelete')` lifts that scope and nothing else, whether you're querying for one record or many — see [removeDefaultScope and removeAllDefaultScopes](/docs/models/querying/removeDefaultScope) for why the blanket `removeAllDefaultScopes()` is the wrong reach:
+Soft deleted models can be included in queries by removing the soft delete scope by name. `removeDefaultScope('dream:SoftDelete')` lifts that scope and nothing else, whether you're querying for one record or many — see [removing default scopes](/docs/models/querying/removeDefaultScope):
 
 ```ts
 await Place.create({ name: 'My Place' })

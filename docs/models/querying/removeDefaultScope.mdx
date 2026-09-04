@@ -2,7 +2,7 @@
 title: 'removing default scopes'
 ---
 
-# removeDefaultScope and removeAllDefaultScopes
+# removeDefaultScope
 
 The `removeDefaultScope` method lifts one named default scope from a query. Consider a model where a soft delete pattern has been applied, like so:
 
@@ -18,15 +18,7 @@ await Pet.count() // 0
 await Pet.removeDefaultScope('dream:SoftDelete').count() // 1
 ```
 
-The `removeAllDefaultScopes` method prevents *every* default scope from applying:
-
-```ts
-await Pet.removeAllDefaultScopes().count() // 1
-```
-
-## Which one to use
-
-Prefer `removeDefaultScope` over `removeAllDefaultScopes`. Naming the scope lifts that scope and only that scope, on the root query and on associations alike, so every other default scope the model (or an association's model) carries stays in place:
+Naming the scope lifts that scope and only that scope, on the root query and on associations alike, so every other default scope the model (or an association's model) carries stays in place — including the `dream:STI` scope restricting a child model to its own type, and any your application declared to control access:
 
 ```ts
 // Removes only the soft-delete scope; dream:STI still restricts results to Bedroom rows
@@ -35,10 +27,6 @@ await Bedroom.removeDefaultScope('dream:SoftDelete').all()
 // Also works through an association
 await user.associationQuery('places').removeDefaultScope('dream:SoftDelete').all()
 
-// An identity lookup needs nothing broader either
+// Works the same for an identity lookup
 await Place.removeDefaultScope('dream:SoftDelete').findOrFail(id)
 ```
-
-`removeAllDefaultScopes` lifts every default scope on every model in the query: the two built into Dream, plus any your application declared — including one written to keep one tenant's or one user's rows out of another's results. A reader cannot see from the call site what was lifted, which is the danger. Targeting a single record by its identity does not make it safe: an authorization scope filtering that row out is often exactly the point.
-
-The blast radius is real even without an application-defined scope. An STI child has a `dream:STI` default scope restricting it to its own type, and `removeAllDefaultScopes` drops that too, returning sibling types you didn't ask for.
