@@ -192,7 +192,7 @@ Commit hooks (below) do not receive a `txn` argument, because the transaction ha
 
 A destroy runs the record's own `BeforeDestroy` hooks **first**, then the `dependent: 'destroy'` cascade, then `AfterDestroy` — so a `BeforeDestroy` on `Place` still sees its `Room` records present, and an `AfterDestroy` sees them gone. Work that must read, count, or archive the children belongs in `BeforeDestroy`; work that assumes they're already deleted belongs in `AfterDestroy`, which still runs inside the destroy's transaction.
 
-`undestroy()` (on a `@SoftDelete()` model) goes the other way: the deepest descendants are restored first, and the record itself last. A child's `AfterUpdate` therefore runs while its parent still carries a non-null `deletedAt`, so an association read back to the parent through the parent's own default scopes finds nothing. Read it with `removeAllDefaultScopes()`, or move the work to the parent's `AfterUpdate`, which runs after the whole cascade.
+`undestroy()` (on a `@SoftDelete()` model) goes the other way: the deepest descendants are restored first, and the record itself last. A child's `AfterUpdate` therefore runs while its parent still carries a non-null `deletedAt`, so an association read back to the parent through the parent's own default scopes finds nothing. Read it with `removeDefaultScope('dream:SoftDelete')`, or move the work to the parent's `AfterUpdate`, which runs after the whole cascade.
 
 ## after commit hooks
 
