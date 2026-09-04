@@ -4,29 +4,29 @@ title: 'removing default scopes'
 
 # removeDefaultScope and removeAllDefaultScopes
 
-The `removeAllDefaultScopes` method prevents all default scopes from applying. Consider a model where a soft delete pattern has been applied, like so:
+The `removeDefaultScope` method lifts one named default scope from a query. Consider a model where a soft delete pattern has been applied, like so:
 
 ```ts
 @SoftDelete()
 export default class Pet extends ApplicationModel {}
 ```
 
-When a `Pet` record is destroyed, the SoftDelete decorator will kick in, preventing the destroy and instead setting `deletedAt` field, which will cause the default `hideDeleted` scope to hide it. This means that you will not be able to find this record again, since one of the the SoftDelete decorator also applies a default scope to the model class, preventing non-null deletedAt fields from showing up. To get around this, you can use the `removeDefaultScopes` method, like so:
+When a `Pet` record is destroyed, the SoftDelete decorator will kick in, preventing the destroy and instead setting the `deletedAt` field. The decorator also applies a `dream:SoftDelete` default scope to the model class, preventing records with a non-null `deletedAt` from showing up, which means you will not be able to find this record again. To get around this, name that scope:
 
 ```ts
 await Pet.count() // 0
-await Pet.removeAllDefaultScopes().count() // 1
+await Pet.removeDefaultScope('dream:SoftDelete').count() // 1
 ```
 
-Additionally, you can use the `removeDefaultScope` method to target a particular scope for removal:
+The `removeAllDefaultScopes` method prevents *every* default scope from applying:
 
 ```ts
-await Pet.removeDefaultScope('dream:SoftDelete').count() // 1
+await Pet.removeAllDefaultScopes().count() // 1
 ```
 
 ## Which one to use
 
-Prefer `removeDefaultScope` over `removeAllDefaultScopes` whenever you're querying for a plurality of records, because it removes only the named scope and preserves every other default scope the model (or an association's model) carries. For example, an STI child also has a `dream:STI` default scope restricting it to its own type — `removeAllDefaultScopes` would drop that too, returning sibling types you didn't ask for:
+Prefer `removeDefaultScope` over `removeAllDefaultScopes`. Naming the scope lifts that scope and only that scope, on the root query and on associations alike, so every other default scope the model (or an association's model) carries stays in place:
 
 ```ts
 // Removes only the soft-delete scope; dream:STI still restricts results to Bedroom rows
@@ -34,10 +34,11 @@ await Bedroom.removeDefaultScope('dream:SoftDelete').all()
 
 // Also works through an association
 await user.associationQuery('places').removeDefaultScope('dream:SoftDelete').all()
+
+// An identity lookup needs nothing broader either
+await Place.removeDefaultScope('dream:SoftDelete').findOrFail(id)
 ```
 
-Reach for `removeAllDefaultScopes` when you're targeting one specific record by its identity — typically a `findOrFail` — where no other default scope should be allowed to filter it out:
+`removeAllDefaultScopes` lifts every default scope on every model in the query: the two built into Dream, plus any your application declared — including one written to keep one tenant's or one user's rows out of another's results. A reader cannot see from the call site what was lifted, which is the danger. Targeting a single record by its identity does not make it safe: an authorization scope filtering that row out is often exactly the point.
 
-```ts
-await Place.removeAllDefaultScopes().findOrFail(id)
-```
+The blast radius is real even without an application-defined scope. An STI child has a `dream:STI` default scope restricting it to its own type, and `removeAllDefaultScopes` drops that too, returning sibling types you didn't ask for.

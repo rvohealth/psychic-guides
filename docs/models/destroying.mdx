@@ -121,7 +121,7 @@ If you add `@SoftDelete()` to a model that also has `@deco.Sortable()`, make the
 
 ## Loading soft deleted models
 
-Soft deleted models can be included in queries by removing all default scopes or specifically the soft delete scope. Use `removeDefaultScope` when querying for a plurality (it preserves other default scopes) and `removeAllDefaultScopes` when targeting one specific record — see [removeDefaultScope and removeAllDefaultScopes](/docs/models/querying/removeDefaultScope) for the full rationale:
+Soft deleted models can be included in queries by removing the soft delete scope by name. `removeDefaultScope('dream:SoftDelete')` lifts that scope and nothing else, whether you're querying for one record or many — see [removeDefaultScope and removeAllDefaultScopes](/docs/models/querying/removeDefaultScope) for why the blanket `removeAllDefaultScopes()` is the wrong reach:
 
 ```ts
 await Place.create({ name: 'My Place' })
@@ -130,8 +130,6 @@ await Place.count()
 await Place.destroy()
 await Place.count()
 // 0
-await Place.removeAllDefaultScopes().count()
-// 1
 await Place.removeDefaultScope('dream:SoftDelete').count()
 // 1
 ```
@@ -141,7 +139,7 @@ await Place.removeDefaultScope('dream:SoftDelete').count()
 Soft-deleted records can be restored with `undestroy()`, which sets `deletedAt` back to `null`. Because the record is hidden by the `dream:SoftDelete` default scope, you must bypass it to find the record first:
 
 ```ts
-const place = await Place.removeAllDefaultScopes().findOrFail(id)
+const place = await Place.removeDefaultScope('dream:SoftDelete').findOrFail(id)
 await place.undestroy()
 // place.deletedAt is now null; the record is visible again in normal queries
 ```
@@ -162,7 +160,7 @@ await place.undestroyAssociation('rooms')
 Query-level undestroy is also available, for restoring a plurality of records in one call:
 
 ```ts
-await Place.removeAllDefaultScopes().where({ id }).undestroy()
+await Place.removeDefaultScope('dream:SoftDelete').where({ id }).undestroy()
 ```
 
 ## Deleting @SoftDelete models from the database
@@ -174,7 +172,7 @@ await Place.create({ name: 'My Place' })
 await Place.count()
 // 1
 await Place.reallyDestroy()
-await Place.removeAllDefaultScopes().count()
+await Place.removeDefaultScope('dream:SoftDelete').count()
 // 0
 ```
 
