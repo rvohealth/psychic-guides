@@ -1,6 +1,6 @@
 ---
 sidebar_position: 10
-ai_summary: "Scopes capture recurring query behavior into reusable functions. Use @deco.Scope() decorator. Default scopes automatically apply to all queries. Scope functions receive Query instance and return modified query (usually via where). Two default scopes are built in: dream:SoftDelete and dream:STI. Bypass by naming the scope with removeDefaultScope; removeAllDefaultScopes lifts every default scope and is rarely what you want."
+ai_summary: "Scopes capture recurring query behavior into reusable functions. Use @deco.Scope() decorator. Default scopes automatically apply to all queries. Scope functions receive Query instance and return modified query (usually via where). Two default scopes are built in: dream:SoftDelete and dream:STI. Bypass one by naming it with removeDefaultScope."
 ---
 
 # scopes
@@ -48,4 +48,4 @@ An STI child of a soft-deletable parent carries both: the inherited `dream:SoftD
 
 ### Bypassing default scopes
 
-Use `removeDefaultScope('name')` to bypass one named default scope — it leaves other default scopes (including any other model's default scopes reached through an association) in place. Prefer it to `removeAllDefaultScopes()`, which lifts every default scope on every model in the query, including any your application declared to control access. See [removeDefaultScope and removeAllDefaultScopes](/docs/models/querying/removeDefaultScope) for the full rationale and examples.
+Use `removeDefaultScope('name')` to bypass one named default scope — it leaves other default scopes (including any other model's default scopes reached through an association) in place. See [removing default scopes](/docs/models/querying/removeDefaultScope) for examples.

@@ -326,7 +326,7 @@ describe('Place', () => {
       // Soft deleted - hidden from default queries
       expect(await Place.where({ id: place.id }).exists()).toBe(false)
       // Still in database
-      expect(await Place.where({ id: place.id }).removeAllDefaultScopes().exists()).toBe(true)
+      expect(await Place.where({ id: place.id }).removeDefaultScope('dream:SoftDelete').exists()).toBe(true)
 
       // Cascaded to dependents
       expect(await HostPlace.where({ id: hostPlace.id }).exists()).toBe(false)
@@ -353,7 +353,7 @@ describe('Place', () => {
 })
 ```
 
-Test soft deletes by testing behavior, not implementation: verify the record is hidden from a normal query **and** still present once default scopes are removed.
+Test soft deletes by testing behavior, not implementation: verify the record is hidden from a normal query **and** still present once the soft delete scope is lifted by name with `removeDefaultScope('dream:SoftDelete')`.
 
 ## Matchers
 
@@ -632,7 +632,7 @@ Two practical consequences:
 4. **Don't spec behavior of another class that is already spec'd** — use vitest spies to return different values instead.
 5. **In controller specs, use factories to create real models.** Let controllers leverage real Dream queries, never mocked. If a spec'd service or view-model fetches or transforms the data, you may mock it, but make sure its own spec covers the full variety of cases.
 6. **Test authorization** — verify users can only access their own resources.
-7. **Test soft deletes by testing behavior** — verify the record is hidden from a normal query and still present when scopes are removed.
+7. **Test soft deletes by testing behavior** — verify the record is hidden from a normal query and still present under `removeDefaultScope('dream:SoftDelete')`.
 8. **Use Polly** (`setupPolly`) for recording and replaying external API calls rather than stubbing.
 9. **Stub the environment through `AppEnv`, not `vi.stubEnv`** — app config is read through `AppEnv`, whose setters are name-typed to the app's union and restored explicitly, where `vi.stubEnv` is untyped and, in the generated app's default configuration, never restored.
 
