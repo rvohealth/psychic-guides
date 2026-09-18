@@ -9,40 +9,6 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 Single Table Inheritance, or STI, stores several model types in one table. The parent table has a `type` column, and each child class maps to one enum value. Use STI when those types share one lifecycle and table, but need different behavior, validations, child-specific columns, serializers, or controller dispatch.
 
-## adding a variant of an existing concept
-
-Some variants arrive as a new state of something that already exists: a listing a host is still working on — a draft `Place` that must not turn up in search, availability, or bookings. More than one shape is right here. Two that people reach for, with what each costs:
-
-**A `draft` boolean on `Place`.** One table, one model, one set of associations. Existing queries have to account for the flag, either at each call site or centrally with a `@deco.Scope({ default: true })` that filters drafts out of every `Place` query. The central [default scope](/docs/models/scopes) is its own trade: code that is *about* drafts then has to lift it by name (`Place.removeDefaultScope('hideDrafts')`).
-
-**`Place` and `DraftPlace` as siblings under a shared STI base.** Both are concrete children of a new base, so each filters to its own type and existing `Place.where(...)` still means only real places, with no condition at any call site. `Place` keeps its own path and global name, so every existing reference to it goes on working — see [naming the base](#naming-the-base-two-sti-shapes). The direction matters: making `Place` itself the base and `DraftPlace` a child would *not* hide drafts from existing `Place` reads, because a base query deliberately returns every child.
-
-```ts
-// app/models/Place/Base.ts — shared columns, and every association both children need
-export default class BasePlace extends ApplicationModel {
-  public type: DreamColumn<BasePlace, 'type'>
-
-  @deco.BelongsTo('Host')
-  public host: Host
-  public hostId: DreamColumn<BasePlace, 'hostId'>
-
-  @deco.HasMany('Booking')
-  public bookings: Booking[]
-}
-```
-
-```ts
-// app/models/Place.ts — DraftPlace is declared the same way in app/models/Place/Draft.ts
-import BasePlace from '@models/Place/Base.js'
-
-@STI(BasePlace)
-export default class Place extends BasePlace {}
-```
-
-What the STI shape costs: children cannot declare associations, so everything `Place` declares relocates to the base; and an ordinary required scalar column that only one child needs takes a per-type check constraint while its generated type stays nullable, so that child's own code carries a null check the database is already enforcing.
-
-Neither of these is the whole menu. The one shape that does not belong is a second table duplicating the concept.
-
 ## generating STI models
 
 Generate the parent with `--sti-base-serializer`. The `type` column must be a database enum, and the enum values must exactly match the child class names:
@@ -80,7 +46,7 @@ Which shape you have decides what the base is called and where it lives.
 - **A general category with kinds under it.** `Room` is never instantiated; `Bedroom`, `Bathroom` and `Kitchen` are. The base *is* the concept, so it takes the concept's name and path: `Room.ts` holding `Room`, children at `Room/Bedroom.ts`.
 - **Peers at the same level.** `Place` and `DraftPlace` are both kinds of place, and neither is a general category. The base is a technical artifact holding what they share, so it lives inside the namespace: `Place/Base.ts` holding `BasePlace`, with the concrete peers at `Place.ts` and `Place/Draft.ts`.
 
-The peers shape is not an exception to the path-equals-class-name convention: the base there is not a domain concept, so naming it after one would assert a category that does not exist. That shape is also what keeps a retrofit cheap — the concrete class stays at its original path under its original global name, so every existing association and query still means what it meant. Choosing the first shape for a retrofit instead makes the existing model the base, and a base query returns every child, so the new variant leaks into every existing read. See [adding a variant of an existing concept](#adding-a-variant-of-an-existing-concept).
+The peers shape is not an exception to the path-equals-class-name convention: the base there is not a domain concept, so naming it after one would assert a category that does not exist. That shape is also what keeps a retrofit cheap — the concrete class stays at its original path under its original global name, so every existing association and query still means what it meant. Choosing the first shape for a retrofit instead makes the existing model the base, and a base query returns every child, so the new variant leaks into every existing read.
 
 ### shared columns across multiple children
 
