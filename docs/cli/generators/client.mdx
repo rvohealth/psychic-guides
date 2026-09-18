@@ -152,6 +152,10 @@ To do this, simply run
 
 This will generate an initializer that will tap into psychic lifecycle hooks, ensuring that any time `psy sync` is run, the enums will be synced to the outfile destination of your choosing.
 
+The file carries only the enums the chosen spec's surface actually reaches, each with only the values that spec renders — a client is handed your public surface, not every enum in your database, so an enum or value missing from it is usually the boundary working. If the client genuinely needs one, widen the spec that serves it rather than hand-writing the value back.
+
+One absence is not the boundary: only pg-enum-backed Dream columns reach this file, keyed on the column's database type name. An enum declared inline on an `ObjectSerializer` attribute renders into the OpenAPI document and into the generated client's property type, but produces no values const or type here, and widening the spec will never produce one. Serialize the attribute through a Dream model column when the client needs the runtime array.
+
 ## setup\:sync\:openapi-typescript
 
 Generates an initializer in your app for converting one of your OpenAPI files to TypeScript types.

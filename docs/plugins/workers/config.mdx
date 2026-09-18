@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: config
-ai_summary: 'Workers configuration uses BullMQ, configured in conf/initializers/workers.ts. Two mutually exclusive modes: simple (workstream) mode, which Psychic scans on sync to capture workstream names for types, or native BullMQ mode for raw per-queue BullMQ options. Extend ApplicationBackgroundedService and ApplicationScheduledService. Workstreams are groups containing a queue and workers. Multiple workstreams useful for rate-limited APIs. Supports BullMQ Pro for rate limiting and transitional workstreams for Redis migrations.'
+ai_summary: 'Workers configuration uses BullMQ, configured in conf/initializers/workers.ts. Two mutually exclusive modes: simple (workstream) mode, which Psychic scans on sync to capture workstream names for types, or native BullMQ mode for raw per-queue BullMQ options. Extend ApplicationBackgroundedService and ApplicationScheduledService. Workstreams are groups containing a queue and workers. Multiple workstreams useful for rate-limited APIs. Named workstreams can carry a rateLimit, and transitional workstreams cover Redis migrations. workerCount is how many Worker objects the process builds, not how many processes or cores.'
 ---
 
 # Workers - config
@@ -59,7 +59,7 @@ You can now inherit from each of these classes in your application, allowing the
 
 Psychic superimposes a new concept, called a `workstream`, on top of BullMQ's existing system, which enables one to easily grasp, configure, and express their background systems. In essence, you can think of a workstream as a group, containing a queue and a set of workers to work off that queue:
 
-Many applications will only need one workstream, but multiple workstreams are extremely useful when, for example, you have background jobs responsible for hitting external APIs which are rate limited. Having a background system that doesn't respect rate limits can lead to real chaos in your systems, so it is useful to partition those out into their own workstreams. By doing so, you can ensure that only one worker is working off that queue, and you can either manually ensure that it breathes a certain amount of time before issuing another request, or else leverage [BullMQ Pro](https://docs.bullmq.io/bullmq-pro/introduction), which provides rate limiting tools out of the box that would enable you to spin up multiple workers on this workstream without concern of rate limit abuse.
+Many applications will only need one workstream, but multiple workstreams are extremely useful when, for example, you have background jobs responsible for hitting external APIs which are rate limited. Having a background system that doesn't respect rate limits can lead to real chaos in your systems, so it is useful to partition those out into their own workstreams. Once the work is isolated, a named workstream's `rateLimit` bounds how many of its jobs start per time window — see [Rate limiting](./rate-limiting).
 
 To set up workstreams in Psychic, all you need to do is add a basic workstream setup to your `conf/initializers/workers.ts` file:
 
@@ -69,9 +69,8 @@ To set up workstreams in Psychic, all you need to do is add a basic workstream s
 function initializeWorkers(workersApp: PsychicAppWorkers) {
   workersApp.set('background', {
     defaultWorkstream: {
-      // https://docs.bullmq.io/guide/parallelism-and-concurrency
-      workerCount: os.cpus().length,
-      concurrency: 100,
+      workerCount: 1,
+      concurrency: 10,
     },
 
     namedWorkstreams: [
@@ -80,14 +79,13 @@ function initializeWorkers(workersApp: PsychicAppWorkers) {
         workerCount: 1,
       },
 
-      // Rate limited workstream (requires BullMQ Pro)
+      // Rate limited workstream
       // {
       //   name: 'RateLimitedWorkstream',
-      //   // https://docs.bullmq.io/guide/parallelism-and-concurrency
       //   workerCount: 1,
-      //   concurrency: 100,
+      //   concurrency: 10,
       //   rateLimit: {
-      //     max: 100,
+      //     max: 20,
       //     duration: 1000,
       //   },
       // },
@@ -192,13 +190,19 @@ At first glance, this configuration might seem overwhelming to you, but most of 
 
 ```ts
     defaultWorkstream: {
-      // https://docs.bullmq.io/guide/parallelism-and-concurrency
-      workerCount: os.cpus().length,
-      concurrency: 100,
+      workerCount: 1,
+      concurrency: 10,
     },
 ```
 
 With this done, any service in your application extending the `ApplicationBackgroundedService` or `ApplicationScheduledService` classes will automatically send their jobs to the queue belonging to the default workstream.
+
+The two options are not what their names suggest:
+
+- **`workerCount`** is how many BullMQ [`Worker`](https://api.docs.bullmq.io/classes/v5.Worker.html) objects this process builds. They are constructed in the same Node process, so each one opens its own blocking Redis connection and all of them share the one event loop.
+- **`concurrency`** is how many fetched jobs a single `Worker` runs at once.
+
+Their product bounds how many jobs are in flight in the process, so size it against the database pool rather than against the CPU. Raising `workerCount` cannot make CPU-bound JavaScript use additional cores — every inline handler still runs on the same event loop — so CPU parallelism comes from running more worker processes. In particular, do not derive it from `os.cpus().length`: inside a container that reports the host's topology rather than the task's CPU allocation, so it inflates the in-flight bound while buying no parallelism at all. See BullMQ's [parallelism and concurrency](https://docs.bullmq.io/guide/parallelism-and-concurrency) guide for the underlying model.
 
 `defaultBullMQWorkerOptions` — the worker-side counterpart to `defaultBullMQQueueOptions` — also belongs in this block. In simple mode, a `concurrency` or `connection` placed inside it is always overwritten by the workstream's own value, so set concurrency on the workstream itself rather than here.
 
@@ -239,8 +243,8 @@ workersApp.set('background', {
     defaultQueueOptions: {
       defaultJobOptions: { attempts: 20, backoff: { type: 'exponential', delay: 1000 } },
     },
-    defaultWorkerCount: os.cpus().length,
-    defaultWorkerOptions: { concurrency: 100 },
+    defaultWorkerCount: 1,
+    defaultWorkerOptions: { concurrency: 10 },
 
     namedQueueOptions: {
       BookingNotifications: {
@@ -301,9 +305,8 @@ If your app demands multiple queues, you will want to leverage multiple workstre
 
 ```ts
     defaultWorkstream: {
-      // https://docs.bullmq.io/guide/parallelism-and-concurrency
-      workerCount: os.cpus().length,
-      concurrency: 100,
+      workerCount: 1,
+      concurrency: 10,
     },
     namedWorkstreams: [
       {
@@ -324,6 +327,24 @@ export default class FileImporter extends ApplicationBackgroundedService {
   ...
 }
 ```
+
+## Inspecting queues outside a booted server
+
+`background.connect()` is wired to the `server:init:after-routes` hook. In a `pnpm console` session, a one-off script, or any other process that initializes the Psychic app without starting the server, nothing has connected, so `background.queues` is an empty array — no error, no warning, and an inspection or maintenance script reports success having done nothing.
+
+Connect explicitly first. `connect()` defaults to `activateWorkers: false`, so it opens the producer connections and builds the `Queue` objects without turning the process into a worker:
+
+```ts
+import { background } from '@rvoh/psychic-workers'
+
+background.connect()
+
+for (const queue of background.queues) {
+  console.log(queue.name, await queue.getJobCounts())
+}
+```
+
+This applies to reading `background.queues`; enqueueing and scheduling connect on their own. Read the queue name off the `Queue` object, as above, rather than hardcoding it or deriving it from `Background.defaultQueueName`.
 
 ## test invocation
 

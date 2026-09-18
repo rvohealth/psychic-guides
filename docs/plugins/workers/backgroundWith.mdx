@@ -1,0 +1,61 @@
+---
+sidebar_position: 6
+title: backgroundWith
+ai_summary: "backgroundWith({ delay, priority }, methodName, ...args) is the per-call form for backgrounded services and models. delay queues the job to run at least that far in the future (seconds, minutes, hours, days); priority overrides backgroundJobConfig for that one job. A delay's optional jobId gives debounce behavior: re-backgrounding the same jobId overwrites the queued job and resets the timer. The debounce delay must be at least 3 seconds or it throws."
+---
+
+# backgroundWith
+
+Alongside `background`, classes extending `ApplicationBackgroundedService` or `ApplicationBackgroundedModel` provide `backgroundWith({ delay, priority }, methodName, ...args)`, the per-call form. Both keys are optional, and either may be used alone:
+
+- **`delay`** queues the job to run at least that far in the future. It is not guaranteed to run at exactly that time, since the workers may be fully occupied with other work. The delay is expressed in `seconds`, `minutes`, `hours`, and `days`.
+- **`priority`** overrides the class's [`backgroundJobConfig`](./services#backgroundjobconfig-is-class-level) priority for this one job.
+
+```ts
+class ImageProcessingService extends ApplicationBackgroundedService {
+  public static async processUpload(uploadId: string) {
+    // Wait for the S3 upload to propagate before processing
+    await this.backgroundWith({ delay: { seconds: 15 } }, '_processUpload', uploadId)
+  }
+
+  public static async _processUpload(uploadId: string) {
+    const upload = await Upload.find(uploadId)
+    if (!upload) return
+    // ...process the image
+  }
+}
+```
+
+Reach for a `delay` when a job may be queued before an external dependency is ready — waiting for a direct-to-S3 upload to exist before image processing begins — or when the work wants a grace period before it starts.
+
+Routing is not per-call: `workstream` is read from the class's `backgroundJobConfig`, so isolating a subset of a service's jobs still means splitting the class. See [Services](./services#backgroundjobconfig-is-class-level).
+
+## Debounce
+
+`delay` carries an optional `jobId`, which gives debounce behavior. If a job with that `jobId` is already queued with a delay, re-backgrounding with the same `jobId` overwrites the previous job and resets the delay timer from the current time. For example, if the application syncs user data to Intercom every time the user changes, and users make multiple changes in quick succession, debouncing collapses those into one sync.
+
+```ts
+class IntercomSync extends ApplicationBackgroundedService {
+  public static async syncUser(user: User) {
+    await this.backgroundWith(
+      { delay: { minutes: 2, jobId: `intercom-sync-user-${user.id}` } },
+      '_syncUser',
+      user.id
+    )
+  }
+
+  public static async _syncUser(id: IdType) {
+    const user = await User.find(id)
+    if (!user) return
+    // ...sync user to intercom
+  }
+}
+```
+
+What debounce guarantees is that the job runs **at least** once, at or after the moment it was last scheduled. It collapses repeated expensive work; it does not guarantee the work happens only once. Re-arming the same `jobId` from inside the job's own running handler is safe.
+
+The debounce delay must be at least 3 seconds; a shorter one throws.
+
+When the work must happen only once, record that it happened — a boolean or a `DateTime` column on the model — and return early when a later run finds it set. Under that pattern a run that fires while a new event re-arms the timer is not a problem: the second run reads the flag and does nothing. When the timing itself is what matters rather than the collapsing, reach for a [scheduled job](./scheduled) with a datetime check on the model instead.
+
+See https://docs.bullmq.io/guide/jobs/deduplication#debounce-mode for implementation details.

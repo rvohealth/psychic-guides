@@ -1,6 +1,6 @@
 ---
 sidebar_position: 13
-ai_summary: "Single Table Inheritance (STI) stores several model types in one table using a database enum type column whose values match child class names. Generate parents with --sti-base-serializer, children with g:sti-child, dispatch creates with exhaustive switches, and keep associations/decorators on the parent. STI is exactly one level deep, virtual attributes don't filter up to the base class, associations can be type-scoped with an `and` clause, type can change after creation, and hand-added serializer variants must replicate the StiChildClass/type shape and be registered on every child."
+ai_summary: "Single Table Inheritance (STI) stores several model types in one table using a database enum type column whose values match child class names. Generate parents with --sti-base-serializer, children with g:sti-child, dispatch creates with exhaustive switches, and keep associations/decorators on the parent. STI is exactly one level deep, virtual attributes don't filter up to the base class, an association can target one child by its global name (typed as the child) or several with an `and` clause on `type`, type can change after creation, and hand-added serializer variants must replicate the StiChildClass/type shape and be registered on every child."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -26,6 +26,8 @@ Then generate each child with `g:sti-child`:
 {{PM}} psy g:sti-child Room/Kitchen extends Room appliances:enum[]:appliance_types:stove,oven,microwave`}
 />
 
+Generate the parent first: generation order is migration order. When a child declares columns, `g:sti-child` writes a timestamp-named migration that `ALTER`s the parent's table, so a child generated ahead of its parent sorts ahead of the `CREATE TABLE` it depends on and the run fails.
+
 STI children alter the parent table rather than creating their own. When a child declares no additional columns, `g:sti-child` emits no migration at all, since there is no schema change to make. `g:sti-child` also generates check constraints that require child-specific columns to be non-null only for the rows of that child type, so a batch of children with no shared columns is fast to run:
 
 <PackageManagerTabs
@@ -36,6 +38,15 @@ STI children alter the parent table rather than creating their own. When a child
 Reach for the generator even when a child looks trivial, since it keeps the enum, check constraints, factories, and serializers in sync for you.
 
 STI children never receive `@SoftDelete()`. Soft delete is enforced at the STI parent level, and `g:sti-child` does not accept a `--no-soft-delete` flag.
+
+### naming the base: two STI shapes
+
+Which shape you have decides what the base is called and where it lives.
+
+- **A general category with kinds under it.** `Room` is never instantiated; `Bedroom`, `Bathroom` and `Kitchen` are. The base *is* the concept, so it takes the concept's name and path: `Room.ts` holding `Room`, children at `Room/Bedroom.ts`.
+- **Peers at the same level.** `Place` and `DraftPlace` are both kinds of place, and neither is a general category. The base is a technical artifact holding what they share, so it lives inside the namespace: `Place/Base.ts` holding `BasePlace`, with the concrete peers at `Place.ts` and `Place/Draft.ts`.
+
+The peers shape is not an exception to the path-equals-class-name convention: the base there is not a domain concept, so naming it after one would assert a category that does not exist. That shape is also what keeps a retrofit cheap — the concrete class stays at its original path under its original global name, so every existing association and query still means what it meant. Choosing the first shape for a retrofit instead makes the existing model the base, and a base query returns every child, so the new variant leaks into every existing read.
 
 ### shared columns across multiple children
 
@@ -109,26 +120,36 @@ A `@deco.Virtual` attribute declared on a child, by contrast, is registered on t
 
 Handle a child's virtual attribute on the child class, not the base. In the `create` switch, pull it inside that child's `case` — `extractParams(Bedroom, ['childVirtual'])` resolves because `Bedroom` owns the virtual — and document it on a child-specific `@OpenAPI(Bedroom, ...)` if it needs to appear in the spec. Reserve the single base-class `extractParams(Room, [...])` call for physical columns, which it covers completely.
 
-## scoping an association to specific child types
+## targeting an STI child
 
-Children cannot declare new associations — every association must live on the parent — but you can scope a parent-declared association to one or more child types with an `and` clause on the `type` column. This filters the association the parent already owns; it does not define a new one.
+Children cannot declare new associations — every association must live on the parent — but another model's association can point at one subtype. Pointing at a subtype does not define a new association on the child.
+
+When a single child is the target, name it by its namespaced global name. No `type` clause is written anywhere, and the association property is typed as the child, so child-specific columns are reachable without a cast:
 
 ```ts
 export default class Place extends ApplicationModel {
   @deco.HasMany('Room')
   public rooms: Room[]
 
-  // Loads only bedrooms
-  @deco.HasMany('Room', { and: { type: 'Bedroom' } })
-  public bedrooms: Room[]
+  // Loads only bedrooms, and `bedrooms` is typed as Bedroom[]
+  @deco.HasMany('Room/Bedroom')
+  public bedrooms: Bedroom[]
+}
+```
 
-  // Loads several child types
+For several child types at once, scope the parent-declared association with an `and` clause on the `type` column, whose values are bare class names. This types the property as the base, so each child-specific access costs a cast:
+
+```ts
+export default class Place extends ApplicationModel {
+  // Loads several child types; `sleepingRooms` is typed as Room[]
   @deco.HasMany('Room', { and: { type: ['Bedroom', 'Bathroom'] } })
   public sleepingRooms: Room[]
 }
 ```
 
-Records loaded through a type-scoped association come back instantiated as their child class (Dream reads the `type` column) and render through that child's serializer.
+Either way, loaded records come back instantiated as their child class (Dream reads the `type` column) and render through that child's serializer.
+
+Across a [`through`](/docs/models/associations/through) chain, an outer child may **narrow** an inner base: on `Host`, `@deco.HasMany('Room/Bedroom', { through: 'places', source: 'rooms' })` returns only bedrooms even though `Place.rooms` targets `Room`. An outer base may not broaden an inner child, and sibling targets are incompatible. Both fail at *query* time — TypeScript accepts the declaration and nothing fires at decoration time — so an invalid chain surfaces later than you expect.
 
 ## changing an STI record's type
 

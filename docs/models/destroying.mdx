@@ -119,6 +119,10 @@ If you add `@SoftDelete()` to a model that also has `@deco.Sortable()`, make the
 
 `undestroy()` sets the position column back to `MAX(position) + 1` within its sortable scope, in the same update that clears `deletedAt` — the record is re-appended to the *end* of its sortable scope, not restored to its original position. If you need the original ordering back, re-position the record explicitly after undestroying.
 
+### Setting `deletedAt` yourself is not a substitute for `destroy()`
+
+A raw SQL `UPDATE`, a data-repair migration, or `Place.where({ id }).update({ deletedAt: DateTime.now() })` really does soft-delete the row: the `dream:SoftDelete` scope hides it from then on, and a query-level update still runs the model's *update* hooks, so the write reads as though it worked. What it skips is the rest of the destroy lifecycle — no `beforeDestroy`/`afterDestroy`, and no `dependent: 'destroy'` cascade, so dependent rows are left live pointing at a parent nothing returns.
+
 ## Loading soft deleted models
 
 Soft deleted models can be included in queries by removing the soft delete scope by name. `removeDefaultScope('dream:SoftDelete')` lifts that scope and nothing else, whether you're querying for one record or many — see [removing default scopes](/docs/models/querying/removeDefaultScope):
@@ -177,6 +181,14 @@ await Place.removeDefaultScope('dream:SoftDelete').count()
 ```
 
 `reallyDestroy()` cascades through the record's `dependent: 'destroy'` associations, hard-deleting each one depth-first (children before the parent) instead of soft-deleting it. It bypasses the `dream:SoftDelete` default scope while loading that cascade, so children that were already soft-deleted are loaded and hard-deleted too. A `restrict`-FK child that isn't reachable through a `dependent: 'destroy'` association is never touched by the cascade — if such a row still references the parent, `reallyDestroy()` throws a foreign key violation instead of silently deleting it.
+
+The query form selects under the model's default scopes, `dream:SoftDelete` among them — the bypass just described governs which *children* the cascade loads, not which records the query selects. So `Place.where({ ... }).reallyDestroy()` matches only live rows: a prune written over already-soft-deleted rows returns `0` and deletes nothing, with no error. Remove the scope to select them:
+
+```ts
+await Place.removeDefaultScope('dream:SoftDelete')
+  .where({ deletedAt: ops.lessThan(DateTime.now().minus({ days: 30 })) })
+  .reallyDestroy()
+```
 
 There is an analogous method for deleting associated models marked `@SoftDelete` from the database:
 

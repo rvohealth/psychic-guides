@@ -1,7 +1,7 @@
 ---
 sidebar_position: 9
 title: named wokstreams
-ai_summary: "Named workstreams isolate work within dedicated BullMQ queues. Configure in conf/initializers/workers.ts namedWorkstreams array, optionally with their own Redis connections. Set workstream via backgroundJobConfig getter. A workstream's name becomes its jobs' group.id, which moves priority into group.priority — ignored by open-source BullMQ. Enables resource control and better visualization in BullMQ dashboards."
+ai_summary: "Named workstreams isolate work within dedicated BullMQ queues. Configure in conf/initializers/workers.ts namedWorkstreams array, optionally with their own Redis connections. Set workstream via backgroundJobConfig getter. A workstream's name becomes its jobs' group.id — a BullMQ Pro surface open-source BullMQ ignores — while the job's priority is still written to BullMQ's top-level priority field, so isolation and priority ordering hold together. Enables resource control and better visualization in BullMQ dashboards."
 ---
 
 # Named workstreams
@@ -50,9 +50,9 @@ class IntercomSync extends ApplicationBackgroundedService {
 }
 ```
 
-## Priority and workstreams are an either/or without BullMQ Pro
+## Isolation and priority hold together
 
-A workstream's `name` also becomes the `group.id` on that workstream's jobs. Assigning a service to a workstream therefore moves its `priority` onto BullMQ's `group.priority` instead of the top-level `priority` field — and open-source BullMQ ignores `group.priority` entirely, since group priority is a BullMQ Pro surface. So a service gets workstream isolation *or* priority ordering, not both, unless the app runs the `QueuePro`/`WorkerPro` providers (see [Rate limiting](./rate-limiting)). See [Priority](./priority) for the full detail.
+A workstream's `name` also becomes the `group.id` on that workstream's jobs and workers — a BullMQ Pro surface that open-source BullMQ stores and ignores. The job's priority is unaffected: Psychic writes the mapped priority number to BullMQ's top-level `priority` on every job, grouped or not, so a service on a named workstream keeps its priority ordering. See [Priority](./priority) for the full detail.
 
 ## Per-workstream connections
 
@@ -70,3 +70,13 @@ namedWorkstreams: [
 ```
 
 Without them, the workstream shares the app-wide default connection, and the isolation it provides is limited to queue and worker counts — not a separate Redis instance.
+
+## Retiring a named workstream
+
+Dropping a `namedWorkstreams` entry and running `pnpm psy sync` regenerates `workstreamNames`, so every service still routing to that workstream becomes a TypeScript error. What the compiler cannot reach is whatever is already queued, and each route leaves it somewhere different:
+
+- **Registration and class removed together.** With no entry, Psychic builds neither the queue nor its workers. A delayed job is only ever promoted by a worker attached to that queue — the keys are per queue, so no other workstream's workers can drain it — and nothing in Psychic reports a queue it no longer builds. Whatever was waiting silently never runs. This is right only when the queue's remaining contents are disposable.
+- **Class removed, registration kept.** The workers stay attached and keep pulling, so the remaining work surfaces in BullMQ's `failed` set (see [Process-level error semantics](./config#process-level-error-semantics)) — countable, and attributable to the name you just deleted.
+- **Entry moved to [`transitionalWorkstreams`](./config#transitional-workstreams).** Queue and workers are still built under the same name, so the backlog keeps draining, while the name is gone from `workstreamNames` and every typed enqueue site is a compile error.
+
+**A workstream carrying scheduled work never drains.** Working an occurrence is what mints the next one, so watching that queue go quiet proves nothing. The scheduler entry has to be removed with `ApplicationScheduledService.unschedule(...)`, which sweeps every queue the app builds, transitional ones included — but it cannot reach a queue that is no longer built, so unschedule while the `namedWorkstreams` entry still exists, or while it sits in `transitionalWorkstreams`. See [scheduled jobs](./scheduled).

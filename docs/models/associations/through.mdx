@@ -107,7 +107,7 @@ Default to composing; stack on the origin only when the intermediate would exist
 
 ## Every hop applies its own default scopes, including soft delete
 
-A `through` chain joins each intermediate under that model's default scopes, so a soft-deleted intermediate makes the chain resolve `null` (`HasOne`) or `[]` (`HasMany`) with no error — as if the row never existed. `through` cannot take `withoutDefaultScopes`, so when you need to traverse a soft-deleted intermediate, walk the hops as explicit queries under `removeDefaultScope('dream:SoftDelete')` instead of a single `through` association.
+A `through` chain joins each intermediate under that model's default scopes, so a soft-deleted intermediate makes the chain resolve `null` (`HasOne`) or `[]` (`HasMany`) with no error — as if the row never existed. `through` cannot take `withoutDefaultScopes`; to traverse a hidden intermediate, name the scope at the root of the query instead — [`removeDefaultScope`](/docs/models/querying/removeDefaultScope) lifts it on every hop the query reaches.
 
 ## What `through` cannot use
 

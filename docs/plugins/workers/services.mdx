@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: services
-ai_summary: "Classes extending ApplicationBackgroundedService provide background and backgroundWithDelay methods. Background methods by calling this.background('_methodName', args). Keep job arguments to IDs/scalars — including composed strings that embed a secret — look records up with find, use commit hooks when enqueueing from model lifecycle hooks, and never catch-and-continue inside a backgrounded method. backgroundJobConfig is class-level, governing every method on the service."
+ai_summary: "Classes extending ApplicationBackgroundedService provide background and backgroundWith methods. Background methods by calling this.background('_methodName', args). Keep job arguments to IDs/scalars — including composed strings that embed a secret — look records up with find, use commit hooks when enqueueing from model lifecycle hooks, and never catch-and-continue inside a backgrounded method. backgroundJobConfig is class-level, governing every method on the service, and only priority is overridable per call. Every dispatch appends the BullMQ Job as a final argument, so no parameter of a backgrounded method may carry a default or a ?."
 ---
 
 # Services
 
-Any class that extends `ApplicationBackgroundedService` provides the `background` and `backgroundWithDelay` methods that are used to background methods on the class. For instance, let's say you have a service that syncs your user data to a service like intercom, twilio, salesforce, helpdesk, etc...
+Any class that extends `ApplicationBackgroundedService` provides the `background` and [`backgroundWith`](./backgroundWith) methods that are used to background methods on the class. For instance, let's say you have a service that syncs your user data to a service like intercom, twilio, salesforce, helpdesk, etc...
 
 ```ts
 class IntercomSync {
@@ -64,9 +64,27 @@ class BookingMailerService extends ApplicationBackgroundedService {
 
 If you enqueue from model hooks, use an after-commit hook such as `@deco.AfterCreateCommit`, `@deco.AfterUpdateCommit`, or `@deco.AfterSaveCommit`. This applies to any enqueue path: calling a backgrounded service, calling `this.background(...)` on a backgrounded model, or calling a helper that queues the job. Do not enqueue from inside an open transaction; the worker can race the commit and either look up a record before it exists or read stale persisted data after an update. A service that takes a `txn` parameter and also calls `background(...)` in its body is almost always this bug — enqueue after the transaction resolves instead, or let a commit hook do it.
 
+## Every dispatch appends the `Job`, so no parameter may be optional
+
+Psychic appends the BullMQ `Job` as a final argument to every dispatched method; `this.background(...)` and `this.backgroundWith(...)` pass only the arguments before it. A method that wants the `Job` declares it as a final parameter (see [Logging in background jobs](./overview#logging-in-background-jobs)).
+
+Because of that appended argument, **no parameter of a backgrounded method may carry a default or a `?`**. Give the last parameter either and the appended `Job` lands in that slot: the default never applies, and the method runs with a `Job` where it expected its own value — in specs too, which dispatch through the same path.
+
+```ts
+// WRONG — the appended Job lands in `attempt`, and the default never applies
+public static async _geocodePlace(placeId: string, attempt = 1) {}
+
+// RIGHT — the caller seeds the value, and the parameter is required
+public static async _geocodePlace(placeId: string, attempt: number) {}
+```
+
+[Scheduled](./scheduled) methods are dispatched the same way but must *not* declare the `Job`: `schedule()` requires every parameter the method declares, so a final `job: Job` becomes an argument the call site has to pass.
+
 ## `backgroundJobConfig` is class-level
 
-A backgrounded service exposes no per-method or per-call override. Both `background(method, ...args)` and `backgroundWithDelay(delay, method, ...args)` read `this.backgroundJobConfig`, and their only tail is the variadic `...args` — neither accepts a config argument. So the getter's `workstream` and `priority` govern *every* backgrounded method on the service, immediate and delayed alike; you cannot route one method to its own workstream, or make one method `urgent` and another `not_urgent`, from a single class. To isolate a subset of a service's jobs, extract those methods into a separate backgrounded service with its own `backgroundJobConfig` — splitting the class is the only mechanism.
+`backgroundJobConfig` sets the class's defaults, and only `priority` can be overridden per call: [`backgroundWith({ delay, priority }, method, ...args)`](./backgroundWith) replaces the getter's priority for that one job, whether or not the service carries a `workstream`.
+
+`opts` carries no routing. The getter's `workstream` governs *every* backgrounded method on the service, immediate and delayed alike; you cannot route one method to its own workstream from a single class. To isolate a subset of a service's jobs, extract those methods into a separate backgrounded service with its own `backgroundJobConfig` — splitting the class is the only mechanism.
 
 ## Never catch-and-continue inside a backgrounded method
 

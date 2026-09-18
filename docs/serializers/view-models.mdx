@@ -87,6 +87,8 @@ export const PlaceWithNearbySerializer = (place: Place, nearby: Place[]) =>
 
 The action is then `@OpenAPI(PlaceWithNearbySerializer, { status: 200 })` over `this.ok(PlaceWithNearbySerializer(place, nearby))`. The schema is derived and validated under test instead of hand-maintained, so it can't drift from the actual response. This is worth doing even for a one-off envelope — a composing serializer stays the single source of truth where a hand-written `responses` block does not.
 
+The action has to *invoke* the composing serializer. Hand `this.ok` the raw `{ place, nearby }` object instead and `OpenapiResponseValidationFailure` lands on an ordinary column inside the nested `place`, which reads as a preload miss and is not one — a genuine preload miss throws `NonLoadedAssociation` during serialization and never reaches response validation.
+
 ## rendering an async-computed shape on the model
 
 `rendersOne`/`rendersMany` accept any declared property, not only associations, so a shape that has to be computed asynchronously can be assigned in the controller and rendered as a field of the model itself. Prefer the compound-envelope pattern above when you can; reach for this instead only when the computed shape needs to sit *inside* the model's own object — typically because the models render as a collection, where an envelope can't reach individual items:

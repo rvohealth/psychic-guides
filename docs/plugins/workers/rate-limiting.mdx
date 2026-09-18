@@ -1,25 +1,16 @@
 ---
 sidebar_position: 10
 title: rate limiting
-ai_summary: "Rate limiting for named workstreams requires BullMQ Pro license. Add rateLimit configuration (max, duration) to named workstream. Must use QueuePro and WorkerPro providers. Pro is also what lets a named workstream honor group.priority, so it's the only way to combine rate limiting with priority-ordered fan-out work. See BullMQ Pro rate limiting documentation."
+ai_summary: "A named workstream's rateLimit (max, duration) bounds how many of its jobs start per time window, using open-source BullMQ's worker limiter — no BullMQ Pro license involved. A job told to slow down by an external service (HTTP 429) throws RateLimitedPsychicJob with pauseQueueForSeconds to pause the whole workstream without burning a retry attempt; maxStartedAttempts on defaultBullMQWorkerOptions bounds how many times one job may cycle through that pause."
 ---
 
 # Rate Limiting
 
-When using a BullMQ Pro license, [Named workstreams](./named-workstreams) can be rate limited by adding a `rateLimit` configuration to each named workstream.
-
-Note that in order to use BullMQ Pro, `providers` must be configured to pass `QueuePro` and `WorkerPro`.
+[Named workstreams](./named-workstreams) can be rate limited by adding a `rateLimit` configuration to the workstream. `max` and `duration` bound how many of that workstream's jobs may *start* per time window:
 
 ```ts
-  import { QueuePro, WorkerPro } from '@taskforcesh/bullmq-pro'
-
   workersApp.set('background', {
     ...
-
-    providers: {
-      Queue: QueuePro,
-      Worker: WorkerPro,
-    },
 
     namedWorkstreams: [
       {
@@ -27,8 +18,6 @@ Note that in order to use BullMQ Pro, `providers` must be configured to pass `Qu
         workerCount: 1,
         concurrency: 10,
 
-        // `max` and `duration` map to the rate limit configuration supported by BullMQ Pro;
-        // see https://docs.bullmq.io/bullmq-pro/groups/rate-limiting for details.
         rateLimit: {
           max: 10,
           duration: 1000,
@@ -39,8 +28,7 @@ Note that in order to use BullMQ Pro, `providers` must be configured to pass `Qu
         workerCount: 1,
         concurrency: 10,
 
-        // `max` and `duration` map to the rate limit configuration supported by BullMQ Pro;
-        // see https://docs.bullmq.io/bullmq-pro/groups/rate-limiting for details.
+        // 20 jobs per second
         rateLimit: {
           max: 20,
           duration: 1000,
@@ -53,4 +41,22 @@ Note that in order to use BullMQ Pro, `providers` must be configured to pass `Qu
 })
 ```
 
-Rate limiting is also the reason to reach for BullMQ Pro when [fanning out background jobs for a very large record set](./fan-out) that calls a rate-limited external API: `not_urgent`/`last` priority only affects worker-slot ordering, not the rate of requests once a job is running, and only Pro honors a named workstream's `group.priority` (open-source BullMQ ignores it) — so Pro is what lets that fan-out's backpressure and its rate limit both hold on the same named workstream.
+`rateLimit` becomes the BullMQ `limiter` on that workstream's workers, which is an open-source BullMQ feature — no BullMQ Pro license is involved.
+
+## Reacting to a 429
+
+A rate limit you configure is a guess at the external service's budget. When the service itself tells you to slow down — an HTTP 429 carrying a `retry-after` — throw `RateLimitedPsychicJob` to pause the whole workstream for that duration without burning one of the job's retry attempts:
+
+```ts
+import { RateLimitedPsychicJob } from '@rvoh/psychic-workers/errors'
+
+if (response.status === 429) {
+  throw new RateLimitedPsychicJob({
+    pauseQueueForSeconds: Number(response.headers.get('retry-after') ?? 1),
+  })
+}
+```
+
+Because the pause doesn't consume an attempt, a service that keeps answering 429 could cycle one job through the pause indefinitely. `maxStartedAttempts` bounds that; set it on the global `defaultBullMQWorkerOptions`. Any workstream whose jobs throw the signal wants it.
+
+Throw `RateLimitedPsychicJob` only from a job on a workstream whose workers carry a limiter — thrown where there is none, it surfaces as a misconfiguration rather than pausing anything.
