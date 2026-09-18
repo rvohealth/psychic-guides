@@ -23,7 +23,6 @@ However, if this is not the case for you and you are looking to install websocke
 ```ts
 // conf/initializers/workers.ts
 
-import os from 'os'
 import { PsychicApp } from '@rvoh/psychic'
 import { PsychicAppWorkers } from '@rvoh/psychic-workers'
 import { Queue, Worker } from 'bullmq'
@@ -39,9 +38,8 @@ export default (psy: PsychicApp) => {
 function initializeWorkers(workersApp: PsychicAppWorkers) {
   workersApp.set('background', {
     defaultWorkstream: {
-      // https://docs.bullmq.io/guide/parallelism-and-concurrency
-      workerCount: os.cpus().length,
-      concurrency: 100,
+      workerCount: 1,
+      concurrency: 10,
     },
 
     namedWorkstreams: [
@@ -50,14 +48,13 @@ function initializeWorkers(workersApp: PsychicAppWorkers) {
         workerCount: 1,
       },
 
-      // Rate limited workstream (requires BullMQ Pro)
+      // Rate limited workstream
       // {
       //   name: 'RateLimitedWorkstream',
-      //   // https://docs.bullmq.io/guide/parallelism-and-concurrency
       //   workerCount: 1,
-      //   concurrency: 100,
+      //   concurrency: 10,
       //   rateLimit: {
-      //     max: 100,
+      //     max: 20,
       //     duration: 1000,
       //   },
       // },

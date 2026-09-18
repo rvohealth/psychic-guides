@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: priority
-ai_summary: "Background job priority customizable via backgroundJobConfig getter. Options: urgent, default, not_urgent, last, mapped to BullMQ numeric priority 1-4. Default is 'default'. Use 'last' for check-in jobs and 'not_urgent'/'last' for bulk fan-out work. Priority and named workstreams are an either/or without a BullMQ Pro license."
+ai_summary: "Background job priority customizable via backgroundJobConfig getter. Options: urgent, default, not_urgent, last, mapped to BullMQ numeric priority 1-4. Default is 'default'. Use 'last' for check-in jobs and 'not_urgent'/'last' for bulk fan-out work. Priority ordering and named-workstream isolation compose: the priority number is always written to BullMQ's top-level priority field."
 ---
 
 # Priority
@@ -24,9 +24,11 @@ type BackgroundQueuePriority = 'urgent' | 'default' | 'not_urgent' | 'last'
 // Maps to BullMQ numeric priority: 1 (urgent), 2 (default), 3 (not_urgent), 4 (last)
 ```
 
-## Priority and named workstreams are an either/or without BullMQ Pro
+## Priority and named workstreams compose
 
-When a `backgroundJobConfig` sets a `workstream` (or a `groupId`), Psychic writes the priority number to the job's `group.priority` instead of the top-level `priority`, and open-source BullMQ ignores `group.priority` — it's a BullMQ Pro surface. So a service on a named workstream gets workstream isolation, not priority ordering within it, unless the app runs the `QueuePro`/`WorkerPro` providers described in [Rate limiting](./rate-limiting). A service with no `workstream` (routed to the default queue, or to a native-mode `queue`) keeps top-level `priority` and full ordering.
+When a `backgroundJobConfig` sets a `workstream` (or a `groupId`), Psychic still writes the priority number to BullMQ's top-level `priority` — the only priority open-source BullMQ reads — so a service gets workstream isolation and priority ordering together. There is nothing to trade off, and nothing to license.
+
+BullMQ Pro adds a `group.priority` alongside that top-level priority. It answers a different question: which *group* runs next among the queue's other groups, rather than which job runs next within one. Running Pro means passing `QueuePro` and `WorkerPro` as the `Queue` and `Worker` providers in the workers initializer.
 
 ## Bulk work belongs under `not_urgent`/`last`
 

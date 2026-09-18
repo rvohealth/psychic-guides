@@ -29,7 +29,7 @@ const topicMap: Record<string, string[]> = {
 }
 
 // Skill files that are not topic sections, so they need no docs target.
-const skillMetaFiles = /^(CHANGELOG|CLAUDE|README|SKILL|VERSION|WHAT_I_LEARNED_ABOUT_PSYCHIC.*)\.md$/
+const skillMetaFiles = /^(CHANGELOG|CLAUDE|MAINTAINING|README|SKILL|VERSION|WHAT_I_LEARNED_ABOUT_PSYCHIC.*)\.md$/
 
 const stalePatterns: Array<[RegExp, string]> = [
   [/requestBody:\s*\{\s*only:/, 'Use requestBody.params instead of requestBody.only'],

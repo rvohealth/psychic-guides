@@ -12,7 +12,7 @@ tl;dr: Generally, web requests should fetch data from the database and serialize
 
 1. faster web responses
 2. automatic retry of work that fails
-3. rate-limiting certain types of work (when using named workstreams—requires a BullMQ Pro license)
+3. rate-limiting certain types of work (when using named workstreams)
    :::
 
 A web application is like an ecosystem, with many different players interacting and responding to each other's behavior. Much of this is done in the form of API requests being triggered from clients to your backend application servers, but some things are not. For example, you may find yourself needing a piece of code that runs every hour of every day, or something that just runs on the first Monday of each 3rd month.
@@ -55,7 +55,7 @@ class DataProcessingService extends ApplicationBackgroundedService {
 }
 ```
 
-The `Job` parameter is optional and always comes last in the method signature. Job logs are accessible through the BullMQ dashboard and can be retrieved programmatically. Let unexpected errors throw so BullMQ can retry the job; catching and continuing marks the job successful.
+The `Job` parameter is optional and always comes last in the method signature — Psychic appends it to every dispatch, which is why no parameter of a backgrounded method may carry a default or a `?` (see [Services](/docs/plugins/workers/services#every-dispatch-appends-the-job-so-no-parameter-may-be-optional)). Job logs are accessible through the BullMQ dashboard and can be retrieved programmatically. Let unexpected errors throw so BullMQ can retry the job; catching and continuing marks the job successful.
 
 
 ## Where to go next
@@ -74,7 +74,7 @@ The `Job` parameter is optional and always comes last in the method signature. J
 **Capabilities** — knobs each backgrounded service can set
 
 - [scheduled](/docs/plugins/workers/scheduled) — running work on a cron-like cadence
-- [backgroundWithDelay](/docs/plugins/workers/backgroundWithDelay) — running work once, after a delay
+- [backgroundWith](/docs/plugins/workers/backgroundWith) — running work once, after a delay, or at a one-off priority
 - [retry](/docs/plugins/workers/retry) — how failed jobs are retried
 - [priority](/docs/plugins/workers/priority) — running some work ahead of other work
 - [named workstreams](/docs/plugins/workers/named-workstreams) — isolating work into its own queue

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 4.5
 title: fanning out large record sets
-ai_summary: "For hundreds of thousands to millions of records, don't enqueue all jobs up front — use a two-level fan-out: a kickoff job pluckEach's IDs in batches and enqueues expander jobs at priority 'last', each expander enqueues individual worker jobs at priority 'not_urgent'. Priority creates backpressure that bounds queue depth; requires both tiers on the same BullMQ queue."
+ai_summary: "For hundreds of thousands to millions of records, don't enqueue all jobs up front — use a two-level fan-out: a kickoff job pluckEach's IDs in batches and enqueues expander jobs at priority 'last', each expander enqueues individual worker jobs at priority 'not_urgent'. Priority creates backpressure that bounds queue depth; requires both tiers on the same BullMQ queue. Priority orders worker slots and does not throttle a running job's request rate — a named workstream's rateLimit does that."
 ---
 
 # Fanning out large record sets
@@ -83,14 +83,13 @@ Keep both tiers of the fan-out below `default`. A bulk run's individual jobs vas
 Because expanders run at `last` priority, they only claim worker slots when no `not_urgent`-priority individual jobs are pending. With 10 workers, that means at most ~10 batches are expanded at a time (producing ~10,000 individual jobs in flight), and the individual jobs drain before more batches are expanded. The queue depth stays bounded regardless of the total record count. Expander jobs are also infrequent relative to individual jobs — one per 1000 IDs — so sharing the `last` tier with a check-in/heartbeat job (see [Priority](./priority)) doesn't starve it outright; it just interleaves.
 
 - **`pluckEach` selects only the `id` column** — no hydration, minimal memory.
-- **Priorities create the backpressure.** Expanders (`last`) yield to individual jobs (`not_urgent`), so the in-flight count of individual jobs never exceeds roughly `worker_count * concurrency * batch_size`.
+- **Priorities create the backpressure.** Expanders (`last`) yield to individual jobs (`not_urgent`), so the in-flight count of individual jobs never exceeds roughly `worker_count * concurrency * batch_size`. Priority orders worker slots; it does not throttle a running job's request rate. To bound pressure on an external service, put those jobs on a named workstream with a [`rateLimit`](./rate-limiting).
 - **The expander and individual-worker services must route to the same queue.** Priority is only meaningful within a single BullMQ queue — jobs in different queues have separate worker pools and never compete for the same slots, so putting expanders and individual jobs on different queues silently defeats the backpressure; each queue just drains independently and you're back to unbounded fan-out.
 - **If the kickoff is interrupted,** only the expanders already enqueued will run, and if the kickoff job itself is retried it re-plucks from the beginning — but because each individual job is independent and idempotent (via the `find`/early-return pattern), re-runs are safe.
 - **Individual jobs still follow the standard rule of passing IDs, not model instances** — hydrate inside `_processOne`. See [Services](./services).
 
 ## Isolating the fan-out to its own queue
 
-To keep this fan-out off the default queue entirely — so it can't crowd out unrelated default-queue work even at `not_urgent`/`last` — the isolation mechanism differs by mode:
+To keep this fan-out off the default queue entirely — so it can't crowd out unrelated default-queue work even at `not_urgent`/`last` — route both the expander and the individual-worker service to the same named [workstream](./named-workstreams). The mapped priority is written to BullMQ's top-level `priority` on every job, grouped or not, so the expander/individual backpressure survives the isolation on open-source BullMQ and on BullMQ Pro alike.
 
-- **Open-source BullMQ** — route both services to the same [native-mode](./config#native-bullmq-mode) `queue`, not a named [workstream](./named-workstreams). A workstream sets a job's BullMQ `group.id` to the workstream name, which moves `priority` into `group.priority` instead of the top-level field, and open-source BullMQ silently ignores `group.priority` (it's BullMQ Pro-only) — so the expander/individual backpressure stops working with no error or warning. A native-mode `queue` (with no `groupId` set) keeps `priority` top-level and the backpressure intact.
-- **BullMQ Pro** — a named `workstream` works fine instead, because Pro honors `group.priority`, so isolation and backpressure both hold. Pro is also the only way to rate-limit the individual jobs against an external dependency (see [Rate limiting](./rate-limiting)) — worth adopting for a bulk job that calls a rate-limited API or otherwise needs to throttle pressure on a shared resource (the database included), since `not_urgent`/`last` priority only affects worker-slot ordering, not the rate of requests once a job is running.
+If the bulk work calls a rate-limited external API, that same named workstream is where you bound the request rate: give it a [`rateLimit`](./rate-limiting). Priority cannot do this — it orders worker slots, and once a job is running it does not throttle the requests that job makes.

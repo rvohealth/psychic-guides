@@ -219,6 +219,8 @@ export default class GraphEdge extends ApplicationModel {
 
 ### Dependent
 
+`dependent: 'destroy'` goes on the association that sees every child, never on one carrying an `and` condition. The cascade reaches exactly what that association's own definition matches, so where `Place` declares both `@deco.HasMany('Booking', { and: { status: 'confirmed' } })` and a plain `@deco.HasMany('Booking')`, it belongs on the plain one. Put it on the conditioned one and the remaining bookings stay live under a soft-deleted place, and a hard delete is refused outright by their `RESTRICT` foreign key, rolling the transaction back. The same holds for a `HasOne`: returning at most one record does not make an `and` condition harmless.
+
 When the application owns child lifecycle, prefer `dependent: 'destroy'` on the association. With soft delete, keep database foreign keys on the default `restrict` behavior and let Dream run model hooks and soft-delete behavior:
 
 ```ts

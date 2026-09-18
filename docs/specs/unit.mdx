@@ -67,6 +67,10 @@ beforeEach(async () => {
 })
 ```
 
+### `context` is not a Vitest global
+
+Vitest ships `describe` and `it` only. Dream's spec helpers manufacture `context` (`global.context = describe`) so Psychic specs read RSpec-style, which is also where the `.staticMethod` / `#instanceMethod` describe names elsewhere in these guides come from. Use `context` freely; nothing needs importing.
+
 ## Parallelism
 
 Since each test needs a freshly-truncated database to operate on, vitest is ordinarily forced to run each test, one at a time, performing truncation between each run to clear out the database. However, Dream by default supports parallel spec runs by creating extra databases for you, provided you specify the necessary configuration in `conf/dream.ts`.

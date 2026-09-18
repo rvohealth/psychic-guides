@@ -358,7 +358,7 @@ Configure the Redis connection (`wsApp.set('connection', ...)`) before `cable.st
 
 ## Client Transport
 
-Always set `transports: ['websocket']` on the Socket.IO client. Socket.IO defaults to long-polling first for historical reasons — that fallback is unnecessary today since WebSocket is universally supported by modern browsers and mobile apps. Skipping the polling phase means faster connection establishment and eliminates a class of subtle failures where polling requests interfere with the websocket server's HTTP handler.
+Set `transports: ['websocket']` on the Socket.IO client. Socket.IO tries long-polling first and upgrades in the background; WebSocket is universally supported by modern browsers and mobile apps, so skipping the polling phase just means faster connection establishment. The websocket server serves polling and WebSocket clients correctly either way, so this is a connection-latency recommendation rather than a correctness requirement — with one exception at scale: a polling client's later requests have to reach the same node, because engine.io's heartbeat timers are per-connection, so a multi-node fleet serving polling clients needs sticky sessions. Websocket-only transport sidesteps that.
 
 ```ts
 import { io } from 'socket.io-client'
