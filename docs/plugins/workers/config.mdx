@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: config
-ai_summary: 'Workers configuration uses BullMQ, configured in conf/initializers/workers.ts. Two mutually exclusive modes: simple (workstream) mode, which Psychic scans on sync to capture workstream names for types, or native BullMQ mode for raw per-queue BullMQ options. Extend ApplicationBackgroundedService and ApplicationScheduledService. Workstreams are groups containing a queue and workers. Multiple workstreams useful for rate-limited APIs. Named workstreams can carry a rateLimit, and transitional workstreams cover Redis migrations. workerCount is how many Worker objects the process builds, not how many processes or cores.'
+ai_summary: 'Workers configuration uses BullMQ, configured in conf/initializers/workers.ts. Two mutually exclusive modes: simple (workstream) mode, which Psychic scans on sync to capture workstream names for types, or native BullMQ mode for raw per-queue BullMQ options. Extend ApplicationBackgroundedService and ApplicationScheduledService. Workstreams are groups containing a queue and workers. Multiple workstreams useful for rate-limited APIs. Named workstreams can carry a rateLimit, and transitional workstreams cover Redis migrations. workerCount is how many Worker objects the process builds, all sharing one event loop; its product with concurrency bounds in-flight jobs.'
 ---
 
 # Workers - config
@@ -197,12 +197,12 @@ At first glance, this configuration might seem overwhelming to you, but most of 
 
 With this done, any service in your application extending the `ApplicationBackgroundedService` or `ApplicationScheduledService` classes will automatically send their jobs to the queue belonging to the default workstream.
 
-The two options are not what their names suggest:
+What the two options control:
 
 - **`workerCount`** is how many BullMQ [`Worker`](https://api.docs.bullmq.io/classes/v5.Worker.html) objects this process builds. They are constructed in the same Node process, so each one opens its own blocking Redis connection and all of them share the one event loop.
 - **`concurrency`** is how many fetched jobs a single `Worker` runs at once.
 
-Their product bounds how many jobs are in flight in the process, so size it against the database pool rather than against the CPU. Raising `workerCount` cannot make CPU-bound JavaScript use additional cores — every inline handler still runs on the same event loop — so CPU parallelism comes from running more worker processes. In particular, do not derive it from `os.cpus().length`: inside a container that reports the host's topology rather than the task's CPU allocation, so it inflates the in-flight bound while buying no parallelism at all. See BullMQ's [parallelism and concurrency](https://docs.bullmq.io/guide/parallelism-and-concurrency) guide for the underlying model.
+Their product bounds how many jobs are in flight in the process, so size it against the database pool rather than against the CPU. Raising `workerCount` cannot make CPU-bound JavaScript use additional cores — every inline handler still runs on the same event loop — so CPU parallelism comes from running more worker processes. See BullMQ's [parallelism and concurrency](https://docs.bullmq.io/guide/parallelism-and-concurrency) guide for the underlying model.
 
 `defaultBullMQWorkerOptions` — the worker-side counterpart to `defaultBullMQQueueOptions` — also belongs in this block. In simple mode, a `concurrency` or `connection` placed inside it is always overwritten by the workstream's own value, so set concurrency on the workstream itself rather than here.
 
