@@ -2,7 +2,7 @@
 sidebar_position: 6
 title: client
 
-ai_summary: "Client setup commands generate initializers that run on psy sync in development and test: setup:sync:openapi-redux (RTK Query via @rtk-query/codegen-openapi), setup:sync:openapi-zustand (typed SDK via @hey-api/openapi-ts plus Zustand store hooks in store.gen.ts; --export-name names the initializer file, function and log labels; keep the client config file outside --output-dir, which openapi-ts empties each run), setup:sync:enums, and setup:sync:openapi-typescript. All accept --overwrite."
+ai_summary: "Client setup commands generate initializers that run on psy sync in development and test: setup:sync:openapi-redux (RTK Query via @rtk-query/codegen-openapi), setup:sync:openapi-zustand (typed SDK via @hey-api/openapi-ts plus Zustand store hooks in store.gen.ts; --export-name names the initializer file, function and log labels; the client config file must sit outside --output-dir, which openapi-ts empties each run, so by default the SDK is generated into a generated/ subfolder beside it), setup:sync:enums, and setup:sync:openapi-typescript. All accept --overwrite."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -142,15 +142,15 @@ Re-running with a different `--export-name` writes a new codegen config file and
 For clients using Zustand, Jotai, or any other non-Redux state manager, this command wires your client to [@hey-api/openapi-ts](https://www.npmjs.com/package/@hey-api/openapi-ts), which generates a typed function for every operation in one of your OpenAPI files. On top of that SDK, Psychic generates a Zustand store hook per function.
 
 <PackageManagerTabs
-  code={`{{PM}} psy setup:sync:openapi-zustand --schema-file=./src/openapi/openapi.json --output-dir=../client/app/api/myAppApi --client-config-file=../client/app/api/myAppApiClient.ts --export-name=myAppApi`}
+  code={`{{PM}} psy setup:sync:openapi-zustand --schema-file=./src/openapi/openapi.json --output-dir=../client/app/api/myAppApi/generated --client-config-file=../client/app/api/myAppApi/client.ts --export-name=myAppApi`}
 />
 
 ### Options
 
 - `--schema-file <schemaFile>`: The path from your api root to the openapi file that `@hey-api/openapi-ts` reads. Defaults to `./src/openapi/openapi.json`.
 - `--export-name <exportName>`: The camelCased name for the generated initializer. It names the initializer's file (`src/conf/initializers/openapi/<exportName>.ts`), its function (`initialize` followed by the PascalCased name), and the labels on its sync log lines. It does not name anything in the generated SDK or store, which come entirely from your OpenAPI spec. Defaults to your camelCased app name followed by `Api`, e.g. `myAppApi`.
-- `--output-dir <outputDir>`: The directory, from your api root, where `@hey-api/openapi-ts` writes the typed functions and types, and where Psychic writes `store.gen.ts`. Defaults to `../client/app/api/<exportName>`.
-- `--client-config-file <clientConfigFile>`: The path, from your api root, of the client configuration file that sets the base URL and credentials for every request. Defaults to `../client/app/api/<exportName>/client.ts`, but place it outside `--output-dir` (see [the client config file](#the-client-config-file) below).
+- `--output-dir <outputDir>`: The directory, from your api root, where `@hey-api/openapi-ts` writes the typed functions and types, and where Psychic writes `store.gen.ts`. Defaults to `../client/app/api/<exportName>/generated`.
+- `--client-config-file <clientConfigFile>`: The path, from your api root, of the client configuration file that sets the base URL and credentials for every request. Defaults to `../client/app/api/<exportName>/client.ts`. It must be outside `--output-dir` (see [the client config file](#the-client-config-file) below).
 - `--overwrite`: Replace existing generated files that differ, without prompting.
 - `-h, --help`: Display help for command.
 
@@ -173,7 +173,7 @@ export default function initializeMyAppApi(psy: PsychicApp) {
     if (AppEnv.isDevelopmentOrTest) {
       await DreamCLI.logger.logProgress(`[myAppApi] syncing...`, async () => {
         await DreamCLI.spawn('pnpm', {
-          args: ["exec","openapi-ts","-i","./src/openapi/openapi.json","-o","../client/app/api/myAppApi"],
+          args: ["exec","openapi-ts","-i","./src/openapi/openapi.json","-o","../client/app/api/myAppApi/generated"],
           onStdout: message => {
             DreamCLI.logger.logContinueProgress(`[myAppApi]` + ' ' + message, {
               logPrefixColor: 'green',
@@ -183,7 +183,7 @@ export default function initializeMyAppApi(psy: PsychicApp) {
       })
 
       await DreamCLI.logger.logProgress(`[myAppApi] generating zustand store...`, async () => {
-        await generateZustandStoreFromSdk('../client/app/api/myAppApi')
+        await generateZustandStoreFromSdk('../client/app/api/myAppApi/generated')
       })
     }
   })
@@ -202,9 +202,9 @@ On every `psy sync` it does two things:
 The client config file is a scaffold for you to edit, with a `baseUrl()` function to fill in and a commented-out place for auth headers:
 
 ```ts
-// client/app/api/myAppApiClient.ts
+// client/app/api/myAppApi/client.ts
 
-import { client } from './client.gen'
+import { client } from './generated/client.gen'
 
 function baseUrl() {
   // add custom code here for determining your application's baseUrl
@@ -223,17 +223,9 @@ client.setConfig({
 })
 ```
 
-Keep this file outside `--output-dir`. By default, `@hey-api/openapi-ts` deletes its whole output directory before every run, so a config file inside it (where the default path and the `--help` example both put it) is deleted on your next `psy sync`.
+The config file has to live outside `--output-dir`, because `@hey-api/openapi-ts` deletes its whole output directory before every run. That is why the defaults generate into a `generated` folder next to `client.ts`. The command rejects a `--client-config-file` at or inside `--output-dir` before it writes or installs anything. The `client.gen` import is computed from the two paths, so it resolves wherever you put them.
 
-Outside `--output-dir`, the generated `import { client } from './client.gen'` no longer resolves, because it assumes the config file sits next to `client.gen.ts`. After your first sync, point that import into the output directory. For the command above:
-
-```ts
-// client/app/api/myAppApiClient.ts
-
-import { client } from './myAppApi/client.gen'
-```
-
-Sync never touches this file, so the fix and any changes you make stay put. Re-running `setup:sync:openapi-zustand` does replace it, after the overwrite prompt, so confirming that prompt (or passing `--overwrite`) discards your import fix and any base URL or auth code you added.
+Sync never touches this file, so your changes stay put. Re-running `setup:sync:openapi-zustand` does replace it, after the overwrite prompt, so confirming that prompt (or passing `--overwrite`) discards any base URL or auth code you added.
 
 ### Using the output in your client
 
@@ -242,14 +234,14 @@ Import the client config file once, at your client's entry point, so `client.set
 ```ts
 // client/app/main.tsx
 
-import './api/myAppApiClient'
+import './api/myAppApi/client'
 ```
 
 Then call the typed functions directly, or use the store hooks. The function names, parameters, and response types all come from your OpenAPI spec:
 
 ```ts
-import { getPlaces } from './api/myAppApi/sdk.gen'
-import { useGetPlaces } from './api/myAppApi/store.gen'
+import { getPlaces } from './api/myAppApi/generated/sdk.gen'
+import { useGetPlaces } from './api/myAppApi/generated/store.gen'
 
 const { data, error } = await getPlaces()
 
