@@ -1,6 +1,6 @@
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext'
 import Layout from '@theme/Layout'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import Controllers from '../components/home/sections/controllers'
 import FeatureTesting from '../components/home/sections/feature-testing'
 import Hero from '../components/home/sections/hero'
@@ -18,7 +18,7 @@ function getBannerHeights() {
   })
 }
 
-export default function Home(): JSX.Element {
+export default function Home(): ReactNode {
   const { siteConfig } = useDocusaurusContext()
 
   useEffect(() => {
