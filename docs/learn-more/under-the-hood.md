@@ -73,10 +73,11 @@ To support this, Dream has a built in `ioc` (inversion of control) system to ena
 Dream and Psychic both rely on special type-syncing operations to happen in certain contexts. The generated files produced by these operations go into the `src/types` folder within your app, and are then fed back into your application via a few entry points. For Dream, these types are fed back into your application via the `ApplicationModel` class, automatically created for you whenever you provision a new Psychic application.
 
 ```ts
+// src/app/models/ApplicationModel.ts
 import { Dream } from '@rvoh/dream'
 import { DB } from '#src/types/db.js'
-import { connectionTypeConfig, schema } from '#src/types/dream.js'
 import { globalTypeConfig } from '#src/types/dream.globals.js'
+import { connectionTypeConfig, schema } from '#src/types/dream.js'
 
 export default class ApplicationModel extends Dream {
   declare public DB: DB
@@ -98,13 +99,16 @@ export default class ApplicationModel extends Dream {
 Psychic types are similarly fed back into your application via the `ApplicationController` class
 
 ```ts
+// src/app/controllers/ApplicationController.ts
 import { PsychicController } from '@rvoh/psychic'
 import psychicTypes from '#src/types/psychic.js'
 
 export default class ApplicationController extends PsychicController {
-  public get psychicTypes() {
+  public override get psychicTypes() {
     return psychicTypes
   }
+
+  // ...the scaffolded openapiNames and locale getters
 }
 ```
 

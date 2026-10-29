@@ -2,18 +2,20 @@
 sidebar_position: 6
 title: client
 
-ai_summary: "Client setup commands include setup:sync:openapi-redux for generating Redux bindings from OpenAPI specs using @rtk-query/codegen-openapi, setup:sync:enums for syncing backend enums to a client app, and setup:sync:openapi-typescript for generating TypeScript types from OpenAPI specs. All automatically sync when psy sync is called."
+ai_summary: "Client setup commands generate initializers that run on psy sync in development and test: setup:sync:openapi-redux (RTK Query via @rtk-query/codegen-openapi), setup:sync:openapi-zustand (typed SDK via @hey-api/openapi-ts plus Zustand store hooks in store.gen.ts; --export-name names the initializer file, function and log labels; keep the client config file outside --output-dir, which openapi-ts empties each run), setup:sync:enums, and setup:sync:openapi-typescript. All accept --overwrite."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
-In addition to strict backend utilities, Psychic also exports a few CLI utilities that can be used to help smooth out a client integration with Psychic.
+In addition to strict backend utilities, Psychic also exports a few CLI utilities that can be used to help smooth out a client integration with Psychic. Each is a one-time setup command: it generates an initializer that taps into the `cli:sync` hook, so from then on `psy sync` keeps your client up to date. The generated initializers only do their work when `AppEnv.isDevelopmentOrTest` is true.
+
+Re-running any of these commands compares every file it would write against what is on disk. Missing files are created and identical files are left alone, but if any file exists with different content, you are prompted once, with every affected path listed, before anything is written. Declining leaves every file untouched. Pass `--overwrite` to give that consent up front for non-interactive use, such as agents or CI.
 
 ## setup\:sync\:openapi-redux
 
-Since the majority of the world is using React, we have provided a util which easily generates Redux bindings for a given client application. The bindings provided will create a bridge that keeps client OpenAPI integrations up to date with the latest OpenAPI files, syncing the newly-generated bindings over to your client any time `psy sync` is called:
+Since the majority of the world is using React, we have provided a util which easily generates Redux bindings for a given client application. The bindings provided will create a bridge that keeps client OpenAPI integrations up to date with the latest OpenAPI files, syncing the newly-generated bindings over to your client any time `psy sync` is called.
 
-Under the hood, Psychic uses the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) util to provision this for you, but also adds an initializer to your app that taps into lifecycle hooks within Psychic to make sure that the codegen tool is run every time your app changes. With this utility in place, calling `psy sync` is all you need to do to have the latest API endpoints available to you within your React app.
+Under the hood, Psychic uses the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) util to provision this for you (the command adds it and `ts-node` to your dev dependencies), but also adds an initializer to your app that taps into lifecycle hooks within Psychic to make sure that the codegen tool is run every time your app changes. With this utility in place, calling `psy sync` is all you need to do to have the latest API endpoints available to you within your React app. If your client uses Zustand, Jotai, or another non-Redux state manager, use [setup:sync:openapi-zustand](#setupsyncopenapi-zustand) instead.
 
 To make use of this utility, you can run the following:
 
@@ -23,45 +25,46 @@ To make use of this utility, you can run the following:
 
 ### Options
 
-- `--schema-file <schemaFile>`: The path from your api root to the openapi file you wish to use to generate your schema, e.g. `./src/openapi/openapi.json`.
-- `--api-file <apiFile>`: The path to the boilerplate api file that will be used to scaffold your backend endpoints together with, e.g. `../client/app/api.ts`.
-- `--api-import <apiImport>`: The camelCased name of the export from your api module, e.g. `emptyBackendApi`.
-- `--output-file <outputFile>`: The path to the file that will contain your typescript openapi redux bindings, e.g. `../client/app/myBackendApi.ts`.
-- `--export-name <exportName>`: The camelCased name to use for your exported api, e.g. `myBackendApi`.
+- `--schema-file <schemaFile>`: The path from your api root to the openapi file you wish to use to generate your schema. Defaults to `./src/openapi/openapi.json`.
+- `--api-file <apiFile>`: The path to the boilerplate api file that will be used to scaffold your backend endpoints together with. Defaults to `../client/app/api/api.ts`.
+- `--api-import <apiImport>`: The camelCased name of the export from your api module. Defaults to `empty` followed by the PascalCased export name, e.g. `emptyMyAppApi`.
+- `--output-file <outputFile>`: The path to the file that will contain your typescript openapi redux bindings. Defaults to `../client/app/api/<exportName>.ts`.
+- `--export-name <exportName>`: The camelCased name to use for your exported api. Defaults to your camelCased app name followed by `Api`, e.g. `myAppApi`. It also names the generated codegen config file and initializer.
+- `--overwrite`: Replace existing generated files that differ, without prompting.
 - `-h, --help`: Display help for command.
 
 You will be prompted to answer a few questions if the options above are not provided, primarily to fill out the configuration file provided by the [@rtk-query/codegen-openapi](https://www.npmjs.com/package/@rtk-query/codegen-openapi) package. The configuration for this package is confusing, and also _must_ be set up using JSON as of now, due to limitations in their own library when paired with an ESM package. These nuances are hard to tango with and can lead to frustration, which is why we provided this setup command to begin with.
 
-Nuances aside, the package does an incredible job at providing useful, Redux-driven bindings to your application that will create a seamless integration between your client and back end applications. By default, Psychic will attempt to sync to your `openapi/openapi.json` file, but you can redirect it to any OpenAPI file of your choosing. Psychic will make a few other intelligent guesses as to a few of the configuration options, but feel free to override any of the defaults.
+Nuances aside, the package does an incredible job at providing useful, Redux-driven bindings to your application that will create a seamless integration between your client and back end applications. Pressing enter at a prompt accepts the default shown above, but feel free to override any of them.
 
 It will automatically generate an initializer for you that will keep your client openapi file in sync:
 
 ```ts
-// conf/initializers/openapi/myAppApi.ts
+// api/src/conf/initializers/openapi/myAppApi.ts
 
-import { DreamCLI } from '@rvoh/dream'
+import { DreamCLI } from '@rvoh/dream/system'
 import { PsychicApp } from '@rvoh/psychic'
-import AppEnv from '#conf/AppEnv.js'
+import AppEnv from '../../AppEnv.js'
 
 export default function initializeMyAppApi(psy: PsychicApp) {
-  psy.on('sync', async () => {
+  psy.on('cli:sync', async () => {
     if (AppEnv.isDevelopmentOrTest) {
-      DreamCLI.logger.logStartProgress(`[myAppApi] syncing...`)
-      await DreamCLI.spawn(
-        'npx @rtk-query/codegen-openapi src/conf/openapi/myAppApi.openapi-codegen.json',
-        {
-          onStdout: (message) => {
+      await DreamCLI.logger.logProgress(`[myAppApi] syncing...`, async () => {
+        await DreamCLI.spawn('pnpm', {
+          args: ["exec","rtk-query-codegen-openapi","src/conf/openapi/myAppApi.openapi-codegen.json"],
+          onStdout: message => {
             DreamCLI.logger.logContinueProgress(`[myAppApi]` + ' ' + message, {
               logPrefixColor: 'green',
             })
           },
-        }
-      )
-      DreamCLI.logger.logEndProgress()
+        })
+      })
     }
   })
 }
 ```
+
+The spawned command matches your app's package manager; the example above is what a pnpm app gets.
 
 It will additionally generate a configuration file for the @rtk-query/codegen-openapi util:
 
@@ -69,11 +72,12 @@ It will additionally generate a configuration file for the @rtk-query/codegen-op
 // api/src/conf/openapi/myAppApi.openapi-codegen.json
 
 {
-  "schemaFile": "../../../openapi/openapi.json",
+  "schemaFile": "../../../src/openapi/openapi.json",
   "apiFile": "../../../../client/app/api/api.ts",
   "outputFile": "../../../../client/app/api/myAppApi.ts",
   "apiImport": "emptyMyAppApi",
-  "exportName": "myAppApi"
+  "exportName": "myAppApi",
+  "hooks": true
 }
 ```
 
@@ -84,7 +88,7 @@ as well as a boilerplate api file to mix into the generated code provided by `@r
 
 // Or from '@reduxjs/toolkit/query' if not using the auto-generated hooks
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import { RootState } from '../store' // update this to the correct path to your app's store
+// import { RootState } from '../store' // update this to the correct path to your app's store
 
 function baseUrl() {
   // add custom code here for determining your application's baseUrl
@@ -105,7 +109,7 @@ export const emptyMyAppApi = createApi({
   keepUnusedDataFor: 0,
 
   baseQuery: fetchBaseQuery({
-    baseUrl: baseURL(),
+    baseUrl: baseUrl(),
     credentials: 'include',
 
     // we recommend that you use a function like this for preparing
@@ -131,6 +135,130 @@ export const emptyMyAppApi = createApi({
 })
 ```
 
+Re-running with a different `--export-name` writes a new codegen config file and initializer without prompting, and leaves the previous initializer active. Delete the old files by hand, or both will run on every sync.
+
+## setup\:sync\:openapi-zustand
+
+For clients using Zustand, Jotai, or any other non-Redux state manager, this command wires your client to [@hey-api/openapi-ts](https://www.npmjs.com/package/@hey-api/openapi-ts), which generates a typed function for every operation in one of your OpenAPI files. On top of that SDK, Psychic generates a Zustand store hook per function.
+
+<PackageManagerTabs
+  code={`{{PM}} psy setup:sync:openapi-zustand --schema-file=./src/openapi/openapi.json --output-dir=../client/app/api/myAppApi --client-config-file=../client/app/api/myAppApiClient.ts --export-name=myAppApi`}
+/>
+
+### Options
+
+- `--schema-file <schemaFile>`: The path from your api root to the openapi file that `@hey-api/openapi-ts` reads. Defaults to `./src/openapi/openapi.json`.
+- `--export-name <exportName>`: The camelCased name for the generated initializer. It names the initializer's file (`src/conf/initializers/openapi/<exportName>.ts`), its function (`initialize` followed by the PascalCased name), and the labels on its sync log lines. It does not name anything in the generated SDK or store, which come entirely from your OpenAPI spec. Defaults to your camelCased app name followed by `Api`, e.g. `myAppApi`.
+- `--output-dir <outputDir>`: The directory, from your api root, where `@hey-api/openapi-ts` writes the typed functions and types, and where Psychic writes `store.gen.ts`. Defaults to `../client/app/api/<exportName>`.
+- `--client-config-file <clientConfigFile>`: The path, from your api root, of the client configuration file that sets the base URL and credentials for every request. Defaults to `../client/app/api/<exportName>/client.ts`, but place it outside `--output-dir` (see [the client config file](#the-client-config-file) below).
+- `--overwrite`: Replace existing generated files that differ, without prompting.
+- `-h, --help`: Display help for command.
+
+You are prompted for each option you leave out, and pressing enter accepts its default. The command then writes two files, the client config file and the initializer, adds `@hey-api/openapi-ts` to your backend's dev dependencies, and prints the remaining steps.
+
+### What runs on sync
+
+The generated initializer looks like this:
+
+```ts
+// api/src/conf/initializers/openapi/myAppApi.ts
+
+import { DreamCLI } from '@rvoh/dream/system'
+import { PsychicApp } from '@rvoh/psychic'
+import { generateZustandStoreFromSdk } from '@rvoh/psychic/system'
+import AppEnv from '../../AppEnv.js'
+
+export default function initializeMyAppApi(psy: PsychicApp) {
+  psy.on('cli:sync', async () => {
+    if (AppEnv.isDevelopmentOrTest) {
+      await DreamCLI.logger.logProgress(`[myAppApi] syncing...`, async () => {
+        await DreamCLI.spawn('pnpm', {
+          args: ["exec","openapi-ts","-i","./src/openapi/openapi.json","-o","../client/app/api/myAppApi"],
+          onStdout: message => {
+            DreamCLI.logger.logContinueProgress(`[myAppApi]` + ' ' + message, {
+              logPrefixColor: 'green',
+            })
+          },
+        })
+      })
+
+      await DreamCLI.logger.logProgress(`[myAppApi] generating zustand store...`, async () => {
+        await generateZustandStoreFromSdk('../client/app/api/myAppApi')
+      })
+    }
+  })
+}
+```
+
+On every `psy sync` it does two things:
+
+1. Runs `openapi-ts` against your schema file, which regenerates `--output-dir` (files such as `sdk.gen.ts`, `types.gen.ts`, and `client.gen.ts`). The spawned command matches your app's package manager.
+2. Reads the exported functions from `sdk.gen.ts` and rewrites `store.gen.ts` in the same directory. Each SDK function `getPlaces` becomes a hook `useGetPlaces`, a Zustand store holding `data`, `error`, `isLoading`, a `fetch` function that takes the SDK function's arguments, calls it, stores the result, and returns `data`, and a `reset` function. If `sdk.gen.ts` is missing or exports nothing, this step does nothing.
+
+`store.gen.ts` imports from `zustand`, so add `zustand` to your client's dependencies; Psychic does not install it. Each hook is one store at module level, so every component that uses the same hook shares the same state.
+
+### The client config file
+
+The client config file is a scaffold for you to edit, with a `baseUrl()` function to fill in and a commented-out place for auth headers:
+
+```ts
+// client/app/api/myAppApiClient.ts
+
+import { client } from './client.gen'
+
+function baseUrl() {
+  // add custom code here for determining your application's baseUrl
+  // ...
+  return 'http://localhost:7777'
+}
+
+client.setConfig({
+  baseUrl: baseUrl(),
+  credentials: 'include',
+
+  // you can customize headers here, for example to add auth tokens:
+  // headers: {
+  //   Authorization: `Bearer ${getToken()}`,
+  // },
+})
+```
+
+Keep this file outside `--output-dir`. By default, `@hey-api/openapi-ts` deletes its whole output directory before every run, so a config file inside it (where the default path and the `--help` example both put it) is deleted on your next `psy sync`.
+
+Outside `--output-dir`, the generated `import { client } from './client.gen'` no longer resolves, because it assumes the config file sits next to `client.gen.ts`. After your first sync, point that import into the output directory. For the command above:
+
+```ts
+// client/app/api/myAppApiClient.ts
+
+import { client } from './myAppApi/client.gen'
+```
+
+Sync never touches this file, so the fix and any changes you make stay put. Re-running `setup:sync:openapi-zustand` does replace it, after the overwrite prompt, so confirming that prompt (or passing `--overwrite`) discards your import fix and any base URL or auth code you added.
+
+### Using the output in your client
+
+Import the client config file once, at your client's entry point, so `client.setConfig` runs before any request:
+
+```ts
+// client/app/main.tsx
+
+import './api/myAppApiClient'
+```
+
+Then call the typed functions directly, or use the store hooks. The function names, parameters, and response types all come from your OpenAPI spec:
+
+```ts
+import { getPlaces } from './api/myAppApi/sdk.gen'
+import { useGetPlaces } from './api/myAppApi/store.gen'
+
+const { data, error } = await getPlaces()
+
+// inside a component
+const { data: places, isLoading, fetch } = useGetPlaces()
+```
+
+Re-running with a different `--export-name` writes a new initializer without prompting, and leaves the previous one active. Delete the old initializer by hand, or both will run on every sync.
+
 ## setup\:sync\:enums
 
 You may find yourself wishing to have access to your backend enums from your client, perhaps to populate a select box. Even if you are using the `@rtk-query/codegen-openapi` utility, it will not provide you with easy access to the enums that are generated from it. Rather than burden you with copying the enums manually by hand, psychic offers a helpful setup command to bridge your backend enums to your client.
@@ -138,19 +266,17 @@ You may find yourself wishing to have access to your backend enums from your cli
 To do this, simply run
 
 <PackageManagerTabs
-  code={`{{PM}} psy setup:sync:enums ../client/src/enums.ts`}
+  code={`{{PM}} psy setup:sync:enums --output-file=../client/src/api/enums.ts`}
 />
-
-### Arguments
-
-- `<outfile>`: The path from your backend directory to the location which you want the enums copied. Should end with `.ts`, e.g. `../client/src/api/enums.ts`.
 
 ### Options
 
-- `--initializer-filename <initializerFilename>`: The name you want the file to be in your initializers folder. Defaults to `sync-enums.ts`.
+- `--output-file <outputFile>`: Required. The path from your backend directory to the location which you want the enums copied. Should end with `.ts`, e.g. `../client/src/api/enums.ts`.
+- `--openapi-name <openapiName>`: The name of the registered OpenAPI spec whose enums will be exported, e.g. `mobile`. Defaults to `default`, the unnamed `psy.set('openapi', ...)` registration. It also names the initializer: `sync-enums.ts` for `default`, `sync-enums-<name>.ts` otherwise.
+- `--overwrite`: Replace existing generated files that differ, without prompting.
 - `-h, --help`: Display help for command.
 
-This will generate an initializer that will tap into psychic lifecycle hooks, ensuring that any time `psy sync` is run, the enums will be synced to the outfile destination of your choosing.
+This will generate an initializer that will tap into psychic lifecycle hooks, ensuring that any time `psy sync` is run, the enums will be synced to the outfile destination of your choosing. An app with one client per OpenAPI spec runs this setup once per spec, each with its own `--output-file`. Two initializers pointed at the same `--output-file` overwrite each other on every sync.
 
 The file carries only the enums the chosen spec's surface actually reaches, each with only the values that spec renders — a client is handed your public surface, not every enum in your database, so an enum or value missing from it is usually the boundary working. If the client genuinely needs one, widen the spec that serves it rather than hand-writing the value back.
 
@@ -172,4 +298,7 @@ Generates an initializer in your app for converting one of your OpenAPI files to
 ### Options
 
 - `--initializer-filename <initializerFilename>`: The name you want the file to be in your initializers folder. Defaults to `sync-openapi-typescript.ts`.
+- `--overwrite`: Replace existing generated files that differ, without prompting.
 - `-h, --help`: Display help for command.
+
+Re-running with a different `--initializer-filename` generates a second initializer without prompting, and leaves the previous one active. Delete the old initializer by hand, or both will run on every sync.

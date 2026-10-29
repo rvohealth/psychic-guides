@@ -10,10 +10,13 @@ ai_summary: "Dream lifecycle hooks include BeforeCreate, BeforeUpdate, BeforeSav
 `BeforeCreate` hooks are run whenever a new record is being saved to the database. A decorator pattern is leveraged, so no arguments need to be passed to the hook, it simply needs to live above the property, like so:
 
 ```ts
+// src/app/models/User.ts
+import argon2 from 'argon2'
+
 export default class User extends ApplicationModel {
   @deco.BeforeCreate()
   public async hashPassword() {
-    if (this.password) this.passwordDigest = await Hash.gen(this.password)
+    if (this.password) this.passwordDigest = await argon2.hash(this.password)
     this.password = undefined
   }
 }
@@ -96,17 +99,18 @@ export default class Post extends ApplicationModel {
 AfterCreate hooks are run after a new record is saved to the database. A decorator pattern is leveraged, so no arguments need to be passed to the hook, it simply needs to live above the property, like so:
 
 ```ts
+// src/app/models/Post.ts
 export default class Post extends ApplicationModel {
   ...
 
   @deco.AfterCreate()
-  public async hashPassword() {
-    if (this.password)
-      this.password_digest = await Hash.gen(this.password)
-    this.password = undefined
+  public async createDefaultComment(this: Post, txn: DreamTransaction<Dream> | null) {
+    await this.txn(txn).createAssociation('comments', { body: 'Welcome!' })
   }
 }
 ```
+
+Changing the record itself belongs in a before hook; by the time an after hook runs, the row is already written.
 
 ## after update
 

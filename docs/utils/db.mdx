@@ -1,31 +1,52 @@
 ---
 sidebar_position: 6
-ai_summary: "db provides direct Kysely database access. Import db and use Kysely query builder. Supports connection specification (e.g., 'replica'). Dream queries can be converted to Kysely using toKysely method."
+ai_summary: "A new app's src/db/index.ts exports db(), which returns a Kysely instance typed against the app's DB types; import it as db from '#src/db/index.js'. db() takes the connection type (default 'primary'; 'replica' falls back to the primary credentials when no replica is configured). Dream queries convert to Kysely with toKysely('select' | 'update' | 'delete'); a select builder already selects the model's columns and carries the query's conditions and default scopes."
 ---
 
 # db
 
-Once your database connection is configured, you are able to import it and begin making queries to your DB using [Kysely](https://kysely.dev) as your database driver. This means rather than write raw queries, you will have Kysely to help you build queries and provide helpful TypeScript autocomplete power at a low level:
+Once your database connection is configured, you can query it directly with [Kysely](https://kysely.dev), Dream's underlying query builder, instead of writing raw SQL, with TypeScript autocomplete at a low level. A new Psychic app ships a `db` helper in `src/db/index.ts` that returns the Kysely instance for a connection, typed against your app's `DB` types:
 
 ```ts
-import db from '../db'
+// src/app/services/BurpCollaboratorUsers.ts
+import db from '#src/db/index.js'
 
-await db()
-  .selectAll('users')
-  .where('email', 'ilike', '%burpcollaborator%')
-  .execute()
+export default class BurpCollaboratorUsers {
+  public static async all() {
+    return await db()
+      .selectFrom('users')
+      .selectAll()
+      .where('email', 'ilike', '%burpcollaborator%')
+      .execute()
+  }
+}
 ```
 
-Dream enables you to specify a connection when connecting to the DB, like so:
+`db()` takes the connection type as its first argument, defaulting to `'primary'`. Pass `'replica'` to read from the replica; when the connection has no replica configured, Dream falls back to the primary credentials:
 
 ```ts
-await db('replica').selectAll('users').execute()
+// src/app/services/ReplicaUsers.ts
+import db from '#src/db/index.js'
+
+export default class ReplicaUsers {
+  public static async all() {
+    return await db('replica').selectFrom('users').selectAll().execute()
+  }
+}
 ```
 
-You can additionally turn any query built in Dream to a Kysely query by calling `#toKysely`, like so:
+You can also turn any query built in Dream into a Kysely query by calling `toKysely`, passing `'select'`, `'update'` or `'delete'`. A `'select'` builder already selects every column of the model's table and carries the Dream query's conditions, including default scopes such as soft-delete filtering:
 
 ```ts
-await User.where({ email: ops.ilike('%burpcollaborator%') })
-  .toKysely('select')
-  .execute()
+// src/app/services/BurpCollaboratorUsersViaDream.ts
+import User from '#models/User.js'
+import { ops } from '@rvoh/dream'
+
+export default class BurpCollaboratorUsersViaDream {
+  public static async all() {
+    return await User.where({ email: ops.ilike('%burpcollaborator%') })
+      .toKysely('select')
+      .execute()
+  }
+}
 ```

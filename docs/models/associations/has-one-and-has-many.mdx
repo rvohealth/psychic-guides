@@ -1,6 +1,6 @@
 ---
 sidebar_position: 3
-ai_summary: "HasOne and HasMany associations link a model to associated models where the foreign key is on the associated model. HasMany represents one-to-many relationships. HasOne represents one-to-one relationships. Options include foreignKey (on option), dependent (for cascading deletes), and through (for many-to-many via join table)."
+ai_summary: "HasOne and HasMany associations link a model to associated models where the foreign key is on the associated model. HasMany represents one-to-many relationships. HasOne represents one-to-one relationships. Options include foreignKey (on option), dependent: 'destroy' (cascading deletes through each child's lifecycle, keeping foreign keys on restrict rather than ON DELETE CASCADE), and through (for many-to-many via join table)."
 ---
 
 # has associations
@@ -221,7 +221,7 @@ export default class GraphEdge extends ApplicationModel {
 
 `dependent: 'destroy'` goes on the association that sees every child, never on one carrying an `and` condition. The cascade reaches exactly what that association's own definition matches, so where `Place` declares both `@deco.HasMany('Booking', { and: { status: 'confirmed' } })` and a plain `@deco.HasMany('Booking')`, it belongs on the plain one. Put it on the conditioned one and the remaining bookings stay live under a soft-deleted place, and a hard delete is refused outright by their `RESTRICT` foreign key, rolling the transaction back. The same holds for a `HasOne`: returning at most one record does not make an `and` condition harmless.
 
-When the application owns child lifecycle, prefer `dependent: 'destroy'` on the association. With soft delete, keep database foreign keys on the default `restrict` behavior and let Dream run model hooks and soft-delete behavior:
+Use `dependent: 'destroy'` to remove children along with their parent, and keep the database foreign key on the default `restrict` behavior, which is what the generators emit. Dream destroys each child through its own lifecycle, so the child's hooks run and a `@SoftDelete()` child is soft-deleted. A database-level `ON DELETE CASCADE` deletes the child rows inside Postgres instead: no hooks run, a `@SoftDelete()` child is permanently removed, and the cascade never fires when the parent is soft-deleted, because the parent row is never deleted. It fits only a parent that is always hard-deleted and children with no hooks and no `@SoftDelete()`. Generated models use `@SoftDelete()` by default, so `dependent: 'destroy'` with a `restrict` foreign key is the usual answer:
 
 ```ts
 export async function up(db: Kysely<any>): Promise<void> {
@@ -238,21 +238,29 @@ export async function up(db: Kysely<any>): Promise<void> {
 }
 ```
 
-Polymorphic relationships also need application-level dependent behavior, since the foreign key can point to many tables. Set the `dependent` option at the association level:
+Polymorphic relationships can only use application-level dependent behavior, since a polymorphic foreign key can point to many tables, so no database foreign key constraint can cascade it. `dependent` is a `HasOne`/`HasMany` option, so declare it on each parent's side of the polymorphic association:
 
 ```ts
-class Rating extends ApplicationModel {
-  @deco.BelongsTo(['Composition', 'Post'], {
+class Post extends ApplicationModel {
+  @deco.HasMany('Rating', {
+    on: 'rateableId',
     polymorphic: true,
     dependent: 'destroy',
   })
-  public rateable: Composition | Post
-  public rateableId: DreamColumn<Rating, 'rateableId'>
-  public rateableType: DreamColumn<Rating, 'rateableType'>
+  public ratings: Rating[]
+}
+
+class Composition extends ApplicationModel {
+  @deco.HasMany('Rating', {
+    on: 'rateableId',
+    polymorphic: true,
+    dependent: 'destroy',
+  })
+  public ratings: Rating[]
 }
 ```
 
-In the above example, any time a `Composition` or `Post` model is destroyed, dependent destroy applies to related ratings. If the parent is soft-deleted, every model in the dependent chain should also use `@SoftDelete()` so children are not permanently removed.
+In the above example, any time a `Composition` or `Post` model is destroyed, its ratings are destroyed with it. If the parent is soft-deleted, every model in the dependent chain should also use `@SoftDelete()` so children are not permanently removed.
 
 ### Distinct
 

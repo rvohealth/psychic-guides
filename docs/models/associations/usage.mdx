@@ -1,7 +1,7 @@
 ---
 sidebar_position: 7
 pagination_next: null
-ai_summary: 'Association usage includes loading (preload, load), associationQuery (construct queries targeting associations), association/associationOrFail (find single associated record - warning: can cause N+1 queries, use preload/load to avoid), createAssociation (create associated record), and other association manipulation methods.'
+ai_summary: 'Association usage includes loading (preload, load), associationQuery (construct queries targeting associations), association/associationOrFail (find single associated record - warning: can cause N+1 queries, use preload/load to avoid), createAssociation (create associated record), destroyAssociation, and other association manipulation methods. Children are removed with their parent via dependent: ''destroy'' on a restrict foreign key, not ON DELETE CASCADE.'
 ---
 
 # usage
@@ -198,4 +198,4 @@ await user.destroyAssociation('posts', { cascade: false })
 // 3
 ```
 
-Additionally, one is free to set up cascade deletion, either at the `db` level (which is preferred), or else by leveraging [dependent: 'destroy'](/docs/models/associations/has-one-and-has-many#dependent) at the association level (though usually, this would only be done for polymorphic relationships, since cascade deleting at the DB level will not work in those cases.)
+To remove child records whenever their parent is destroyed, declare [dependent: 'destroy'](/docs/models/associations/has-one-and-has-many#dependent) on the parent's association and keep the foreign key on its default `restrict` behavior. Dream then destroys each child through its own lifecycle, so its hooks run and a `@SoftDelete()` child is soft-deleted rather than removed. A database-level `ON DELETE CASCADE` bypasses all of that, and never fires at all when the parent is soft-deleted, since the parent row stays in the table.

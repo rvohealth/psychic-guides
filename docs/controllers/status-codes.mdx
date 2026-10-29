@@ -70,7 +70,7 @@ export default class V1HostPlacesController extends V1HostBaseController {
   private async place() {
     return await this.currentHost
       .associationQuery('places')
-      .findOrFail(this.castParam('id', 'string'))
+      .findOrFail(this.castParam('id', 'uuid'))
   }
 }
 ```
@@ -92,7 +92,7 @@ export default class V1HostPlacesController extends V1HostBaseController {
   private async place() {
     return await this.currentHost
       .associationQuery('places')
-      .findOrFail(this.castParam('id', 'string'))
+      .findOrFail(this.castParam('id', 'uuid'))
   }
 }
 ```
@@ -207,8 +207,8 @@ export default class V1HostPlacesController extends V1HostBaseController {
     description: 'Fetch a Place',
   })
   public async show() {
-    // if the id is not present, or is not a valid string, this throws an error which Psychic converts to a 400
-    const id = this.castParam('id', 'string')
+    // if the id is not present, or is not a valid uuid, this throws an error which Psychic converts to a 400
+    const id = this.castParam('id', 'uuid')
 
     // if a place is not found by that id for this host, this throws an error which Psychic converts to a 404
     const place = await this.currentHost

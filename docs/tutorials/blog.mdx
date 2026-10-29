@@ -231,7 +231,7 @@ describe('User', () => {
         const user = await createUser({ password: 'abc123' })
         expect(user.password).toBeUndefined()
 
-        expect(await argon2.verify(user.passwordDigest, 'abc123'))
+        expect(await argon2.verify(user.passwordDigest, 'abc123')).toBe(true)
       })
     })
   })
