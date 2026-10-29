@@ -46,10 +46,11 @@ pnpm add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
 The `presign` action validates what the client says it is about to upload, derives a server-owned key (the client never picks the key), and returns a short-lived signed URL:
 
 ```ts
-import { AuthedController, OpenAPI } from '@rvoh/psychic'
+import { OpenAPI } from '@rvoh/psychic'
+import AuthedController from '#controllers/AuthedController.js'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import AppEnv from '@conf/AppEnv.js'
+import AppEnv from '#conf/AppEnv.js'
 import { DateTime } from '@rvoh/dream'
 import crypto from 'node:crypto'
 
@@ -108,7 +109,7 @@ After the browser completes its PUT, it POSTs the `key` back. The server asks S3
 
 ```ts
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
-import Upload from '../../models/Upload.js'
+import Upload from '#models/Upload.js'
 
 export default class UploadsController extends AuthedController {
   // ... presign() above

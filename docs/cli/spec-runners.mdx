@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-ai_summary: "Spec runners enable running unit specs (uspec) or feature specs (fspec), single files, and visible-browser feature runs. Commands are written to package.json and can be customized. Migrations must be run before specs. The two suites share one test database locally, so run them one at a time; in CI, give each its own database (separate jobs) and use parallelTests / DREAM_PARALLEL_TESTS and vitest --shard to parallelize further."
+ai_summary: "Spec runners enable running unit specs (uspec) or feature specs (fspec), single files, and visible-browser feature runs. Commands are written to package.json and can be customized. Migrations must be run before specs. Each spec worker claims its own database from a test-database pool sized for one suite's workers, so run the two suites one at a time locally; in CI, give each its own database (separate jobs) and use parallelTests / DREAM_PARALLEL_TESTS and vitest --shard to parallelize further."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -55,9 +55,9 @@ it.skip('returns the index of Places', async () => { ... })  // Skip this
 **Run migrations before specs.** After generating a resource or migration, run `{{PM}} psy db:migrate` before `{{PM}} uspec` or `{{PM}} fspec`. Without it, the integrity check fails with "Migrations need to be run on default database".
 
 :::warning Run uspec and fspec one at a time locally
-Both suites truncate the same test database between runs, so running them at once produces truncation and setup/teardown races.
+Each spec worker claims its own database from a pool of test-database copies sized for one suite's workers, so running both suites at once can exhaust the pool.
 
-The constraint is the database, not the machine. Once each suite has a database of its own, they can run at the same time, which is exactly what you want in CI.
+The constraint is the database, not the machine. Once each suite has a database server of its own, they can run at the same time, which is exactly what you want in CI.
 :::
 
 **Feature specs manage their own frontend servers.** `fspec` automatically starts and stops the frontend servers (client, admin, internal) it needs. Don't start them manually before running `fspec` — a server already bound to the port will make `fspec` fail when it tries to bind the same port itself.
@@ -102,7 +102,7 @@ env:
   DREAM_PARALLEL_TESTS: '2'
 ```
 
-Dream then makes that many copies of the database and hands each concurrent test run a database of its own, so the truncation races the warning describes can't happen.
+Dream then sizes its pool of test-database copies for that many spec workers, and each worker claims a database of its own for as long as it runs, so no two workers clean up each other's data.
 
 Beyond that, vitest can shard the spec *files* themselves across runners, with each shard getting its own runner and therefore its own database. A new app has too few spec files for this to be worth it, but as a suite grows it's the next thing to reach for:
 

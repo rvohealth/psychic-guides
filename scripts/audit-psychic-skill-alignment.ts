@@ -38,7 +38,7 @@ const stalePatterns: Array<[RegExp, string]> = [
   [/process\.env\.[A-Z0-9_]+\b(?!\s*=[^=])/, 'Use AppEnv instead of direct process.env in application examples'],
   [/new Date\(/, 'Use Dream date/time classes except explicit JS interop examples'],
   [/deleted_at:datetime(?!:optional)/, 'Soft-delete migration shorthand should be nullable'],
-  [/from '@rvoh\/dream'[\s\S]{0,80}\b(camelize|compact|groupBy|uniq|range)\b/, 'Utility helpers should import from @rvoh/dream/utils'],
+  [/import\s*\{[^}]*\b(camelize|compact|groupBy|uniq|range)\b[^}]*\}\s*from '@rvoh\/dream'/, 'Utility helpers should import from @rvoh/dream/utils'],
   [/Psychic converts to 422 errors/, 'Validation-layer failures should be documented as 400, not 422'],
   // The guides document only the current state of the latest packages — no superseded APIs.
   [/\bscrollPaginate\b/, 'scrollPaginate was replaced by cursorPaginate; document only the current API'],

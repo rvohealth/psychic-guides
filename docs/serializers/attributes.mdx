@@ -5,7 +5,11 @@ ai_summary: >-
   Serializer attribute methods include attribute (with options: openapi,
   default, as, precision), delegatedAttribute (renders from nested
   objects/associations), and customAttribute (arbitrary transformation with
-  flatten option). All support OpenAPI shape definitions.
+  flatten option, or returning an ObjectSerializer builder described by
+  $serializer). Column and virtual-column shapes are inferred, so openapi
+  there adds only a description; json/jsonb columns, plain getters,
+  ObjectSerializer attributes, and customAttribute need an explicit openapi
+  shape.
 ---
 
 # attributes
@@ -29,19 +33,21 @@ CalendarDate and DateTime attributes (even arrays of them) are automatically con
 
 ### openapi
 
-When serializing a Dream model with `DreamSerializer`, the OpenAPI shape of database column attributes is determined automatically (except for json and jsonb columns). You can still add an OpenAPI description if you want:
+When serializing a Dream model with `DreamSerializer`, the OpenAPI shape of database column attributes is determined automatically (except for json and jsonb columns). On such a column, `openapi` adds only a description:
 
 ```ts
 .attribute('name', { openapi: { description: 'The name of the Place' } })
 ```
 
-With `ObjectSerializer`, you always need to provide the `openapi` option, since there's no schema to pull from. Same goes for [virtual attributes](/docs/models/decorators/virtual) on Dream models — even with `DreamSerializer`, virtual attributes need an explicit `openapi` shape:
+A [virtual attribute](/docs/models/decorators/virtual) takes its shape from the type declared in `@deco.Virtual(...)`, so it, too, is a plain `.attribute('myVirtualAttribute')` with no `openapi` type.
+
+With `ObjectSerializer`, you always need to provide the `openapi` option, since there's no schema to pull from. Same goes for a plain getter on a Dream model — even with `DreamSerializer`, a getter needs an explicit `openapi` shape:
 
 ```ts
 export const PlaceSerializer = (place: Place) =>
   DreamSerializer(Place, place)
     .attribute('id')
-    .attribute('myVirtualAttribute', { openapi: ['string', 'null'] })
+    .attribute('displayName', { openapi: 'string' }) // a getter on Place
 ```
 
 For `json`/`jsonb` columns, you'll need to spell out the full OpenAPI shape:
@@ -103,7 +109,7 @@ The `delegatedAttribute` method reaches into a nested object or association and 
 export const PlaceSummaryForGuestsSerializer = (place: Place) =>
   DreamSerializer(Place, place)
     .attribute('id')
-    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
+    .delegatedAttribute('currentLocalizedText', 'title')
 
 // A place with currentLocalizedText { title: 'Hello world' } renders:
 // { id: 1234, title: 'Hello world' }
@@ -111,13 +117,10 @@ export const PlaceSummaryForGuestsSerializer = (place: Place) =>
 
 ### delegatedAttribute.default
 
-All options from `attribute` are supported on `delegatedAttribute`. The `default` kicks in whether the association itself is null or the attribute on the association is null:
+When the delegated-to property is a column, its OpenAPI shape is inferred, as with `attribute`; `openapi` is required only for a json/jsonb column or a non-Dream target. All options from `attribute` are supported on `delegatedAttribute`. The `default` kicks in whether the association itself is null or the attribute on the association is null:
 
 ```ts
-.delegatedAttribute('currentLocalizedText', 'title', {
-  openapi: 'string',
-  default: 'Untitled',
-})
+.delegatedAttribute('currentLocalizedText', 'title', { default: 'Untitled' })
 
 // A place without a currentLocalizedText, or one with { title: null }, renders:
 // { id: 1234, title: 'Untitled' }
@@ -129,9 +132,9 @@ When the delegated-through path can resolve to `undefined` or `null` — a missi
 
 | Option | Runtime | OpenAPI |
 |---|---|---|
-| `optional: true` | No effect — the key always renders (`null` when the path is missing). | Schema becomes `anyOf: [schema, { type: 'null' }]`. |
+| `optional: true` | No effect — the key always renders (`null` when the path is missing). | Schema made nullable (`type: 'string'` becomes `type: ['string', 'null']`; a `$ref` becomes `anyOf: [{ $ref }, { type: 'null' }]`). |
 | `required: false` | The key is **omitted** from the response entirely when the resolved value is `undefined`. | The field is excluded from the containing schema's `required[]`. |
-| `default: <value>` | Substitutes the value when the resolved path is `undefined`. | No effect. |
+| `default: <value>` | Substitutes the value when the resolved path is `null` or `undefined`. | No effect. |
 
 At render time, Dream resolves in this order: the first non-`null`/non-`undefined` value from the target path; else `default` if one was provided; else omit the key if `required: false`; else render `null`.
 
@@ -142,8 +145,8 @@ Both options work the same way across regular columns, virtual columns, JSON/JSO
 Two `delegatedAttribute` calls can target the same output name, which gives you a "default value, optionally overridden by something more specific" pattern — a locale-specific translation falling back to a default-locale one, an org-level setting falling back to a global default, and so on. Attributes fold in declaration order, so a later directive overwrites an earlier one unless it's skipped:
 
 ```ts
-.delegatedAttribute('fallbackAssociation', 'title', { openapi: 'string' })
-.delegatedAttribute('specificAssociation', 'title', { openapi: 'string', required: false })
+.delegatedAttribute('fallbackAssociation', 'title')
+.delegatedAttribute('specificAssociation', 'title', { required: false })
 ```
 
 The first call is required, so it always writes `title`. The second uses `required: false` rather than `optional: true`: when `specificAssociation` is absent, the key is omitted instead of being overwritten with `null`, leaving the fallback's value in place. (`optional: true` would still write `title: null` and blank out the fallback.) Because the fallback directive is required, the merged OpenAPI schema keeps `title` as a required string, so this pattern doesn't change the generated client type. Both associations are automatically discovered and loaded by [`preloadFor`](/docs/models/querying/preloadFor) — no controller change needed.
@@ -167,22 +170,40 @@ See the [passthrough documentation](/docs/serializers/render#serializer-passthro
 
 ### customAttribute.flatten
 
-When `flatten: true` is included, the attributes of the returned object get flattened into the parent:
+When `flatten: true` is included, the attributes of the returned object get flattened into the parent. The `openapi` option then describes the whole returned object:
 
 ```ts
-const UserSerializer = (user: User) =>
+export const UserSerializer = (user: User) =>
   DreamSerializer(User, user)
     .attribute('id')
     .customAttribute('profileInfo', () => ({ age: 30, city: 'Metropolis' }), {
       flatten: true,
       openapi: {
-        age: { type: 'integer' },
-        city: { type: 'string' },
+        type: 'object',
+        required: ['age', 'city'],
+        properties: {
+          age: { type: 'integer' },
+          city: { type: 'string' },
+        },
       },
     })
 
 // renders { id: 1, age: 30, city: 'Metropolis' }
 ```
+
+### customAttribute returning a serializer
+
+To render a nested object, return an exported `ObjectSerializer`'s builder from the callback and point `openapi` at that serializer with `$serializer`, which derives the schema:
+
+```ts
+.customAttribute(
+  'availabilitySummary',
+  () => PlaceAvailabilitySummaryViewSerializer(passthrough.availabilitySummary),
+  { openapi: { $serializer: PlaceAvailabilitySummaryViewSerializer } },
+)
+```
+
+Return the builder, not its `.render()` output or a raw object. Dream renders a returned builder with the outer render's passthrough and casing, which a hand-called `.render()` drops; a raw object goes out as-is, extra keys included.
 
 ### customAttribute and preloadFor
 

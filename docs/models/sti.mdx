@@ -1,6 +1,6 @@
 ---
 sidebar_position: 13
-ai_summary: "Single Table Inheritance (STI) stores several model types in one table using a database enum type column whose values match child class names. Generate parents with --sti-base-serializer, children with g:sti-child, dispatch creates with exhaustive switches, and keep associations/decorators on the parent. STI is exactly one level deep, virtual attributes don't filter up to the base class, an association can target one child by its global name (typed as the child) or several with an `and` clause on `type`, type can change after creation, and hand-added serializer variants must replicate the StiChildClass/type shape and be registered on every child."
+ai_summary: "Single Table Inheritance (STI) stores several model types in one table using a database enum type column whose values match child class names. Generate parents with --sti-base-serializer, children with g:sti-child, dispatch creates with exhaustive switches, and keep associations/decorators on the parent. STI is exactly one level deep, virtual attributes don't filter up to the base class, an association can target one child by its global name (typed as the child) or several with an `and` clause on `type`, type can change after creation, bulk creation casts each item's type with Params.cast, and the single-value type enum on each summary serializer keeps child schemas apart in the OpenAPI anyOf, so hand-added serializer variants must replicate the StiChildClass/type shape and be registered on every child."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -28,14 +28,14 @@ Then generate each child with `g:sti-child`:
 
 Generate the parent first: generation order is migration order. When a child declares columns, `g:sti-child` writes a timestamp-named migration that `ALTER`s the parent's table, so a child generated ahead of its parent sorts ahead of the `CREATE TABLE` it depends on and the run fails.
 
-STI children alter the parent table rather than creating their own. When a child declares no additional columns, `g:sti-child` emits no migration at all, since there is no schema change to make. `g:sti-child` also generates check constraints that require child-specific columns to be non-null only for the rows of that child type, so a batch of children with no shared columns is fast to run:
+STI children alter the parent table rather than creating their own. A child with no additional columns gets its model, serializer, factory, and spec but no migration, since there is no schema change to make, so a batch of such children is fast to run. For each child column that is not `:optional`, a boolean, or an array, `g:sti-child` also generates a check constraint that requires a value only on the rows of that child type:
 
 <PackageManagerTabs
   code={`{{PM}} psy g:sti-child Room/Den extends Room
 {{PM}} psy g:sti-child Room/LivingRoom extends Room`}
 />
 
-Reach for the generator even when a child looks trivial, since it keeps the enum, check constraints, factories, and serializers in sync for you.
+Reach for the generator even when a child looks trivial, since it handles child-column enum types and keeps the check constraints, factories, and serializers in sync for you.
 
 STI children never receive `@SoftDelete()`. Soft delete is enforced at the STI parent level, and `g:sti-child` does not accept a `--no-soft-delete` flag.
 
@@ -50,9 +50,9 @@ The peers shape is not an exception to the path-equals-class-name convention: th
 
 ### shared columns across multiple children
 
-When two or more children share a column name (say, `Bedroom` and `LivingRoom` both need `capacity`), include the column in each `g:sti-child` command so every child's model and serializer generate correctly. Because every child's migration ALTERs the same parent table, only the first migration should actually add the column — after generating, remove the duplicate `addColumn` (and its matching `dropColumn` in `down`) from the later migrations.
+When two or more children share a column name (say, `Bedroom` and `LivingRoom` both need `capacity`), include the column in each `g:sti-child` command so every child's model and serializer generate correctly. Because every child's migration ALTERs the same parent table, only the first migration should actually add the column. After generating, remove from each later migration the duplicate `addColumn` (and its matching `dropColumn` in `down`), which fails with "column already exists", and the duplicate `rooms_not_null_capacity` check constraint, which fails the same way.
 
-If the column isn't `:optional` and isn't a simple boolean, the generator adds a check constraint to the first migration requiring it for that one child type. Widen the constraint to cover every child that needs the column:
+If the column isn't `:optional`, a boolean, or an array, the first migration's check constraint (`type != 'Bedroom' OR capacity IS NOT NULL`) covers only its own child. Widen it to cover every child that requires the column:
 
 ```ts
 // Not yet deployed: edit the first child's migration directly
@@ -166,7 +166,7 @@ const room = await Room.findOrFail(bedroom.id)
 const bathroom = await Bathroom.findOrFail(bedroom.id)
 ```
 
-The re-query is necessary because Dream instantiates model classes from the `type` column at query time. After `update()`, the in-memory object is still the old class, with the old serializers, associations, and behavior.
+The re-query is necessary because Dream instantiates model classes from the `type` column at query time. After `update()`, the in-memory object is still the old class, with its serializers and behavior.
 
 ## controller creation
 
@@ -207,15 +207,17 @@ Pair that controller with OpenAPI request-body narrowing:
 
 ### bulk creation from a request-body array
 
-For endpoints that create many STI children in one request — `{ items: [{ type: 'Bedroom', position: 1, ... }, { type: 'Kitchen', position: 2, ... }] }` — extract each entry's params against the parent's safe columns with `{ key, array: true }`. The framework still strips `type` per the standard exclusions, so read `type` from the raw request body and let an exhaustive switch enforce validity:
+For endpoints that create many STI children in one request — `{ items: [{ type: 'Bedroom', position: 1, ... }, { type: 'Kitchen', position: 2, ... }] }` — extract each entry's params against the parent's safe columns with `{ key, array: true }`. The framework still strips `type` (and foreign keys such as `placeId`) per the standard exclusions, so cast each item's `type` from the raw request body with `Params.cast` against the enum, then dispatch through an exhaustive switch:
 
 ```ts
+import { Params } from '@rvoh/psychic'
+
 // Body: { items: [{ type: 'Bedroom', position: 1, ... }, { type: 'Kitchen', position: 2, ... }] }
 const itemsParams = this.extractParams(Room, ['name', 'position', 'bedTypes'], { key: 'items', array: true })
-const rawItems = (this.params as { items?: { type?: string }[] }).items ?? []
+const rawItems = (this.params as { items?: object[] }).items ?? []
 
 for (const [i, params] of itemsParams.entries()) {
-  const roomType = rawItems[i]?.type as RoomTypesEnum
+  const roomType = Params.cast(rawItems[i] ?? {}, 'type', 'string', { enum: RoomTypesEnumValues })
   switch (roomType) {
     case 'Bathroom':   await Bathroom.create({ place: this.currentPlace, ...params }); break
     case 'Bedroom':    await Bedroom.create({ place: this.currentPlace, ...params }); break
@@ -230,11 +232,11 @@ for (const [i, params] of itemsParams.entries()) {
 }
 ```
 
-No separate enum-membership check is needed — the exhaustive switch with its `_never` default already rejects anything invalid, at compile time and at runtime. Wrap the loop in a transaction only when the action genuinely needs atomicity; the extra overhead isn't free.
+`Params.cast` rejects a missing or unknown `type` the same way `castParam` does, with a 400. Wrap the loop in `ApplicationModel.transaction(async txn => { ... })` only when the action genuinely needs atomicity — the extra overhead isn't free — and then bind each create to it (`Bedroom.txn(txn).create(...)`), as [every write inside a transaction must be](/docs/models/transactions#every-operation-inside-a-transaction-must-be-explicitly-bound).
 
 ## serializers
 
-The generated base serializer is intentionally generic so child serializers can preserve OpenAPI discrimination. When hand-adding a serializer variant, keep the `StiChildClass` parameter and render `type` as the single child enum value:
+The base serializers `--sti-base-serializer` generates are intentionally generic: each takes a `StiChildClass` parameter, and the summary serializer renders `type` right after `id`, with an enum holding only the child's class name, which the default serializer inherits. Each child passes its own class, which narrows the OpenAPI `type` enum to that child's name and lets the child's serializer add its own columns. When hand-adding a serializer variant, keep the `StiChildClass` parameter and render `type` as the single child enum value:
 
 ```ts
 export const RoomForGuestsSerializer = (
@@ -245,12 +247,14 @@ export const RoomForGuestsSerializer = (
   DreamSerializer(StiChildClass ?? Room, room, passthrough)
     .attribute('id')
     .attribute('type', { openapi: { type: 'string', enum: [StiChildClass?.sanitizedName || room.type] } })
-    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
+    .delegatedAttribute('currentLocalizedText', 'title')
 ```
 
-Dropping the generic child class shape can make every child serialize as the parent schema over HTTP, even if unit-level rendering looks correct — the direct unit spec still renders the right fields, so the failure only shows up in the response `fastJsonStringify` produces over HTTP. If you see that exact symptom (direct render correct, HTTP response missing STI child fields), suspect a hand-written serializer that lost the `type` / `StiChildClass` shape before suspecting Dream model instantiation or `preloadFor`.
+The single-value `type` is what keeps child shapes apart over HTTP. `@OpenAPI(Room, ...)` renders a response as an `anyOf` with one schema per child, sorted by class name, and `fastJsonStringify` writes each row with the first schema it satisfies. Each schema requires its own attributes but tolerates extra ones, so without a `type` that only one child accepts, `Den` (which adds nothing) accepts a `Kitchen` row and writes it without `appliances`. The single-value `type` enum makes every schema reject the other children's rows, and it is what lets a client narrow the union.
 
-The `default` and `summary` variants above are always generated for you. `AdminSerializer`/`AdminSummarySerializer` and `InternalSerializer`/`InternalSummarySerializer` are also generator-produced — via `--admin-serializers` / `--internal-serializers` on `g:model`, or automatically when a resource is generated under an `Admin/` or `Internal/` controller namespace — and already carry the correct STI base shape. You never hand-write those variants.
+The failure is silent in a unit spec — direct serializer rendering still looks correct — and only shows up in the response `fastJsonStringify` produces over HTTP. If you see that exact symptom (direct render correct, HTTP response missing STI child fields), suspect a serializer that lacks the `type` / `StiChildClass` shape before suspecting Dream model instantiation or `preloadFor`.
+
+The `default` and `summary` variants above are always generated for you. `AdminSerializer`/`AdminSummarySerializer` and `InternalSerializer`/`InternalSummarySerializer` are also generator-produced — via `--admin-serializers` / `--internal-serializers` on `g:model`, or automatically when a resource is generated under an `Admin/` or `Internal/` controller namespace — and already carry the STI base shape, with the `type` discriminator on each summary serializer. You never hand-write those variants.
 
 A hand-added variant like `forGuests` (there is no guest-serializer flag) is the case that needs the manual replication shown above. Register it on **every** child, not just the ones you're actively working on — the generated schema's serializer-key list is the intersection across the models sharing it, so a variant only reaches the base class's `DreamSerializerKey` once every child has registered it. If a child is missing it, the type error surfaces on `Room.preloadFor('forGuests')`, but the fix belongs on the child that lacks the key. Run `pnpm psy sync` after adding the variant everywhere.
 

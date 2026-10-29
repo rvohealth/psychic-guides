@@ -1,6 +1,6 @@
 ---
 sidebar_position: 3
-ai_summary: "Psychic provides status code methods (ok, created, accepted, noContent, redirect, movedPermanently, badRequest, unauthorized, forbidden, notFound, conflict, unprocessableContent, serverError) that automatically apply HTTP status codes and render JSON. Error-status methods accept an optional message that becomes a runtime discriminator (an error marker), optionally typed via @OpenAPI responses."
+ai_summary: "Psychic provides status code methods (ok, created, accepted, noContent, redirect, movedPermanently, badRequest, unauthorized, forbidden, notFound, conflict, unprocessableContent, internalServerError) that automatically apply HTTP status codes and render JSON. Error-status methods send their argument as the response body: a string marker becomes a runtime discriminator, optionally typed via @OpenAPI responses, and an ObjectSerializer renders an object-shaped error body declared with $serializer."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -11,7 +11,7 @@ Psychic encourages developers to think in terms of HTTP status code names, rathe
 
 ```ts
 import { OpenAPI } from '@rvoh/psychic'
-import Place from '../../../models/Place.js'
+import Place from '#models/Place.js'
 import V1HostBaseController from './BaseController.js'
 
 const openApiTags = ['places']
@@ -121,10 +121,10 @@ this.conflict()             // 409
 this.unprocessableContent() // 422
 
 // Server errors
-this.serverError()          // 500
+this.internalServerError() // 500
 ```
 
-A same-origin relative path (starting with a single `/`) always works with `redirect`/`movedPermanently`. An absolute-URL target is checked against `redirectAllowedHosts` — an empty allowlist by default — and throws a `500` (not a silent no-op) if the host isn't listed. Allowlist matching is host-only: case-insensitive and both port- and scheme-insensitive. Add external redirect targets explicitly:
+A same-origin relative path (a single leading `/`) works with `redirect`/`movedPermanently`. An absolute-URL target is checked against `redirectAllowedHosts` — an empty allowlist by default — and throws a `500` (not a silent no-op) if the host isn't listed. Matching is host-only and case- and port-insensitive, and only `http:` and `https:` URLs qualify — any other scheme is refused. Add external redirect targets explicitly:
 
 ```ts
 psy.set('redirectAllowedHosts', ['oauth.example.com'])
@@ -134,7 +134,7 @@ psy.set('redirectAllowedHosts', ['oauth.example.com'])
 
 When one endpoint can return the same status for two different reasons, the message you pass to a response helper becomes a runtime discriminator the frontend can switch on.
 
-**The marker itself (untyped, zero-config).** `this.forbidden(msg)` / `this.unauthorized(msg)` (and the rest) throw an error whose argument is JSON-stringified as the response body, so `this.forbidden('not_your_place')` produces the body `"not_your_place"`. The default error responses are description-only — no schema — so the marker never appears in the generated OpenAPI spec or client; it's a runtime-only discriminator with no schema change and no regeneration needed:
+**The marker itself (untyped, zero-config).** `this.forbidden(msg)` / `this.unauthorized(msg)` (and every other error helper except `internalServerError`) throw an error whose argument is JSON-stringified as the response body, so `this.forbidden('not_your_place')` produces the body `"not_your_place"`. The default error responses are description-only — no schema — so the marker never appears in the generated OpenAPI spec or client; it's a runtime-only discriminator with no schema change and no regeneration needed:
 
 ```ts
 // A Host editing a Place they don't own
@@ -146,7 +146,7 @@ if (!place.hostedBy(this.currentUser)) this.forbidden('not_your_place')
 if (err.response.status === 403 && err.response.data === 'not_your_place') { /* ... */ }
 ```
 
-Two caveats. Pass a non-empty string — calling `forbidden()` with a falsy argument sends no body, so the discriminator check fails on the frontend. And the marker is always sent to the client verbatim at runtime, so keep it a coarse, stable cause code (`not_your_place`, `terms_of_service_required`) and never put sensitive detail in it.
+Two caveats. Pass the marker on every call — `forbidden()` with no argument sends no body, so the discriminator check fails on the frontend. And the marker is always sent to the client verbatim at runtime, so keep it a coarse, stable cause code (`not_your_place`, `terms_of_service_required`) and never put sensitive detail in it.
 
 **The typed-enum upgrade.** The body stays a string; attaching an `enum` to the action's `@OpenAPI` `responses` makes the generated client type it as a literal union instead of bare `string`:
 
@@ -160,9 +160,40 @@ Two caveats. Pass a non-empty string — calling `forbidden()` with a falsy argu
 public async update() { /* ... this.forbidden('not_your_place') ... */ }
 ```
 
-This changes only the spec and the generated types — it doesn't enforce the enum at runtime. You still write the `forbidden('not_your_place')` throw yourself and have to keep it in sync with the declared `enum` by hand.
+This changes only the spec and the generated types — it doesn't enforce the enum at runtime. You still write the `forbidden('not_your_place')` throw yourself and have to keep it in sync with the declared `enum` by hand. A declared status replaces the default entry for that one operation; the other default responses remain.
 
 **Where the typed response lives depends on where the cause is raised.** An action-specific cause (raised only inside one action) gets its typed `responses` override on that action's `@OpenAPI`. A cross-cutting cause raised from a shared `@BeforeAction` (e.g. `terms_of_service_required`, returnable by every authed endpoint) shouldn't be repeated per action — see [OpenAPI: customizing default error responses](/docs/openapi/controllers#customizing-default-error-responses) for redefining the shared response component once at the conf level instead.
+
+## Object-shaped error bodies
+
+When an error body is an object rather than a marker string, give it an exported [`ObjectSerializer`](/docs/serializers/view-models), declare the status with `$serializer`, and pass the serializer to the helper. It is rendered the same way an `ok()` body is:
+
+```ts
+// app/serializers/BookingConflictSerializer.ts
+export const BookingConflictSerializer = (
+  conflict: { overlappingBookingId: string; startsOn: CalendarDate; endsOn: CalendarDate },
+) =>
+  ObjectSerializer(conflict)
+    .attribute('overlappingBookingId', { openapi: 'string' })
+    .attribute('startsOn', { openapi: 'date' })
+    .attribute('endsOn', { openapi: 'date' })
+```
+
+```ts
+// app/controllers/V1/Guest/BookingsController.ts
+@OpenAPI(Booking, {
+  status: 201,
+  responses: {
+    409: { $serializer: BookingConflictSerializer },
+  },
+})
+public async create() {
+  // ...
+  if (overlapping) {
+    this.conflict(BookingConflictSerializer({ overlappingBookingId: overlapping.id, startsOn, endsOn }))
+  }
+}
+```
 
 ## Implicit status codes
 

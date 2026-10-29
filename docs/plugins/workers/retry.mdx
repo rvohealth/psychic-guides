@@ -9,8 +9,8 @@ ai_summary: >-
   app-owned retry budget catches its one expected error and re-enqueues itself
   with an incrementing attempt count, which the public entry method seeds. No
   parameter may carry a default, since every dispatch appends the BullMQ Job as
-  a final argument. See BullMQ retry documentation for
-  customization.
+  a final argument. A worker whose lock lapses can also re-deliver a job that
+  has not failed. See BullMQ retry documentation for customization.
 ---
 
 # Automatic retry of failed jobs
@@ -35,13 +35,17 @@ Jobs that throw an unhandled Error during execution are automatically retried. T
 
 This config is sent directly to BullMQ, so see [the BullMQ retry documentation](https://docs.bullmq.io/guide/retrying-failing-jobs) for details on how to customize the retry strategy.
 
+With this default, a job makes up to 20 attempts over ~6.1 days. That is why a backgrounded method looks its record up with `find` rather than `findOrFail`: if the record has been deleted, `findOrFail` throws, and the job is retried for ~6 days with every attempt failing. Returning early when `find` comes back `null` lets the job exit cleanly. It is also why rethrowing a handled error just so it lands somewhere a human looks is the wrong tool: it buys days of backoff retries of something that will not succeed. Retrying is the queue's job; alerting is the app's.
+
+A job can also run twice without failing. If a worker's lock lapses, BullMQ re-delivers the job while the first execution may still be running (see BullMQ's [stalled jobs](https://docs.bullmq.io/guide/workers/stalled-jobs) guide). This is rare. Guard against it only where repeating the side effect actually costs something; most jobs are fine to repeat.
+
 Do not wrap a backgrounded method in a broad `try/catch` just to log and continue. A caught-and-not-rethrown error inside a backgrounded method marks the job successful: no failed-job marker in BullMQ, no automatic retry, and the work is silently lost until someone reads worker logs. If the job cannot complete, let the error throw so BullMQ records the failure and applies retry/backoff. Catch only a specific, expected error when the correct outcome is genuinely to continue — and when you do, report the event to your error-reporting service (Sentry, etc.) right there in the handling code, since a caught error that completes the job never reaches a place a human would otherwise see it.
 
 If your reason for adding a catch is "I want to be resilient to one bad input out of many" in a loop, the right fix is **separate background jobs per input** (see [Services](./services)) rather than a try/catch that fakes per-iteration success and gives up the retry property entirely.
 
 ## App-owned retry budgets
 
-There is no per-service retry budget — `backgroundJobConfig` carries `priority` and a routing key, nothing more. When one job's expected failure is worth retrying, but not twenty times over six days (an external service billed per attempt, say), have the service own the budget itself: the `_` implementation method takes a required `attempt` argument — the public entry method seeds it with `1` — catches its one expected error, and re-enqueues itself with the count incremented while it's under the threshold:
+There is no per-service retry budget — `backgroundJobConfig` carries `priority` and a routing key, nothing more. When one job's expected failure is worth retrying, but not twenty attempts over six days (an external service billed per attempt, say), have the service own the budget itself: the `_` implementation method takes a required `attempt` argument — the public entry method seeds it with `1` — catches its one expected error, and re-enqueues itself with the count incremented while it's under the threshold:
 
 ```ts
 export class PlaceGeocodingService extends ApplicationBackgroundedService {

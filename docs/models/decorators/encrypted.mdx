@@ -1,5 +1,5 @@
 ---
-ai_summary: "The @deco.Encrypted decorator automatically encrypts/decrypts values on insert and access. Uses a pseudo-column whose value is stored in a separate encrypted field. Supports current and legacy encryption keys for key rotation. Configuration done in conf/dream.ts."
+ai_summary: "The @deco.Encrypted decorator automatically encrypts/decrypts values on insert and access. Uses a pseudo-column whose value is stored in a separate encrypted<Name> column (or one named with the column option). Configured in conf/dream.ts, where the scaffold sets encryption.columns.current from COLUMN_ENCRYPTION_KEY; a legacy key supports rotation, and Model.reencryptEncryptedColumns() re-encrypts existing rows before legacy is dropped. Params accept string (or string | null) unless the decorator declares an openapi shape, which structured :encrypted content needs. Writing the backing column directly accepts only decryptable ciphertext or null. Not queryable in where."
 ---
 # @deco.Encrypted
 
@@ -8,61 +8,89 @@ Leverage the `@deco.Encrypted` decorator to automatically encrypt and decrypt va
 ```ts
 export default class User extends ApplicationModel {
   @deco.Encrypted()
-  public secret: { token: string }
+  public secret: DreamColumn<User, 'encryptedSecret'>
   public encryptedSecret: DreamColumn<User, 'encryptedSecret'>
   ...
 }
 
 const user = await User.firstOrFail()
-user.secret = { token: 'abc123' }
+user.secret = 'abc123'
 await user.save()
 
 const reloaded = await User.firstOrFail()
 console.log(reloaded.secret)
-// { token: 'abc123' }
+// 'abc123'
 ```
 
-By default, a given property that is decorated with the `@deco.Encrypted` decorator will be expected to have a column in the DB with the same name, but with the word `encrypted` up front, and camel-cased. This means that if your decorated property is `secret`, the expected corresponding column in your database will need to be called `encryptedSecret`. This column will store the encrypted data for retrieval later.
+By default, a given property that is decorated with the `@deco.Encrypted` decorator will be expected to have a column in the DB with the same name, but with the word `encrypted` up front, and camel-cased. This means that if your decorated property is `secret`, the expected corresponding column in your database will need to be called `encryptedSecret`. This column will store the encrypted data for retrieval later. To store it in a differently named column, pass that column's name: `@deco.Encrypted({ column: 'secretCiphertext' })`.
 
 ## Configuration
 
-Dream will use the values provided in your `conf/dream.ts` file to perform encryption and decryption. Dream also has built-in fallback support, enabling you to temporarily have both a current _and_ a legacy encryption key at once, which can be set in the Dream config using the `encryption` configuration setting, like so:
+Dream encrypts and decrypts with the `encryption.columns` keys set in your `conf/dream.ts` file. This is separate from the cookie encryption configured in `conf/app.ts`. The generated `conf/dream.ts` already sets the `current` key from `COLUMN_ENCRYPTION_KEY`; without it, reading or assigning an encrypted property throws:
 
 ```ts
 // conf/dream.ts
-export default function configureDream(dream: DreamApp) {
-  dream.set('encryption', {
+export default async (app: DreamApp) => {
+  ...
+  app.set('encryption', {
     columns: {
       current: {
         algorithm: 'aes-256-gcm',
-        key: AppEnv.string('APP_ENCRYPTION_KEY'),
-      },
-      legacy: {
-        algorithm: 'aes-256-gcm',
-        key: AppEnv.string('LEGACY_APP_ENCRYPTION_KEY'),
+        key: AppEnv.string('COLUMN_ENCRYPTION_KEY'),
       },
     },
   })
 }
 ```
 
-If Dream is unable to decrypt a value using the `current` encryption key, it will attempt to use the `legacy` encryption key before failing, enabling you to switch encryption keys without sweating the complexity of migrating existing data off of one and onto the other.
+Generate encryption keys with `pnpm psy g:encryption-key`.
 
 :::note
 Adding `@deco.Encrypted` to a column that already has data requires more than a rename. A plain rename leaves existing rows as plaintext, which the decorator's getter will fail to decrypt. Use [`DreamMigrationHelpers.encryptColumn`](/docs/migrations/helpers#encryption) to transform the existing data in the same migration.
 :::
 
-Generate encryption keys with `pnpm psy g:encryption-key`.
+## Rotating keys
+
+Dream supports a `legacy` key beside `current`, so you can switch keys without breaking existing rows. New values are encrypted with `current`; if Dream is unable to decrypt a value using the `current` key, it will attempt to use the `legacy` key before failing:
+
+```ts
+// conf/dream.ts
+app.set('encryption', {
+  columns: {
+    current: {
+      algorithm: 'aes-256-gcm',
+      key: AppEnv.string('COLUMN_ENCRYPTION_KEY'),
+    },
+    legacy: {
+      algorithm: 'aes-256-gcm',
+      // an environment variable your app adds to hold the previous key
+      key: AppEnv.string('LEGACY_COLUMN_ENCRYPTION_KEY'),
+    },
+  },
+})
+```
+
+The `legacy` key only keeps old rows readable; it does not rewrite them. Before dropping `legacy`, re-encrypt the existing rows under the new key. Once every server in an environment encrypts with the new `current`, run `reencryptEncryptedColumns()` for every model with encrypted properties, in that environment, from the console or a script:
+
+```ts
+await User.reencryptEncryptedColumns()
+```
+
+It walks every row of the model's table, including rows hidden by default scopes such as soft delete, and writes each value back encrypted with `current`, without running hooks or touching `updatedAt`. Run it per environment rather than from a migration, since each environment rotates its keys on its own schedule. Once it has run for every model, drop `legacy` and deploy again. Reading a row still encrypted with a dropped key throws `DecryptionError`. See [rotating column encryption keys](/docs/utils/encryption/internal#rotating-column-encryption-keys) for the full workflow.
 
 ## Sync after adding the decorator
 
-After adding `@deco.Encrypted()` and its migration, run `pnpm psy sync` so the `encrypted<Column>` column is reflected in the generated types. The plaintext property (e.g. `secret`) is not assignable in `.create()`/`UpdateableProperties` until sync lists it under the model's `virtualColumns`; until then `tsc` reports `TS2353 ... 'secret' does not exist` even though the model declares the field.
+After adding `@deco.Encrypted()` and its migration, run `pnpm psy sync` so the generated types list the plaintext property (e.g. `secret`) under the model's `virtualColumns`. Until then it is not assignable in `.create()`/`UpdateableProperties`, and `tsc` reports `TS2353 ... 'secret' does not exist` even though the model declares the field.
 
-`extractParams` and model-derived OpenAPI request bodies use the public property name (the plaintext, e.g. `secret`), not the encrypted DB column name. The accepted type is `string` or `string | null` depending on whether the backing encrypted column is nullable; `extractParams` enforces that type at runtime and in TypeScript.
+## Params and OpenAPI
 
-## The encrypted column's own setter throws
+`extractParams` and model-derived OpenAPI request bodies use the public property name (the plaintext, e.g. `secret`), not the encrypted DB column name. The accepted type is `string` or `string | null`, depending on whether the backing encrypted column is nullable, unless the decorator declares an `openapi` shape (see [structured content](#structured-content) below). `extractParams` enforces that type in TypeScript; at runtime it checks only the top-level type, not the properties of an object shape.
 
-The raw encrypted column (`encryptedSecret`) has a setter that throws if you try to assign it directly — write through the plaintext property (`secret`) instead. That guard is itself a custom setter, so it only fires on the setter path (`create`/`update`/`assignAttribute(s)`/`this.secret = ...`). [`setAttribute`/`setAttributes`](/docs/models/attributes#which-writes-run-the-setter) bypass custom setters entirely and will write an unencrypted value straight into `encryptedSecret` with no error — never use `setAttributes`/`updateAttributes` to touch an `@deco.Encrypted` column.
+## Writing the encrypted column directly
+
+The raw encrypted column (`encryptedSecret`) has a setter that throws `DoNotSetEncryptedFieldsDirectly` if you try to assign it directly — write through the plaintext property (`secret`) instead. The writers that bypass custom setters ([`setAttribute`/`setAttributes`](/docs/models/attributes#which-writes-run-the-setter) and `updateAttributes`) accept a value for `encryptedSecret` only when it is ciphertext that the app's column keys decrypt, or `null`, and otherwise throw the same error.
+
+`setAttribute('secret', ...)` neither encrypts nor stores the value. To store a new value, assign the property (`user.secret = 'new secret'`) or pass it to `setAttributes`, each of which encrypts it.
 
 ## Not queryable in a `where` clause
 
@@ -70,8 +98,16 @@ An `@deco.Encrypted` column is not queryable in a `where` clause. The plaintext 
 
 For an existence/idempotency check, fetch candidate rows by their queryable columns and compare the decrypted property in memory. A true server-side equality lookup needs a separate deterministic (blind-index) column you maintain yourself; Dream does not add one.
 
-## Structured content: `:encrypted` vs `:jsonb`
+## Structured content: `:encrypted` vs `:jsonb` {#structured-content}
 
 A column that needs both encryption and structured content uses the `:encrypted` type (which generates a `text` backing column), not `:jsonb`. JSONB earns its place by being queryable — GIN indexes, path operators, an index on `field->>'key'` — and ciphertext is opaque, so none of that survives; what's left is a value you can only read whole.
 
-The encrypted column carries structured content directly — Dream JSON-serializes the value on write and parses it on read, so the plaintext property round-trips objects and arrays as-is, with no model-layer parse/stringify. The generated declaration types the plaintext property from its `text` backing column (`DreamColumn<Model, 'encryptedHouseRules'>`, i.e. `string | null`), so widen it by hand to the structured type (`public houseRules: HouseRules | null`). The decision is whether the data warrants encryption at all: if it does, use `:encrypted`; if not, it stays `jsonb` and keeps its query ergonomics.
+The encrypted column carries structured content directly — Dream JSON-serializes the value on write and parses it on read, so the plaintext property round-trips objects and arrays as-is, with no model-layer parse/stringify. The generated declaration types the plaintext property from its `text` backing column (`DreamColumn<Place, 'encryptedHouseRules'>`, i.e. `string | null`), so widen it by hand to the structured type and declare the same shape on the decorator. Without `openapi`, Psychic casts the param and documents the property as a string:
+
+```ts
+// app/models/Place.ts
+@deco.Encrypted({ openapi: { type: ['object', 'null'], properties: { petsAllowed: 'boolean' } } })
+public houseRules: HouseRules | null
+```
+
+The decision is whether the data warrants encryption at all: if it does, use `:encrypted`; if not, it stays `jsonb` and keeps its query ergonomics.

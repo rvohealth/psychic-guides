@@ -1,7 +1,7 @@
 ---
 sidebar_position: 0
 pagination_prev: null
-ai_summary: "Psychic controllers extend PsychicController and handle HTTP requests. The directory structure IS the authentication architecture — each branch has its own auth base controller and authentication flows downhill, never weaker deeper in the hierarchy. Provides status code response methods, OpenAPI decorator, params, cookies, serialization, and exception handling."
+ai_summary: "Psychic controllers extend PsychicController and handle HTTP requests. The directory structure IS the authentication architecture — each branch has its own auth base controller and authentication flows downhill, never weaker deeper in the hierarchy. The client AuthedController and MaybeAuthedController share a resolveCurrentUser helper (401 vs. null currentUser). Provides status code response methods, OpenAPI decorator, params, cookies, serialization, and exception handling."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -31,7 +31,7 @@ controllers/
 ├── AuthedController.ts               (client auth — @BeforeAction, 401 if no user)
 ├── MaybeAuthedController.ts          (client auth — currentUser null if absent)
 ├── UnauthedController.ts             (no auth)
-├── StatusController.ts               (health check — extends UnauthedController)
+├── helpers/                          (resolveCurrentUser.ts, plus its Admin / Internal counterparts)
 │
 ├── V1/                                (client API — AUTHED ONLY)
 │   ├── BaseController.ts             (extends AuthedController)
@@ -85,6 +85,33 @@ controllers/
   - A partner API keyed by a shared secret: reparent `Api/BaseController` to `UnauthedController` and verify the API key in a `@BeforeAction` there — one API, one key scheme, so it belongs on the shared base.
   - Webhooks: reparent `Webhooks/BaseController` to `UnauthedController` (auth level only). Verify each provider's payload signature in a `@BeforeAction` on that *provider's* controller, not the shared base — a later provider added under the same namespace reuses the base, and signature schemes differ per provider.
   - A public/optionally-authed surface: reparent `Visitor/BaseController` to `MaybeAuthedController` (public reads that vary when logged in; bootstrap endpoints self-guard on `currentUser`).
+
+### The client auth controllers
+
+The generated `AuthedController` and `MaybeAuthedController` don't decode a token themselves. Both call the app's `resolveCurrentUser(controller)` helper (`controllers/helpers/resolveCurrentUser.ts`), which holds the token scheme, and differ only in what they do with a `null` result:
+
+```typescript
+// controllers/AuthedController.ts
+import ApplicationController from '#controllers/ApplicationController.js'
+import resolveCurrentUser from '#controllers/helpers/resolveCurrentUser.js'
+import User from '#models/User.js'
+import { BeforeAction } from '@rvoh/psychic'
+
+export default class AuthedController extends ApplicationController {
+  protected currentUser: User
+
+  @BeforeAction()
+  protected async authenticate() {
+    const user = await resolveCurrentUser(this)
+    if (!user) return this.unauthorized()
+    this.currentUser = user
+  }
+}
+```
+
+`MaybeAuthedController` assigns the same result, `null` included, instead of responding 401 (`this.currentUser = await resolveCurrentUser(this)`), for public endpoints that behave differently when someone is logged in.
+
+The generated helper returns `null` for a missing token or one it can't decrypt, so a forged or stale token gets a 401 rather than a 500. The scaffold's scheme is a placeholder that throws outside the test environment; keep the `null` behavior when you replace it with your production scheme — see [Decrypting a value yourself](/docs/controllers/cookies#decrypting-a-value-yourself) for the errors to catch.
 
 ### Cross-cutting authorization gates
 
@@ -142,17 +169,21 @@ pnpm psy check:controller-hierarchy
 
 ### Routing when directory names shouldn't appear in URLs
 
-Controller directory names reflect the auth architecture, not URL structure. When the directory name shouldn't appear in the URL (e.g. `Visitor/` is the auth context, but `/v1/visitor/places` isn't a natural public URL), use an explicit `controller` reference instead of a namespace:
+Controller directory names reflect the auth architecture, not URL structure. When the directory name shouldn't appear in the URL (e.g. `Visitor/` is the auth context, but `/visitor/v1/places` isn't a natural public URL), use an explicit `controller` reference instead of a namespace:
 
 ```typescript
-// BAD — "visitor" leaks into the URL: /v1/visitor/places
+// BAD — "visitor" leaks into the URL: /visitor/v1/places
 r.namespace('visitor', r => {
-  r.resources('places', { only: ['index', 'show'] })
+  r.namespace('v1', r => {
+    r.resources('places', { only: ['index', 'show'] })
+  })
 })
 
 // GOOD — clean URL: /v1/places, controller explicitly specified
-import VisitorV1PlacesController from '@controllers/Visitor/V1/PlacesController.js'
-r.resources('places', { only: ['index', 'show'], controller: VisitorV1PlacesController })
+import VisitorV1PlacesController from '#controllers/Visitor/V1/PlacesController.js'
+r.namespace('v1', r => {
+  r.resources('places', { only: ['index', 'show'], controller: VisitorV1PlacesController })
+})
 ```
 
 The controller directory structure still enforces the auth inheritance chain; only the URL changes. Three concerns are independent here and shouldn't be collapsed into one tree: the **URL namespace** (an API-contract concern, e.g. version-first `/v1/...`), the **controller file namespace**, and the **auth inheritance chain**. A versioned URL doesn't require a matching controller ancestry — don't make `Visitor/BaseController` extend `V1/BaseController` merely because the URL starts with `/v1`. Express auth boundaries through ancestry, and let the route file map a versioned URL onto whatever controller has the correct ancestry.
@@ -251,7 +282,7 @@ Psychic Controllers contains powerful bindings to OpenAPI through the usage of t
 
 ```ts
 import { OpenAPI } from '@rvoh/psychic'
-import Place from '../../../models/Place.js'
+import Place from '#models/Place.js'
 import V1HostBaseController from './BaseController.js'
 
 const openApiTags = ['places']

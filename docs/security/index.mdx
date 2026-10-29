@@ -20,18 +20,18 @@ For framework-internal audit history, see `SECURITY_AUDIT_TRACKER.md`, `SECURITY
 
 Out of the box, a generated app gets:
 
-- **`SameSite=Strict` session cookies.** Cookies do not ride along with cross-site requests; classical CSRF is blocked in modern browsers without a token primitive.
+- **`SameSite=Strict` session cookies.** Cookies do not ride along with cross-site requests; classical CSRF is blocked in modern browsers without a token primitive. (A client on another origin of the same site — `app.example.com` calling `api.example.com` — still sends them.)
 - **AEAD-encrypted cookie payload.** Session cookies are AES-GCM encrypted with a per-encryption IV; tampering fails decryption.
 - **Weak-key boot rejection.** A missing or short cookie encryption key throws at production boot rather than at the first encryption call.
 - **Open-redirect protection.** Every framework redirect helper funnels through a validator; absolute URLs fail closed unless the destination host appears in your `redirectAllowedHosts` allowlist.
 - **Mass-assignment safety.** `this.extractParams(Model, [...])` is a type-checked, runtime-intersected primitive; the explicit allowlist is required at every call site and is the framework's canonical mass-assignment defense.
-- **Boundary-level input bounding.** `castParam`/`extractParams` accept `minLength`/`maxLength` on strings and `minimum`/`maximum` on numeric types, checked after type coercion and applied element-wise on array casts. Use these to bound untrusted input at the controller boundary rather than validating size later in a model or service — see [Params — Bounding length and range](/docs/controllers/params#bounding-length-and-range).
+- **Boundary-level input bounding.** `castParam` accepts `minLength`/`maxLength` on strings and `minimum`/`maximum` on numeric types, checked after type coercion and applied element-wise on array casts; `extractParams` takes no bound options, so `castParam` each field that needs one. Use these to bound untrusted input at the controller boundary rather than validating size later in a model or service — see [Params — Bounding length and range](/docs/controllers/params#bounding-length-and-range).
 - **Prototype-pollution-safe param parsing.** The merge target is `Object.create(null)`; `__proto__` / `constructor` / `prototype` arriving as own keys cannot pollute `Object.prototype`.
 - **Content-type-agnostic security headers.** `X-Content-Type-Options: nosniff`, `Cross-Origin-Resource-Policy`, and HSTS in production are defaults. Document-scoped headers (CSP, XFO, COOP, Permissions-Policy, Referrer-Policy) are deliberately not shipped — Psychic emits JSON, not HTML, so those headers are no-ops on framework responses. See [Output Encoding & i18n](/docs/security/output-encoding) for the boundary.
 - **CORS off by default.** `@koa/cors` is not mounted unless you call `psy.set('cors', ...)`. Apps that need cross-origin opt in.
-- **WebSocket origin allowlist + first-connection auth.** New scaffolds wire `allowRequestForOrigins(allowedCorsOrigins())` across all socket.io transports; the boilerplate `resolveWebsocketUser` rejects unauth handshakes.
+- **WebSocket origin allowlist + first-connection auth.** New scaffolds re-enforce the CORS origin allowlist in socket.io's `allowRequest` hook, which covers every transport, and sign each socket in from a `ws:connect` hook that disconnects it when the boilerplate `resolveWebsocketUser` returns `null`.
 - **Run-time-safe shell spawn.** Framework `sspawn` retains shell semantics for legitimate dev-CLI glue; argv-form `sspawnArgs` is the secure default for new code.
-- **Body limits.** `koa-bodyparser` defaults (1 MB JSON, 56 KB form) are passed through as-is and tunable via `psy.set('json', { jsonLimit: '...' })`.
+- **Body limits.** `@koa/bodyparser` defaults (1 MB JSON, 56 KB form) are passed through as-is and tunable via `psy.set('json', { jsonLimit: '...' })`. These limits are the app's own defense against oversized-payload memory DoS, whether or not an edge layer also caps bodies.
 - **Failed-job retention.** BullMQ's failed-set is the dead-letter queue; the boilerplate ships `removeOnFail: 20000` + `attempts: 20` + exponential backoff.
 
 ## Application-layer responsibilities
@@ -61,18 +61,18 @@ Each link below goes deeper on one piece of the security posture.
 
 | Concern | Knob | Default | See |
 |---|---|---|---|
-| Session cookie scope | `psy.set('cookie', { sameSite, maxAge, domain, path })` | `sameSite: 'strict'`, 31-day `maxAge` | [Session config below](#session-cookie-config) |
+| Session cookie lifetime | `psy.set('cookie', { maxAge })` | 14 days in the scaffold's `conf/app.ts` (31 when unset); `SameSite=Strict`, `httpOnly`, `Secure` in production | [Session config below](#session-cookie-config) |
 | Cookie encryption key | `psy.set('encryption', { cookies: { current, legacy } })` | none — boot throws in production | [Encryption rotation below](#encryption-key-rotation) |
 | Redirect allowlist | `psy.set('redirectAllowedHosts', [...])` | empty (relative redirects only) | [Redirect allowlist below](#redirect-allowlist) |
 | Mass assignment | `this.extractParams(Model, [allowed])` | emitted by the generator | [Mass assignment below](#mass-assignment) |
-| LIKE / ILIKE escaping | `escapeLikePattern(value)` | manual opt-in | [LIKE / ILIKE below](#like--ilike-with-user-input) |
+| LIKE / ILIKE escaping | `ops.like.escape(value)` | manual opt-in | [LIKE / ILIKE below](#like--ilike-with-user-input) |
 | Default response headers | `psy.set('defaultResponseHeaders', {...})` | content-type-agnostic baseline | [Headers below](#default-response-headers) |
 | CORS | `psy.set('cors', {...})` | not mounted | [CORS below](#cors) |
 | Body size | `psy.set('json', { jsonLimit, formLimit, ... })` | `1mb` / `56kb` | [Body limits below](#body-size-limits) |
 | File uploads | (app concern) | n/a | [File Uploads tutorial](/docs/tutorials/file-uploads) |
-| WebSocket auth | `resolveWebsocketUser` (scaffold) + `allowRequestForOrigins` | scaffold rejects unauth, allowlist enforced | [WebSocket auth below](#websocket-auth--origin) |
+| WebSocket auth | `resolveWebsocketUser` in a `ws:connect` hook + `allowRequest` (scaffold) | scaffold rejects unauth, allowlist enforced | [WebSocket auth below](#websocket-auth--origin) |
 | Worker connections | `defaultQueueConnection` / `defaultWorkerConnection` | TLS via `tls: {}` in production boilerplate | [Workers & Redis](/docs/security/workers-and-redis) |
-| Logger redaction | `psy.set('logger', logger)` + `requestLogger` `headerBlocklist` / `bodyBlocklist` | scaffold ships `authorization` / `cookie` / `password` / `token` redaction | [Logging below](#logging--error-disclosure) |
+| Logger redaction | `requestLogger` `headerBlocklist` / `bodyBlocklist` | scaffold leaves out `authorization` / `cookie` / `referer` headers and masks `password` / `token` / `secret`-like names | [Logging below](#logging--error-disclosure) |
 | Unhandled-error logging | `psy.on('server:error', handler)` | logs via the registered logger | [Logging below](#logging--error-disclosure) |
 | `path-to-regexp` pin | `overrides` / `resolutions` / `pnpm.overrides` | scaffolded with `>=8.4.0` pin | [Supply Chain & Audit](/docs/security/supply-chain) |
 
@@ -82,14 +82,11 @@ Each link below goes deeper on one piece of the security posture.
 
 ```ts
 psy.set('cookie', {
-  sameSite: 'strict',          // do not relax to 'lax' without re-running the threat model
-  maxAge: { days: 14 },        // shorter than the default 31 if your auth flow allows
-  domain: 'app.example.com',   // pin to your app's host
-  path: '/',
+  maxAge: { days: 14 },        // what the scaffold sets; 31 days when unset
 })
 ```
 
-`SameSite=Strict` is the framework's CSRF defense. Relaxing it to `'lax'` re-introduces the classical CSRF surface and is rarely the right call for a JSON API — link-click navigations to a JSON endpoint do nothing useful.
+`maxAge` is the app-wide cookie option, and `startSession` always uses it. Every cookie Psychic sets is `httpOnly`, `SameSite=Strict`, and `Secure` in production unless the options passed to `this.setCookie()` override them for that one cookie; `startSession` always uses `Strict`. `SameSite=Strict` is the framework's CSRF defense. Relaxing a cookie to `'lax'` re-introduces the classical CSRF surface and is rarely the right call for a JSON API — link-click navigations to a JSON endpoint do nothing useful. See [Cookies — Sessions](/docs/controllers/cookies#sessions) for what `maxAge` does and doesn't revoke.
 
 ### Encryption key rotation
 
@@ -98,8 +95,8 @@ Cookies are AEAD-encrypted via Dream's `Encrypt`. The rotation primitive is a `c
 ```ts
 psy.set('encryption', {
   cookies: {
-    current: AppEnv.string('COOKIE_KEY_CURRENT'),
-    legacy:  AppEnv.string('COOKIE_KEY_LEGACY', { optional: true }),
+    current: { algorithm: 'aes-256-gcm', key: AppEnv.string('APP_ENCRYPTION_KEY') },
+    legacy: { algorithm: 'aes-256-gcm', key: AppEnv.string('LEGACY_APP_ENCRYPTION_KEY') },
   },
 })
 ```
@@ -113,7 +110,7 @@ Rotation workflow:
 
 Two-key rotation is sufficient for any sensible cookie TTL. The framework throws on a missing or undersized key in production at boot — use `Encrypt.generateKey` to produce keys, never hand-typed strings.
 
-Koa middleware that runs outside the controller layer (e.g. gating a Bull Board dashboard) can't call `this.getCookie()` and has to decrypt with `Encrypt.decrypt` directly — including deciding how to treat `DecryptionError` versus `DecryptionRotationError`. See [Cookies — Decrypting cookies outside a controller](/docs/controllers/cookies#decrypting-cookies-outside-a-controller) for the full error-handling contract; the short version is: log-and-treat-as-unauthenticated for a single bad cookie, but rethrow if both the current and legacy keys fail, since that signals a broken rotation rather than a forged cookie.
+A cookie no configured key opens (forged, garbled, or issued under a dropped key) reads as absent: `getCookie` returns `null` and logs nothing. Koa middleware that runs outside the controller layer (e.g. gating a Bull Board dashboard) has no `this.getCookie()`. Read the cookie with `new PsychicSession(ctx).getCookie(name)`, the class `this.getCookie()` calls; it decrypts with the same keys and treats an undecryptable cookie the same way. See [Cookies — Decrypting cookies outside a controller](/docs/controllers/cookies#decrypting-cookies-outside-a-controller), and [Decrypting a value yourself](/docs/controllers/cookies#decrypting-a-value-yourself) for a bearer token the app decrypts with `Encrypt`.
 
 ### Redirect allowlist
 
@@ -126,7 +123,7 @@ Every framework-level redirect (`controller.redirect(path)`, the variants return
 ### Mass assignment
 
 ```ts
-import User from '../models/User'
+import User from '#models/User.js'
 
 class UsersController extends AuthedController {
   async update() {
@@ -144,13 +141,13 @@ The allowed array is typed as `readonly DreamParamSafeColumnNames<...>[]`, so pa
 ### LIKE / ILIKE with user input
 
 ```ts
-import { escapeLikePattern } from '@rvoh/dream'
+import { ops } from '@rvoh/dream'
 
-const pattern = `%${escapeLikePattern(userInput)}%`
+const pattern = `%${ops.like.escape(userInput)}%`
 await User.where({ email: ops.ilike(pattern) }).all()
 ```
 
-LIKE / ILIKE values are bound parameters in Kysely, so there is no SQL injection. The semantic-correctness concern is `%` and `_` in the user input acting as wildcards. `escapeLikePattern` escapes those (and the `\` escape character itself) so the pattern matches the literal characters the user typed.
+LIKE / ILIKE values are bound parameters in Kysely, so there is no SQL injection. The semantic-correctness concern is `%` and `_` in the user input acting as wildcards. `ops.like.escape` escapes those (and the `\` escape character itself) so the pattern matches the literal characters the user typed.
 
 `ops.match` (regex) does not have an escape helper — regex DoS via attacker-supplied patterns is up to the caller to bound (length cap, timeout, or pre-validation).
 
@@ -195,32 +192,46 @@ The framework does not bundle multipart parsing. The 2026-default pattern is **p
 ### WebSocket auth & origin
 
 ```ts
-// boilerplate websockets initializer
+// conf/initializers/websockets.ts (boilerplate)
+const allowedOrigins = allowedCorsOrigins()
 wsApp.set('socketio', {
-  allowRequest: allowRequestForOrigins(allowedCorsOrigins()),
+  cors: { credentials: true, origin: allowedOrigins },
+  allowRequest: (req, callback) => {
+    const origin = req.headers.origin
+    if (origin !== undefined && allowedOrigins.includes(origin)) callback(null, true)
+    else callback('origin not allowed', false)
+  },
 })
 
-wsApp.on('ws:start', io => {
-  io.on('connection', async (socket) => {
-    const user = await resolveWebsocketUser(socket)
-    if (!user) { socket.disconnect(true); return }
-    await Ws.register(socket, user.id)
-  })
+wsApp.on('ws:connect', async socket => {
+  const user = await resolveWebsocketUser(socket)
+  if (!user) {
+    socket.disconnect(true)
+    return
+  }
+  await Ws.register(socket, user)
 })
 ```
 
-`allowRequestForOrigins` wraps socket.io's `allowRequest` hook so the origin allowlist applies across **all** transports (long-polling and native WebSocket). socket.io's built-in `cors.origin` only covers long-polling — the native-WS-bypasses-CORS gap is the reason `allowRequestForOrigins` exists. The scaffolded `resolveWebsocketUser` uses `Encrypt.decrypt` against `socket.handshake.auth.token` in test, and throws in non-test envs until you wire it to your production auth.
+socket.io's built-in `cors.origin` only constrains long-polling — native WebSocket upgrades bypass CORS — so the scaffold re-enforces the allowlist in `allowRequest`, which runs before every handshake on every transport. Keep `allowRequest` to checks on the raw HTTP request: the client's auth token isn't available there yet, and a throw there isn't contained. Sign sockets in from the `ws:connect` hook instead, where the framework contains a throw (a database or Redis blip, the scaffold's placeholder throw) to the one socket, logs it, and reports it to `ws:error`. The scaffolded `resolveWebsocketUser` reads the token from `socket.handshake.auth` in test, and throws in non-test envs until you wire it to your production auth.
 
 ### Logging & error disclosure
 
 ```ts
-// scaffold ships in api/src/conf/app.ts
-psy.set('logger', winstonLogger)
-psy.use(requestLogger({
-  headerBlocklist: ['authorization', 'cookie', 'x-api-key'],
-  bodyBlocklist:   ['password', 'token', 'authentication', 'authorization', 'secret'],
-  ignoredRoutes:   ['/health_check'],
-}))
+// scaffold ships in api/src/conf/app.ts (abridged)
+psy.set('logger', winstonLogger(apiRoot))
+
+psy.on('server:init:after-middleware', psychicServer => {
+  psychicServer.koaApp.use(
+    requestLogger({
+      transports: [new winston.transports.Console()],
+      format: winston.format.combine(winston.format.json()),
+      headerBlocklist: ['authorization', 'content-length', 'connection', 'cookie', 'referer', /* … */],
+      bodyBlocklist: ['password', 'token', 'authentication', 'authorization', 'secret'],
+      ignoredRoutes: ['/health_check'],
+    }),
+  )
+})
 
 psy.on('server:error', (err, ctx) => {
   // custom redaction or routing for unhandled errors
@@ -229,7 +240,13 @@ psy.on('server:error', (err, ctx) => {
 })
 ```
 
-`PsychicApp.log` / `logWithLevel` are a logger facade; the framework does not redact what developers explicitly log. Request logging redaction is at the app layer (boilerplate ships sensible defaults). The `server:error` hook is the seam for customizing unhandled-error logging — useful when a `pg` error walks into `.parameters` containing user data, or when a third-party library attaches the original request to its error.
+`PsychicApp.log` / `logWithLevel` are a logger facade; the framework does not redact what developers explicitly log. Request logging redaction is at the app layer, in the scaffold's `conf/system/requestLogger.ts`, which writes one JSON line per request through its own Winston instance:
+
+- **`headerBlocklist`** — request headers left out of the log line, matched on the whole name, ignoring case.
+- **`bodyBlocklist`** — names whose values are logged as `[FILTERED]`, key kept: any body key at any depth (arrays included), query-string key, header name, or route param (the `:token` segment of `/password-resets/:token`) that *contains* a listed name, ignoring case. The scaffold's list already covers `accessToken` and `x-auth-token`. Extend it when you add new sensitive fields (`api_key`, `api-key` for an `x-api-key` header, `ssn`, `creditCard`), or they land in production logs.
+- **`ignoredRoutes`** — request paths skipped entirely.
+
+The path of a request no route matched is logged as sent, so put an emailed token in the URL fragment (`/reset-password#token=…`), which browsers never send, and have the page post it as `token` in the body, where `bodyBlocklist` masks it. The `server:error` hook is the seam for customizing unhandled-error logging — useful when a `pg` error walks into `.parameters` containing user data, or when a third-party library attaches the original request to its error.
 
 ## Cadence
 

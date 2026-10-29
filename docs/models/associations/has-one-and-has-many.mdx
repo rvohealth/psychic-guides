@@ -109,7 +109,7 @@ class User extends ApplicationModel {
 }
 
 const user = await User
-  .preload('favoritePet', { species: 'cat' })
+  .preload('favoritePet', { and: { species: 'cat' } })
   .firstOrFail()
 
 user.favoritePet
@@ -334,7 +334,7 @@ class Place extends ApplicationModel {
 The `and` option supports two special `DreamConst` values instead of a fixed value, both covered above under [And](#and):
 
 - **`DreamConst.passthrough`** — the value is supplied at query time via `.passthrough({ column: value })`. Throws `MissingRequiredPassthroughForAssociationAndClause` if the value is `undefined` — pass `null` instead when there's genuinely no value.
-- **`DreamConst.required`** — the value must be provided via `{ and: { column: value } }` conditions whenever the association is used in any query (`load`, `preload`, `innerJoin`, `leftJoin`, `associationQuery`, `association`, etc.). Throws `MissingRequiredAssociationAndClause` if not provided. Because the value can only be supplied for the association actually named in the query, an association carrying `DreamConst.required` cannot serve as an intermediate hop of a `through` chain — bridging across it always throws.
+- **`DreamConst.required`** — the value must be provided via `{ and: { column: value } }` conditions whenever the association is used in any query (`load`, `preload`, `innerJoin`, `leftJoin`, `associationQuery`, etc.) — for example `user.associationQuery('favoritePet', { and: { species: 'cat' } })`. The [`association`](/docs/models/associations/usage#association) method, which is not a query, takes the value as `{ required: { species: 'cat' } }` instead. Throws `MissingRequiredAssociationAndClause` if not provided. Because the value can only be supplied for the association actually named in the query, an association carrying `DreamConst.required` cannot serve as an intermediate hop of a `through` chain — bridging across it always throws.
 
 Both are required — the difference is *how* the value is supplied. Use `passthrough` when the value comes from broad query context (e.g. locale from a request header); use `required` when the value is specific to a particular association-loading call. **Neither can be combined with `dependent: 'destroy'`.**
 

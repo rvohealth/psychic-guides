@@ -1,7 +1,7 @@
 ---
 sidebar_position: 4.5
 title: fanning out large record sets
-ai_summary: "For hundreds of thousands to millions of records, don't enqueue all jobs up front — use a two-level fan-out: a kickoff job pluckEach's IDs in batches and enqueues expander jobs at priority 'last', each expander enqueues individual worker jobs at priority 'not_urgent'. Priority creates backpressure that bounds queue depth; requires both tiers on the same BullMQ queue. Priority orders worker slots and does not throttle a running job's request rate — a named workstream's rateLimit does that."
+ai_summary: "For hundreds of thousands to millions of records, don't enqueue all jobs up front — use a two-level fan-out: a kickoff job pluckEach's IDs in batches and enqueues expander jobs at priority 'last', each expander enqueues individual worker jobs at priority 'not_urgent'. Priority creates backpressure that bounds the individual-job backlog; requires both tiers on the same BullMQ queue. Isolating the fan-out on its own named workstream keeps it from delaying unrelated not_urgent/last work, such as a check-in job. A retried kickoff re-enqueues every record, so expensive per-record work stamps a datetime column the kickoff filters on. Priority orders worker slots and does not throttle a running job's request rate — a named workstream's rateLimit does that."
 ---
 
 # Fanning out large record sets
@@ -18,7 +18,7 @@ The idiomatic pattern uses `pluckEach` and [priority](./priority) levels:
 
 1. A kickoff job uses `pluckEach` to pluck IDs in batches (default batch size is 1000).
 2. For each batch, it enqueues an **expander job** (priority `last`) with just that batch of IDs.
-3. Each expander job iterates its batch and enqueues an **individual worker job** (priority `not_urgent`) per ID.
+3. Each expander job loads its batch and enqueues an **individual worker job** (priority `not_urgent`) per record.
 4. Each individual worker job loads the record and does the real work.
 
 Each service lives in its own file, as always:
@@ -49,9 +49,9 @@ export default class ReprocessAllPhotosService extends ApplicationBackgroundedSe
 
   // Step 2: expander — fans the batch into individual worker jobs
   public static async _expandBatch(ids: string[]) {
-    for (const id of ids) {
-      await PhotoProcessingService.processOne(id)
-    }
+    await Photo.where({ id: ids }).findEach(async photo => {
+      await PhotoProcessingService.processOne(photo)
+    })
   }
 }
 ```
@@ -64,32 +64,34 @@ export default class PhotoProcessingService extends ApplicationBackgroundedServi
   }
 
   // Step 3: individual worker — loads the record and does the actual work
-  public static async processOne(id: string) {
-    await this.background('_processOne', id)
+  public static async processOne(photo: Photo) {
+    await this.background('_processOne', photo.id)
   }
 
-  public static async _processOne(id: string) {
-    const photo = await Photo.find(id)
+  public static async _processOne(photoId: string) {
+    const photo = await Photo.find(photoId)
     if (!photo) return
     // ...do the real work
   }
 }
 ```
 
-## Why this bounds queue depth
+## Why this bounds the backlog
 
 Keep both tiers of the fan-out below `default`. A bulk run's individual jobs vastly outnumber ordinary application work, and if they ran at `default` priority they'd compete directly with it — routine, more-important-than-bulk jobs would queue up behind however many thousand photos are left to reprocess. Bulk work belongs entirely under `not_urgent`/`last` so it only fills otherwise-idle worker slots.
 
-Because expanders run at `last` priority, they only claim worker slots when no `not_urgent`-priority individual jobs are pending. With 10 workers, that means at most ~10 batches are expanded at a time (producing ~10,000 individual jobs in flight), and the individual jobs drain before more batches are expanded. The queue depth stays bounded regardless of the total record count. Expander jobs are also infrequent relative to individual jobs — one per 1000 IDs — so sharing the `last` tier with a check-in/heartbeat job (see [Priority](./priority)) doesn't starve it outright; it just interleaves.
+Because expanders run at `last` priority, they only claim worker slots when no `not_urgent`-priority individual jobs are pending. With 10 worker slots (`workerCount × concurrency`), that means at most ~10 batches are expanded at a time (producing ~10,000 individual jobs in flight), and the individual jobs drain before more batches are expanded. The individual-job backlog stays bounded regardless of the total record count.
 
 - **`pluckEach` selects only the `id` column** — no hydration, minimal memory.
 - **Priorities create the backpressure.** Expanders (`last`) yield to individual jobs (`not_urgent`), so the in-flight count of individual jobs never exceeds roughly `worker_count * concurrency * batch_size`. Priority orders worker slots; it does not throttle a running job's request rate. To bound pressure on an external service, put those jobs on a named workstream with a [`rateLimit`](./rate-limiting).
 - **The expander and individual-worker services must route to the same queue.** Priority is only meaningful within a single BullMQ queue — jobs in different queues have separate worker pools and never compete for the same slots, so putting expanders and individual jobs on different queues silently defeats the backpressure; each queue just drains independently and you're back to unbounded fan-out.
-- **If the kickoff is interrupted,** only the expanders already enqueued will run, and if the kickoff job itself is retried it re-plucks from the beginning — but because each individual job is independent and idempotent (via the `find`/early-return pattern), re-runs are safe.
+- **If the kickoff is interrupted,** only the expanders already enqueued will run, and if the kickoff job itself is retried it re-plucks from the beginning — so every ID already enqueued in a batch is enqueued again, and `_processOne` redoes that record's work when the record is still there. When repeating a record's work is expensive, stamp a datetime column on the record as each one finishes and filter the kickoff's `pluckEach` query on it, so a re-pluck skips what is already done.
 - **Individual jobs still follow the standard rule of passing IDs, not model instances** — hydrate inside `_processOne`. See [Services](./services).
 
 ## Isolating the fan-out to its own queue
 
-To keep this fan-out off the default queue entirely — so it can't crowd out unrelated default-queue work even at `not_urgent`/`last` — route both the expander and the individual-worker service to the same named [workstream](./named-workstreams). The mapped priority is written to BullMQ's top-level `priority` on every job, grouped or not, so the expander/individual backpressure survives the isolation on open-source BullMQ and on BullMQ Pro alike.
+To keep this fan-out off the default queue entirely — so it can't crowd out unrelated `not_urgent`/`last` work there — route both the expander and the individual-worker service to the same named [workstream](./named-workstreams). The mapped priority is written to BullMQ's top-level `priority` on every job, grouped or not, so the expander/individual backpressure survives the isolation on open-source BullMQ and on BullMQ Pro alike.
+
+On a shared queue, a [check-in/heartbeat job](./priority) at `last` waits behind every expander enqueued before it, for most of a long run, so the check-in can miss its window while the workers are healthy. Isolating the fan-out keeps the check-in on time.
 
 If the bulk work calls a rate-limited external API, that same named workstream is where you bound the request rate: give it a [`rateLimit`](./rate-limiting). Priority cannot do this — it orders worker slots, and once a job is running it does not throttle the requests that job makes.

@@ -328,15 +328,16 @@ ClockTime.max(t1, t2, t3) // t2 (16:45:00)
 ClockTime instances are automatically created when loading `time without time zone` columns from the database:
 
 ```ts
-import { Model } from '@rvoh/psychic'
-import { ClockTime } from '@rvoh/dream'
-
-class BusinessHours extends Model {
-  id!: number
-  dayOfWeek!: string
-  openTime!: ClockTime // time without time zone
-  closeTime!: ClockTime // time without time zone
+class BusinessHours extends ApplicationModel {
+  public id: DreamColumn<BusinessHours, 'id'>
+  public dayOfWeek: DreamColumn<BusinessHours, 'dayOfWeek'> // string
+  public openTime: DreamColumn<BusinessHours, 'openTime'> // ClockTime (time without time zone)
+  public closeTime: DreamColumn<BusinessHours, 'closeTime'> // ClockTime (time without time zone)
 }
+```
+
+```ts
+import { ClockTime } from '@rvoh/dream'
 
 // Load from database
 const hours = await BusinessHours.findBy({ dayOfWeek: 'Monday' })

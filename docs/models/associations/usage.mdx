@@ -13,7 +13,7 @@ Dream provides many useful tools for accessing and manipulating associations. Le
 With associations already created in the database, there are several ways to access them. The most common way to do this would be to leverage the `preload` method, which will enable you to load an association onto your record as you are loading the record itself, like so:
 
 ```ts
-const user = await User.preload('posts').execute()
+const user = await User.preload('posts').firstOrFail()
 user.posts
 // [Post{}, Post{}, ...]
 ```
@@ -27,11 +27,11 @@ user.posts
 // [Post{}, Post{}, ...]
 ```
 
-When loading and preloading, additional where statements can be passed in, and many associations can be chained together:
+When loading and preloading, association conditions can be passed under `and` (or `andNot`/`andAny`), and many associations can be chained together:
 
 ```ts
 let user = await User.firstOrFail()
-user = await user.load('posts', { body: null }).load('pets').execute()
+user = await user.load('posts', { and: { body: null } }).load('pets').execute()
 user.posts
 // [Post{ body: null }, Post{ body: null }, ...]
 
@@ -54,7 +54,7 @@ Using associationQuery, you can add additional statements to your query before l
 const posts = await user
   .associationQuery('posts')
   .where({ body: null })
-  .innerJoin('comments', { body: null })
+  .innerJoin('comments', { and: { body: null } })
   .all()
 
 // [Post{ body: null }, Post{ body: null }, ...]
@@ -133,16 +133,18 @@ await Booking.create({ place, guest })  // not { placeId: place.id, guestId: gue
 await review.update({ booking })        // not { bookingId: booking.id }
 ```
 
-This works the same **regardless of the association's shape** — polymorphic or not, and whether the model you pass is a plain model or an STI child. Dream derives the foreign key from the instance's primary key and, for a polymorphic association, the type discriminator from the instance's `referenceTypeString` (which resolves an STI child such as a `Bathroom` to its base, `'Room'`). One form covers every case, so the call site never has to know which case it's in.
+This works the same **regardless of the association's shape** — polymorphic or not, and whether the model you pass is a plain model or an STI child. Dream reads the foreign-key value off the instance and, for a polymorphic association, the type discriminator from the instance's `referenceTypeString` (which resolves an STI child such as a `Bathroom` to its base, `'Room'`). One form covers every case, so the call site never has to know which case it's in.
 
 Why this matters:
 
 1. **Polymorphic filters/writes are wrong without it.** Hand-assigning `localizableId: host.id` never sets the paired type discriminator. With integer/serial primary keys, a `Host` and a `Place` can share id `1`, so an id-only reference is ambiguous between types; passing the instance sets the type discriminator for you.
-2. **STI type strings resolve correctly.** Creating through an STI child records the base type (`'Room'`, not `'Bathroom'`), because the association is declared on the base — a hand-written type string gets this wrong with nothing at the call site to warn you.
+2. **STI type strings resolve correctly.** Creating or filtering through an STI child records/matches the base type (`'Room'`, not `'Bathroom'`). A hand-written `localizableType: 'Bathroom'` matches nothing — and nothing at the call site warns you.
 3. **Holding the instance means you loaded it.** The authorized way to obtain a record is to load it — usually through an association chain from the current user that proves they may touch it. Passing the instance keeps that step in the code path; hand-assigning a raw id from a request param skips it.
 4. **Factories create an orphan from an id.** Generated factories guard on the association (`host: attrs.host ?? (await createHost())`) with `...attrs` spread after, so `createHostPlace({ hostId: host.id })` creates a second `Host` and then overwrites `hostId` with the one passed — a stray row and an extra insert per call, silently.
 
-**Pass ids when you don't hold an instance**: an array of ids for a bulk filter, a cross-type polymorphic batch load that falls back to explicit type/id groups, and background-job arguments, which must serialize to a queue and therefore pass ids that the job re-hydrates on the other end.
+Filtering accepts an array of instances too — `Booking.where({ place: places })`, and likewise `whereNot`/`whereAny` and the `and`/`andNot`/`andAny` of a join. A non-polymorphic key expands to a foreign-key `IN`; a polymorphic key groups the instances by type, so `LocalizedText.where({ localizable: [...places, ...rooms] })` matches each id only with its own type. `create`, `update`, and `findOrCreateBy` still take a single instance.
+
+**Pass ids only when you don't hold the instances**: an array of ids for a bulk filter (`Booking.where({ placeId: placeIds })`, where `placeIds` came from a prior query), and background-job arguments, which must serialize to a queue and therefore pass ids that the job re-hydrates on the other end.
 
 Additionally, Dream provides the `createAssociation` method for creating associations, which can be used like so:
 
@@ -167,10 +169,10 @@ await user.updateAssociation('userSettings', { active: true })
 
 > NOTE: in the case of HasMany associations, calling `updateAssociation` will apply to all discovered associations.
 
-Additional where clauses can be applied during update, like so:
+Additional conditions can be applied during update under `and` (or `andNot`/`andAny`), like so:
 
 ```ts
-await user.updateAssociation('userSettings', { active: true }, { where: { userId: [1, 2, 3] } })
+await user.updateAssociation('posts', { body: 'goodbye world' }, { and: { body: 'hello world' } })
 ```
 
 ## destroying
@@ -182,10 +184,10 @@ await user.destroyAssociation('posts')
 // 3
 ```
 
-You can pass an additional where clause while destroying associations, like so:
+You can pass additional conditions under `and` (or `andNot`/`andAny`) while destroying associations, like so:
 
 ```ts
-await user.destroyAssociation('posts', { where: { body: null } })
+await user.destroyAssociation('posts', { and: { body: null } })
 // 3
 ```
 
@@ -196,4 +198,4 @@ await user.destroyAssociation('posts', { cascade: false })
 // 3
 ```
 
-Additionally, one is free to set up cascade deletion, either at the `db` level (which is preferred), or else by leveraging [dependent: 'cascade'](/docs/models/associations/has-one-and-has-many#dependent) at the association level (though usually, this would only be done for polymorphic relationships, since cascade deleting at the DB level will not work in those cases.)
+Additionally, one is free to set up cascade deletion, either at the `db` level (which is preferred), or else by leveraging [dependent: 'destroy'](/docs/models/associations/has-one-and-has-many#dependent) at the association level (though usually, this would only be done for polymorphic relationships, since cascade deleting at the DB level will not work in those cases.)

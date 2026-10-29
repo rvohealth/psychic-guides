@@ -8,7 +8,7 @@ ai_summary: "The @ReplicaSafe decorator directs select queries to a read-only da
 export default class Place extends ApplicationModel {}
 ```
 
-`@ReplicaSafe()` is a class decorator that opts a model into reading from a read replica when one is configured (see [database config](/docs/config/dream#database-connection)). Without it, every query against that model always hits the primary.
+`@ReplicaSafe()` is a class decorator that opts a model into reading from a read replica when one is configured (see [database config](/docs/config/dream#database-connection)). Without it, the model's queries read the primary unless a call asks for `.connection('replica')` (see [below](#override-per-call-with-connection)).
 
 ## Mark a model by its dominant traffic pattern
 
@@ -34,7 +34,7 @@ await Room.innerJoin('bookings').all()   // primary — Booking isn't ReplicaSaf
 await Room.all()                          // replica — Room alone is ReplicaSafe
 ```
 
-`preload` (and `preloadFor`) is different: it runs the base query and each preloaded association as **separate** queries, so each one is routed independently by its own model's `@ReplicaSafe()` status — a `@ReplicaSafe()` base model still reaches the replica even when a preloaded association isn't.
+`preload` (and `preloadFor`) is different: it runs the base query and each preloaded association as **separate** queries, so a `@ReplicaSafe()` base model still reaches the replica even when a preloaded association isn't.
 
 ## Override per call with `.connection()`
 

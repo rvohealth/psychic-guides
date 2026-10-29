@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: hooks
-ai_summary: 'Psychic and Dream expose lifecycle hooks. Psychic hooks (cli:sync, server:init:before-middleware, server:init:after-middleware, etc.) are configured in conf/app.ts or initializers. Dream hooks (model lifecycle hooks) are configured in conf/dream.ts. Hooks enable tapping into core internal events.'
+ai_summary: 'Psychic and Dream expose lifecycle hooks. Psychic hooks (cli:sync, server:init:before-middleware, server:init:after-middleware, etc.) are configured in conf/app.ts or initializers. Dream hooks (db:log, encryption:legacy-key-used, repl:start) are configured in conf/dream.ts. Hooks enable tapping into core internal events.'
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -9,7 +9,7 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 Psychic and Dream expose hooks to enable developers to tap into core internal events. The majority of these events are lifecycle event hooks that fire off internally as the web server is bootstrapped, but there are other useful hooks to discuss as well. Due to the fact that Psychic and Dream are separate libraries, some of the hooks you will tap into will be in the `conf/dream.ts` file, while others will be in the `conf/app.ts` file.
 
 :::tip
-Reach for `PsychicApp.log(message, ...meta)` (or `PsychicApp.logWithLevel(level, message, ...meta)`) inside a hook callback rather than `console.log` — these route through the app's configured logger instead of writing unstructured strings straight to stdout.
+Reach for `PsychicApp.log(...args)` (or `PsychicApp.logWithLevel(level, ...args)`) inside a hook callback rather than `console.log` — these route through the app's configured logger instead of writing unstructured strings straight to stdout.
 :::
 
 ## Psychic hooks
@@ -173,6 +173,24 @@ function maskPII(data: unknown) {
   return data
 }
 ```
+
+### encryption\:legacy-key-used {#encryption-legacy-key-used}
+
+During a column encryption key rotation, this hook fires each time reading an `@deco.Encrypted` property needed the `legacy` key rather than `current` to open the stored value, which lets you find the rows still encrypted with the old key:
+
+```ts
+export default async function (app: DreamApp) {
+  app.on('encryption:legacy-key-used', ({ dream, property }) => {
+    PsychicApp.logWithLevel('warn', 'value still encrypted with the legacy column key', {
+      model: dream.sanitizedConstructorName,
+      id: dream.primaryKeyValue(),
+      property,
+    })
+  })
+}
+```
+
+The callback runs synchronously inside the property read, and an error it throws propagates from that read. A row nobody reads never fires the hook, so a quiet hook doesn't show that `legacy` is safe to drop; see [rotating column encryption keys](/docs/utils/encryption/internal#rotating-column-encryption-keys) for re-encrypting every row.
 
 ### repl:start
 

@@ -1,5 +1,5 @@
 ---
-ai_summary: "The where method adds WHERE conditions to queries, returning a Query instance that can be chained. Supports exact matches, array values (IN clause), query operators via ops, and chaining multiple conditions with AND logic."
+ai_summary: "The where method adds WHERE conditions to queries, returning a Query instance that can be chained. Supports exact matches, array values (IN clause), query operators via ops, joined-association columns, and chaining multiple conditions with AND logic."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -43,21 +43,21 @@ await Pet.where({ user }).count()
 
 When you hold the associated instance, prefer filtering by it (`where({ user })`) over the foreign key (`where({ userId: user.id })`). For a polymorphic association this is a correctness fix, not just style: the id-only form omits the `_type` column, so it matches rows across every type that shares that id. Passing the instance sets both columns.
 
-## Referencing joined or preloaded columns
+## Referencing joined columns
 
-After joining or preloading an association, you can reference its columns in `where` clauses using `'associationName.column'` syntax:
+After joining an association (`innerJoin`, `leftJoin`, `leftJoinPreload`), you can reference its columns in `where` clauses as `'associationName.column'`. `preload` loads in a separate query, so its columns are not in scope:
 
 ```ts
 const posts = await user
   .associationQuery('posts')
-  .preload('comments')
+  .leftJoinPreload('comments')
   .whereAny([{ body: null }, { 'comments.body': null }])
   .all()
 ```
 
 ## Array values on array columns
 
-A bare array passed to `where` always means `IN`, even against an array-typed column — it never becomes containment or array equality on its own. To check whether an array column contains an element, or is exactly equal to another array, use [`ops.any` / `ops.equal`](/docs/models/querying/ops#array-column-containment-and-equality).
+A bare array passed to `where` doesn't compile against an array-typed column. To check whether an array column contains an element, or is exactly equal to another array, use [`ops.any` / `ops.equal`](/docs/models/querying/ops#array-column-containment-and-equality).
 
 ## Bounded ranges
 

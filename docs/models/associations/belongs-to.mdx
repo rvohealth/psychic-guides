@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-ai_summary: "BelongsTo associations link a model to another model via a foreign key. The model containing the foreign key belongs to the referenced model. Options include optional (for nullable foreign keys) and on (to specify custom foreign key column name)."
+ai_summary: "BelongsTo associations link a model to another model via a foreign key. The model containing the foreign key belongs to the referenced model. Options include optional (for nullable foreign keys, inferred by serializers), on (to specify custom foreign key column name), primaryKeyOverride, polymorphic, and withoutDefaultScopes. A required BelongsTo throws MissingRequiredBelongsToAssociation when its parent is missing; fix it with dependent: 'destroy' on the inverse, withoutDefaultScopes: ['dream:SoftDelete'] to reach a soft-deleted parent, or optional: true."
 ---
 
 import Tabs from '@theme/Tabs'
@@ -25,7 +25,7 @@ export default class Post extends ApplicationModel {
 
 ### optional
 
-`BelongsTo` associations are required by default (and should have a corresponding not-null declaration on the foreign key column). To make an association optional, pass the `optional: true` option (and ensure that the column allows null values):
+`BelongsTo` associations are required by default (and should have a corresponding not-null declaration on the foreign key column). To make an association optional, pass the `optional: true` option (and ensure that the column allows null values). The serializer's `rendersOne` and `delegatedAttribute` infer the association's nullability from this flag, so serializers don't restate it:
 
 ```ts
 export default class Post extends ApplicationModel {
@@ -42,9 +42,13 @@ export default class Post extends ApplicationModel {
 
 - **You may not conditionally load it.** A trailing constraint on a non-optional `BelongsTo` in `preload`/`load`/`leftJoinPreload`/`leftJoinLoad` is a compile error, since the constraint could filter the parent out and null a field the spec declares non-nullable. (`innerJoin`/`leftJoin` are exempt — they don't hydrate a value.)
 - **It registers a `requiredBelongsTo` validation for you.** Saving without the parent fails Dream validation before Postgres sees it, and `.errors` is keyed by the *association* name (`{ user: ['requiredBelongsTo'] }`), not the foreign key column. Never declare `@deco.Validates('requiredBelongsTo')` yourself.
-- **Accessing it when null throws `MissingRequiredBelongsToAssociation`.** When an *internal* mechanism nulls a required parent — a default scope (e.g. soft delete) filtered it out, an `and`/`on` baked into the association excluded it, or the parent row was hard-deleted leaving a dangling FK — the getter throws this error instead of returning a null the types say is impossible.
+- **Accessing it when null throws `MissingRequiredBelongsToAssociation`.** When an *internal* mechanism nulls a required parent — a default scope (e.g. soft delete) filtered it out, the row's STI `type` is not the child the association targets, or the parent row was hard-deleted leaving a dangling FK — the getter throws this error instead of returning a null the types say is impossible.
 
-The runtime error is a modeling bug, so the fix is a model change, not a looser spec: add `dependent: 'destroy'` to the inverse `HasOne`/`HasMany` so the parent can't be orphaned, or mark the `BelongsTo` `optional: true` if absence is legitimate.
+The runtime error is a modeling bug, so the fix is a model change, not a looser spec:
+
+- add `dependent: 'destroy'` to the inverse `HasOne`/`HasMany` so no child outlives its parent,
+- add [`withoutDefaultScopes: ['dream:SoftDelete']`](#withoutdefaultscopes) to the `BelongsTo` when the child must still reach a soft-deleted parent (a past `Booking` whose `Place` was delisted), or
+- mark the `BelongsTo` `optional: true` if absence is legitimate, which makes the OpenAPI field nullable and re-allows conditional loading.
 
 ### Foreign key (on option)
 

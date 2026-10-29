@@ -1,7 +1,7 @@
 ---
 sidebar_position: 4
 title: migration
-ai_summary: "The generate:migration command creates timestamped migration files. Supports column types (uuid, citext, encrypted, string, text, boolean, date, datetime, time, timetz, integer, decimal, jsonb, enum, belongs_to), arrays, optional columns, and custom connection names. Ending migration name with -to-table-name auto-populates alterTable command."
+ai_summary: "The generate:migration command creates timestamped migration files. Supports column types (uuid, citext, encrypted, string, text, boolean, date, datetime, time, timetz, integer, decimal, jsonb, enum, belongs_to), arrays, optional columns, and custom connection names. A kebab-case -to-<table> marker in the migration name scaffolds an add-columns alterTable, -from-<table> a remove-columns one; a name with no marker leaves the table to fill in by hand. Column shorthand supplies defaults only for non-optional boolean, array, and json/jsonb columns."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -23,12 +23,14 @@ Use the built-in CLI command for generating migrations to easily get up and runn
 
 ### Arguments
 
-- `<migrationName>`: End with `-to-table-name` or `-from-table-name` to prepopulate with an alterTable command.
+- `<migrationName>`: A kebab-case name describing the change. Include `-to-<table_name>` (add columns) or `-from-<table_name>` (remove columns) to prepopulate an `alterTable` command for that table.
 - `[columnsWithTypes...]`: Space separated snake-case (except for belongs_to model name) properties like this:
   `title:citext subtitle:string body_markdown:text style:enum:post_styles:formal,informal User:belongs_to`
   
   All properties default to not nullable; null can be allowed by appending `:optional`:
   `subtitle:string:optional`
+
+  Column shorthand supplies a column default on its own only for non-optional `boolean` (`false`), array (`'{}'`), and `json`/`jsonb` (`'{}'`) columns. Any other `NOT NULL` column added to a table that already has rows needs a hand-edited default or backfill — see [NOT NULL columns and defaults](/docs/migrations/overview#not-null-columns-and-defaults).
   
   #### Supported types
 
@@ -66,7 +68,7 @@ Use the built-in CLI command for generating migrations to easily get up and runn
 - `--connection-name <connectionName>`: The connection name you wish to use for your migration.
 - `-h, --help`: Display help for command.
 
-Ending the migration name with `-to-table-name` will automatically include the underscored table name in the migration. When a name contains both markers, `-to-` wins regardless of where `-from-` appears; `-from-` only takes effect when the name has no `-to-` at all.
+A `-to-<table_name>` marker anywhere in the migration name — not just at the end — makes the generator write an `alterTable` for that table that adds the columns you pass, and a `-from-<table_name>` marker makes `up` drop them instead (`down` re-adds them). The text after the marker is snake-cased and pluralized into the table name, which is how the generator finds the table: `add-phone-to-guests phone:encrypted` alters `guests`. When a name contains both markers, `-to-` wins regardless of where `-from-` appears; `-from-` only takes effect when the name has no `-to-` at all. A name with no marker — including an underscore spelling such as `add_phone_to_guests` — resolves no table: with columns passed, it leaves an `alterTable('<table-name>')` stub to edit by hand, and with none, empty `up` and `down` bodies.
 
 Because of this, a hand-written migration name (one with no columns passed, meant to be edited by hand) must avoid `-to-` and `-from-` entirely — either substring resolves the trailing text into a real table name and the generator fails when it can't find columns to pair with that table.
 

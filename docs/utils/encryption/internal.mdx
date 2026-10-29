@@ -2,8 +2,11 @@
 sidebar_position: 2
 ai_summary: >-
   Psychic and Dream use Encrypt class internally. Cookie encryption config in
-  conf/app.ts. Encrypted decorator config in conf/dream.ts. Supports
-  current/legacy keys for key rotation.
+  conf/app.ts. Encrypted decorator config in conf/dream.ts (scaffolded from
+  COLUMN_ENCRYPTION_KEY). Supports current/legacy keys for key rotation; before
+  dropping a legacy column key, run Model.reencryptEncryptedColumns() for every
+  model with encrypted properties in each environment, from the console or a
+  script, not a migration.
 pagination_next: null
 ---
 
@@ -51,15 +54,15 @@ For more information on utilizing cookies, see the [Cookie guides](/docs/control
 
 ## Encrypted decorator
 
-Within Dream, an `Encrypted` decorator is provided, which will automatically encrypt any values that are bound to its call. In order for it to work properly, you must provide an algorithm and key in the `conf/dream.ts` file, like so:
+Within Dream, an `Encrypted` decorator is provided, which will automatically encrypt any values that are bound to its call. It encrypts with the column keys set in `conf/dream.ts`; a new app's `conf/dream.ts` sets them for you from `COLUMN_ENCRYPTION_KEY`:
 
 ```ts
 // conf/dream.ts
-dream.set('encryption', {
+app.set('encryption', {
   columns: {
     current: {
       algorithm: 'aes-256-gcm',
-      key: AppEnv.string('APP_ENCRYPTION_KEY'),
+      key: AppEnv.string('COLUMN_ENCRYPTION_KEY'),
     },
   },
 })
@@ -68,16 +71,16 @@ dream.set('encryption', {
 If you are in the middle of key rotation and need to temporarily provide multiple keys for decryption, you can do that as well:
 
 ```ts
-// conf/app.ts
-dream.set('encryption', {
+// conf/dream.ts
+app.set('encryption', {
   columns: {
     current: {
       algorithm: 'aes-256-gcm',
-      key: AppEnv.string('APP_ENCRYPTION_KEY'),
+      key: AppEnv.string('COLUMN_ENCRYPTION_KEY'),
     },
     legacy: {
       algorithm: 'aes-128-gcm',
-      key: AppEnv.string('APP_LEGACY_ENCRYPTION_KEY'),
+      key: AppEnv.string('LEGACY_COLUMN_ENCRYPTION_KEY'),
     },
   },
 })
@@ -86,3 +89,24 @@ dream.set('encryption', {
 :::info
 For more information on the `@deco.Encrypted` decorator, see the [Encrypted guides](/docs/models/decorators/encrypted)
 :::
+
+## Rotating column encryption keys
+
+Values in `@deco.Encrypted` columns stay encrypted under whichever key wrote them, so before dropping `legacy`, re-encrypt the existing rows under the new `current` key. Rotate in this order:
+
+1. Generate a new key (see [generating keys](/docs/utils/encryption/generating-keys)).
+2. Set the new key as `current` and the old one as `legacy`, and deploy. New writes use `current`; existing values still read through the `legacy` fallback.
+3. Once every server in an environment encrypts with the new `current`, run `reencryptEncryptedColumns()` there for every model with encrypted properties, from the console or a script:
+
+   ```ts
+   await User.reencryptEncryptedColumns()
+   ```
+
+   It walks every row of the model's table (including rows default scopes such as soft delete hide, and STI siblings), and rewrites each value under the current key, without running model hooks or changing `updatedAt`. Run it in each environment separately rather than from a migration: each environment rotates its keys on its own schedule, while a migration runs everywhere with the code.
+4. Drop `legacy` and deploy again.
+
+Once `legacy` is dropped, reading a row still under the old key throws `DecryptionError`.
+
+While `legacy` is configured, the [`encryption:legacy-key-used`](/docs/config/hooks#encryption-legacy-key-used) hook fires each time reading an `@deco.Encrypted` property needed `legacy` to open the value. A value nobody reads never fires it, so a quiet hook alone doesn't show that `legacy` is safe to drop; run `reencryptEncryptedColumns()` regardless.
+
+For cookies, keep `legacy` for at least the cookie `maxAge`, so in-flight sessions aren't forced to sign in again.

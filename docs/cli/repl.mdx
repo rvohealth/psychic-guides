@@ -1,6 +1,6 @@
 ---
 sidebar_position: 4
-ai_summary: "The REPL (console) enables database inspection through the application. All models and services are loaded into the global namespace, namespaced by folder path. Additional globals can be added via conf/repl.ts. Exit with ESC twice."
+ai_summary: "The REPL (console) enables database inspection through the application. pnpm console runs the source tree (paths under ./src/...), pnpm console:js the compiled tree (./dist/src/...). Models with a table and every services file's default export are loaded into the global namespace, named by file path rather than class name, along with some Dream utilities; anything else is imported dynamically with a path from api/. Additional globals can be added via conf/repl.ts. Piping input into the console is racy."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -18,20 +18,32 @@ NODE_ENV=development {{PM}} console`}
 > u = await User.all()
 ```
 
-Wait for the console to fully load before using auto-imported names — it does not live-reload, so exit and relaunch after code changes. Press `ESC` twice to exit.
+`console` runs the source tree (`tsx ./src/conf/repl.ts`), so a hand-typed import path is `./src/...`. The compiled console, `console:js` (`node ./dist/src/conf/repl.js`, the form a production container runs), runs the built tree, where the same path is `./dist/src/...`. The examples below show `./src/...`.
+
+Wait for the console to fully load before using auto-imported names — it does not live-reload, so exit (`.exit`, or `Ctrl+D`) and relaunch after code changes.
+
+The console is meant for a person typing at a terminal. Piping commands into it is racy: the REPL evaluates each line as it arrives, without waiting for boot to finish the auto-imports or for an earlier line's `await` to settle, so `let x = await ...` on one line can still be `undefined` on the next. For a non-interactive one-off, write a script that loads env and calls `initializePsychicApp()` before querying, the way [`conf/repl.ts`](/docs/config/repl) does.
 
 ## Auto-imported models
 
-By default, all of your models are loaded into the global namespace. However, to avoid class naming conflicts, all models will actually be namespaced based on their folder path, starting from the `models` directory. This means that if you have a model located at `Nutrition/LogEntry`, and another located at `Weight/LogEntry`, the class names in the repl will be `NutritionLogEntry` and `WeightLogEntry`, regardless of what their actual class names are.
+By default, all of your models are loaded into the global namespace. However, to avoid class naming conflicts, all models will actually be namespaced based on their folder path, starting from the `models` directory. This means that if you have a model located at `Nutrition/LogEntry`, and another located at `Weight/LogEntry`, the class names in the repl will be `NutritionLogEntry` and `WeightLogEntry`, regardless of what their actual class names are. A `Kitchen` class in `src/app/models/Room/Kitchen.ts` is `RoomKitchen` in the console.
+
+Only Dream model classes that have a table become globals. `ApplicationModel` has no table and so no global, and neither does any other kind of default export under `src/app/models/`.
 
 ## Auto-imported services
 
-Services are namespaced the same way, prefixed with `Services` and derived from the path relative to `app/services/`:
+Services are namespaced the same way, prefixed with `Services` and derived from the path relative to `src/app/services/`:
 
 | File Path                                          | Console Name                        |
 | --------------------------------------------------- | ------------------------------------ |
-| `app/services/NotificationService.ts`                | `ServicesNotificationService`        |
-| `app/services/Host/OnboardingService.ts`             | `ServicesHostOnboardingService`      |
+| `src/app/services/NotificationService.ts`            | `ServicesNotificationService`        |
+| `src/app/services/Host/OnboardingService.ts`         | `ServicesHostOnboardingService`      |
+
+Every file under `src/app/services/` contributes its default export as a `Services`-prefixed global, whatever that export is — a class, or a function such as the default export of `src/app/services/Booking/pricing.ts`, which becomes `ServicesBookingPricing`. A file with only named exports claims its name but leaves it `undefined`. Named exports, and files outside `src/app/models/` and `src/app/services/`, are imported by hand (see [Dynamically importing files](#dynamically-importing-files)).
+
+## Auto-imported utilities
+
+`DateTime`, `CalendarDate`, `ClockTime`, `ClockTimeTz`, `Encrypt`, and `ops` are globals, along with some of the `@rvoh/dream/utils` helpers: `camelize`, `capitalize`, `compact`, `hyphenize`, `pascalize`, `pascalizePath`, `range`, `round`, `snakeify`, `sort`, `sortBy`, `uncapitalize`, and `uniq`. The rest of `@rvoh/dream/utils`, such as `groupBy` and `isEmpty`, needs a dynamic import.
 
 ## Adding custom globals
 
@@ -39,12 +51,12 @@ If you want to add additional globals to your repl, you can do so by modifying t
 
 ```ts
 // conf/repl.ts
-import './loadEnv.js'
+import '#conf/loadEnv.js'
 
 import * as repl from 'node:repl'
 import { DreamCLI } from '@rvoh/dream/system'
-import initializePsychicApp from './system/initializePsychicApp.js'
-import MyClass from '../services/MyClass'
+import initializePsychicApp from '#conf/system/initializePsychicApp.js'
+import MyClass from '#services/MyClass.js'
 
 const replServer = repl.start('> ')
 export default (async function () {
@@ -58,8 +70,10 @@ export default (async function () {
 
 ## Dynamically importing files
 
-For code that isn't auto-imported, use a dynamic import with a path relative to `src/`:
+For anything not auto-imported — a named export, or a file outside `src/app/models/` and `src/app/services/` — use a dynamic import with a path from `api/`, the directory the console runs in:
 
 ```ts
-myHelper = (await import('./app/services/Host/pricingHelpers.js')).default
+let { PlaceSerializer } = await import('./src/app/serializers/PlaceSerializer.js')
+let { cleaningFee, formatNightly } = await import('./src/app/services/Booking/fees.js')
+let { groupBy } = await import('@rvoh/dream/utils')
 ```

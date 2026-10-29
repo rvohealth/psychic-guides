@@ -41,7 +41,7 @@ It will automatically generate an initializer for you that will keep your client
 
 import { DreamCLI } from '@rvoh/dream'
 import { PsychicApp } from '@rvoh/psychic'
-import AppEnv from '../AppEnv.js'
+import AppEnv from '#conf/AppEnv.js'
 
 export default function initializeMyAppApi(psy: PsychicApp) {
   psy.on('sync', async () => {

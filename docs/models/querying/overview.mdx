@@ -170,14 +170,14 @@ const userData = await User.pluck(['email', 'name'])
 
 ## distinct
 
-Ensures only unique records are returned by eliminating duplicates.
+Applies `DISTINCT ON`: keeps one row per value of the given column, or, with no argument, one row per primary key, which dedupes the rows a join fans out.
 
 ```ts
 // Get distinct user roles
 const roles = await User.distinct('role').pluck('role')
 
-// Get distinct active users
-const uniqueActiveUsers = await User.where({ active: true }).distinct().all()
+// Get each user with posts once, however many posts they have
+const usersWithPosts = await User.innerJoin('posts').distinct().all()
 ```
 
 [Learn more about distinct records](/docs/models/querying/distinct)

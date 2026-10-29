@@ -1,7 +1,7 @@
 ---
 sidebar_position: 4
 title: rendering
-ai_summary: "Serializers can be used explicitly (call .render() directly) or implicitly (Psychic automatically infers and uses serializers from model's serializers getter). Implicit rendering requires model to define serializers getter with default/summary/detail keys. Can specify serializerKey option to use non-default serializer."
+ai_summary: "Serializers can be used explicitly (call .render() directly) or implicitly (Psychic automatically infers and uses serializers from model's serializers getter). Implicit rendering requires model to define serializers getter with default/summary/detail keys. Can specify serializerKey option to use non-default serializer. serializerPassthrough supplies passthrough data to serializers; a query's .passthrough() does not."
 ---
 
 # rendering
@@ -78,3 +78,5 @@ export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: Lo
 ```
 
 When using `rendersOne` or `rendersMany` with the `serializer` option, passthrough data from the parent serializer is automatically forwarded to the nested serializer — no extra wiring needed.
+
+A query's `.passthrough()` (`Place.passthrough({ locale })`) is a separate channel: it scopes associations declared with `DreamConst.passthrough`, such as `currentLocalizedText`, and never reaches a serializer.

@@ -1,29 +1,27 @@
 ---
 sidebar_position: 11
-ai_summary: "Transactions tie the success of multiple queries together, guaranteeing valid database state. Start one at the class level (ApplicationModel.transaction) or instance level (model.transaction), and bind every operation inside with .txn(txn) or it runs outside the transaction. .txn(null) is a no-op for optional participation. Methods relying on unique-constraint violations (createOrFindBy, createOrUpdateBy) cannot be used in transactions. Keep external I/O outside the transaction; do it before, then write results in a short transaction."
+ai_summary: "Transactions tie the success of multiple queries together, guaranteeing valid database state; open one only when a set of writes must land together or not at all. Start one with ApplicationModel.transaction, and bind every operation inside with .txn(txn) or it runs outside the transaction (on a @deco.Sortable model, an unbound write can hang on the transaction's own scope lock). Sortable writes hold a lock per sort scope until commit, so keep transactions narrow. Reload a stale instance with original.txn(txn).reload(). .txn(null) is a no-op for optional participation. Methods relying on unique-constraint violations (createOrFindBy, createOrUpdateBy) cannot be used in transactions. Keep external I/O outside the transaction; do it before, then write results in a short transaction."
 ---
 
 # transactions
 
 Transactions are useful if you want to tie the success of one query to another, enabling you to guarantee a valid state for your database in the event that anything might go wrong. If the callback throws, the entire transaction rolls back.
 
-There are two ways to start a transaction:
+Start a transaction by calling `transaction` on your app's `ApplicationModel`:
 
 ```ts
-// Class-level
 await ApplicationModel.transaction(async txn => {
   const user = await User.txn(txn).create({ ... })
   await UserSettings.txn(txn).create({ user })
-})
-
-// Instance-level
-await user.transaction(async txn => {
-  await user.txn(txn).update({ status: 'active' })
   await user.txn(txn).createAssociation('profile', {})
 })
 ```
 
-The pattern for this can seem strange at first, but you will get the hang of it in short order. To instantiate a transaction, you will call the `transaction` method on your app's `ApplicationModel` (or on a model instance), capturing the provided transaction in the callback function you provide, named `txn` by convention. With the txn variable on hand, you proceed to pass it to each subsequent query that might need it, as demonstrated above, using the `txn` method (named the same as the variable).
+The pattern for this can seem strange at first, but you will get the hang of it in short order. The callback you pass to `transaction` receives the transaction, named `txn` by convention. With the txn variable on hand, you proceed to pass it to each subsequent query that might need it, as demonstrated above, using the `txn` method (named the same as the variable), which model classes and model instances both provide.
+
+## When to open a transaction
+
+Open one only when a set of writes must land together or not at all — a `Place` and the `Room`s created with it, a `Booking` and the row recording its payment. A single write never needs one, and neither does a set whose partial application the application can recover from.
 
 ## Every operation inside a transaction must be explicitly bound
 
@@ -40,9 +38,17 @@ await ApplicationModel.transaction(async txn => {
 })
 ```
 
-On a [`@deco.Sortable`](/docs/models/decorators/sortable) model, forgetting `.txn(txn)` is worse than a lost rollback. A sortable write computes its position under a lock on its sort scope, so an unbound `room.destroy()` inside a `Place` transaction opens a second transaction on another connection and waits on a lock the enclosing transaction is holding. Only one side is waiting, so Postgres's deadlock detector never sees it — the call hangs until `sortableScopeLockTimeout` expires, then throws `SortableScopeLockWaitTimedOut`. That error advises retrying; a retry cannot help here, since the fix is adding the missing `.txn(txn)`.
+On a [`@deco.Sortable`](/docs/models/decorators/sortable) model, forgetting `.txn(txn)` is worse than a lost rollback. A sortable write computes its position under a lock on its sort scope, so an unbound `room.destroy()` inside a transaction that has already created, moved, or destroyed another `Room` of the same `Place` opens a second transaction on another connection and waits on a lock the enclosing transaction is holding. Only one side is waiting, so Postgres's deadlock detector never sees it — the call hangs until `sortableScopeLockTimeout` expires, then throws `SortableScopeLockWaitTimedOut`. That error advises retrying; a retry cannot help here, since the fix is adding the missing `.txn(txn)`.
 
-**`instance.txn(txn).update(attrs)` mutates that same in-memory instance** — it assigns the attributes to the instance before saving, exactly like non-transactional `instance.update()`. So the caller's reference is current after the call and can be handed onward (to a service, a serializer) without re-querying. The catch: only *that* instance is updated. If a helper loaded a *different* instance of the same row (e.g. `Place.txn(txn).findBy(...)`) and updated it, the caller's original instance is now stale — `await original.reload()` before reading from it.
+**`instance.txn(txn).update(attrs)` mutates that same in-memory instance** — it assigns the attributes to the instance before saving, exactly like non-transactional `instance.update()`. So the caller's reference is current after the call and can be handed onward (to a service, a serializer) without re-querying. The catch: only *that* instance is updated. If a helper loaded a *different* instance of the same row (e.g. `Place.txn(txn).findBy(...)`) and updated it, the caller's original instance is now stale — `await original.txn(txn).reload()` before reading from it. An unbound `reload()` reads on another connection and cannot see the transaction's uncommitted write.
+
+## Sortable writes hold their scope locks until commit
+
+Binding every write correctly leaves a second cost on a `@deco.Sortable` model. A sortable write holds the lock on its sort scope until the transaction commits, and nothing releases those locks along the way, so a transaction that writes `Room`s across many `Place`s holds one lock per place at once. These are Postgres advisory locks, which come from a lock table the whole Postgres cluster shares; exhausting it fails other connections' transactions with `out of shared memory`, far from the code that caused it.
+
+Keep the transaction to the writes that must land together. A loop whose sortable writes span many `Place` scopes is usually not one of them, and narrowing the transaction to each iteration costs atomicity across the loop: if a later iteration fails, the earlier ones have already committed, so a re-run has to skip what already landed.
+
+Narrowing applies only to transactions your own code opens. Inside a transaction your code did not open — a hook's `txn`, or one handed to a service — every write still binds to that `txn`; a sortable write broken out of it hangs as described above.
 
 ## Optional transaction participation with `.txn(null)`
 
@@ -72,7 +78,7 @@ Once in a transaction builder (done by calling the `txn` method), you will be pr
 
 ## Keep background work and I/O out of the transaction
 
-Do not enqueue background work from inside an open transaction. When a model lifecycle hook queues a backgrounded service, a backgrounded model method, or any helper that queues work, use a commit hook variant such as `@deco.AfterCreateCommit`, `@deco.AfterUpdateCommit`, or `@deco.AfterSaveCommit` so the worker only runs after the transaction commits. Otherwise the worker can race the transaction and either miss a newly-created row or read stale data after an update. This applies equally to an imperative `background()` call made from inside `ApplicationModel.transaction(...)`.
+Do not enqueue background work from inside an open transaction. When a model lifecycle hook queues a backgrounded service, a backgrounded model method, or any helper that queues work, use a commit hook variant such as `@deco.AfterCreateCommit`, `@deco.AfterUpdateCommit`, or `@deco.AfterSaveCommit` so the worker only runs after the transaction commits. Regular hooks run before an enclosing transaction commits, so otherwise the worker can race the commit and either miss a newly-created row or read stale data after an update. This applies equally to an imperative `background()` call made from inside `ApplicationModel.transaction(...)`.
 
 More broadly, **what belongs inside `ApplicationModel.transaction(...)` is database writes only.** HTTP fetches, S3/object-storage uploads, sending email, calling third-party APIs, file I/O, sleeps, and any other non-DB work belong outside the transaction. Holding an open transaction across long-running I/O has three failure modes:
 
@@ -107,7 +113,7 @@ for (const place of created) {
 const prepared: Array<{ record: Record; bucketPath: string }> = []
 for (const record of records) {
   const buffer = await (await fetch(record.photoUrl)).arrayBuffer()
-  const bucketPath = PlacePhotoMediaService.objectKey(host.id, record)
+  const bucketPath = PlacePhotoMediaService.objectKey(host, record)
   await s3.send(new PutObjectCommand({ Bucket, Key: bucketPath, Body: Buffer.from(buffer) }))
   prepared.push({ record, bucketPath })
 }

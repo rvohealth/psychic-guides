@@ -61,7 +61,7 @@ Or apply it per-endpoint with `@BeforeAction` on a specific controller when you 
 ```ts
 import { BeforeAction } from '@rvoh/psychic'
 import { HttpStatusTooManyRequests } from '@rvoh/psychic/errors'
-import AuthedController from './AuthedController.js'
+import AuthedController from '#controllers/AuthedController.js'
 
 export default class SessionsController extends AuthedController {
   @BeforeAction({ only: ['create'] })

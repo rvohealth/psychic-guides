@@ -12,14 +12,14 @@ When querying your database in SQL, you will often be joining relational tables 
 ```ts
 const posts = await user
   .associationQuery('posts')
-  .preload('comments')
+  .leftJoinPreload('comments')
   .whereAny([{ body: null }, { 'comments.body': null }])
   .all()
 
 console.log(posts.flatMap((post) => post.comments))
 ```
 
-By leveraging `associationQuery`, for example, we don't have to worry about manually applying a foreign key clause to target the correct userId on posts, that is done automatically for us by Dream. Additionally, by `preload`ing comments, we are ensuring that each post will have a `comments` property attached, pointing to a list of comments in the DB that have `null` bodies. Each of the loaded comments will only be loaded if the foreign key pointing to that post is present, and Dream will do this automatically without you needing to specify anything.
+By leveraging `associationQuery`, for example, we don't have to worry about manually applying a foreign key clause to target the correct userId on posts, that is done automatically for us by Dream. Additionally, by `leftJoinPreload`ing comments, we are ensuring that each post will have a `comments` property attached, and the join puts the comments' columns in scope for the `whereAny`, which keeps the posts that have a `null` body or a comment with a `null` body. Dream matches each comment to its post through the foreign key automatically, without you needing to specify anything. A plain `preload` loads its association in a separate query, so its columns can't be referenced in a `where`.
 
 ## Association chaining
 

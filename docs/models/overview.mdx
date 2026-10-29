@@ -17,6 +17,8 @@ Dream is deeply indebted to Ruby on Rails’ ActiveRecord. If you are familiar w
 
 ## Model Definition
 
+Every model inherits from `ApplicationModel` (`src/app/models/ApplicationModel.ts`), the app's Dream subclass that create-psychic generates.
+
 ```ts
 export async function up(db: Kysely<any>): Promise<void> {
   await db.schema
@@ -60,7 +62,7 @@ Generators leave this import commented out on a freshly generated model that has
 // const deco = new Decorators<typeof MyModel>()
 ```
 
-Uncomment it as soon as you add the model's first field-level decorator. Class-level decorators such as `@STI` and `@SoftDelete` are imported directly from `@rvoh/dream` and are unaffected by this rule — they don't require a `deco` instance.
+Uncomment it as soon as you add the model's first field-level decorator. `@SoftDelete` models follow the same rule; a generated STI child omits the commented block. Class-level decorators such as `@STI` and `@SoftDelete` are imported directly from `@rvoh/dream` and are unaffected by this rule — they don't require a `deco` instance.
 
 With migrations run, and the above model in place, you can begin leveraging some of the powerful methods built into Dream to simplify your interactions with the database:
 
@@ -109,8 +111,8 @@ if (something) {
 }
 await user.save()
 
-// attempts to create, but if it runs into a foreign key
-// violation, it returns the violating record instead.
+// attempts to create, but if it runs into a unique-constraint
+// violation, it finds and returns the existing record instead.
 // requires a unique index on the column you are looking up
 await User.createOrFindBy(
   {

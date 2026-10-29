@@ -1,14 +1,25 @@
 ---
-ai_summary: "Dirty tracking methods: isDirty (boolean indicating if record has changes), changes (detailed object showing was/now for each changed field), changedAttributes (object with only changed attributes and their new values)."
+ai_summary: "Dirty tracking: isDirty (getter, true when the record has unsaved changes), willSaveChangeToAttribute(column) (a pending change to one column), dirtyAttributes() (pending values), changedAttributes() (original values of the changed columns), changes() ({ was, now } per column), savedChangeToAttribute(column) (a change the last save made). In Before* hooks and validations the pending-change methods describe this save; in After* hooks the snapshot is already refreshed, so use savedChangeToAttribute/changes or gate with ifChanged. Comparison is against the instance's snapshot from its last load or save; an update with nothing dirty issues no UPDATE. Encrypted properties report their encrypted<Name> column."
 ---
 
 # dirty
 
-In an ORM ecosystem, it is often necessary to determine if a record has any changes to be saved or not. Dream provides powerful methods for introspecting the changing state of your model.
+In an ORM ecosystem, it is often necessary to determine if a record has any changes to be saved or not. Dream provides methods for introspecting the changing state of your model:
+
+```ts
+const place = await Place.findOrFail(id) // name: 'Cozy Cabin'
+place.name = 'Bear Den Lodge'
+
+place.isDirty                            // true
+place.willSaveChangeToAttribute('name')  // true
+place.willSaveChangeToAttribute('style') // false
+place.dirtyAttributes()                  // { name: 'Bear Den Lodge' } — pending values
+place.changedAttributes()                // { name: 'Cozy Cabin' } — original values
+```
 
 ## isDirty
 
-The `isDirty` property will return `true` or `false`, depending on if a record has changes:
+The `isDirty` getter returns `true` or `false`, depending on whether a record has unsaved changes:
 
 ```ts
 const user = await User.first()
@@ -18,9 +29,51 @@ user.email = 'new@email'
 console.log(user.isDirty) // true
 ```
 
+## willSaveChangeToAttribute
+
+`willSaveChangeToAttribute(column)` checks a single column for a pending change:
+
+```ts
+const user = await User.first()
+user.email = 'new@email'
+
+user.willSaveChangeToAttribute('email') // true
+user.willSaveChangeToAttribute('name') // false
+```
+
+## dirtyAttributes
+
+`dirtyAttributes()` returns the columns with pending changes and the values about to be saved:
+
+```ts
+const user = await User.first() // email: 'how@yadoin'
+user.email = 'new@email'
+
+console.log(user.dirtyAttributes())
+// {
+//   email: 'new@email',
+// }
+```
+
+On a record that has not been saved yet, every column given a value other than `undefined` counts as dirty, so `User.new({ name: 'Alice' })` reports `name` immediately.
+
+## changedAttributes
+
+`changedAttributes()` returns the same columns as `dirtyAttributes()`, but with the values they held before the change, as of the last load or save:
+
+```ts
+const user = await User.first() // email: 'how@yadoin'
+user.email = 'new@email'
+
+console.log(user.changedAttributes())
+// {
+//   email: 'how@yadoin',
+// }
+```
+
 ## changes
 
-For more verbose information on what has changed, you can also call the `changes` method, which will give you an in-depth explanation of the changes for each field:
+For both sides at once, call `changes`, which gives the previous and new value for each changed field:
 
 ```ts
 const user = await User.first()
@@ -35,37 +88,29 @@ console.log(user.changes())
 // }
 ```
 
-## changedAttributes
+`changes()` keeps reporting what the last save changed, beside any newer unsaved change, until the next save.
 
-To retrieve only the changed attributes and their values, you can use `changedAttributes`:
+## Dirty tracking in hooks and validations
 
-```ts
-const user = await User.first()
-user.email = 'new@email'
+In a validation or `Before*` hook, the pending-change methods describe the save in progress. `this.willSaveChangeToAttribute('status')` tells whether this save changes `status`; `this.status` is the value being saved, `this.changedAttributes().status` is the value before the change, and `this.changes()` gives both as `{ was, now }`. To run a `Before*` hook only when a column changes, gate it with [`ifChanging`](/docs/models/hooks#gating-hooks-on-a-change), which on a create counts only the columns that were assigned.
 
-console.log(user.changedAttributes())
-// {
-//   email: 'new@email',
-// }
-```
-
-`changedAttributes()` works before the first save too. `User.new({ name: 'Alice' })` marks `name` dirty immediately, so `changedAttributes()` is populated on the unpersisted instance.
-
-## isClean and hasChanges
-
-`isClean` is the inverse of `isDirty`. `hasChanges` checks a single attribute:
+Save's `After*` hooks run once the snapshot has been refreshed, so there `willSaveChangeToAttribute` is `false` and `dirtyAttributes()` is empty. Use `savedChangeToAttribute(column)` and `changes()`, which report the last save:
 
 ```ts
-const user = await User.first()
-user.isClean() // true
-
-user.email = 'new@email'
-user.hasChanges('email') // true
-user.hasChanges('name') // false
+@deco.AfterSave()
+public async logRename(this: Place) {
+  if (this.savedChangeToAttribute('name')) {
+    // ...
+  }
+}
 ```
+
+After a create, the last save covers every column the insert returned — the primary key, timestamps, database defaults, and `null` for each nullable column nobody assigned — so `savedChangeToAttribute` is `true` for all of them. To run an after hook only when a column changed, gate it with [`ifChanged`](/docs/models/hooks#gating-hooks-on-a-change), which is checked at the save itself and on a create counts only the columns that were assigned.
 
 ## Dirty tracking is against the last load or save, not the current DB row
 
-The comparison `isDirty`/`changes`/`changedAttributes`/`hasChanges` report is against the instance's own snapshot from its last load or save — not against whatever the row currently holds in the database. A persisted instance with nothing dirty issues no `UPDATE` on `save()` or `update()`, and leaves `updatedAt` unstamped: `update({})`, or an `update()` assigning values equal to the current ones, is a no-op rather than a touch. Before-save hooks and validations still run first, so a hook that dirties the record turns it back into a real write.
+The comparison these methods report is against the instance's own snapshot from its last load or save — not against whatever the row currently holds in the database. A persisted instance with nothing dirty issues no `UPDATE` on `save()` or `update()`, and leaves `updatedAt` unstamped: `update({})`, or an `update()` assigning values equal to the current ones, is a no-op rather than a touch. Before-save hooks and validations still run first, so a hook that dirties the record turns it back into a real write.
 
-Re-assigning the same plaintext to an [`@deco.Encrypted()`](/docs/models/decorators/encrypted) property is always a real write, since each assignment re-encrypts to fresh ciphertext. For an encrypted field, `changedAttributes()` reports the persisted `encrypted<Name>` key, not the plaintext virtual property — `getAttribute('<plaintext>')` returns `undefined` because it isn't the decrypting accessor, while `getAttribute('encrypted<Name>')` returns ciphertext. Read the decrypted value via the instance property (`instance.<plaintext>`) instead.
+## Encrypted properties
+
+Assigning a new plaintext to an [`@deco.Encrypted()`](/docs/models/decorators/encrypted) property marks its `encrypted<Name>` column dirty; assigning the plaintext it already holds leaves the record clean, so that update issues no `UPDATE` either. `dirtyAttributes()` and `changedAttributes()` report the persisted `encrypted<Name>` key, not the plaintext virtual property — `getAttribute('<plaintext>')` returns `undefined` because it isn't the decrypting accessor, while `getAttribute('encrypted<Name>')` returns ciphertext. Read the decrypted value via the instance property (`instance.<plaintext>`) instead.

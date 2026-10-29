@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: sti-child
-ai_summary: 'The generate:sti-child command creates STI (Single Table Inheritance) child models that extend a parent model. Requires parent model to be created first with --sti-base-serializer flag. Supports same column types as model generator, plus --model-name, --admin-serializers, and --internal-serializers options. ALTERs the parent table (no migration if no columns), rejects belongs_to columns, and never accepts --no-soft-delete.'
+ai_summary: 'The generate:sti-child command creates STI (Single Table Inheritance) child models that extend a parent model. Requires parent model to be created first with --sti-base-serializer flag. Supports the same column types as the model generator except belongs_to, plus --no-serializer, --model-name, --admin-serializers, and --internal-serializers options. ALTERs the parent table (no migration if no columns), rejects belongs_to columns, and never accepts --no-soft-delete.'
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -20,7 +20,7 @@ Before generating STI children, you must first create the parent model with the 
   Place:belongs_to position:integer:optional`}
 />
 
-**Why `--sti-base-serializer`?** This flag creates the base serializer in a format that child serializers can properly extend, ensuring the inheritance hierarchy works correctly.
+**Why `--sti-base-serializer`?** This flag creates generic base serializers that accept the child class as a parameter. Each summary serializer renders `type` right after `id`, with an OpenAPI enum holding only the child's class name, and the default serializer inherits it, so clients can tell which child shape they received. Child serializers extend these base serializers, passing their own class.
 
 ## Usage
 
@@ -43,8 +43,8 @@ You can also create an STI parent using the model generator:
 - `<parentModelName>`: Fully qualified name of the parent model, e.g.:
   - To extend the Room model in `src/app/models/Room`: `Room`
   - To extend the Coach model in `src/app/models/Health/Coach`: `Health/Coach`
-- `[columnsWithTypes...]`: Space separated snake-case (except for belongs_to model name) properties like this:
-  `title:citext subtitle:string body_markdown:text style:enum:post_styles:formal,informal User:belongs_to`
+- `[columnsWithTypes...]`: Space separated snake-case properties like this:
+  `title:citext subtitle:string body_markdown:text style:enum:post_styles:formal,informal`
 
   All properties default to not nullable; null can be allowed by appending `:optional`:
   `subtitle:string:optional`
@@ -68,14 +68,11 @@ You can also create an STI parent using the model generator:
     - Omit the enum values to leverage an existing enum (omits the enum type creation):
       `type:enum:room_types` or `type:enum:room_types:optional`
     - Leveraging arrays, add the "[]" suffix, e.g.: `type:enum[]:room_types:bathroom,kitchen,bedroom`
-  - `belongs_to`: not only adds a foreign key to the migration, but also adds a BelongsTo association to the generated model:
-    - Include the fully qualified model name, e.g., if the Coach model is in `src/app/models/Health/Coach`:
-      `Health/Coach:belongs_to`
+  - `belongs_to` is not supported: STI children cannot declare associations, so declare every `BelongsTo`, `HasOne`, and `HasMany` on the STI parent instead.
 
 ### Options
 
 - `--no-serializer`: Skip generating a serializer for the child model.
-- `--connection-name`: The db connection you want this model attached to (defaults to the default connection).
 - `--model-name <modelName>`: Explicit model class name to use instead of the auto-generated one (e.g. `--model-name=Kitchen` for `Room/Kitchen`).
 - `--admin-serializers`: Generate admin serializer variants (`AdminSerializer` and `AdminSummarySerializer`) in addition to the default serializers.
 - `--internal-serializers`: Generate internal serializer variants (`InternalSerializer` and `InternalSummarySerializer`) in addition to the default serializers.
@@ -110,9 +107,9 @@ STI child models support the same column types as the [model generator](/docs/mo
 ## What Gets Generated
 
 - A Dream STI child model decorated with `@STI(ParentClass)`
-- Child serializers that extend the parent's serializers
-- A migration that **ALTERs the parent table** (never a new table) to add any child-specific columns, plus check constraints that require those columns to be non-null only for rows of that child type. **When the child declares no additional columns, no migration is emitted at all** — STI children share the parent's table, so a columnless child needs no schema change.
+- Child serializers that extend the parent's base serializers (unless `--no-serializer` is passed)
 - Factory and spec skeletons
+- A migration that **ALTERs the parent table** (never a new table) to add any child-specific columns, plus, for each column that is not `:optional`, a boolean, or an array, a check constraint that requires a value only on rows of that child type. The migration goes in the migrations folder of the parent model's database connection, which the child shares. **When the child declares no additional columns, no migration is emitted at all** — STI children share the parent's table, so a columnless child needs no schema change.
 
 STI children never receive `@SoftDelete()` — soft delete is enforced at the STI parent level — and `g:sti-child` does not accept a `--no-soft-delete` flag.
 

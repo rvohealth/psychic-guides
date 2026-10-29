@@ -222,7 +222,7 @@ With the package added, let's first write a spec to cover the new behavior for t
 // api/spec/unit/models/User.spec.ts
 
 import argon2 from 'argon2'
-import createUser from '../../factories/UserFactory.js'
+import createUser from '#spec/factories/UserFactory.js'
 
 describe('User', () => {
   describe('upon save', () => {
@@ -280,8 +280,8 @@ With the new virtual attribute in place, re-running the specs should produce a s
 Let's also update the `createUser` factory to automatically supply a password field, so that we don't always have to remember to provide one when we are creating users for specs.
 
 ```ts
-import { UpdateableProperties } from '@rvoh/dream'
-import User from '../../src/app/models/User.js'
+import { UpdateableProperties } from '@rvoh/dream/types'
+import User from '#models/User.js'
 
 let counter = 0
 
@@ -365,7 +365,7 @@ Now that we have a user with a functioning password field, we can begin wiring u
 // api/spec/features/signup.spec.ts
 
 import { visit } from '@rvoh/psychic-spec-helpers'
-import User from '../../src/app/models/User.js'
+import User from '#models/User.js'
 
 describe('Signup', () => {
   it('allows user to sign up', async () => {
@@ -583,9 +583,9 @@ This will generate both a controller and spec for us. Let's start by editing the
 // api/spec/unit/controllers/AuthSessionController.spec.ts
 
 import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
-import { paths } from '../../../src/types/openapi/tests.openapi.js'
+import { paths } from '#src/types/openapi/tests.openapi.js'
 import { PsychicServer } from '@rvoh/psychic'
-import createUser from '../../factories/UserFactory.js'
+import createUser from '#spec/factories/UserFactory.js'
 
 const request = new OpenapiSpecRequest<paths>()
 
@@ -697,7 +697,7 @@ To solve this error, let's add the implementation for sign up. To start with, we
 // conf/routes.ts
 
 import { PsychicRouter } from '@rvoh/psychic'
-import AuthSessionController from '../app/controllers/AuthSessionController.js'
+import AuthSessionController from '#controllers/AuthSessionController.js'
 
 export default (r: PsychicRouter) => {
   r.post('/sign-up', AuthSessionController, 'signUp')
@@ -710,8 +710,8 @@ Next, let's add the implementation for the sign-up endpoint in the new controlle
 // api/src/app/controllers/AuthSessionController.ts
 
 import { OpenAPI } from '@rvoh/psychic'
-import AuthedController from './AuthedController.js'
-import User from '../models/User.js'
+import AuthedController from '#controllers/AuthedController.js'
+import User from '#models/User.js'
 
 const openApiTags = ['auth-session']
 
@@ -1234,7 +1234,7 @@ Additionally, let's add a corresponding route to the routes file:
 // api/src/conf/routes.ts
 
 import { PsychicRouter } from '@rvoh/psychic'
-import AuthSessionController from '../app/controllers/AuthSessionController.js'
+import AuthSessionController from '#controllers/AuthSessionController.js'
 
 export default (r: PsychicRouter) => {
   r.post('/sign-up', AuthSessionController, 'signUp')
@@ -1301,7 +1301,7 @@ Running this spec should give us a 404. We can fix that by adding both a route a
 // api/src/conf/routes.ts
 
 import { PsychicRouter } from '@rvoh/psychic'
-import AuthSessionController from '../app/controllers/AuthSessionController.js'
+import AuthSessionController from '#controllers/AuthSessionController.js'
 
 export default (r: PsychicRouter) => {
   r.post('/sign-up', AuthSessionController, 'signUp')
@@ -1493,12 +1493,12 @@ This automatically generates a controller, model, serializer, controller spec, a
 ```ts
 // api/spec/unit/controllers/Api/V1/PostsController.spec.ts
 
-import { UpdateableProperties } from '@rvoh/dream'
-import Post from '../../../../../src/app/models/Post.js'
-import User from '../../../../../src/app/models/User.js'
-import createPost from '../../../../factories/PostFactory.js'
-import createUser from '../../../../factories/UserFactory.js'
-import { session, SpecRequestType } from '../../../helpers/authentication.js'
+import { UpdateableProperties } from '@rvoh/dream/types'
+import Post from '#models/Post.js'
+import User from '#models/User.js'
+import createPost from '#spec/factories/PostFactory.js'
+import createUser from '#spec/factories/UserFactory.js'
+import { session, SpecRequestType } from '#spec/unit/helpers/authentication.js'
 
 describe('Api/V1/PostsController', () => {
   let request: SpecRequestType
@@ -1714,7 +1714,7 @@ What you will get, unfortunately, is specs that take forever to fail. This is fu
 
 import { OpenAPI } from '@rvoh/psychic'
 import ApiV1BaseController from './BaseController.js'
-import Post from '../../../models/Post.js'
+import Post from '#models/Post.js'
 
 const openApiTags = ['posts']
 
@@ -1795,7 +1795,7 @@ Examining this controller, all of the methods we need are here, but the implemen
 
 import { OpenAPI } from '@rvoh/psychic'
 import ApiV1BaseController from './BaseController.js'
-import Post from '@models/Post.js'
+import Post from '#models/Post.js'
 
 const openApiTags = ['posts']
 
@@ -1882,8 +1882,8 @@ let's solve for this error now, by updating the AuthedController. Uncommenting a
 
 ```ts
 import { BeforeAction } from '@rvoh/psychic'
-import User from '../models/User.js'
-import ApplicationController from './ApplicationController.js'
+import User from '#models/User.js'
+import ApplicationController from '#controllers/ApplicationController.js'
 
 export default class AuthedController extends ApplicationController {
   protected currentUser: User
@@ -1910,10 +1910,10 @@ Now, we can revisit the PostsController and find that, oh lovely, no more type e
 Let's update the session function to be more relevant to the app. In the end, we will arrive at something much simpler.
 
 ```ts
-import User from '@models/User.js'
+import User from '#models/User.js'
 import { PsychicServer } from '@rvoh/psychic'
 import { OpenapiRequestBody, OpenapiRequestQuery, OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
-import { paths as OpenapiPaths } from '@src/types/openapi/tests.openapi.js'
+import { paths as OpenapiPaths } from '#src/types/openapi/tests.openapi.js'
 
 export type SpecRequestType = Awaited<ReturnType<typeof session>>
 
@@ -1981,7 +1981,7 @@ Before we begin, let's abstract some of the sign in logic to a helper, so we can
 ```ts
 // api/spec/features/helpers/signIn.ts
 
-import User from '../../../src/app/models/User.js'
+import User from '#models/User.js'
 
 export default async function signIn(user: User, password: string = 'abc123') {
   await visit('/')
@@ -1998,9 +1998,9 @@ Now, let's use this spec helper in the index spec:
 ```ts
 // api/spec/features/posts/index.spec.ts
 
-import createPost from '../../factories/PostFactory.js'
-import createUser from '../../factories/UserFactory.js'
-import signIn from '../helpers/signIn.js'
+import createPost from '#spec/factories/PostFactory.js'
+import createUser from '#spec/factories/UserFactory.js'
+import signIn from '#spec/features/helpers/signIn.js'
 
 describe('index Posts', () => {
   it('allows a user to index Posts', async () => {
@@ -2088,7 +2088,7 @@ Let's also update the PostSerializer, so that the summary serializer contains mo
 
 ```ts
 import { DreamSerializer } from '@rvoh/dream'
-import Post from '../models/Post.js'
+import Post from '#models/Post.js'
 
 export const PostSummarySerializer = (post: Post) =>
   DreamSerializer(Post, post).attribute('id').attribute('title').attribute('body')
@@ -2183,9 +2183,9 @@ Next, let's add a show page for one of our blog entries. We'll start with a feat
 ```ts
 // spec/features/posts/show.spec.ts
 
-import createPost from '../../factories/PostFactory.js'
-import createUser from '../../factories/UserFactory.js'
-import signIn from '../helpers/signIn.js'
+import createPost from '#spec/factories/PostFactory.js'
+import createUser from '#spec/factories/UserFactory.js'
+import signIn from '#spec/features/helpers/signIn.js'
 
 describe('show Post', () => {
   it('allows a user to show a Post', async () => {
@@ -2339,8 +2339,8 @@ With a show page in place, it will be easier to write a create test, since that 
 ```ts
 // api/spec/features/posts/create.spec.ts
 
-import createUser from '../../factories/UserFactory.js'
-import signIn from '../helpers/signIn.js'
+import createUser from '#spec/factories/UserFactory.js'
+import signIn from '#spec/features/helpers/signIn.js'
 
 describe('create a Post', () => {
   it('allows a user to create a Post', async () => {
@@ -2484,9 +2484,9 @@ With all of this in place, adding the scaffolding for updating should be relativ
 ```ts
 // api/spec/features/posts/update.spec.ts
 
-import createPost from '../../factories/PostFactory.js'
-import createUser from '../../factories/UserFactory.js'
-import signIn from '../helpers/signIn.js'
+import createPost from '#spec/factories/PostFactory.js'
+import createUser from '#spec/factories/UserFactory.js'
+import signIn from '#spec/features/helpers/signIn.js'
 
 describe('update a Post', () => {
   it('allows a user to update a Post', async () => {
@@ -2695,10 +2695,10 @@ Now let's add a delete spec to get going on our ability to delete existing posts
 ```ts
 // api/spec/features/posts/delete.spec.ts
 
-import Post from '../../../src/app/models/Post.js'
-import createPost from '../../factories/PostFactory.js'
-import createUser from '../../factories/UserFactory.js'
-import signIn from '../helpers/signIn.js'
+import Post from '#models/Post.js'
+import createPost from '#spec/factories/PostFactory.js'
+import createUser from '#spec/factories/UserFactory.js'
+import signIn from '#spec/features/helpers/signIn.js'
 
 describe('delete a Post', () => {
   it('allows a user to delete a Post', async () => {

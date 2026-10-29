@@ -77,7 +77,7 @@ function applyFilters(query: Query<Place, any>, params: FilterParams): Query<Pla
 }
 ```
 
-**What you lose at the cast site:** joined column name validation in subsequent `where` calls. `leftJoin` itself still validates the association name.
+**What each costs:** the `typeof query` cast keeps full checking — the joined-column `where` is chained before the cast, so it is validated against the join. A `Query<Place, any>` helper gives up `where` checking entirely: column names and values, base or joined, compile unchecked. Association names and the other query-method checks stay in force in both, and runtime behavior is unchanged.
 
 ## leftJoin vs leftJoinPreload
 

@@ -42,8 +42,8 @@ export default (psy: PsychicApp) => {
 
   psy.set('openapi', 'mobile', {
     outputFilepath: path.join('src', 'openapi', 'mobile.openapi.json'),
-    // identical endpoints to `default`, except enums are emitted as
-    // described strings instead of a closed set of values
+    // identical endpoints to `default`, except response enums are emitted
+    // as described strings instead of a closed set of values
     suppressResponseEnums: true,
   })
 }

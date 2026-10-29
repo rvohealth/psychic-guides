@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-ai_summary: "Install @rvoh/psychic-websockets package. Can be selected during app provisioning or installed after. Add conf/initializers/websockets.ts configuration file. Per-environment adapter seam: test uses InProcessWebsocketsAdapter (no Redis), dev/prod use RedisWebsocketsAdapter; override with wsApp.set('adapter', ...). Configurable connection limits: maxConnectionsPerUser (default 3) and maxConnectionTtl (default 1 day, a GC backstop — not socket lifetime). Provides ws:start, ws:connect, and ws:error lifecycle hooks. Covers the resolveWebsocketUser auth helper, the CORS_HOSTS origin allowlist, the health check endpoint, and running the websocket server as its own process via Cable."
+ai_summary: "Install @rvoh/psychic-websockets package. Can be selected during app provisioning or installed after. Add conf/initializers/websockets.ts configuration file. Per-environment adapter seam: test uses InProcessWebsocketsAdapter (no Redis), dev/prod use RedisWebsocketsAdapter; override with wsApp.set('adapter', ...). Configurable connection limits (Redis adapter): maxConnectionsPerUser (default 3; an evicted socket stays connected but receives nothing) and maxConnectionTtl (default 1 day, a GC backstop — not socket lifetime). Provides ws:start, ws:connect, and ws:error lifecycle hooks; sockets sign in from ws:connect, where a throw is contained and reported to ws:error. Covers the resolveWebsocketUser auth helper, the CORS_HOSTS origin allowlist enforced in an inline allowRequest, the health check endpoint, running the websocket server as its own process via Cable, and waiting for /ops/connection-success on the client."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -22,11 +22,11 @@ However, if this is not the case for you and you are looking to install websocke
 2. Add the missing configuration file to `src/conf/initializers/websockets.ts`:
 
 ```ts
-import AppEnv from '@conf/AppEnv.js'
-import allowedCorsOrigins from '@conf/system/allowedCorsOrigins.js'
-import resolveWebsocketUser from '@conf/system/resolveWebsocketUser.js'
+import AppEnv from '#conf/AppEnv.js'
+import allowedCorsOrigins from '#conf/system/allowedCorsOrigins.js'
+import resolveWebsocketUser from '#conf/system/resolveWebsocketUser.js'
 import { PsychicApp } from '@rvoh/psychic'
-import { allowRequestForOrigins, PsychicAppWebsockets, Ws } from '@rvoh/psychic-websockets'
+import { PsychicAppWebsockets, Ws } from '@rvoh/psychic-websockets'
 import { Redis } from 'ioredis'
 
 export default (psy: PsychicApp) => {
@@ -66,23 +66,38 @@ function initializeWebsockets(wsApp: PsychicAppWebsockets) {
     )
   }
 
+  // socket.io's own `cors.origin` constrains HTTP long-polling only; native
+  // WebSocket upgrades bypass CORS. `allowRequest` runs before every handshake
+  // on every transport, so re-enforce the allowlist there.
+  const allowedOrigins = allowedCorsOrigins()
   wsApp.set('socketio', {
-    allowRequest: allowRequestForOrigins(allowedCorsOrigins()),
-  })
-
-  wsApp.on('ws:start', io => {
-    io.of('/').on('connection', async socket => {
-      const user = await resolveWebsocketUser(socket)
-      if (!user) {
-        socket.disconnect(true)
-        return
+    cors: {
+      credentials: true,
+      origin: allowedOrigins,
+    },
+    allowRequest: (req, callback) => {
+      const origin = req.headers.origin
+      if (origin !== undefined && allowedOrigins.includes(origin)) {
+        callback(null, true)
+      } else {
+        callback('origin not allowed', false)
       }
-      await Ws.register(socket, user.id)
-    })
+    },
   })
 
-  wsApp.on('ws:connect', () => {
-    // do something upon websocket connection being established
+  // Sign in each socket in ws:connect, where a throw is contained to that
+  // socket and reported to ws:error. resolveWebsocketUser is the app's helper.
+  wsApp.on('ws:connect', async socket => {
+    const user = await resolveWebsocketUser(socket)
+    if (!user) {
+      socket.disconnect(true)
+      return
+    }
+
+    await Ws.register(socket, user.id)
+
+    const ws = new Ws(['/ops/connection-success'] as const)
+    await ws.emit(user.id, '/ops/connection-success', { message: 'Connected' })
   })
 }
 ```
@@ -176,9 +191,9 @@ Two connection-limit options are available via `wsApp.set(...)`. Both already de
 
 ```ts
 // Cap on simultaneous socket registrations per user. When a user
-// registers a new socket past this limit, their oldest socket is evicted.
-// This bounds per-user resource use — a client reconnecting in a loop
-// can't accumulate unbounded registry entries.
+// registers a new socket past this limit, their oldest socket is evicted
+// from the registry. This bounds per-user resource use — a client
+// reconnecting in a loop can't accumulate unbounded registry entries.
 wsApp.set('maxConnectionsPerUser', 3)
 
 // TTL on the per-user socket-id registry key in Redis.
@@ -191,51 +206,53 @@ wsApp.set('maxConnectionsPerUser', 3)
 wsApp.set('maxConnectionTtl', { days: 1 })
 ```
 
+Both limits apply under the Redis adapter only, so specs on the in-process adapter never hit the cap. An evicted socket is not disconnected: it stays connected but silently receives nothing more, because emits find sockets through the registry. A user with a fourth tab or device open drops the first one this way, so raise `maxConnectionsPerUser` if your users routinely hold more connections than that.
+
 ### Hooks
 
 In addition to configuration, psychic-websockets also exposes hooks to tap into during various lifecycle events exposed by the websockets app.
 
 #### ws:start {#ws-start}
 
-The `ws:start` event is called whenever the websocket server is started. This enables you to establish socket bindings. Under the hood we are using [socket.io](https://socket.io) to power websocket bindings, which means you can visit their documentation to understand more about setting up a websockets app within your application.
+The `ws:start` event is called whenever the websocket server is started, with the socket.io server. Under the hood we are using [socket.io](https://socket.io) to power websocket bindings, which means you can visit their documentation to understand more about setting up a websockets app within your application.
 
 ```ts
-export default (wsApp: PsychicAppWebsockets) => {
-  // ...
-  wsApp.on('ws:start', io => {
-    // use socket.io to establish namespaced channels
-    // for your app to communicate on
-    io.of('/').on('connection', async socket => {
-      const user = await resolveWebsocketUser(socket)
-      if (!user) {
-        socket.disconnect(true)
-        return
-      }
-
-      // this automatically fires the /ops/connection-success message
-      await Ws.register(socket, user.id)
-
-      // establish socket routes using socket.on
-    })
-  })
-}
-```
-
-#### ws:connect {#ws-connect}
-
-`ws:connect` fires once a socket has connected, and is the recommended place to do per-socket work that might throw — including auth. A hook registered here runs inside a try/catch the framework provides: if it throws (a DB or Redis blip mid-handshake, for example), the framework logs the error, calls `socket.disconnect(true)`, and moves on — only that one socket is rejected, the ws process stays up. That containment means the hook doesn't need its own outer try/catch to protect the process, and a throw is a legitimate way to reject a connection.
-
-```ts
-wsApp.on('ws:connect', async () => {
-  // do something upon websocket connection being established —
-  // a throw here is caught, logged, and disconnects only this socket
+wsApp.on('ws:start', io => {
+  // use socket.io to establish namespaced channels
+  // for your app to communicate on
 })
 ```
 
+Sign sockets in from a `ws:connect` hook rather than from a connection handler registered here; see the caution below.
+
+#### ws:connect {#ws-connect}
+
+`ws:connect` fires once a socket has connected, with that socket, and is the place to sign it in and do any other per-socket work that might throw. A hook registered here runs inside a try/catch the framework provides: if it throws (a DB or Redis blip during the user lookup, for example), the framework logs the error, calls `socket.disconnect(true)`, and moves on — only that one socket is rejected, and the ws process stays up. So the hook needs no outer try/catch to protect the process.
+
+```ts
+wsApp.on('ws:connect', async socket => {
+  const user = await resolveWebsocketUser(socket)
+  if (!user) {
+    socket.disconnect(true)
+    return
+  }
+
+  await Ws.register(socket, user.id)
+
+  const ws = new Ws(['/ops/connection-success'] as const)
+  await ws.emit(user.id, '/ops/connection-success', { message: 'Connected' })
+
+  // any other per-connection work goes after Ws.register,
+  // so it never runs for a socket that is not signed in
+})
+```
+
+The `/ops/connection-success` event is the hook's own emit, sent once `Ws.register` has stored the socket; it is what tells the client that sign-in finished (see [Client transport](#client-transport)).
+
 Framework-contained failures here are also forwarded to the `ws:error` hook below, which is where you ship them to your monitoring SDK.
 
-:::caution Per-socket auth belongs in `ws:connect`, not inside `ws:start`'s `io.on('connection')`
-Containment only wraps `ws:connect` hooks. If you do per-socket auth directly inside the `io.on('connection')` handler you register in `ws:start` (as shown above, and as `create-psychic` scaffolds), a throw there is **not** contained by the framework and gets no `ws:error` coverage — it's your own responsibility to catch it. Moving that logic into `wsApp.on('ws:connect', …)` gets you both containment and `ws:error` observability for free.
+:::caution Per-socket auth belongs in `ws:connect`
+Containment only wraps `ws:connect` hooks. A throw inside an `io.on('connection')` handler registered in a `ws:start` hook, or inside `io.use` middleware, is **not** contained by the framework and gets no `ws:error` coverage. In the generated `ws.ts` it becomes an unhandled rejection, which exits the websocket process. Put per-socket auth in `wsApp.on('ws:connect', …)` to get both containment and `ws:error` observability.
 :::
 
 #### ws:error {#ws-error}
@@ -257,7 +274,7 @@ wsApp.on('ws:error', (error, context) => {
 
 The second argument is a discriminated context (`PsychicWebsocketsErrorContext`, exported alongside `PsychicWebsocketsErrorHook`) with two phases:
 
-- **`phase: 'ws:connect'`** — a `ws:connect` hook threw while a socket was connecting. Carries `socketId`. A throw-to-reject (an auth hook throwing to refuse a connection) fires this too, so filter your own rejection sentinels inside the hook if you don't want to treat those as errors.
+- **`phase: 'ws:connect'`** — a `ws:connect` hook threw while a socket was connecting. Carries `socketId`.
 - **`phase: 'ws:health-check'`** — the websocket server's own HTTP request handler (the health check and its catch-all 404) threw. Carries `method` and `path`. This is the ws process's raw `http.Server`, **not** the Koa app — errors here never reach `server:error`.
 
 The context handed to this hook is privacy-scrubbed for external shipping: it never carries a raw socket, handshake credentials, request headers, or the raw request URL — `path` is the pathname with the query string stripped, since a query string can carry tokens or PII. (The framework's own internal error log still records the full URL locally; only the external-bound hook context is scrubbed.)
@@ -268,22 +285,9 @@ This is by design. The framework already logs the pub/sub clients' `'error'` eve
 
 ### Auth: `resolveWebsocketUser`
 
-`create-psychic` scaffolds a boilerplate auth helper at `conf/system/resolveWebsocketUser.ts`. A newly-generated app rejects every websocket connection until you replace its body with real auth logic — typically pulling a token from `socket.handshake.auth`, decrypting it, and returning the matching `User` (or `null` to reject):
+`resolveWebsocketUser` (`conf/system/resolveWebsocketUser.ts`) is the app's own helper. It reads the token the client sends in `socket.handshake.auth` and returns the matching `User`, or `null` to reject the socket. Have it return `null` for a token it can't decrypt, as `getCookie` does for a cookie no key opens (see [Decrypting cookies outside a controller](/docs/controllers/cookies#decrypting-cookies-outside-a-controller)).
 
-```ts
-// conf/system/resolveWebsocketUser.ts
-import type { Socket } from 'socket.io'
-import User from '../../app/models/User.js'
-
-export default async function resolveWebsocketUser(socket: Socket): Promise<User | null> {
-  const token = socket.handshake.auth.token as string | undefined
-  if (!token) return null
-  // ...decrypt the token and look up the user
-  return User.find(/* userId */)
-}
-```
-
-The "fail loudly in dev" ergonomic is intentional — if auth isn't wired up, no socket connects, rather than every socket connecting as an anonymous user.
+`create-psychic` scaffolds a version for early development: in the `test` environment it decrypts the token with `Encrypt.decrypt` and `APP_ENCRYPTION_KEY` to find the user, returning `null` for a token it can't open, and everywhere else it throws, so every socket is rejected (and the throw reported to `ws:error`) until you replace it with your production authentication.
 
 ### Health check
 
@@ -301,18 +305,24 @@ An error thrown by this handler (or by the server's catch-all 404) surfaces to `
 
 ### Origin allowlist
 
-`wsApp.set('socketio', { allowRequest, ... })` is a thin passthrough to socket.io's own server options — see the [socket.io server API docs](https://socket.io/docs/v4/server-api/#new-Server-httpServer-options) for the full option shape. The one Psychic-specific piece is `allowRequestForOrigins`, exported from `@rvoh/psychic-websockets`, which builds an `allowRequest` handler from your app's origin allowlist:
+`wsApp.set('socketio', { ... })` is a thin passthrough to socket.io's own server options — see the [socket.io server API docs](https://socket.io/docs/v4/server-api/#new-Server-httpServer-options) for the full option shape. The generated initializer uses two of them to enforce the app's origin allowlist (shown in [Installation](#installation) above): `cors.origin`, and an inline `allowRequest` that closes over the same list.
 
 ```ts
-import allowedCorsOrigins from '@conf/system/allowedCorsOrigins.js'
-import { allowRequestForOrigins } from '@rvoh/psychic-websockets'
-
+const allowedOrigins = allowedCorsOrigins()
 wsApp.set('socketio', {
-  allowRequest: allowRequestForOrigins(allowedCorsOrigins()),
+  cors: { credentials: true, origin: allowedOrigins },
+  allowRequest: (req, callback) => {
+    const origin = req.headers.origin
+    if (origin !== undefined && allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback('origin not allowed', false)
+    }
+  },
 })
 ```
 
-This matters because socket.io's `cors.origin` option only constrains HTTP long-polling — a native WebSocket upgrade bypasses CORS entirely. `allowRequest` runs before every handshake on every transport, so it's the one enforcement point that actually covers both.
+Both are needed because socket.io's `cors.origin` option only constrains HTTP long-polling — a native WebSocket upgrade bypasses CORS entirely. `allowRequest` runs before every handshake on every transport, so it's the one enforcement point that actually covers both. Keep `allowRequest` to checks on the raw HTTP request: the client's auth token (`socket.handshake.auth`) isn't available there yet, and a throw there is not contained. Authentication goes in the [`ws:connect`](#ws-connect) hook.
 
 The allowlist itself lives in the app: `conf/system/allowedCorsOrigins.ts` parses the `CORS_HOSTS` env var, which must be a JSON-encoded array of origins:
 
@@ -322,8 +332,6 @@ CORS_HOSTS='["https://app.example.com","https://admin.example.com"]'
 
 It defaults to `[]` when unset, so an app booted without it rejects every handshake. Malformed JSON throws at boot, naming `CORS_HOSTS` and echoing what it received.
 
-If you need to layer an auth-token check onto the handshake in addition to origin checking, do it inside a custom `allowRequest` body rather than `allowRequestForOrigins` — that helper only checks origin.
-
 ## WebSocket Server Startup
 
 The websocket server runs as its own process, separate from your web and worker processes, using the `Cable` class:
@@ -331,8 +339,8 @@ The websocket server runs as its own process, separate from your web and worker 
 ```ts
 // ws.ts
 import { Cable } from '@rvoh/psychic-websockets'
-import AppEnv from '@conf/AppEnv.js'
-import initializePsychicApp from '@conf/system/initializePsychicApp.js'
+import AppEnv from '#conf/AppEnv.js'
+import initializePsychicApp from '#conf/system/initializePsychicApp.js'
 
 let cable: Cable | null = null
 
@@ -358,7 +366,7 @@ Configure the Redis connection (`wsApp.set('connection', ...)`) before `cable.st
 
 ## Client Transport
 
-Set `transports: ['websocket']` on the Socket.IO client. Socket.IO tries long-polling first and upgrades in the background; WebSocket is universally supported by modern browsers and mobile apps, so skipping the polling phase just means faster connection establishment. The websocket server serves polling and WebSocket clients correctly either way, so this is a connection-latency recommendation rather than a correctness requirement — with one exception at scale: a polling client's later requests have to reach the same node, because engine.io's heartbeat timers are per-connection, so a multi-node fleet serving polling clients needs sticky sessions. Websocket-only transport sidesteps that.
+Set `transports: ['websocket']` on the Socket.IO client. Socket.IO tries long-polling first and upgrades in the background; WebSocket is universally supported by modern browsers and mobile apps, so skipping the polling phase just means faster connection establishment. The websocket server serves polling and WebSocket clients correctly either way, so this is a connection-latency recommendation rather than a correctness requirement — with one exception at scale: a polling client's later requests have to reach the node holding its engine.io session (any other node answers "Session ID unknown"), so a multi-node fleet serving polling clients needs sticky sessions. Websocket-only transport sidesteps that.
 
 ```ts
 import { io } from 'socket.io-client'
@@ -366,5 +374,19 @@ import { io } from 'socket.io-client'
 const socket = io(websocketHost, {
   transports: ['websocket'],
   auth: { token },
+})
+```
+
+The client's `connect` event can fire before the `ws:connect` hook has signed the socket in, so wait for the event the hook emits after `Ws.register` (`/ops/connection-success` in [ws:connect](#ws-connect)) before relying on emits reaching it. A socket the hook disconnects, such as one `resolveWebsocketUser` rejects, gets a `disconnect` event with reason `'io server disconnect'`, never `connect_error`:
+
+```ts
+socket.on('/ops/connection-success', () => {
+  // signed in: emits to this user now reach this socket
+})
+
+socket.on('disconnect', reason => {
+  if (reason === 'io server disconnect') {
+    // the server rejected or dropped this socket; it will not reconnect on its own
+  }
 })
 ```

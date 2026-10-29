@@ -2,7 +2,7 @@
 sidebar_position: 0
 title: overview
 pagination_prev: null
-ai_summary: "Websockets package enables real-time updates via a permanent client-server connection, built on Socket.IO with Redis pub-sub for distributing broadcasts across a clustered websocket fleet. Ws class simplifies registering users and emitting messages. Register users on connection in conf/initializers/websockets.ts. Emit from anywhere in the application, including background jobs."
+ai_summary: "Websockets package enables real-time updates via a permanent client-server connection, built on Socket.IO with Redis pub-sub for distributing broadcasts across a clustered websocket fleet. Ws class simplifies registering users and emitting messages. Sign in and register users from the ws:connect hook in conf/initializers/websockets.ts. Emit from anywhere in the application, including background jobs."
 ---
 
 # websockets overview
@@ -17,28 +17,26 @@ Psychic solves this complexity for you by providing you with two key features:
 
 2. The `Ws` class, a simple class to use for registering users and emitting to them from anywhere in your stack. This class abstracts away the complexity of connecting to redis adapters, making it easy to set up clean patterns for both registering and emitting to users.
 
-To utilize the Ws class to your advantage, you first need to leverage the `.register` method when websocket connections. This is done within the `conf/initializers/websockets.ts` file, which `create-psychic` scaffolds for you when you opt into websockets:
+To utilize the Ws class to your advantage, you first need to call the `.register` method as each websocket connects. This is done from a `ws:connect` hook in the `conf/initializers/websockets.ts` file, which `create-psychic` scaffolds for you when you opt into websockets:
 
 ```ts
 // conf/initializers/websockets.ts
-import resolveWebsocketUser from '@conf/system/resolveWebsocketUser.js'
+import resolveWebsocketUser from '#conf/system/resolveWebsocketUser.js'
 
 function initializeWebsockets(wsApp: PsychicAppWebsockets) {
-  wsApp.on('ws:start', io => {
-    io.of('/').on('connection', async socket => {
-      const user = await resolveWebsocketUser(socket)
-      if (!user) {
-        socket.disconnect(true)
-        return
-      }
+  wsApp.on('ws:connect', async socket => {
+    const user = await resolveWebsocketUser(socket)
+    if (!user) {
+      socket.disconnect(true)
+      return
+    }
 
-      await Ws.register(socket, user.id)
-    })
+    await Ws.register(socket, user.id)
   })
 }
 ```
 
-`resolveWebsocketUser` is itself scaffolded boilerplate — a newly-generated app rejects every websocket connection until you replace its body with real auth logic. See [Registering](./registering) and [Config](./config#auth-resolvewebsocketuser) for the full pattern, including how the front end hands back the auth token that `resolveWebsocketUser` resolves.
+`resolveWebsocketUser` is itself scaffolded boilerplate — outside the `test` environment, a newly-generated app rejects every websocket connection until you replace it with your production authentication. See [Registering](./registering) and [Config](./config#auth-resolvewebsocketuser) for the full pattern, including how the front end hands back the auth token that `resolveWebsocketUser` resolves.
 
 Once this is done, you are able to emit from anywhere in your application to this user using the `emit` method.
 

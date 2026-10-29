@@ -12,7 +12,7 @@ Calling `delete` on a query issues a single `DELETE` statement for every record 
 await LocalizedText.where({ localizable: host }).delete()
 ```
 
-`delete` bypasses the model entirely — of the query-level writers, only `delete()` and the no-`lock` `update(attrs, { skipHooks: true })` do. That means:
+`delete` bypasses the model entirely — of the query-level writers, only `delete()` and the no-`lock` `update(attrs, { skipHooks: true })` do. It is one statement, still filtered by the query's `where` and the model's default scopes. That means:
 
 - No lifecycle hooks run.
 - No `dependent: 'destroy'` cascade runs (though a database-level foreign key `ON DELETE CASCADE`, if one exists, still fires).
@@ -20,4 +20,4 @@ await LocalizedText.where({ localizable: host }).delete()
 
 ## When you want the model's lifecycle instead
 
-`query.destroy(...)`, `query.reallyDestroy(...)`, and `query.undestroy(...)` instantiate each matched record — even under `{ skipHooks: true }` — so default scopes and any `dependent: 'destroy'` cascade still apply. Reach for these instead of `delete` when you need soft-delete semantics, cascading destroys, or lifecycle hooks to run. See [destroying](/docs/models/destroying) for the full instance- and association-level destroy reference.
+`query.destroy(...)`, `query.reallyDestroy(...)`, and `query.undestroy(...)` instantiate each matched record — even under `{ skipHooks: true }` — so any `dependent: 'destroy'` cascade still applies. Reach for these instead of `delete` when you need soft-delete semantics, cascading destroys, or lifecycle hooks to run. See [destroying](/docs/models/destroying) for the full instance- and association-level destroy reference.

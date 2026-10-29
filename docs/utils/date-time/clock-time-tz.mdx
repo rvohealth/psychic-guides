@@ -402,15 +402,16 @@ ClockTimeTz.min(estTime, pstTime) // same instant, returns first
 ClockTimeTz instances are automatically created when loading `time with time zone` columns from the database:
 
 ```ts
-import { Model } from '@rvoh/psychic'
-import { ClockTimeTz } from '@rvoh/dream'
-
-class Meeting extends Model {
-  id!: number
-  title!: string
-  startTime!: ClockTimeTz // time with time zone
-  endTime!: ClockTimeTz // time with time zone
+class Meeting extends ApplicationModel {
+  public id: DreamColumn<Meeting, 'id'>
+  public title: DreamColumn<Meeting, 'title'> // string
+  public startTime: DreamColumn<Meeting, 'startTime'> // ClockTimeTz (time with time zone)
+  public endTime: DreamColumn<Meeting, 'endTime'> // ClockTimeTz (time with time zone)
 }
+```
+
+```ts
+import { ClockTimeTz } from '@rvoh/dream'
 
 // Load from database
 const meeting = await Meeting.find(1)

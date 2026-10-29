@@ -29,8 +29,8 @@ Background methods can optionally receive a `Job` parameter as their last argume
 import { Job } from 'bullmq'
 
 class DataProcessingService extends ApplicationBackgroundedService {
-  public static async processLargeDataset(datasetId: string) {
-    await this.background('_processLargeDataset', datasetId)
+  public static async processLargeDataset(dataset: Dataset) {
+    await this.background('_processLargeDataset', dataset.id)
   }
 
   public static async _processLargeDataset(datasetId: string, job: Job) {

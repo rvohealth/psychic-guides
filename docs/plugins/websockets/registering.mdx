@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: registering
-ai_summary: "Register users with Ws class when websocket connections are established. Frontend provides auth token via socket.io-client handshake. Backend resolves the websocket user in the initializer and calls Ws.register(socket, user.id)."
+ai_summary: "Register users with Ws class when websocket connections are established. Frontend provides auth token via socket.io-client handshake. Backend resolves the websocket user in the ws:connect hook, calls Ws.register(socket, user.id), and emits /ops/connection-success. Ws.register stores socket ids under the Redis key user:{id}:socket_ids; another table's ids take their own prefix. Each key keeps at most maxConnectionsPerUser (default 3) sockets."
 ---
 
 # Registering
@@ -19,7 +19,7 @@ Registering users with the `Ws` class is imperative if you intend to later emit 
     this.startSession(user!)
 
     // this token is used for authenticating via websockets
-    const token = Encrypt.encrypt(user!.id.toString(), {
+    const token = Encrypt.encrypt({ userId: user!.id }, {
       algorithm: 'aes-256-gcm',
       key: AppEnv.string('APP_ENCRYPTION_KEY'),
     })
@@ -47,8 +47,8 @@ try {
     transports: ['websocket'],
   })
 
-  // this will be called automatically upon establishing
-  // a connection with socket.io in Psychic
+  // emitted by the ws:connect hook once this socket is signed in
+  // and registered (see below)
   socket.on('/ops/connection-success', message => {
     console.log(message)
   })
@@ -57,25 +57,29 @@ try {
 }
 ```
 
-Finally, in `src/conf/initializers/websockets.ts`, register your users with `Ws` upon connection via websocket:
+Finally, in `src/conf/initializers/websockets.ts`, sign each socket in and register it with `Ws` from a `ws:connect` hook:
 
 ```ts
 // src/conf/initializers/websockets.ts
 function initializeWebsockets(wsApp: PsychicAppWebsockets) {
-  wsApp.on('ws:start', io => {
-    io.of('/').on('connection', async socket => {
-      const user = await resolveWebsocketUser(socket)
-      if (!user) {
-        socket.disconnect(true)
-        return
-      }
-      await Ws.register(socket, user.id)
-    })
+  wsApp.on('ws:connect', async socket => {
+    const user = await resolveWebsocketUser(socket)
+    if (!user) {
+      socket.disconnect(true)
+      return
+    }
+
+    await Ws.register(socket, user.id) // Redis key 'user:{id}:socket_ids'
+
+    const ws = new Ws(['/ops/connection-success'] as const)
+    await ws.emit(user.id, '/ops/connection-success', { message: 'Connected' })
   })
 }
 ```
 
-`resolveWebsocketUser` is the boilerplate auth helper `create-psychic` scaffolds at `conf/system/resolveWebsocketUser.ts` — the login-endpoint-plus-`Encrypt.decrypt` pattern shown above is exactly what belongs inside its body. A newly-generated app rejects every websocket connection until that body is filled in with real auth logic, so no socket connects as an unauthenticated or misattributed user by default. See [Config](./config#auth-resolvewebsocketuser) for the helper's full shape.
+A throw inside a `ws:connect` hook is contained to that socket: the framework logs it, disconnects the socket, and reports it to `ws:error` (see [Config](./config#ws-connect)).
+
+`resolveWebsocketUser` is the auth helper `create-psychic` scaffolds at `conf/system/resolveWebsocketUser.ts` — decrypting the token from the login endpoint above with `Encrypt.decrypt`, and returning `null` for a token it can't decrypt, is what belongs inside its body. The scaffolded version throws outside the `test` environment, so a newly-generated app rejects every websocket connection until it is replaced with your production authentication. See [Config](./config#auth-resolvewebsocketuser).
 
 Once this is done, you are able to emit from anywhere in your backend application to this user using the `#emit` method.
 
@@ -84,4 +88,19 @@ ws = new Ws(['/users/ping', 'users/alert', 'users/info'] as const)
 await ws.emit(user.id, '/users/ping', { hello: 'world' })
 ```
 
-To learn more about emitting to your users, see the [Emitting guides](./emitting)
+To learn more about emitting to your users, see the [Emitting guides](./emitting).
+
+## Registering ids from another table
+
+`Ws.register` keys sockets by id under the `user` prefix. Ids from another table, such as an `AdminUser`'s, need their own prefix so they never collide with a `User`'s, and emits to them name the same prefix:
+
+```ts
+await Ws.register(socket, adminUser.id, 'admin-user')
+
+const adminWs = new Ws(['/admin/alert'] as const, { redisKeyPrefix: 'admin-user' })
+await adminWs.emit(adminUser.id, '/admin/alert', { message: 'hello' })
+```
+
+## Connection cap
+
+Under the Redis adapter, each key keeps at most three sockets by default. A fourth `Ws.register` for the same user — a fourth tab or device — drops the oldest socket from the registry; that socket stays connected but silently receives nothing more. Raise the cap with `wsApp.set('maxConnectionsPerUser', n)` (see [Connection limits](./config#connection-limits)). The in-process adapter used in specs applies no cap.

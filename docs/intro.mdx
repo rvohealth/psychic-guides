@@ -121,7 +121,7 @@ Psychic provides an expressive routing layer to your controllers:
 ```ts
 // conf/routes.ts
 
-import V1HostPlacesController from '@controllers/V1/Host/PlacesController.js'
+import V1HostPlacesController from '#controllers/V1/Host/PlacesController.js'
 import { PsychicRouter } from '@rvoh/psychic'
 
 export default function routes(r: PsychicRouter) {
@@ -327,7 +327,7 @@ const date = CalendarDate.today()
 const parsedDate = CalendarDate.fromISO('2024-01-15')
 ```
 
-Dream automatically converts database `timestamp` fields to `DateTime` objects and `date` fields to `CalendarDate` objects, providing built-in math, formatting, and timezone handling. see the [date and time](/docs/utils/date-time/overview) guides for full documentation.
+Dream automatically converts database `timestamp` and `timestamptz` fields to `DateTime` objects and `date` fields to `CalendarDate` objects, providing built-in math, formatting, and timezone handling. see the [date and time](/docs/utils/date-time/overview) guides for full documentation.
 :::
 
 - powerful decorators like `@SoftDelete`, `@Sortable`, and `@ReplicaSafe` that automatically and universally handle common use cases which would otherwise introduce complexity into your application
@@ -451,8 +451,8 @@ Psychic also provides helpers to enable easy endpoint testing, making it simple 
 
 import { PsychicServer } from '@rvoh/psychic'
 import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
-import createUser from '../../../../factories/UserFactory'
-import { validationOpenapiPaths } from '../../../../../src/types/openapi/validation.openapi.js'
+import createUser from '#spec/factories/UserFactory.js'
+import { validationOpenapiPaths } from '#src/types/openapi/validation.openapi.js'
 
 const request = new OpenapiSpecRequest<validationOpenapiPaths>()
 
@@ -494,7 +494,7 @@ Psychic will automatically bootstrap with [puppeteer](https://pptr.dev/guides/wh
 ```ts
 // api/spec/features/visitor/signs-up.spec.ts
 
-import User from '../../../src/app/models/User'
+import User from '#models/User.js'
 
 describe('visitor visits the signup page', () => {
   it('allows visitor to fill sign up for a new account and then log in with the same credentials', async () => {

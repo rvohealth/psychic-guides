@@ -10,7 +10,7 @@ import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
 
 There are two ways to install the `psychic-workers` package. The first is by selecting `yes` when prompted during the initial psychic app provisioning stage. If you select yes, the package will be automatically installed, and your app bootstrapped to use workers automatically.
 
-However, if this is not the case for you and you are looking to install websockets after the fact, you can follow these steps:
+However, if this is not the case for you and you are looking to install workers after the fact, you can follow these steps:
 
 1. Install the package.
 
@@ -26,8 +26,8 @@ However, if this is not the case for you and you are looking to install websocke
 import { PsychicApp } from '@rvoh/psychic'
 import { PsychicAppWorkers } from '@rvoh/psychic-workers'
 import { Queue, Worker } from 'bullmq'
-import Redis, { Cluster } from 'ioredis'
-import AppEnv from '../AppEnv.js'
+import { Cluster, Redis } from 'ioredis'
+import AppEnv from '#conf/AppEnv.js'
 
 export default (psy: PsychicApp) => {
   psy.plugin(async () => {
@@ -171,11 +171,11 @@ function initializeWorkers(workersApp: PsychicAppWorkers) {
 // app/services/ApplicationBackgroundedService.ts
 
 import { BaseBackgroundedService } from '@rvoh/psychic-workers'
-import psychicTypes from '../../types/psychic'
+import psychicWorkerTypes from '#src/types/workers.js'
 
 export default class ApplicationBackgroundedService extends BaseBackgroundedService {
-  public get psychicTypes() {
-    return psychicTypes
+  public override get psychicWorkerTypes() {
+    return psychicWorkerTypes
   }
 }
 ```
@@ -184,40 +184,46 @@ export default class ApplicationBackgroundedService extends BaseBackgroundedServ
 // app/services/ApplicationScheduledService.ts
 
 import { BaseScheduledService } from '@rvoh/psychic-workers'
-import psychicTypes from '../../types/psychic'
+import psychicWorkerTypes from '#src/types/workers.js'
 
 export default class ApplicationScheduledService extends BaseScheduledService {
-  public get psychicTypes() {
-    return psychicTypes
+  public override get psychicWorkerTypes() {
+    return psychicWorkerTypes
   }
 }
 ```
 
 ```ts
-// app/models/ApplicationBackgroundedModel
+// app/models/ApplicationBackgroundedModel.ts
 
-import { BackgroundJobConfig, BaseBackgroundedModel } from '@rvoh/psychic-workers'
-import { DBClass } from '../../types/db'
-import { globalSchema, schema } from '../../types/dream'
-import psychicTypes from '../../types/psychic'
+import { BaseBackgroundedModel } from '@rvoh/psychic-workers'
+import { BackgroundJobConfig } from '@rvoh/psychic-workers/types'
+import { DB } from '#src/types/db.js'
+import { globalTypeConfig } from '#src/types/dream.globals.js'
+import { connectionTypeConfig, schema } from '#src/types/dream.js'
+import psychicWorkerTypes from '#src/types/workers.js'
 
 export default class ApplicationBackgroundedModel extends BaseBackgroundedModel {
-  public DB: DBClass
+  declare public DB: DB
 
-  public static get backgroundJobConfig(): BackgroundJobConfig<BaseBackgroundedModel> {
-    return {}
-  }
-
-  public get schema() {
+  public override get schema() {
     return schema
   }
 
-  public get globalSchema() {
-    return globalSchema
+  public override get connectionTypeConfig() {
+    return connectionTypeConfig
   }
 
-  public get psychicTypes() {
-    return psychicTypes
+  public override get globalTypeConfig() {
+    return globalTypeConfig
+  }
+
+  public override get psychicWorkerTypes() {
+    return psychicWorkerTypes
+  }
+
+  public static override get backgroundJobConfig(): BackgroundJobConfig<BaseBackgroundedModel> {
+    return {}
   }
 }
 ```

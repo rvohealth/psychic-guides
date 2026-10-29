@@ -40,7 +40,7 @@ However, if you decided to have one OpenAPI spec for your admin endpoints and on
 
 ### 2. Per-endpoint validation
 
-Within the OpenAPI decorator, you can also provide the same validation options. If they are provided, Psychic will merge the options with the global defaults provided, prioritizing the custom validation options over the global defaults:
+Within the OpenAPI decorator, you can also provide the same validation options. If they are provided, they override the global defaults flag by flag: a flag the decorator sets wins, and a flag it leaves out keeps the spec's value. `all` overrides every flag at once, in whichever direction it is set:
 
 ```ts
 // controllers/PetsController

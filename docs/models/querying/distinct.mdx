@@ -1,11 +1,11 @@
 ---
-ai_summary: "The distinct method returns unique records based on the specified field(s). Can be chained with other query building methods like where and innerJoin."
+ai_summary: "The distinct method applies SELECT DISTINCT ON: distinct(column) keeps one row per value of that column, and distinct() or distinct(true) uses the primary key, which dedupes the rows a join fans out. distinct(false) clears it. Can be chained with other query building methods like where and innerJoin."
 ---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # distinct
 
-The `distinct` method returns all unique records matching the given distinct field:
+The `distinct` method applies a `SELECT DISTINCT ON`, keeping one row per value of the given column:
 
 ```ts
 const users = await User.distinct('name').all()
@@ -21,11 +21,11 @@ select distinct on ("users"."name") "users".* from "users"
 
 ## Distinct on the primary key, or clearing distinct
 
-Calling `distinct()` with no argument, or `distinct(true)`, distincts on the primary key. `distinct(false)` clears a `distinct` applied earlier in the chain:
+Calling `distinct()` with no argument, or `distinct(true)`, distincts on the primary key, which dedupes the rows a join fans out — each record comes back once however many joined rows matched it. `distinct(false)` clears a `distinct` applied earlier in the chain:
 
 ```ts
-await Host.query().distinct().all()       // DISTINCT on the primary key
-await Host.query().distinct(true).all()   // same as above
+await Host.innerJoin('places').distinct().all()  // each host once, however many places it has
+await Host.innerJoin('places').distinct(true).all()  // same as distinct()
 await Host.query().distinct('familyName').distinct(false).all()  // distinct cleared
 ```
 

@@ -58,7 +58,7 @@ export default (app: DreamApp) => {
 }
 ```
 
-Lower `paginationMaxPageSize` if an endpoint's per-row cost (large payloads, expensive preloads) warrants a stricter cap than the app-wide default.
+`paginationMaxPageSize` is app-wide, so lowering it caps every paginated query. To cap one expensive endpoint (large payloads, expensive preloads) more tightly, clamp the `pageSize` you pass to `paginate` there.
 
 ## cursorPaginate (Cursor-Based Pagination)
 

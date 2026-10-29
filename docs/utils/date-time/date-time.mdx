@@ -499,8 +499,10 @@ dt.setLocale('fr-FR')
 
 ### Global Settings
 
+Dream's `DateTime` is built on [Luxon](https://moment.github.io/luxon/), so its global defaults are Luxon's `Settings`. `Settings` isn't exported from `@rvoh/dream`; import it from `luxon`, adding `luxon` to your app's dependencies first:
+
 ```ts
-import { Settings } from '@rvoh/dream'
+import { Settings } from 'luxon'
 
 // Set default zone
 Settings.defaultZone = 'America/New_York'
@@ -536,18 +538,19 @@ Catch only the specific parse error you expect, not every error — an unguarded
 
 ## Usage with Models
 
-DateTime instances are automatically created when loading timestamp columns from the database:
+DateTime instances are automatically created when loading `timestamp` and `timestamptz` columns from the database, with or without a time zone:
 
 ```ts
-import { Model } from '@rvoh/psychic'
-import { DateTime } from '@rvoh/dream'
-
-class Event extends Model {
-  id!: number
-  createdAt!: DateTime // timestamp with time zone
-  updatedAt!: DateTime // timestamp with time zone
-  scheduledAt!: DateTime // timestamp without time zone
+class Event extends ApplicationModel {
+  public id: DreamColumn<Event, 'id'>
+  public createdAt: DreamColumn<Event, 'createdAt'> // DateTime (timestamp with time zone)
+  public updatedAt: DreamColumn<Event, 'updatedAt'> // DateTime (timestamp with time zone)
+  public scheduledAt: DreamColumn<Event, 'scheduledAt'> // DateTime (timestamp without time zone)
 }
+```
+
+```ts
+import { DateTime } from '@rvoh/dream'
 
 // Load from database
 const event = await Event.find(1)

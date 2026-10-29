@@ -152,7 +152,7 @@ Next, let's provide the new passport middleware in the routing layer, which will
 ```ts
 // conf/routes.ts
 import passport from 'koa-passport'
-import User from '../app/models/User.js'
+import User from '#models/User.js'
 
 ...
   r.post('sign-in', [
@@ -176,7 +176,7 @@ In order to make use of the passport session that was established, let's tap int
 // test-app/src/app/controllers/AuthedController.ts
 
 import { BeforeAction, PsychicController } from '../../../../src/index.js'
-import User from '../models/User.js'
+import User from '#models/User.js'
 
 export default class AuthedController extends PsychicController {
   protected currentUser: User
