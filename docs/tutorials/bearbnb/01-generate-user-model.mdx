@@ -33,6 +33,9 @@ cd api
 pnpm psy g:model --help
 pnpm psy g:model --no-serializer User email:citext phone:encrypted
 ```
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UqRHFQRjCHrGh9xPhFnGUR
 ``````
 
 ## Changes
@@ -40,12 +43,12 @@ pnpm psy g:model --no-serializer User email:citext phone:encrypted
 ``````
 diff --git a/api/spec/factories/UserFactory.ts b/api/spec/factories/UserFactory.ts
 new file mode 100644
-index 0000000..b95c066
+index 0000000..923cf9e
 --- /dev/null
 +++ b/api/spec/factories/UserFactory.ts
 @@ -0,0 +1,12 @@
 +import { UpdateableProperties } from '@rvoh/dream/types'
-+import User from '@models/User.js'
++import User from '#models/User.js'
 +
 +let counter = 0
 +
@@ -67,13 +70,13 @@ index 0000000..06dac32
 +})
 diff --git a/api/src/app/models/User.ts b/api/src/app/models/User.ts
 new file mode 100644
-index 0000000..6a43a29
+index 0000000..9e53d00
 --- /dev/null
 +++ b/api/src/app/models/User.ts
 @@ -0,0 +1,21 @@
 +import { Decorators, SoftDelete } from '@rvoh/dream'
 +import { DreamColumn } from '@rvoh/dream/types'
-+import ApplicationModel from '@models/ApplicationModel.js'
++import ApplicationModel from '#models/ApplicationModel.js'
 +
 +const deco = new Decorators<typeof User>()
 +
@@ -92,12 +95,12 @@ index 0000000..6a43a29
 +  @deco.Encrypted()
 +  public phone: DreamColumn<User, 'encryptedPhone'>
 +}
-diff --git a/api/src/db/migrations/1782925721266-create-user.ts b/api/src/db/migrations/1782925721266-create-user.ts
+diff --git a/api/src/db/migrations/1793240425799-create-user.ts b/api/src/db/migrations/1793240425799-create-user.ts
 new file mode 100644
-index 0000000..7be5e55
+index 0000000..3135e21
 --- /dev/null
-+++ b/api/src/db/migrations/1782925721266-create-user.ts
-@@ -0,0 +1,32 @@
++++ b/api/src/db/migrations/1793240425799-create-user.ts
+@@ -0,0 +1,26 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely, sql } from 'kysely'
 +
@@ -117,12 +120,6 @@ index 0000000..7be5e55
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
 +    .addColumn('deleted_at', 'timestamp')
-+    .execute()
-+
-+  await db.schema
-+    .createIndex('users_deleted_at')
-+    .on('users')
-+    .column('deleted_at')
 +    .execute()
 +}
 +

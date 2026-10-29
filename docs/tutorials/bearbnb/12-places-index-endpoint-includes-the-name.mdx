@@ -15,13 +15,16 @@ pnpm psy sync --help
 pnpm psy sync # to update the OpenAPI spec after updating the serializer
 pnpm uspec spec/unit/controllers/V1/Host/PlacesController.spec.ts
 ```
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UqRHFQRjCHrGh9xPhFnGUR
 ``````
 
 ## Changes
 
 ``````
 diff --git a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
-index 830ef03..accd5e4 100644
+index 800cd7e..5c34efd 100644
 --- a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 +++ b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 @@ -32,6 +32,7 @@ describe('V1/Host/PlacesController', () => {
@@ -33,10 +36,10 @@ index 830ef03..accd5e4 100644
        ])
      })
 diff --git a/api/src/app/serializers/PlaceSerializer.ts b/api/src/app/serializers/PlaceSerializer.ts
-index edbd000..bc76022 100644
+index 0aeaa7c..a4a00c3 100644
 --- a/api/src/app/serializers/PlaceSerializer.ts
 +++ b/api/src/app/serializers/PlaceSerializer.ts
-@@ -4,9 +4,9 @@ import Place from '@models/Place.js'
+@@ -4,9 +4,9 @@ import Place from '#models/Place.js'
  export const PlaceSummarySerializer = (place: Place) =>
    DreamSerializer(Place, place)
      .attribute('id')

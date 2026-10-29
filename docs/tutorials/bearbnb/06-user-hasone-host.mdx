@@ -27,20 +27,23 @@ a new association, one could run `sync` instead
 ```console
 pnpm psy sync
 ```
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UqRHFQRjCHrGh9xPhFnGUR
 ``````
 
 ## Changes
 
 ``````
 diff --git a/api/src/app/models/User.ts b/api/src/app/models/User.ts
-index 9b05776..55cf5f8 100644
+index 0dcf2ed..4bbc688 100644
 --- a/api/src/app/models/User.ts
 +++ b/api/src/app/models/User.ts
-@@ -2,6 +2,7 @@ import { Decorators, SoftDelete } from '@rvoh/dream'
+@@ -2,6 +2,7 @@ import { Decorators, Dream, DreamTransaction, SoftDelete } from '@rvoh/dream'
  import { DreamColumn } from '@rvoh/dream/types'
- import ApplicationModel from '@models/ApplicationModel.js'
- import Guest from '@models/Guest.js'
-+import Host from '@models/Host.js'
+ import ApplicationModel from '#models/ApplicationModel.js'
+ import Guest from '#models/Guest.js'
++import Host from '#models/Host.js'
  
  const deco = new Decorators<typeof User>()
  
@@ -52,10 +55,10 @@ index 9b05776..55cf5f8 100644
 +  @deco.HasOne('Host')
 +  public host: Host
  }
-diff --git a/api/src/db/migrations/1782925912760-create-host.ts b/api/src/db/migrations/1782925912760-create-host.ts
-index f1445a9..4302ccf 100644
---- a/api/src/db/migrations/1782925912760-create-host.ts
-+++ b/api/src/db/migrations/1782925912760-create-host.ts
+diff --git a/api/src/db/migrations/1793240494247-create-host.ts b/api/src/db/migrations/1793240494247-create-host.ts
+index 3160a91..d410f1a 100644
+--- a/api/src/db/migrations/1793240494247-create-host.ts
++++ b/api/src/db/migrations/1793240494247-create-host.ts
 @@ -9,7 +9,7 @@ export async function up(db: Kysely<any>): Promise<void> {
          .primaryKey()
          .defaultTo(sql`uuidv7()`),
@@ -66,10 +69,10 @@ index f1445a9..4302ccf 100644
      .addColumn('updated_at', 'timestamp', col => col.notNull())
      .addColumn('deleted_at', 'timestamp')
 diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index bd4ea0f..25bb48d 100644
+index 6dde270..167fd4f 100644
 --- a/api/src/types/db.ts
 +++ b/api/src/types/db.ts
-@@ -83,6 +83,14 @@ export interface Guests {
+@@ -79,6 +79,14 @@ export interface Guests {
    userId: string
  }
  
@@ -84,7 +87,7 @@ index bd4ea0f..25bb48d 100644
  export interface Users {
    createdAt: Timestamp
    deletedAt: Timestamp | null
-@@ -94,10 +102,12 @@ export interface Users {
+@@ -90,10 +98,12 @@ export interface Users {
  
  export interface DB {
    guests: Guests

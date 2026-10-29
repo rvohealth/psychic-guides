@@ -27,118 +27,121 @@ pnpm psy sync
 pnpm build:spec # to surface any errors so you can fix them
 pnpm uspec spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 ```
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UqRHFQRjCHrGh9xPhFnGUR
 ``````
 
 ## Changes
 
 ``````
 diff --git a/api/spec/factories/Room/BathroomFactory.ts b/api/spec/factories/Room/BathroomFactory.ts
-index 749ce6b..9a79018 100644
+index 8a9e812..3f7a5b7 100644
 --- a/api/spec/factories/Room/BathroomFactory.ts
 +++ b/api/spec/factories/Room/BathroomFactory.ts
 @@ -1,8 +1,10 @@
  import { UpdateableProperties } from '@rvoh/dream/types'
- import Bathroom from '@models/Room/Bathroom.js'
-+import createPlace from '@spec/factories/PlaceFactory.js'
+ import Bathroom from '#models/Room/Bathroom.js'
++import createPlace from '#spec/factories/PlaceFactory.js'
  
  export default async function createBathroom(attrs: UpdateableProperties<Bathroom> = {}) {
    return await Bathroom.create({
-+    place: attrs.place ? null : await createPlace(),
++    place: attrs.place ?? (await createPlace()),
      bathOrShowerStyle: 'bath',
      ...attrs,
    })
 diff --git a/api/spec/factories/Room/BedroomFactory.ts b/api/spec/factories/Room/BedroomFactory.ts
-index 354c9e9..b0501d5 100644
+index cb7e175..bbb7711 100644
 --- a/api/spec/factories/Room/BedroomFactory.ts
 +++ b/api/spec/factories/Room/BedroomFactory.ts
 @@ -1,8 +1,10 @@
  import { UpdateableProperties } from '@rvoh/dream/types'
- import Bedroom from '@models/Room/Bedroom.js'
-+import createPlace from '@spec/factories/PlaceFactory.js'
+ import Bedroom from '#models/Room/Bedroom.js'
++import createPlace from '#spec/factories/PlaceFactory.js'
  
  export default async function createBedroom(attrs: UpdateableProperties<Bedroom> = {}) {
    return await Bedroom.create({
-+    place: attrs.place ? null : await createPlace(),
++    place: attrs.place ?? (await createPlace()),
      bedTypes: ['twin'],
      ...attrs,
    })
 diff --git a/api/spec/factories/Room/DenFactory.ts b/api/spec/factories/Room/DenFactory.ts
-index 1a26df8..a582b30 100644
+index b240c0f..b9c0726 100644
 --- a/api/spec/factories/Room/DenFactory.ts
 +++ b/api/spec/factories/Room/DenFactory.ts
 @@ -1,8 +1,10 @@
  import { UpdateableProperties } from '@rvoh/dream/types'
- import Den from '@models/Room/Den.js'
-+import createPlace from '@spec/factories/PlaceFactory.js'
+ import Den from '#models/Room/Den.js'
++import createPlace from '#spec/factories/PlaceFactory.js'
  
  export default async function createDen(attrs: UpdateableProperties<Den> = {}) {
    return await Den.create({
-+    place: attrs.place ? null : await createPlace(),
++    place: attrs.place ?? (await createPlace()),
      ...attrs,
    })
  }
 diff --git a/api/spec/factories/Room/KitchenFactory.ts b/api/spec/factories/Room/KitchenFactory.ts
-index cb6d068..1b19362 100644
+index 46ded7a..8305bbf 100644
 --- a/api/spec/factories/Room/KitchenFactory.ts
 +++ b/api/spec/factories/Room/KitchenFactory.ts
 @@ -1,8 +1,10 @@
  import { UpdateableProperties } from '@rvoh/dream/types'
- import Kitchen from '@models/Room/Kitchen.js'
-+import createPlace from '@spec/factories/PlaceFactory.js'
+ import Kitchen from '#models/Room/Kitchen.js'
++import createPlace from '#spec/factories/PlaceFactory.js'
  
  export default async function createKitchen(attrs: UpdateableProperties<Kitchen> = {}) {
    return await Kitchen.create({
-+    place: attrs.place ? null : await createPlace(),
++    place: attrs.place ?? (await createPlace()),
      appliances: ['stove'],
      ...attrs,
    })
 diff --git a/api/spec/factories/Room/LivingRoomFactory.ts b/api/spec/factories/Room/LivingRoomFactory.ts
-index acca82d..2db3acd 100644
+index 2f29333..0c2fdbb 100644
 --- a/api/spec/factories/Room/LivingRoomFactory.ts
 +++ b/api/spec/factories/Room/LivingRoomFactory.ts
 @@ -1,8 +1,10 @@
  import { UpdateableProperties } from '@rvoh/dream/types'
- import LivingRoom from '@models/Room/LivingRoom.js'
-+import createPlace from '@spec/factories/PlaceFactory.js'
+ import LivingRoom from '#models/Room/LivingRoom.js'
++import createPlace from '#spec/factories/PlaceFactory.js'
  
  export default async function createLivingRoom(attrs: UpdateableProperties<LivingRoom> = {}) {
    return await LivingRoom.create({
-+    place: attrs.place ? null : await createPlace(),
++    place: attrs.place ?? (await createPlace()),
      ...attrs,
    })
  }
 diff --git a/api/spec/factories/RoomFactory.ts b/api/spec/factories/RoomFactory.ts
 deleted file mode 100644
-index c75d9f4..0000000
+index 36bf9f8..0000000
 --- a/api/spec/factories/RoomFactory.ts
 +++ /dev/null
 @@ -1,10 +0,0 @@
 -import { UpdateableProperties } from '@rvoh/dream/types'
--import Room from '@models/Room.js'
--import createPlace from '@spec/factories/PlaceFactory.js'
+-import Room from '#models/Room.js'
+-import createPlace from '#spec/factories/PlaceFactory.js'
 -
 -export default async function createRoom(attrs: UpdateableProperties<Room> = {}) {
 -  return await Room.create({
--    place: attrs.place ? null : await createPlace(),
+-    place: attrs.place ?? (await createPlace()),
 -    ...attrs,
 -  })
 -}
 diff --git a/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts b/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
-index 88ac684..437e03a 100644
+index 085fed3..fa4ab0f 100644
 --- a/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 +++ b/api/spec/unit/controllers/V1/Host/Places/RoomsController.spec.ts
 @@ -1,7 +1,10 @@
-+import Kitchen from '@models/Room/Kitchen.js'
- import Room from '@models/Room.js'
- import User from '@models/User.js'
- import Place from '@models/Place.js'
--import createRoom from '@spec/factories/RoomFactory.js'
-+import createHost from '@spec/factories/HostFactory.js'
-+import createHostPlace from '@spec/factories/HostPlaceFactory.js'
-+import createKitchen from '@spec/factories/Room/KitchenFactory.js'
- import createUser from '@spec/factories/UserFactory.js'
- import createPlace from '@spec/factories/PlaceFactory.js'
- import { RequestBody, session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
++import Kitchen from '#models/Room/Kitchen.js'
+ import Room from '#models/Room.js'
+ import User from '#models/User.js'
+ import Place from '#models/Place.js'
+-import createRoom from '#spec/factories/RoomFactory.js'
++import createHost from '#spec/factories/HostFactory.js'
++import createHostPlace from '#spec/factories/HostPlaceFactory.js'
++import createKitchen from '#spec/factories/Room/KitchenFactory.js'
+ import createUser from '#spec/factories/UserFactory.js'
+ import createPlace from '#spec/factories/PlaceFactory.js'
+ import { RequestBody, session, SpecRequestType } from '#spec/unit/helpers/authentication.js'
 @@ -13,7 +16,9 @@ describe('V1/Host/Places/RoomsController', () => {
  
    beforeEach(async () => {
@@ -263,11 +266,11 @@ index 88ac684..437e03a 100644
          await destroy(room, 404)
  
 diff --git a/api/src/app/controllers/V1/Host/Places/BaseController.ts b/api/src/app/controllers/V1/Host/Places/BaseController.ts
-index 475dacc..a80efdb 100644
+index 475dacc..5a0fab6 100644
 --- a/api/src/app/controllers/V1/Host/Places/BaseController.ts
 +++ b/api/src/app/controllers/V1/Host/Places/BaseController.ts
 @@ -1,5 +1,14 @@
-+import Place from '@models/Place.js'
++import Place from '#models/Place.js'
 +import { BeforeAction } from '@rvoh/psychic'
  import V1HostBaseController from '../BaseController.js'
  
@@ -282,20 +285,20 @@ index 475dacc..a80efdb 100644
 +  }
  }
 diff --git a/api/src/app/controllers/V1/Host/Places/RoomsController.ts b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
-index 7898fe5..b279458 100644
+index 234033c..171e16f 100644
 --- a/api/src/app/controllers/V1/Host/Places/RoomsController.ts
 +++ b/api/src/app/controllers/V1/Host/Places/RoomsController.ts
 @@ -1,11 +1,22 @@
  import { OpenAPI } from '@rvoh/psychic'
  import { DreamParamSafeColumnNames } from '@rvoh/dream/types'
-+import Bathroom from '@models/Room/Bathroom.js'
-+import Bedroom from '@models/Room/Bedroom.js'
-+import Den from '@models/Room/Den.js'
-+import Kitchen from '@models/Room/Kitchen.js'
-+import LivingRoom from '@models/Room/LivingRoom.js'
-+import { RoomTypesEnumValues } from '@src/types/db.js'
++import Bathroom from '#models/Room/Bathroom.js'
++import Bedroom from '#models/Room/Bedroom.js'
++import Den from '#models/Room/Den.js'
++import Kitchen from '#models/Room/Kitchen.js'
++import LivingRoom from '#models/Room/LivingRoom.js'
++import { RoomTypesEnumValues } from '#src/types/db.js'
  import V1HostPlacesBaseController from './BaseController.js'
- import Room from '@models/Room.js'
+ import Room from '#models/Room.js'
  
  const openApiTags = ['rooms']
  
@@ -406,7 +409,7 @@ index 7898fe5..b279458 100644
    private async room() {
 -    // return await this.currentPlace.associationQuery('rooms')
 -    //   .preloadFor('default')
--    //   .findOrFail(this.castParam('id', 'string'))
+-    //   .findOrFail(this.castParam('id', 'uuid'))
 +    return await this.currentPlace
 +      .associationQuery('rooms')
 +      .preloadFor('default')
@@ -414,14 +417,14 @@ index 7898fe5..b279458 100644
    }
  }
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index 4dcff89..1600eb3 100644
+index e7ad092..5f6d8be 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
 @@ -3,6 +3,7 @@ import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- import ApplicationModel from '@models/ApplicationModel.js'
- import Host from '@models/Host.js'
- import HostPlace from '@models/HostPlace.js'
-+import Room from '@models/Room.js'
+ import ApplicationModel from '#models/ApplicationModel.js'
+ import Host from '#models/Host.js'
+ import HostPlace from '#models/HostPlace.js'
++import Room from '#models/Room.js'
  
  const deco = new Decorators<typeof Place>()
  
@@ -433,135 +436,14 @@ index 4dcff89..1600eb3 100644
 +  @deco.HasMany('Room', { dependent: 'destroy' })
 +  public rooms: Room[]
  }
-diff --git a/api/src/app/serializers/RoomSerializer.ts b/api/src/app/serializers/RoomSerializer.ts
-index b4865a1..d16e185 100644
---- a/api/src/app/serializers/RoomSerializer.ts
-+++ b/api/src/app/serializers/RoomSerializer.ts
-@@ -4,8 +4,8 @@ import Room from '@models/Room.js'
- export const RoomSummarySerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
-   DreamSerializer(StiChildClass ?? Room, room)
-     .attribute('id')
-+    .attribute('type', { openapi: { type: 'string', enum: [(StiChildClass ?? Room).sanitizedName] } })
-+    .attribute('position')
- 
- export const RoomSerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
-   RoomSummarySerializer(StiChildClass, room)
--    .attribute('type', { openapi: { type: 'string', enum: [(StiChildClass ?? Room).sanitizedName] } })
--    .attribute('position')
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index e9bd9cd..1bd1555 100644
+index 4f186d0..a0ec6d8 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
-@@ -278,6 +278,407 @@
-           }
-         }
-       }
-+    },
-+    "/v1/host/places/{placeId}/rooms": {
-+      "parameters": [
-+        {
-+          "in": "path",
-+          "name": "placeId",
-+          "required": true,
-+          "schema": {
-+            "type": "string"
-+          }
-+        },
-+        {
-+          "in": "query",
-+          "required": false,
-+          "name": "cursor",
-+          "description": "Pagination cursor",
-+          "allowReserved": true,
-+          "schema": {
-+            "type": [
-+              "string",
-+              "null"
-+            ]
-+          }
-+        }
-+      ],
-+      "get": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Paginated index of Rooms",
-+        "responses": {
-+          "200": {
-+            "content": {
-+              "application/json": {
-+                "schema": {
-+                  "type": "object",
-+                  "required": [
-+                    "cursor",
-+                    "results"
-+                  ],
-+                  "properties": {
-+                    "cursor": {
-+                      "type": [
-+                        "string",
-+                        "null"
-+                      ]
-+                    },
-+                    "results": {
-+                      "type": "array",
-+                      "items": {
-+                        "anyOf": [
-+                          {
-+                            "$ref": "#/components/schemas/RoomBathroomSummary"
-+                          },
-+                          {
-+                            "$ref": "#/components/schemas/RoomBedroomSummary"
-+                          },
-+                          {
-+                            "$ref": "#/components/schemas/RoomDenSummary"
-+                          },
-+                          {
-+                            "$ref": "#/components/schemas/RoomKitchenSummary"
-+                          },
-+                          {
-+                            "$ref": "#/components/schemas/RoomLivingRoomSummary"
-+                          }
-+                        ]
-+                      }
-+                    }
-+                  }
-+                }
-+              }
-+            },
-+            "description": "Success"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      },
-+      "post": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Create a Room",
-+        "requestBody": {
-+          "content": {
-+            "application/json": {
-+              "schema": {
-+                "type": "object",
-+                "properties": {
+@@ -384,11 +384,60 @@
+               "schema": {
+                 "type": "object",
+                 "properties": {
 +                  "appliances": {
 +                    "type": "array",
 +                    "items": {
@@ -601,11 +483,11 @@ index e9bd9cd..1bd1555 100644
 +                      ]
 +                    }
 +                  },
-+                  "position": {
-+                    "type": [
-+                      "integer",
-+                      "null"
-+                    ]
+                   "position": {
+                     "type": [
+                       "integer",
+                       "null"
+                     ]
 +                  },
 +                  "type": {
 +                    "type": "string",
@@ -616,142 +498,13 @@ index e9bd9cd..1bd1555 100644
 +                      "Kitchen",
 +                      "LivingRoom"
 +                    ]
-+                  }
-+                }
-+              }
-+            }
-+          }
-+        },
-+        "responses": {
-+          "201": {
-+            "content": {
-+              "application/json": {
-+                "schema": {
-+                  "anyOf": [
-+                    {
-+                      "$ref": "#/components/schemas/RoomBathroom"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomBedroom"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomDen"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomKitchen"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomLivingRoom"
-+                    }
-+                  ]
-+                }
-+              }
-+            },
-+            "description": "Created"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      }
-+    },
-+    "/v1/host/places/{placeId}/rooms/{id}": {
-+      "parameters": [
-+        {
-+          "in": "path",
-+          "name": "placeId",
-+          "required": true,
-+          "schema": {
-+            "type": "string"
-+          }
-+        },
-+        {
-+          "in": "path",
-+          "name": "id",
-+          "required": true,
-+          "schema": {
-+            "type": "string"
-+          }
-+        }
-+      ],
-+      "get": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Fetch a Room",
-+        "responses": {
-+          "200": {
-+            "content": {
-+              "application/json": {
-+                "schema": {
-+                  "anyOf": [
-+                    {
-+                      "$ref": "#/components/schemas/RoomBathroom"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomBedroom"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomDen"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomKitchen"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomLivingRoom"
-+                    }
-+                  ]
-+                }
-+              }
-+            },
-+            "description": "Success"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      },
-+      "patch": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Update a Room",
-+        "requestBody": {
-+          "content": {
-+            "application/json": {
-+              "schema": {
-+                "type": "object",
-+                "properties": {
+                   }
+                 }
+               }
+@@ -525,6 +574,45 @@
+               "schema": {
+                 "type": "object",
+                 "properties": {
 +                  "appliances": {
 +                    "type": "array",
 +                    "items": {
@@ -791,450 +544,17 @@ index e9bd9cd..1bd1555 100644
 +                      ]
 +                    }
 +                  },
-+                  "position": {
-+                    "type": [
-+                      "integer",
-+                      "null"
-+                    ]
-+                  }
-+                }
-+              }
-+            }
-+          }
-+        },
-+        "responses": {
-+          "204": {
-+            "description": "Success, no content",
-+            "$ref": "#/components/responses/NoContent"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      },
-+      "delete": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Destroy a Room",
-+        "responses": {
-+          "204": {
-+            "description": "Success, no content",
-+            "$ref": "#/components/responses/NoContent"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      }
-     }
-   },
-   "components": {
-@@ -376,6 +777,260 @@
-           }
-         }
-       },
-+      "RoomBathroom": {
-+        "type": "object",
-+        "required": [
-+          "bathOrShowerStyle",
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "bathOrShowerStyle": {
-+            "type": [
-+              "string",
-+              "null"
-+            ],
-+            "description": "The following values will be allowed:\n  bath,\n  bath_and_shower,\n  none,\n  shower"
-+          },
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "description": "The following values will be allowed:\n  Bathroom"
-+          }
-+        }
-+      },
-+      "RoomBathroomSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "description": "The following values will be allowed:\n  Bathroom"
-+          }
-+        }
-+      },
-+      "RoomBedroom": {
-+        "type": "object",
-+        "required": [
-+          "bedTypes",
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "bedTypes": {
-+            "type": "array",
-+            "items": {
-+              "type": "string",
-+              "description": "The following values will be allowed:\n  bunk,\n  cot,\n  king,\n  queen,\n  sofabed,\n  twin"
-+            }
-+          },
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "description": "The following values will be allowed:\n  Bedroom"
-+          }
-+        }
-+      },
-+      "RoomBedroomSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "description": "The following values will be allowed:\n  Bedroom"
-+          }
-+        }
-+      },
-+      "RoomDen": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "description": "The following values will be allowed:\n  Den"
-+          }
-+        }
-+      },
-+      "RoomDenSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "description": "The following values will be allowed:\n  Den"
-+          }
-+        }
-+      },
-+      "RoomKitchen": {
-+        "type": "object",
-+        "required": [
-+          "appliances",
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "appliances": {
-+            "type": "array",
-+            "items": {
-+              "type": "string",
-+              "description": "The following values will be allowed:\n  dishwasher,\n  microwave,\n  oven,\n  stove"
-+            }
-+          },
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "description": "The following values will be allowed:\n  Kitchen"
-+          }
-+        }
-+      },
-+      "RoomKitchenSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "description": "The following values will be allowed:\n  Kitchen"
-+          }
-+        }
-+      },
-+      "RoomLivingRoom": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "description": "The following values will be allowed:\n  LivingRoom"
-+          }
-+        }
-+      },
-+      "RoomLivingRoomSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "description": "The following values will be allowed:\n  LivingRoom"
-+          }
-+        }
-+      },
-       "ValidationErrors": {
-         "type": "object",
-         "required": [
+                   "position": {
+                     "type": [
+                       "integer",
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 3ed4b72..13b7219 100644
+index 39e7c12..e245d0e 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
-@@ -278,6 +278,407 @@
-           }
-         }
-       }
-+    },
-+    "/v1/host/places/{placeId}/rooms": {
-+      "parameters": [
-+        {
-+          "in": "path",
-+          "name": "placeId",
-+          "required": true,
-+          "schema": {
-+            "type": "string"
-+          }
-+        },
-+        {
-+          "in": "query",
-+          "required": false,
-+          "name": "cursor",
-+          "description": "Pagination cursor",
-+          "allowReserved": true,
-+          "schema": {
-+            "type": [
-+              "string",
-+              "null"
-+            ]
-+          }
-+        }
-+      ],
-+      "get": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Paginated index of Rooms",
-+        "responses": {
-+          "200": {
-+            "content": {
-+              "application/json": {
-+                "schema": {
-+                  "type": "object",
-+                  "required": [
-+                    "cursor",
-+                    "results"
-+                  ],
-+                  "properties": {
-+                    "cursor": {
-+                      "type": [
-+                        "string",
-+                        "null"
-+                      ]
-+                    },
-+                    "results": {
-+                      "type": "array",
-+                      "items": {
-+                        "anyOf": [
-+                          {
-+                            "$ref": "#/components/schemas/RoomBathroomSummary"
-+                          },
-+                          {
-+                            "$ref": "#/components/schemas/RoomBedroomSummary"
-+                          },
-+                          {
-+                            "$ref": "#/components/schemas/RoomDenSummary"
-+                          },
-+                          {
-+                            "$ref": "#/components/schemas/RoomKitchenSummary"
-+                          },
-+                          {
-+                            "$ref": "#/components/schemas/RoomLivingRoomSummary"
-+                          }
-+                        ]
-+                      }
-+                    }
-+                  }
-+                }
-+              }
-+            },
-+            "description": "Success"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      },
-+      "post": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Create a Room",
-+        "requestBody": {
-+          "content": {
-+            "application/json": {
-+              "schema": {
-+                "type": "object",
-+                "properties": {
+@@ -384,11 +384,60 @@
+               "schema": {
+                 "type": "object",
+                 "properties": {
 +                  "appliances": {
 +                    "type": "array",
 +                    "items": {
@@ -1274,11 +594,11 @@ index 3ed4b72..13b7219 100644
 +                      ]
 +                    }
 +                  },
-+                  "position": {
-+                    "type": [
-+                      "integer",
-+                      "null"
-+                    ]
+                   "position": {
+                     "type": [
+                       "integer",
+                       "null"
+                     ]
 +                  },
 +                  "type": {
 +                    "type": "string",
@@ -1289,142 +609,13 @@ index 3ed4b72..13b7219 100644
 +                      "Kitchen",
 +                      "LivingRoom"
 +                    ]
-+                  }
-+                }
-+              }
-+            }
-+          }
-+        },
-+        "responses": {
-+          "201": {
-+            "content": {
-+              "application/json": {
-+                "schema": {
-+                  "anyOf": [
-+                    {
-+                      "$ref": "#/components/schemas/RoomBathroom"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomBedroom"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomDen"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomKitchen"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomLivingRoom"
-+                    }
-+                  ]
-+                }
-+              }
-+            },
-+            "description": "Created"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      }
-+    },
-+    "/v1/host/places/{placeId}/rooms/{id}": {
-+      "parameters": [
-+        {
-+          "in": "path",
-+          "name": "placeId",
-+          "required": true,
-+          "schema": {
-+            "type": "string"
-+          }
-+        },
-+        {
-+          "in": "path",
-+          "name": "id",
-+          "required": true,
-+          "schema": {
-+            "type": "string"
-+          }
-+        }
-+      ],
-+      "get": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Fetch a Room",
-+        "responses": {
-+          "200": {
-+            "content": {
-+              "application/json": {
-+                "schema": {
-+                  "anyOf": [
-+                    {
-+                      "$ref": "#/components/schemas/RoomBathroom"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomBedroom"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomDen"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomKitchen"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomLivingRoom"
-+                    }
-+                  ]
-+                }
-+              }
-+            },
-+            "description": "Success"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      },
-+      "patch": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Update a Room",
-+        "requestBody": {
-+          "content": {
-+            "application/json": {
-+              "schema": {
-+                "type": "object",
-+                "properties": {
+                   }
+                 }
+               }
+@@ -525,6 +574,45 @@
+               "schema": {
+                 "type": "object",
+                 "properties": {
 +                  "appliances": {
 +                    "type": "array",
 +                    "items": {
@@ -1464,488 +655,17 @@ index 3ed4b72..13b7219 100644
 +                      ]
 +                    }
 +                  },
-+                  "position": {
-+                    "type": [
-+                      "integer",
-+                      "null"
-+                    ]
-+                  }
-+                }
-+              }
-+            }
-+          }
-+        },
-+        "responses": {
-+          "204": {
-+            "description": "Success, no content",
-+            "$ref": "#/components/responses/NoContent"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      },
-+      "delete": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Destroy a Room",
-+        "responses": {
-+          "204": {
-+            "description": "Success, no content",
-+            "$ref": "#/components/responses/NoContent"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      }
-     }
-   },
-   "components": {
-@@ -384,6 +785,298 @@
-           }
-         }
-       },
-+      "RoomBathroom": {
-+        "type": "object",
-+        "required": [
-+          "bathOrShowerStyle",
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "bathOrShowerStyle": {
-+            "type": [
-+              "string",
-+              "null"
-+            ],
-+            "enum": [
-+              "bath",
-+              "bath_and_shower",
-+              "none",
-+              "shower",
-+              null
-+            ]
-+          },
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Bathroom"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomBathroomSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Bathroom"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomBedroom": {
-+        "type": "object",
-+        "required": [
-+          "bedTypes",
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "bedTypes": {
-+            "type": "array",
-+            "items": {
-+              "type": "string",
-+              "enum": [
-+                "bunk",
-+                "cot",
-+                "king",
-+                "queen",
-+                "sofabed",
-+                "twin"
-+              ]
-+            }
-+          },
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Bedroom"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomBedroomSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Bedroom"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomDen": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Den"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomDenSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Den"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomKitchen": {
-+        "type": "object",
-+        "required": [
-+          "appliances",
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "appliances": {
-+            "type": "array",
-+            "items": {
-+              "type": "string",
-+              "enum": [
-+                "dishwasher",
-+                "microwave",
-+                "oven",
-+                "stove"
-+              ]
-+            }
-+          },
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Kitchen"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomKitchenSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Kitchen"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomLivingRoom": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "LivingRoom"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomLivingRoomSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "LivingRoom"
-+            ]
-+          }
-+        }
-+      },
-       "ValidationErrors": {
-         "type": "object",
-         "required": [
+                   "position": {
+                     "type": [
+                       "integer",
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index f8e01ed..f55ff6d 100644
+index dada378..8d80904 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
-@@ -278,6 +278,407 @@
-           }
-         }
-       }
-+    },
-+    "/v1/host/places/{placeId}/rooms": {
-+      "parameters": [
-+        {
-+          "in": "path",
-+          "name": "placeId",
-+          "required": true,
-+          "schema": {
-+            "type": "string"
-+          }
-+        },
-+        {
-+          "in": "query",
-+          "required": false,
-+          "name": "cursor",
-+          "description": "Pagination cursor",
-+          "allowReserved": true,
-+          "schema": {
-+            "type": [
-+              "string",
-+              "null"
-+            ]
-+          }
-+        }
-+      ],
-+      "get": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Paginated index of Rooms",
-+        "responses": {
-+          "200": {
-+            "content": {
-+              "application/json": {
-+                "schema": {
-+                  "type": "object",
-+                  "required": [
-+                    "cursor",
-+                    "results"
-+                  ],
-+                  "properties": {
-+                    "cursor": {
-+                      "type": [
-+                        "string",
-+                        "null"
-+                      ]
-+                    },
-+                    "results": {
-+                      "type": "array",
-+                      "items": {
-+                        "anyOf": [
-+                          {
-+                            "$ref": "#/components/schemas/RoomBathroomSummary"
-+                          },
-+                          {
-+                            "$ref": "#/components/schemas/RoomBedroomSummary"
-+                          },
-+                          {
-+                            "$ref": "#/components/schemas/RoomDenSummary"
-+                          },
-+                          {
-+                            "$ref": "#/components/schemas/RoomKitchenSummary"
-+                          },
-+                          {
-+                            "$ref": "#/components/schemas/RoomLivingRoomSummary"
-+                          }
-+                        ]
-+                      }
-+                    }
-+                  }
-+                }
-+              }
-+            },
-+            "description": "Success"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      },
-+      "post": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Create a Room",
-+        "requestBody": {
-+          "content": {
-+            "application/json": {
-+              "schema": {
-+                "type": "object",
-+                "properties": {
+@@ -384,11 +384,60 @@
+               "schema": {
+                 "type": "object",
+                 "properties": {
 +                  "appliances": {
 +                    "type": "array",
 +                    "items": {
@@ -1985,11 +705,11 @@ index f8e01ed..f55ff6d 100644
 +                      ]
 +                    }
 +                  },
-+                  "position": {
-+                    "type": [
-+                      "integer",
-+                      "null"
-+                    ]
+                   "position": {
+                     "type": [
+                       "integer",
+                       "null"
+                     ]
 +                  },
 +                  "type": {
 +                    "type": "string",
@@ -2000,142 +720,13 @@ index f8e01ed..f55ff6d 100644
 +                      "Kitchen",
 +                      "LivingRoom"
 +                    ]
-+                  }
-+                }
-+              }
-+            }
-+          }
-+        },
-+        "responses": {
-+          "201": {
-+            "content": {
-+              "application/json": {
-+                "schema": {
-+                  "anyOf": [
-+                    {
-+                      "$ref": "#/components/schemas/RoomBathroom"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomBedroom"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomDen"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomKitchen"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomLivingRoom"
-+                    }
-+                  ]
-+                }
-+              }
-+            },
-+            "description": "Created"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      }
-+    },
-+    "/v1/host/places/{placeId}/rooms/{id}": {
-+      "parameters": [
-+        {
-+          "in": "path",
-+          "name": "placeId",
-+          "required": true,
-+          "schema": {
-+            "type": "string"
-+          }
-+        },
-+        {
-+          "in": "path",
-+          "name": "id",
-+          "required": true,
-+          "schema": {
-+            "type": "string"
-+          }
-+        }
-+      ],
-+      "get": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Fetch a Room",
-+        "responses": {
-+          "200": {
-+            "content": {
-+              "application/json": {
-+                "schema": {
-+                  "anyOf": [
-+                    {
-+                      "$ref": "#/components/schemas/RoomBathroom"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomBedroom"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomDen"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomKitchen"
-+                    },
-+                    {
-+                      "$ref": "#/components/schemas/RoomLivingRoom"
-+                    }
-+                  ]
-+                }
-+              }
-+            },
-+            "description": "Success"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      },
-+      "patch": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Update a Room",
-+        "requestBody": {
-+          "content": {
-+            "application/json": {
-+              "schema": {
-+                "type": "object",
-+                "properties": {
+                   }
+                 }
+               }
+@@ -525,6 +574,45 @@
+               "schema": {
+                 "type": "object",
+                 "properties": {
 +                  "appliances": {
 +                    "type": "array",
 +                    "items": {
@@ -2175,524 +766,14 @@ index f8e01ed..f55ff6d 100644
 +                      ]
 +                    }
 +                  },
-+                  "position": {
-+                    "type": [
-+                      "integer",
-+                      "null"
-+                    ]
-+                  }
-+                }
-+              }
-+            }
-+          }
-+        },
-+        "responses": {
-+          "204": {
-+            "description": "Success, no content",
-+            "$ref": "#/components/responses/NoContent"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      },
-+      "delete": {
-+        "tags": [
-+          "rooms"
-+        ],
-+        "description": "Destroy a Room",
-+        "responses": {
-+          "204": {
-+            "description": "Success, no content",
-+            "$ref": "#/components/responses/NoContent"
-+          },
-+          "400": {
-+            "$ref": "#/components/responses/BadRequest"
-+          },
-+          "401": {
-+            "$ref": "#/components/responses/Unauthorized"
-+          },
-+          "403": {
-+            "$ref": "#/components/responses/Forbidden"
-+          },
-+          "404": {
-+            "$ref": "#/components/responses/NotFound"
-+          },
-+          "409": {
-+            "$ref": "#/components/responses/Conflict"
-+          },
-+          "500": {
-+            "$ref": "#/components/responses/InternalServerError"
-+          }
-+        }
-+      }
-     }
-   },
-   "components": {
-@@ -384,6 +785,298 @@
-           }
-         }
-       },
-+      "RoomBathroom": {
-+        "type": "object",
-+        "required": [
-+          "bathOrShowerStyle",
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "bathOrShowerStyle": {
-+            "type": [
-+              "string",
-+              "null"
-+            ],
-+            "enum": [
-+              "bath",
-+              "bath_and_shower",
-+              "none",
-+              "shower",
-+              null
-+            ]
-+          },
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Bathroom"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomBathroomSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Bathroom"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomBedroom": {
-+        "type": "object",
-+        "required": [
-+          "bedTypes",
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "bedTypes": {
-+            "type": "array",
-+            "items": {
-+              "type": "string",
-+              "enum": [
-+                "bunk",
-+                "cot",
-+                "king",
-+                "queen",
-+                "sofabed",
-+                "twin"
-+              ]
-+            }
-+          },
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Bedroom"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomBedroomSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Bedroom"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomDen": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Den"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomDenSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Den"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomKitchen": {
-+        "type": "object",
-+        "required": [
-+          "appliances",
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "appliances": {
-+            "type": "array",
-+            "items": {
-+              "type": "string",
-+              "enum": [
-+                "dishwasher",
-+                "microwave",
-+                "oven",
-+                "stove"
-+              ]
-+            }
-+          },
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Kitchen"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomKitchenSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "Kitchen"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomLivingRoom": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "LivingRoom"
-+            ]
-+          }
-+        }
-+      },
-+      "RoomLivingRoomSummary": {
-+        "type": "object",
-+        "required": [
-+          "id",
-+          "position",
-+          "type"
-+        ],
-+        "properties": {
-+          "id": {
-+            "type": "string"
-+          },
-+          "position": {
-+            "type": [
-+              "integer",
-+              "null"
-+            ]
-+          },
-+          "type": {
-+            "type": "string",
-+            "enum": [
-+              "LivingRoom"
-+            ]
-+          }
-+        }
-+      },
-       "ValidationErrors": {
-         "type": "object",
-         "required": [
-diff --git a/api/src/types/db.ts b/api/src/types/db.ts
-index 7271711..c388408 100644
---- a/api/src/types/db.ts
-+++ b/api/src/types/db.ts
-@@ -68,6 +68,45 @@ import {
-  */
- import type { ColumnType } from 'kysely'
- 
-+export type ApplianceTypesEnum = 'dishwasher' | 'microwave' | 'oven' | 'stove'
-+
-+export const ApplianceTypesEnumValues = [
-+  'dishwasher',
-+  'microwave',
-+  'oven',
-+  'stove',
-+] as const
-+
-+export type ArrayType<T> =
-+  ArrayTypeImpl<T> extends (infer U)[] ? U[] : ArrayTypeImpl<T>
-+
-+export type ArrayTypeImpl<T> =
-+  T extends ColumnType<infer S, infer I, infer U>
-+    ? ColumnType<S[], I[], U[]>
-+    : T[]
-+
-+export type BathOrShowerStylesEnum =
-+  'bath' | 'bath_and_shower' | 'none' | 'shower'
-+
-+export const BathOrShowerStylesEnumValues = [
-+  'bath',
-+  'bath_and_shower',
-+  'none',
-+  'shower',
-+] as const
-+
-+export type BedTypesEnum =
-+  'bunk' | 'cot' | 'king' | 'queen' | 'sofabed' | 'twin'
-+
-+export const BedTypesEnumValues = [
-+  'bunk',
-+  'cot',
-+  'king',
-+  'queen',
-+  'sofabed',
-+  'twin',
-+] as const
-+
- export type Generated<T> =
-   T extends ColumnType<infer S, infer I, infer U>
-     ? ColumnType<S, I | undefined, U>
-@@ -86,6 +125,17 @@ export const PlaceStylesEnumValues = [
-   'treehouse',
- ] as const
- 
-+export type RoomTypesEnum =
-+  'Bathroom' | 'Bedroom' | 'Den' | 'Kitchen' | 'LivingRoom'
-+
-+export const RoomTypesEnumValues = [
-+  'Bathroom',
-+  'Bedroom',
-+  'Den',
-+  'Kitchen',
-+  'LivingRoom',
-+] as const
-+
- export type Timestamp = ColumnType<DateTime | CalendarDate>
- 
- export interface Guests {
-@@ -123,6 +173,19 @@ export interface Places {
-   updatedAt: Timestamp
- }
- 
-+export interface Rooms {
-+  appliances: Generated<ArrayType<ApplianceTypesEnum>>
-+  bathOrShowerStyle: BathOrShowerStylesEnum | null
-+  bedTypes: Generated<ArrayType<BedTypesEnum>>
-+  createdAt: Timestamp
-+  deletedAt: Timestamp | null
-+  id: Generated<string>
-+  placeId: string
-+  position: number | null
-+  type: RoomTypesEnum
-+  updatedAt: Timestamp
-+}
-+
- export interface Users {
-   createdAt: Timestamp
-   deletedAt: Timestamp | null
-@@ -137,6 +200,7 @@ export interface DB {
-   host_places: HostPlaces
-   hosts: Hosts
-   places: Places
-+  rooms: Rooms
-   users: Users
- }
- 
-@@ -145,5 +209,6 @@ export class DBClass {
-   host_places: HostPlaces
-   hosts: Hosts
-   places: Places
-+  rooms: Rooms
-   users: Users
- }
-diff --git a/api/src/types/dream.globals.ts b/api/src/types/dream.globals.ts
-index 538a900..b6e5538 100644
---- a/api/src/types/dream.globals.ts
-+++ b/api/src/types/dream.globals.ts
-@@ -64,5 +64,17 @@ export const globalTypeConfig = {
-     'HostSummarySerializer',
-     'PlaceSerializer',
-     'PlaceSummarySerializer',
-+    'Room/BathroomSerializer',
-+    'Room/BathroomSummarySerializer',
-+    'Room/BedroomSerializer',
-+    'Room/BedroomSummarySerializer',
-+    'Room/DenSerializer',
-+    'Room/DenSummarySerializer',
-+    'Room/KitchenSerializer',
-+    'Room/KitchenSummarySerializer',
-+    'Room/LivingRoomSerializer',
-+    'Room/LivingRoomSummarySerializer',
-+    'RoomSerializer',
-+    'RoomSummarySerializer',
-   ],
- } as const
+                   "position": {
+                     "type": [
+                       "integer",
 diff --git a/api/src/types/dream.ts b/api/src/types/dream.ts
-index 3b60d38..4d7d356 100644
+index facc6e2..4d7d356 100644
 --- a/api/src/types/dream.ts
 +++ b/api/src/types/dream.ts
-@@ -62,7 +62,18 @@ import {
-   type ClockTime,
-   type ClockTimeTz,
- } from '@rvoh/dream'
--import { type PlaceStylesEnum, PlaceStylesEnumValues } from './db.js'
-+import {
-+  type ApplianceTypesEnum,
-+  type BathOrShowerStylesEnum,
-+  type BedTypesEnum,
-+  type PlaceStylesEnum,
-+  type RoomTypesEnum,
-+  ApplianceTypesEnumValues,
-+  BathOrShowerStylesEnumValues,
-+  BedTypesEnumValues,
-+  PlaceStylesEnumValues,
-+  RoomTypesEnumValues,
-+} from './db.js'
- 
- export const schema = {
-   guests: {
-@@ -409,6 +420,138 @@ export const schema = {
+@@ -420,6 +420,15 @@ export const schema = {
          requiredAndClauses: null,
          passthroughAndClauses: null,
        },
@@ -2705,433 +786,36 @@ index 3b60d38..4d7d356 100644
 +        requiredAndClauses: null,
 +        passthroughAndClauses: null,
 +      },
-+    },
-+  },
-+  rooms: {
-+    serializerKeys: ['default', 'summary'],
-+    scopes: {
-+      default: ['dream:STI', 'dream:SoftDelete'],
-+      named: [],
-+    },
-+    nonJsonColumnNames: [
-+      'appliances',
-+      'bathOrShowerStyle',
-+      'bedTypes',
-+      'createdAt',
-+      'deletedAt',
-+      'id',
-+      'placeId',
-+      'position',
-+      'type',
-+      'updatedAt',
-+    ],
-+    columns: {
-+      appliances: {
-+        coercedType: {} as ApplianceTypesEnum[],
-+        enumType: {} as ApplianceTypesEnum,
-+        enumArrayType: [] as ApplianceTypesEnum[],
-+        enumValues: ApplianceTypesEnumValues,
-+        dbType: 'appliance_types_enum[]',
-+        allowNull: false,
-+        isArray: true,
-+      },
-+      bathOrShowerStyle: {
-+        coercedType: {} as BathOrShowerStylesEnum | null,
-+        enumType: {} as BathOrShowerStylesEnum,
-+        enumArrayType: [] as BathOrShowerStylesEnum[],
-+        enumValues: BathOrShowerStylesEnumValues,
-+        dbType: 'bath_or_shower_styles_enum',
-+        allowNull: true,
-+        isArray: false,
-+      },
-+      bedTypes: {
-+        coercedType: {} as BedTypesEnum[],
-+        enumType: {} as BedTypesEnum,
-+        enumArrayType: [] as BedTypesEnum[],
-+        enumValues: BedTypesEnumValues,
-+        dbType: 'bed_types_enum[]',
-+        allowNull: false,
-+        isArray: true,
-+      },
-+      createdAt: {
-+        coercedType: {} as DateTime,
-+        enumType: null,
-+        enumArrayType: null,
-+        enumValues: null,
-+        dbType: 'timestamp without time zone',
-+        allowNull: false,
-+        isArray: false,
-+      },
-+      deletedAt: {
-+        coercedType: {} as DateTime | null,
-+        enumType: null,
-+        enumArrayType: null,
-+        enumValues: null,
-+        dbType: 'timestamp without time zone',
-+        allowNull: true,
-+        isArray: false,
-+      },
-+      id: {
-+        coercedType: {} as string,
-+        enumType: null,
-+        enumArrayType: null,
-+        enumValues: null,
-+        dbType: 'uuid',
-+        allowNull: false,
-+        isArray: false,
-+      },
-+      placeId: {
-+        coercedType: {} as string,
-+        enumType: null,
-+        enumArrayType: null,
-+        enumValues: null,
-+        dbType: 'uuid',
-+        allowNull: false,
-+        isArray: false,
-+      },
-+      position: {
-+        coercedType: {} as number | null,
-+        enumType: null,
-+        enumArrayType: null,
-+        enumValues: null,
-+        dbType: 'integer',
-+        allowNull: true,
-+        isArray: false,
-+      },
-+      type: {
-+        coercedType: {} as RoomTypesEnum,
-+        enumType: {} as RoomTypesEnum,
-+        enumArrayType: [] as RoomTypesEnum[],
-+        enumValues: RoomTypesEnumValues,
-+        dbType: 'room_types_enum',
-+        allowNull: false,
-+        isArray: false,
-+      },
-+      updatedAt: {
-+        coercedType: {} as DateTime,
-+        enumType: null,
-+        enumArrayType: null,
-+        enumValues: null,
-+        dbType: 'timestamp without time zone',
-+        allowNull: false,
-+        isArray: false,
-+      },
-+    },
-+    virtualColumns: [],
-+    associations: {
-+      place: {
-+        type: 'BelongsTo',
-+        foreignKey: 'placeId',
-+        foreignKeyTypeColumn: null,
-+        tables: ['places'],
-+        optional: false,
-+        requiredAndClauses: null,
-+        passthroughAndClauses: null,
-+      },
      },
    },
-   users: {
-@@ -507,13 +650,19 @@ export const schema = {
- 
- export const connectionTypeConfig = {
-   passthroughColumns: [],
--  allDefaultScopeNames: ['dream:SoftDelete'],
-+  allDefaultScopeNames: ['dream:STI', 'dream:SoftDelete'],
-   globalNames: {
-     models: {
-       Guest: 'guests',
-       Host: 'hosts',
-       HostPlace: 'host_places',
-       Place: 'places',
-+      Room: 'rooms',
-+      'Room/Bathroom': 'rooms',
-+      'Room/Bedroom': 'rooms',
-+      'Room/Den': 'rooms',
-+      'Room/Kitchen': 'rooms',
-+      'Room/LivingRoom': 'rooms',
-       User: 'users',
-     },
-   },
+   rooms: {
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index d1fd8d8..2278a39 100644
+index ea6f7fc..83ea146 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
-@@ -185,6 +185,206 @@ export interface paths {
-         };
-         trace?: never;
-     };
-+    "/v1/host/places/{placeId}/rooms": {
-+        parameters: {
-+            query?: {
-+                /** @description Pagination cursor */
-+                cursor?: string | null;
-+            };
-+            header?: never;
-+            path: {
-+                placeId: string;
-+            };
-+            cookie?: never;
-+        };
-+        /** @description Paginated index of Rooms */
-+        get: {
-+            parameters: {
-+                query?: {
-+                    /** @description Pagination cursor */
-+                    cursor?: string | null;
-+                };
-+                header?: never;
-+                path: {
-+                    placeId: string;
-+                };
-+                cookie?: never;
-+            };
-+            requestBody?: never;
-+            responses: {
-+                /** @description Success */
-+                200: {
-+                    headers: {
-+                        [name: string]: unknown;
-+                    };
-+                    content: {
-+                        "application/json": {
-+                            cursor: string | null;
-+                            results: (components["schemas"]["RoomBathroomSummary"] | components["schemas"]["RoomBedroomSummary"] | components["schemas"]["RoomDenSummary"] | components["schemas"]["RoomKitchenSummary"] | components["schemas"]["RoomLivingRoomSummary"])[];
-+                        };
-+                    };
-+                };
-+                400: components["responses"]["BadRequest"];
-+                401: components["responses"]["Unauthorized"];
-+                403: components["responses"]["Forbidden"];
-+                404: components["responses"]["NotFound"];
-+                409: components["responses"]["Conflict"];
-+                500: components["responses"]["InternalServerError"];
-+            };
-+        };
-+        put?: never;
-+        /** @description Create a Room */
-+        post: {
-+            parameters: {
-+                query?: {
-+                    /** @description Pagination cursor */
-+                    cursor?: string | null;
-+                };
-+                header?: never;
-+                path: {
-+                    placeId: string;
-+                };
-+                cookie?: never;
-+            };
-+            requestBody?: {
-+                content: {
-+                    "application/json": {
+@@ -249,7 +249,13 @@ export interface paths {
+             requestBody?: {
+                 content: {
+                     "application/json": {
 +                        appliances?: ("dishwasher" | "microwave" | "oven" | "stove")[];
 +                        /** @enum {string|null} */
 +                        bathOrShowerStyle?: "bath" | "bath_and_shower" | "none" | "shower" | null;
 +                        bedTypes?: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
-+                        position?: number | null;
+                         position?: number | null;
 +                        /** @enum {string} */
 +                        type?: "Bathroom" | "Bedroom" | "Den" | "Kitchen" | "LivingRoom";
-+                    };
-+                };
-+            };
-+            responses: {
-+                /** @description Created */
-+                201: {
-+                    headers: {
-+                        [name: string]: unknown;
-+                    };
-+                    content: {
-+                        "application/json": components["schemas"]["RoomBathroom"] | components["schemas"]["RoomBedroom"] | components["schemas"]["RoomDen"] | components["schemas"]["RoomKitchen"] | components["schemas"]["RoomLivingRoom"];
-+                    };
-+                };
-+                400: components["responses"]["BadRequest"];
-+                401: components["responses"]["Unauthorized"];
-+                403: components["responses"]["Forbidden"];
-+                404: components["responses"]["NotFound"];
-+                409: components["responses"]["Conflict"];
-+                500: components["responses"]["InternalServerError"];
-+            };
-+        };
-+        delete?: never;
-+        options?: never;
-+        head?: never;
-+        patch?: never;
-+        trace?: never;
-+    };
-+    "/v1/host/places/{placeId}/rooms/{id}": {
-+        parameters: {
-+            query?: never;
-+            header?: never;
-+            path: {
-+                placeId: string;
-+                id: string;
-+            };
-+            cookie?: never;
-+        };
-+        /** @description Fetch a Room */
-+        get: {
-+            parameters: {
-+                query?: never;
-+                header?: never;
-+                path: {
-+                    placeId: string;
-+                    id: string;
-+                };
-+                cookie?: never;
-+            };
-+            requestBody?: never;
-+            responses: {
-+                /** @description Success */
-+                200: {
-+                    headers: {
-+                        [name: string]: unknown;
-+                    };
-+                    content: {
-+                        "application/json": components["schemas"]["RoomBathroom"] | components["schemas"]["RoomBedroom"] | components["schemas"]["RoomDen"] | components["schemas"]["RoomKitchen"] | components["schemas"]["RoomLivingRoom"];
-+                    };
-+                };
-+                400: components["responses"]["BadRequest"];
-+                401: components["responses"]["Unauthorized"];
-+                403: components["responses"]["Forbidden"];
-+                404: components["responses"]["NotFound"];
-+                409: components["responses"]["Conflict"];
-+                500: components["responses"]["InternalServerError"];
-+            };
-+        };
-+        put?: never;
-+        post?: never;
-+        /** @description Destroy a Room */
-+        delete: {
-+            parameters: {
-+                query?: never;
-+                header?: never;
-+                path: {
-+                    placeId: string;
-+                    id: string;
-+                };
-+                cookie?: never;
-+            };
-+            requestBody?: never;
-+            responses: {
-+                /** @description Success, no content */
-+                204: components["responses"]["NoContent"];
-+                400: components["responses"]["BadRequest"];
-+                401: components["responses"]["Unauthorized"];
-+                403: components["responses"]["Forbidden"];
-+                404: components["responses"]["NotFound"];
-+                409: components["responses"]["Conflict"];
-+                500: components["responses"]["InternalServerError"];
-+            };
-+        };
-+        options?: never;
-+        head?: never;
-+        /** @description Update a Room */
-+        patch: {
-+            parameters: {
-+                query?: never;
-+                header?: never;
-+                path: {
-+                    placeId: string;
-+                    id: string;
-+                };
-+                cookie?: never;
-+            };
-+            requestBody?: {
-+                content: {
-+                    "application/json": {
+                     };
+                 };
+             };
+@@ -358,6 +364,10 @@ export interface paths {
+             requestBody?: {
+                 content: {
+                     "application/json": {
 +                        appliances?: ("dishwasher" | "microwave" | "oven" | "stove")[];
 +                        /** @enum {string|null} */
 +                        bathOrShowerStyle?: "bath" | "bath_and_shower" | "none" | "shower" | null;
 +                        bedTypes?: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
-+                        position?: number | null;
-+                    };
-+                };
-+            };
-+            responses: {
-+                /** @description Success, no content */
-+                204: components["responses"]["NoContent"];
-+                400: components["responses"]["BadRequest"];
-+                401: components["responses"]["Unauthorized"];
-+                403: components["responses"]["Forbidden"];
-+                404: components["responses"]["NotFound"];
-+                409: components["responses"]["Conflict"];
-+                500: components["responses"]["InternalServerError"];
-+            };
-+        };
-+        trace?: never;
-+    };
- }
- export type webhooks = Record<string, never>;
- export interface components {
-@@ -213,6 +413,70 @@ export interface components {
-             id: string;
-             name: string;
-         };
-+        RoomBathroom: {
-+            /** @enum {string|null} */
-+            bathOrShowerStyle: "bath" | "bath_and_shower" | "none" | "shower" | null;
-+            id: string;
-+            position: number | null;
-+            /** @enum {string} */
-+            type: "Bathroom";
-+        };
-+        RoomBathroomSummary: {
-+            id: string;
-+            position: number | null;
-+            /** @enum {string} */
-+            type: "Bathroom";
-+        };
-+        RoomBedroom: {
-+            bedTypes: ("bunk" | "cot" | "king" | "queen" | "sofabed" | "twin")[];
-+            id: string;
-+            position: number | null;
-+            /** @enum {string} */
-+            type: "Bedroom";
-+        };
-+        RoomBedroomSummary: {
-+            id: string;
-+            position: number | null;
-+            /** @enum {string} */
-+            type: "Bedroom";
-+        };
-+        RoomDen: {
-+            id: string;
-+            position: number | null;
-+            /** @enum {string} */
-+            type: "Den";
-+        };
-+        RoomDenSummary: {
-+            id: string;
-+            position: number | null;
-+            /** @enum {string} */
-+            type: "Den";
-+        };
-+        RoomKitchen: {
-+            appliances: ("dishwasher" | "microwave" | "oven" | "stove")[];
-+            id: string;
-+            position: number | null;
-+            /** @enum {string} */
-+            type: "Kitchen";
-+        };
-+        RoomKitchenSummary: {
-+            id: string;
-+            position: number | null;
-+            /** @enum {string} */
-+            type: "Kitchen";
-+        };
-+        RoomLivingRoom: {
-+            id: string;
-+            position: number | null;
-+            /** @enum {string} */
-+            type: "LivingRoom";
-+        };
-+        RoomLivingRoomSummary: {
-+            id: string;
-+            position: number | null;
-+            /** @enum {string} */
-+            type: "LivingRoom";
-+        };
-         ValidationErrors: {
-             /** @enum {string} */
-             type: "validation";
+                         position?: number | null;
+                     };
+                 };
 ``````

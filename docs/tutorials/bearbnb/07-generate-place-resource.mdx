@@ -14,6 +14,9 @@ Generate Place resource
 pnpm psy g:resource --help
 pnpm psy g:resource --owning-model=Host v1/host/places Place name:citext style:enum:place_styles:cottage,cabin,lean_to,treehouse,tent,cave,dump sleeps:integer
 ```
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UqRHFQRjCHrGh9xPhFnGUR
 ``````
 
 ## Changes
@@ -21,12 +24,12 @@ pnpm psy g:resource --owning-model=Host v1/host/places Place name:citext style:e
 ``````
 diff --git a/api/spec/factories/PlaceFactory.ts b/api/spec/factories/PlaceFactory.ts
 new file mode 100644
-index 0000000..d0a664e
+index 0000000..2f80e14
 --- /dev/null
 +++ b/api/spec/factories/PlaceFactory.ts
 @@ -0,0 +1,13 @@
 +import { UpdateableProperties } from '@rvoh/dream/types'
-+import Place from '@models/Place.js'
++import Place from '#models/Place.js'
 +
 +let counter = 0
 +
@@ -40,17 +43,17 @@ index 0000000..d0a664e
 +}
 diff --git a/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 new file mode 100644
-index 0000000..64923d4
+index 0000000..363f0b2
 --- /dev/null
 +++ b/api/spec/unit/controllers/V1/Host/PlacesController.spec.ts
 @@ -0,0 +1,185 @@
-+import Place from '@models/Place.js'
-+import User from '@models/User.js'
-+import Host from '@models/Host.js'
-+import createPlace from '@spec/factories/PlaceFactory.js'
-+import createUser from '@spec/factories/UserFactory.js'
-+import createHost from '@spec/factories/HostFactory.js'
-+import { RequestBody, session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
++import Place from '#models/Place.js'
++import User from '#models/User.js'
++import Host from '#models/Host.js'
++import createPlace from '#spec/factories/PlaceFactory.js'
++import createUser from '#spec/factories/UserFactory.js'
++import createHost from '#spec/factories/HostFactory.js'
++import { RequestBody, session, SpecRequestType } from '#spec/unit/helpers/authentication.js'
 +
 +describe('V1/Host/PlacesController', () => {
 +  let request: SpecRequestType
@@ -262,14 +265,14 @@ index 0000000..1a200d0
 +}
 diff --git a/api/src/app/controllers/V1/Host/PlacesController.ts b/api/src/app/controllers/V1/Host/PlacesController.ts
 new file mode 100644
-index 0000000..2509aca
+index 0000000..432bbff
 --- /dev/null
 +++ b/api/src/app/controllers/V1/Host/PlacesController.ts
 @@ -0,0 +1,84 @@
 +import { OpenAPI } from '@rvoh/psychic'
 +import { DreamParamSafeColumnNames } from '@rvoh/dream/types'
 +import V1HostBaseController from './BaseController.js'
-+import Place from '@models/Place.js'
++import Place from '#models/Place.js'
 +
 +const openApiTags = ['places']
 +
@@ -347,18 +350,18 @@ index 0000000..2509aca
 +  private async place() {
 +    // return await this.currentHost.associationQuery('places')
 +    //   .preloadFor('default')
-+    //   .findOrFail(this.castParam('id', 'string'))
++    //   .findOrFail(this.castParam('id', 'uuid'))
 +  }
 +}
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
 new file mode 100644
-index 0000000..0ef7a21
+index 0000000..9adabf3
 --- /dev/null
 +++ b/api/src/app/models/Place.ts
 @@ -0,0 +1,29 @@
 +import { SoftDelete } from '@rvoh/dream'
 +import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
-+import ApplicationModel from '@models/ApplicationModel.js'
++import ApplicationModel from '#models/ApplicationModel.js'
 +
 +// Uncomment when adding decorators (@deco.BelongsTo, @deco.Validates, etc.):
 +// import { Decorators } from '@rvoh/dream'
@@ -387,12 +390,12 @@ index 0000000..0ef7a21
 +}
 diff --git a/api/src/app/serializers/PlaceSerializer.ts b/api/src/app/serializers/PlaceSerializer.ts
 new file mode 100644
-index 0000000..edbd000
+index 0000000..0aeaa7c
 --- /dev/null
 +++ b/api/src/app/serializers/PlaceSerializer.ts
 @@ -0,0 +1,12 @@
 +import { DreamSerializer } from '@rvoh/dream'
-+import Place from '@models/Place.js'
++import Place from '#models/Place.js'
 +
 +export const PlaceSummarySerializer = (place: Place) =>
 +  DreamSerializer(Place, place)
@@ -404,10 +407,10 @@ index 0000000..edbd000
 +    .attribute('style')
 +    .attribute('sleeps')
 diff --git a/api/src/conf/routes.ts b/api/src/conf/routes.ts
-index 35b824d..b91ad5b 100644
+index 2f673de..0a83449 100644
 --- a/api/src/conf/routes.ts
 +++ b/api/src/conf/routes.ts
-@@ -3,6 +3,12 @@ import internalRoutes from '@conf/routes.internal.js'
+@@ -3,6 +3,12 @@ import internalRoutes from '#conf/routes.internal.js'
  import { PsychicRouter } from '@rvoh/psychic'
  
  export default function routes(r: PsychicRouter) {
@@ -417,15 +420,15 @@ index 35b824d..b91ad5b 100644
 +    })
 +  })
 +
-   adminRoutes(r)
-   internalRoutes(r)
-   // add routes here, perhaps by running `pnpm psy g:resource v1/pets Pet name:citext birthdate:date species:enum:pet_species:dog,cat,fish`
-diff --git a/api/src/db/migrations/1782925986336-create-place.ts b/api/src/db/migrations/1782925986336-create-place.ts
+   // Health check for the web server. Orchestrators / load balancers probe this
+   // for liveness. It is already excluded from request logging via
+   // `ignoredRoutes: ['/health_check']` in conf/app.ts. Uncomment and adjust the
+diff --git a/api/src/db/migrations/1793240523924-create-place.ts b/api/src/db/migrations/1793240523924-create-place.ts
 new file mode 100644
-index 0000000..6c0a5c0
+index 0000000..4270fd8
 --- /dev/null
-+++ b/api/src/db/migrations/1782925986336-create-place.ts
-@@ -0,0 +1,48 @@
++++ b/api/src/db/migrations/1793240523924-create-place.ts
+@@ -0,0 +1,42 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely, sql } from 'kysely'
 +
@@ -459,12 +462,6 @@ index 0000000..6c0a5c0
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
 +    .addColumn('deleted_at', 'timestamp')
-+    .execute()
-+
-+  await db.schema
-+    .createIndex('places_deleted_at')
-+    .on('places')
-+    .column('deleted_at')
 +    .execute()
 +}
 +

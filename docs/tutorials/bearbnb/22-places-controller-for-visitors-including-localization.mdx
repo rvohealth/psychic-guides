@@ -40,8 +40,8 @@ NODE_DEBUG=psychic pnpm uspec spec/unit/controllers/Visitor/V1/PlacesController.
 pnpm uspec
 ```
 
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_015KTzZW1VMPnC3xMwePsEPH
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UqRHFQRjCHrGh9xPhFnGUR
 ``````
 
 ## Changes
@@ -49,24 +49,24 @@ Claude-Session: https://claude.ai/code/session_015KTzZW1VMPnC3xMwePsEPH
 ``````
 diff --git a/api/spec/unit/controllers/Visitor/V1/PlacesController.spec.ts b/api/spec/unit/controllers/Visitor/V1/PlacesController.spec.ts
 new file mode 100644
-index 0000000..37b19cc
+index 0000000..03ded27
 --- /dev/null
 +++ b/api/spec/unit/controllers/Visitor/V1/PlacesController.spec.ts
 @@ -0,0 +1,223 @@
-+import Place from '@models/Place.js'
-+import User from '@models/User.js'
++import Place from '#models/Place.js'
++import User from '#models/User.js'
 +import { PsychicServer } from '@rvoh/psychic'
 +import { OpenapiSpecRequest } from '@rvoh/psychic-spec-helpers'
-+import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
-+import createPlace from '@spec/factories/PlaceFactory.js'
-+import createBathroom from '@spec/factories/Room/BathroomFactory.js'
-+import createBedroom from '@spec/factories/Room/BedroomFactory.js'
-+import createDen from '@spec/factories/Room/DenFactory.js'
-+import createKitchen from '@spec/factories/Room/KitchenFactory.js'
-+import createLivingRoom from '@spec/factories/Room/LivingRoomFactory.js'
-+import createUser from '@spec/factories/UserFactory.js'
-+import { session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
-+import { paths as OpenapiPaths } from '@src/types/openapi/tests.openapi.js'
++import createLocalizedText from '#spec/factories/LocalizedTextFactory.js'
++import createPlace from '#spec/factories/PlaceFactory.js'
++import createBathroom from '#spec/factories/Room/BathroomFactory.js'
++import createBedroom from '#spec/factories/Room/BedroomFactory.js'
++import createDen from '#spec/factories/Room/DenFactory.js'
++import createKitchen from '#spec/factories/Room/KitchenFactory.js'
++import createLivingRoom from '#spec/factories/Room/LivingRoomFactory.js'
++import createUser from '#spec/factories/UserFactory.js'
++import { session, SpecRequestType } from '#spec/unit/helpers/authentication.js'
++import { paths as OpenapiPaths } from '#src/types/openapi/tests.openapi.js'
 +
 +describe('Visitor/V1/PlacesController', () => {
 +  describe('authenticated', () => {
@@ -80,7 +80,7 @@ index 0000000..37b19cc
 +
 +    describe('GET index', () => {
 +      const subject = async <StatusCode extends 200 | 400>(expectedStatus: StatusCode) => {
-+        return request.get('/v1/visitor/places', expectedStatus, {
++        return request.get('/v1/places', expectedStatus, {
 +          headers: {
 +            'accept-language': 'es-ES',
 +          },
@@ -104,7 +104,7 @@ index 0000000..37b19cc
 +
 +    describe('GET show', () => {
 +      const subject = async <StatusCode extends 200 | 400>(place: Place, expectedStatus: StatusCode) => {
-+        return request.get('/v1/visitor/places/{id}', expectedStatus, {
++        return request.get('/v1/places/{id}', expectedStatus, {
 +          id: place.id,
 +          headers: {
 +            'accept-language': 'es-ES',
@@ -135,7 +135,7 @@ index 0000000..37b19cc
 +
 +    describe('GET index', () => {
 +      const subject = async <StatusCode extends 200 | 400>(expectedStatus: StatusCode) => {
-+        return request.get('/v1/visitor/places', expectedStatus, {
++        return request.get('/v1/places', expectedStatus, {
 +          headers: {
 +            'accept-language': 'es-ES',
 +          },
@@ -159,7 +159,7 @@ index 0000000..37b19cc
 +
 +    describe('GET show', () => {
 +      const subject = async <StatusCode extends 200 | 400>(place: Place, expectedStatus: StatusCode) => {
-+        return request.get('/v1/visitor/places/{id}', expectedStatus, {
++        return request.get('/v1/places/{id}', expectedStatus, {
 +          id: place.id,
 +          headers: {
 +            'accept-language': 'es-ES',
@@ -277,23 +277,19 @@ index 0000000..37b19cc
 +  }
 +}
 diff --git a/api/src/app/controllers/ApplicationController.ts b/api/src/app/controllers/ApplicationController.ts
-index db258f4..2daa964 100644
+index eed6c22..108cc59 100644
 --- a/api/src/app/controllers/ApplicationController.ts
 +++ b/api/src/app/controllers/ApplicationController.ts
-@@ -1,6 +1,7 @@
+@@ -1,4 +1,4 @@
 -import { PsychicController } from '@rvoh/psychic'
 +import { BeforeAction, PsychicController } from '@rvoh/psychic'
  import { PsychicOpenapiNames } from '@rvoh/psychic/openapi'
- import psychicTypes from '@src/types/psychic.js'
-+import { supportedLocales } from '@src/utils/i18n.js'
- 
- export default class ApplicationController extends PsychicController {
-   public override get psychicTypes() {
-@@ -10,4 +11,17 @@ export default class ApplicationController extends PsychicController {
-   public static override get openapiNames(): PsychicOpenapiNames<ApplicationController> {
+ import psychicTypes from '#src/types/psychic.js'
+ import { DEFAULT_LOCALE, supportedLocales } from '#src/utils/i18n.js'
+@@ -12,6 +12,13 @@ export default class ApplicationController extends PsychicController {
      return ['default', 'mobile', 'tests']
    }
-+
+ 
 +  @BeforeAction()
 +  public configureSerializers() {
 +    this.serializerPassthrough({
@@ -301,23 +297,21 @@ index db258f4..2daa964 100644
 +    })
 +  }
 +
-+  protected get locale() {
-+    const locale = this.header('Accept-Language')
-+    const locales = supportedLocales()
-+    return locales.includes(locale as (typeof locales)[number]) ? locale : 'en-US'
-+  }
- }
+   // The supported locale (src/utils/i18n.ts) the request's Accept-Language
+   // header prefers, else DEFAULT_LOCALE. Koa does the negotiation (its accepts
+   // and negotiator packages), weighing q-values and matching a bare 'es' to
 diff --git a/api/src/app/controllers/MaybeAuthedController.ts b/api/src/app/controllers/MaybeAuthedController.ts
-index 5d7cb87..a36effb 100644
+index df96b74..b95e475 100644
 --- a/api/src/app/controllers/MaybeAuthedController.ts
 +++ b/api/src/app/controllers/MaybeAuthedController.ts
 @@ -1,16 +1,13 @@
- import ApplicationController from '@controllers/ApplicationController.js'
- import resolveCurrentUser from '@controllers/helpers/resolveCurrentUser.js'
-+import User from '@models/User.js'
+ import ApplicationController from '#controllers/ApplicationController.js'
++import resolveCurrentUser from '#controllers/helpers/resolveCurrentUser.js'
++import User from '#models/User.js'
  import { BeforeAction } from '@rvoh/psychic'
 -/** uncomment after creating User model */
--// import User from '@models/User.js'
+-// import resolveCurrentUser from '#controllers/helpers/resolveCurrentUser.js'
+-// import User from '#models/User.js'
  
  export default class MaybeAuthedController extends ApplicationController {
 -  /** uncomment after creating User model */
@@ -331,6 +325,17 @@ index 5d7cb87..a36effb 100644
 +    this.currentUser = await resolveCurrentUser(this)
    }
  }
+diff --git a/api/src/app/controllers/V1/BaseController.ts b/api/src/app/controllers/V1/BaseController.ts
+index a30ab80..6f2881c 100644
+--- a/api/src/app/controllers/V1/BaseController.ts
++++ b/api/src/app/controllers/V1/BaseController.ts
+@@ -1,5 +1,3 @@
+ import AuthedController from '../AuthedController.js'
+ 
+-export default class V1BaseController extends AuthedController {
+-
+-}
++export default class V1BaseController extends AuthedController {}
 diff --git a/api/src/app/controllers/Visitor/BaseController.ts b/api/src/app/controllers/Visitor/BaseController.ts
 new file mode 100644
 index 0000000..ee11816
@@ -351,11 +356,11 @@ index 0000000..e07512e
 +export default class VisitorV1BaseController extends VisitorBaseController {}
 diff --git a/api/src/app/controllers/Visitor/V1/PlacesController.ts b/api/src/app/controllers/Visitor/V1/PlacesController.ts
 new file mode 100644
-index 0000000..8e1044f
+index 0000000..7c32c80
 --- /dev/null
 +++ b/api/src/app/controllers/Visitor/V1/PlacesController.ts
 @@ -0,0 +1,37 @@
-+import Place from '@models/Place.js'
++import Place from '#models/Place.js'
 +import { OpenAPI } from '@rvoh/psychic'
 +import VisitorV1BaseController from './BaseController.js'
 +
@@ -392,20 +397,8 @@ index 0000000..8e1044f
 +    )
 +  }
 +}
-diff --git a/api/src/app/controllers/helpers/resolveCurrentUser.ts b/api/src/app/controllers/helpers/resolveCurrentUser.ts
-index 24084aa..6e5f1b1 100644
---- a/api/src/app/controllers/helpers/resolveCurrentUser.ts
-+++ b/api/src/app/controllers/helpers/resolveCurrentUser.ts
-@@ -10,6 +10,7 @@ export default async function resolveCurrentUser(controller: PsychicController):
-     )
- 
-   const token = (controller.header('authorization') ?? '').split(' ').at(-1)!
-+  if (!token) return null
- 
-   const decrypted = Encrypt.decrypt(token, {
-     algorithm: 'aes-256-gcm',
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index a1be52d..4d3cb29 100644
+index c063540..3ed5fa2 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
 @@ -18,6 +18,8 @@ export default class Place extends ApplicationModel {
@@ -418,7 +411,7 @@ index a1be52d..4d3cb29 100644
    }
  
 diff --git a/api/src/app/models/Room/Bathroom.ts b/api/src/app/models/Room/Bathroom.ts
-index b38ff11..aaae03d 100644
+index 5bcc095..9aa3327 100644
 --- a/api/src/app/models/Room/Bathroom.ts
 +++ b/api/src/app/models/Room/Bathroom.ts
 @@ -8,6 +8,7 @@ export default class Bathroom extends Room {
@@ -430,7 +423,7 @@ index b38ff11..aaae03d 100644
    }
  
 diff --git a/api/src/app/models/Room/Bedroom.ts b/api/src/app/models/Room/Bedroom.ts
-index e8fc0b2..fa7c36a 100644
+index 3a3909d..f18fd63 100644
 --- a/api/src/app/models/Room/Bedroom.ts
 +++ b/api/src/app/models/Room/Bedroom.ts
 @@ -8,6 +8,7 @@ export default class Bedroom extends Room {
@@ -442,19 +435,27 @@ index e8fc0b2..fa7c36a 100644
    }
  
 diff --git a/api/src/app/models/Room/Den.ts b/api/src/app/models/Room/Den.ts
-index 3b78360..b221360 100644
+index 6cac44b..dac86a9 100644
 --- a/api/src/app/models/Room/Den.ts
 +++ b/api/src/app/models/Room/Den.ts
-@@ -8,6 +8,7 @@ export default class Den extends Room {
+@@ -1,5 +1,5 @@
+ import { STI } from '@rvoh/dream'
+-import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
++import { DreamSerializers } from '@rvoh/dream/types'
+ import Room from '#models/Room.js'
+ 
+ @STI(Room)
+@@ -8,7 +8,7 @@ export default class Den extends Room {
      return {
        default: 'Room/DenSerializer',
        summary: 'Room/DenSummarySerializer',
 +      forVisitors: 'Room/DenForVisitorsSerializer',
      }
    }
- 
+-
+ }
 diff --git a/api/src/app/models/Room/Kitchen.ts b/api/src/app/models/Room/Kitchen.ts
-index a2b15df..492a31a 100644
+index b94f747..0469a38 100644
 --- a/api/src/app/models/Room/Kitchen.ts
 +++ b/api/src/app/models/Room/Kitchen.ts
 @@ -8,6 +8,7 @@ export default class Kitchen extends Room {
@@ -466,26 +467,34 @@ index a2b15df..492a31a 100644
    }
  
 diff --git a/api/src/app/models/Room/LivingRoom.ts b/api/src/app/models/Room/LivingRoom.ts
-index c7f3b30..63938d9 100644
+index caba904..3b1db04 100644
 --- a/api/src/app/models/Room/LivingRoom.ts
 +++ b/api/src/app/models/Room/LivingRoom.ts
-@@ -8,6 +8,7 @@ export default class LivingRoom extends Room {
+@@ -1,5 +1,5 @@
+ import { STI } from '@rvoh/dream'
+-import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
++import { DreamSerializers } from '@rvoh/dream/types'
+ import Room from '#models/Room.js'
+ 
+ @STI(Room)
+@@ -8,7 +8,7 @@ export default class LivingRoom extends Room {
      return {
        default: 'Room/LivingRoomSerializer',
        summary: 'Room/LivingRoomSummarySerializer',
 +      forVisitors: 'Room/LivingRoomForVisitorsSerializer',
      }
    }
- 
+-
+ }
 diff --git a/api/src/app/serializers/PlaceSerializer.ts b/api/src/app/serializers/PlaceSerializer.ts
-index bc76022..2f78daa 100644
+index a4a00c3..1014927 100644
 --- a/api/src/app/serializers/PlaceSerializer.ts
 +++ b/api/src/app/serializers/PlaceSerializer.ts
 @@ -1,5 +1,7 @@
  import { DreamSerializer } from '@rvoh/dream'
- import Place from '@models/Place.js'
-+import { type LocalesEnum } from '@src/types/db.js'
-+import i18n from '@src/utils/i18n.js'
+ import Place from '#models/Place.js'
++import { type LocalesEnum } from '#src/types/db.js'
++import i18n from '#src/utils/i18n.js'
  
  export const PlaceSummarySerializer = (place: Place) =>
    DreamSerializer(Place, place)
@@ -497,7 +506,7 @@ index bc76022..2f78daa 100644
 +export const PlaceSummaryForVisitorsSerializer = (place: Place) =>
 +  DreamSerializer(Place, place)
 +    .attribute('id')
-+    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
++    .delegatedAttribute('currentLocalizedText', 'title')
 +
 +export const PlaceForVisitorsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
 +  PlaceSummaryForVisitorsSerializer(place)
@@ -508,20 +517,20 @@ index bc76022..2f78daa 100644
 +    .attribute('sleeps')
 +    .rendersMany('rooms', { serializerKey: 'forVisitors' })
 diff --git a/api/src/app/serializers/Room/BathroomSerializer.ts b/api/src/app/serializers/Room/BathroomSerializer.ts
-index a80452b..1ea2b6f 100644
+index 9e8de81..8784719 100644
 --- a/api/src/app/serializers/Room/BathroomSerializer.ts
 +++ b/api/src/app/serializers/Room/BathroomSerializer.ts
 @@ -1,5 +1,12 @@
--import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
+-import { RoomSerializer, RoomSummarySerializer } from '#serializers/RoomSerializer.js'
 +import { ObjectSerializer } from '@rvoh/dream'
-+import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
- import Bathroom from '@models/Room/Bathroom.js'
++import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '#serializers/RoomSerializer.js'
+ import Bathroom from '#models/Room/Bathroom.js'
 +import {
 +  type BathOrShowerStylesEnum,
 +  BathOrShowerStylesEnumValues,
 +  type LocalesEnum,
-+} from '@src/types/db.js'
-+import i18n from '@src/utils/i18n.js'
++} from '#src/types/db.js'
++import i18n from '#src/utils/i18n.js'
  
  export const RoomBathroomSummarySerializer = (bathroom: Bathroom) =>
    RoomSummarySerializer(Bathroom, bathroom)
@@ -551,16 +560,16 @@ index a80452b..1ea2b6f 100644
 +  RoomForVisitorsSerializer(Bathroom, roomBathroom, passthrough)
 +    .rendersOne<Bathroom>('bathOrShowerStyle', { serializer: BathOrShowerStyleSerializer })
 diff --git a/api/src/app/serializers/Room/BedroomSerializer.ts b/api/src/app/serializers/Room/BedroomSerializer.ts
-index f34b5b4..451df83 100644
+index a758a17..ddfebf7 100644
 --- a/api/src/app/serializers/Room/BedroomSerializer.ts
 +++ b/api/src/app/serializers/Room/BedroomSerializer.ts
 @@ -1,5 +1,8 @@
--import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
+-import { RoomSerializer, RoomSummarySerializer } from '#serializers/RoomSerializer.js'
 +import { ObjectSerializer } from '@rvoh/dream'
-+import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
- import Bedroom from '@models/Room/Bedroom.js'
-+import { type BedTypesEnum, BedTypesEnumValues, type LocalesEnum } from '@src/types/db.js'
-+import i18n from '@src/utils/i18n.js'
++import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '#serializers/RoomSerializer.js'
+ import Bedroom from '#models/Room/Bedroom.js'
++import { type BedTypesEnum, BedTypesEnumValues, type LocalesEnum } from '#src/types/db.js'
++import i18n from '#src/utils/i18n.js'
  
  export const RoomBedroomSummarySerializer = (bedroom: Bedroom) =>
    RoomSummarySerializer(Bedroom, bedroom)
@@ -581,14 +590,14 @@ index f34b5b4..451df83 100644
 +    serializer: BedTypeSerializer,
 +  })
 diff --git a/api/src/app/serializers/Room/DenSerializer.ts b/api/src/app/serializers/Room/DenSerializer.ts
-index 5d4db09..6a44070 100644
+index cf1dff8..6ad7bf7 100644
 --- a/api/src/app/serializers/Room/DenSerializer.ts
 +++ b/api/src/app/serializers/Room/DenSerializer.ts
 @@ -1,8 +1,12 @@
--import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
-+import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
- import Den from '@models/Room/Den.js'
-+import { type LocalesEnum } from '@src/types/db.js'
+-import { RoomSerializer, RoomSummarySerializer } from '#serializers/RoomSerializer.js'
++import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '#serializers/RoomSerializer.js'
+ import Den from '#models/Room/Den.js'
++import { type LocalesEnum } from '#src/types/db.js'
  
  export const RoomDenSummarySerializer = (den: Den) =>
    RoomSummarySerializer(Den, den)
@@ -599,16 +608,16 @@ index 5d4db09..6a44070 100644
 +export const RoomDenForVisitorsSerializer = (roomDen: Den, passthrough: { locale: LocalesEnum }) =>
 +  RoomForVisitorsSerializer(Den, roomDen, passthrough)
 diff --git a/api/src/app/serializers/Room/KitchenSerializer.ts b/api/src/app/serializers/Room/KitchenSerializer.ts
-index 633aa8f..5f2929c 100644
+index 7af4b41..bcdb4a4 100644
 --- a/api/src/app/serializers/Room/KitchenSerializer.ts
 +++ b/api/src/app/serializers/Room/KitchenSerializer.ts
 @@ -1,5 +1,8 @@
--import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
+-import { RoomSerializer, RoomSummarySerializer } from '#serializers/RoomSerializer.js'
 +import { ObjectSerializer } from '@rvoh/dream'
-+import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
- import Kitchen from '@models/Room/Kitchen.js'
-+import { type ApplianceTypesEnum, ApplianceTypesEnumValues, type LocalesEnum } from '@src/types/db.js'
-+import i18n from '@src/utils/i18n.js'
++import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '#serializers/RoomSerializer.js'
+ import Kitchen from '#models/Room/Kitchen.js'
++import { type ApplianceTypesEnum, ApplianceTypesEnumValues, type LocalesEnum } from '#src/types/db.js'
++import i18n from '#src/utils/i18n.js'
  
  export const RoomKitchenSummarySerializer = (kitchen: Kitchen) =>
    RoomSummarySerializer(Kitchen, kitchen)
@@ -629,14 +638,14 @@ index 633aa8f..5f2929c 100644
 +    serializer: ApplianceSerializer,
 +  })
 diff --git a/api/src/app/serializers/Room/LivingRoomSerializer.ts b/api/src/app/serializers/Room/LivingRoomSerializer.ts
-index 473d39b..1c17f34 100644
+index 957b7d1..4be600d 100644
 --- a/api/src/app/serializers/Room/LivingRoomSerializer.ts
 +++ b/api/src/app/serializers/Room/LivingRoomSerializer.ts
 @@ -1,8 +1,14 @@
--import { RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
-+import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '@serializers/RoomSerializer.js'
- import LivingRoom from '@models/Room/LivingRoom.js'
-+import { type LocalesEnum } from '@src/types/db.js'
+-import { RoomSerializer, RoomSummarySerializer } from '#serializers/RoomSerializer.js'
++import { RoomForVisitorsSerializer, RoomSerializer, RoomSummarySerializer } from '#serializers/RoomSerializer.js'
+ import LivingRoom from '#models/Room/LivingRoom.js'
++import { type LocalesEnum } from '#src/types/db.js'
  
  export const RoomLivingRoomSummarySerializer = (livingRoom: LivingRoom) =>
    RoomSummarySerializer(LivingRoom, livingRoom)
@@ -649,21 +658,24 @@ index 473d39b..1c17f34 100644
 +  passthrough: { locale: LocalesEnum }
 +) => RoomForVisitorsSerializer(LivingRoom, roomLivingRoom, passthrough)
 diff --git a/api/src/app/serializers/RoomSerializer.ts b/api/src/app/serializers/RoomSerializer.ts
-index d16e185..5292ce7 100644
+index 2da4337..d85eec8 100644
 --- a/api/src/app/serializers/RoomSerializer.ts
 +++ b/api/src/app/serializers/RoomSerializer.ts
-@@ -1,5 +1,7 @@
+@@ -1,11 +1,26 @@
  import { DreamSerializer } from '@rvoh/dream'
- import Room from '@models/Room.js'
-+import { type LocalesEnum } from '@src/types/db.js'
-+import i18n from '@src/utils/i18n.js'
+ import Room from '#models/Room.js'
++import { type LocalesEnum } from '#src/types/db.js'
++import i18n from '#src/utils/i18n.js'
  
  export const RoomSummarySerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
    DreamSerializer(StiChildClass ?? Room, room)
-@@ -9,3 +11,16 @@ export const RoomSummarySerializer = <T extends Room>(StiChildClass: typeof Room
+     .attribute('id')
+     .attribute('type', { openapi: { type: 'string', enum: [(StiChildClass ?? Room).sanitizedName] } })
++    .attribute('position')
  
  export const RoomSerializer = <T extends Room>(StiChildClass: typeof Room, room: T) =>
    RoomSummarySerializer(StiChildClass, room)
+-    .attribute('position')
 +
 +export const RoomForVisitorsSerializer = <T extends Room>(
 +  StiChildClass: typeof Room,
@@ -676,7 +688,7 @@ index d16e185..5292ce7 100644
 +    .customAttribute('displayType', () => i18n(passthrough.locale, `rooms.type.${room.type}`), {
 +      openapi: 'string',
 +    })
-+    .delegatedAttribute<Room, 'currentLocalizedText'>('currentLocalizedText', 'title', { openapi: 'string' })
++    .delegatedAttribute('currentLocalizedText', 'title')
 diff --git a/api/src/conf/locales/en.ts b/api/src/conf/locales/en.ts
 index ae21584..1e720ed 100644
 --- a/api/src/conf/locales/en.ts
@@ -794,33 +806,32 @@ index 0000000..25eb876
 +  },
 +}
 diff --git a/api/src/conf/locales/index.ts b/api/src/conf/locales/index.ts
-index b798cf2..82b076e 100644
+index df70a1a..e065634 100644
 --- a/api/src/conf/locales/index.ts
 +++ b/api/src/conf/locales/index.ts
 @@ -1,5 +1,7 @@
- import en from '@conf/locales/en.js'
-+import es from '@conf/locales/es.js'
+ import en from '#conf/locales/en.js'
++import es from '#conf/locales/es.js'
  
  export default {
    en,
 +  es,
  }
 diff --git a/api/src/conf/routes.ts b/api/src/conf/routes.ts
-index ff6749b..e4182bb 100644
+index 013a229..295d6c2 100644
 --- a/api/src/conf/routes.ts
 +++ b/api/src/conf/routes.ts
-@@ -1,17 +1,21 @@
- import adminRoutes from '@conf/routes.admin.js'
- import internalRoutes from '@conf/routes.internal.js'
-+import VisitorPlacesController from '@controllers/Visitor/V1/PlacesController.js'
+@@ -1,15 +1,19 @@
+ import adminRoutes from '#conf/routes.admin.js'
+ import internalRoutes from '#conf/routes.internal.js'
++import VisitorV1PlacesController from '#controllers/Visitor/V1/PlacesController.js'
  import { PsychicRouter } from '@rvoh/psychic'
  
  export default function routes(r: PsychicRouter) {
    r.namespace('v1', r => {
-+    r.namespace('visitor', r => {
-+      r.get('places', VisitorPlacesController, 'index')
-+      r.get('places/:id', VisitorPlacesController, 'show')
-+    })
++    // Visitor/V1 controllers are maybe-authed, so they sit outside the authed V1/ controller tree
++    // and are routed here with an explicit controller to keep "visitor" out of the URL
++    r.resources('places', { only: ['index', 'show'], controller: VisitorV1PlacesController })
 +
      r.namespace('host', r => {
        r.resources('localized-texts', { only: ['update', 'destroy'] })
@@ -829,12 +840,10 @@ index ff6749b..e4182bb 100644
          r.resources('rooms')
 -
        })
--
      })
    })
- 
 diff --git a/api/src/openapi/mobile.openapi.json b/api/src/openapi/mobile.openapi.json
-index 9cf5e7d..31ca0e5 100644
+index 7ebe66d..1e753d3 100644
 --- a/api/src/openapi/mobile.openapi.json
 +++ b/api/src/openapi/mobile.openapi.json
 @@ -781,10 +781,177 @@
@@ -842,7 +851,7 @@ index 9cf5e7d..31ca0e5 100644
          }
        }
 +    },
-+    "/v1/visitor/places": {
++    "/v1/places": {
 +      "parameters": [
 +        {
 +          "in": "query",
@@ -913,7 +922,7 @@ index 9cf5e7d..31ca0e5 100644
 +        }
 +      }
 +    },
-+    "/v1/visitor/places/{id}": {
++    "/v1/places/{id}": {
 +      "parameters": [
 +        {
 +          "in": "path",
@@ -1015,7 +1024,7 @@ index 9cf5e7d..31ca0e5 100644
        "OpenapiValidationErrors": {
          "type": "object",
          "required": [
-@@ -864,6 +1031,57 @@
+@@ -864,6 +1031,60 @@
            }
          }
        },
@@ -1066,14 +1075,17 @@ index 9cf5e7d..31ca0e5 100644
 +            "description": "The following values will be allowed:\n  cabin,\n  cave,\n  cottage,\n  dump,\n  lean_to,\n  tent,\n  treehouse"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          }
 +        }
 +      },
        "PlaceSummary": {
          "type": "object",
          "required": [
-@@ -879,6 +1097,21 @@
+@@ -879,6 +1100,24 @@
            }
          }
        },
@@ -1088,14 +1100,17 @@ index 9cf5e7d..31ca0e5 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          }
 +        }
 +      },
        "RoomBathroom": {
          "type": "object",
          "required": [
-@@ -910,6 +1143,34 @@
+@@ -910,16 +1149,54 @@
            }
          }
        },
@@ -1119,7 +1134,10 @@ index 9cf5e7d..31ca0e5 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -1130,7 +1148,24 @@ index 9cf5e7d..31ca0e5 100644
        "RoomBathroomSummary": {
          "type": "object",
          "required": [
-@@ -964,6 +1225,37 @@
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "description": "The following values will be allowed:\n  Bathroom"
+@@ -957,16 +1234,57 @@
            }
          }
        },
@@ -1157,7 +1192,10 @@ index 9cf5e7d..31ca0e5 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -1168,7 +1206,24 @@ index 9cf5e7d..31ca0e5 100644
        "RoomBedroomSummary": {
          "type": "object",
          "required": [
-@@ -1010,6 +1302,30 @@
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "description": "The following values will be allowed:\n  Bedroom"
+@@ -996,16 +1314,50 @@
            }
          }
        },
@@ -1188,7 +1243,10 @@ index 9cf5e7d..31ca0e5 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -1199,7 +1257,24 @@ index 9cf5e7d..31ca0e5 100644
        "RoomDenSummary": {
          "type": "object",
          "required": [
-@@ -1064,6 +1380,37 @@
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "description": "The following values will be allowed:\n  Den"
+@@ -1043,16 +1395,57 @@
            }
          }
        },
@@ -1226,7 +1301,10 @@ index 9cf5e7d..31ca0e5 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -1237,7 +1315,24 @@ index 9cf5e7d..31ca0e5 100644
        "RoomKitchenSummary": {
          "type": "object",
          "required": [
-@@ -1110,6 +1457,30 @@
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "description": "The following values will be allowed:\n  Kitchen"
+@@ -1082,16 +1475,50 @@
            }
          }
        },
@@ -1257,7 +1352,10 @@ index 9cf5e7d..31ca0e5 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -1268,8 +1366,25 @@ index 9cf5e7d..31ca0e5 100644
        "RoomLivingRoomSummary": {
          "type": "object",
          "required": [
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "description": "The following values will be allowed:\n  LivingRoom"
 diff --git a/api/src/openapi/openapi.json b/api/src/openapi/openapi.json
-index 5cc1512..8e7f7cf 100644
+index 9bfe022..3dbd19e 100644
 --- a/api/src/openapi/openapi.json
 +++ b/api/src/openapi/openapi.json
 @@ -781,10 +781,194 @@
@@ -1277,7 +1392,7 @@ index 5cc1512..8e7f7cf 100644
          }
        }
 +    },
-+    "/v1/visitor/places": {
++    "/v1/places": {
 +      "parameters": [
 +        {
 +          "in": "query",
@@ -1348,7 +1463,7 @@ index 5cc1512..8e7f7cf 100644
 +        }
 +      }
 +    },
-+    "/v1/visitor/places/{id}": {
++    "/v1/places/{id}": {
 +      "parameters": [
 +        {
 +          "in": "path",
@@ -1467,7 +1582,7 @@ index 5cc1512..8e7f7cf 100644
        "OpenapiValidationErrors": {
          "type": "object",
          "required": [
-@@ -872,6 +1056,65 @@
+@@ -872,6 +1056,68 @@
            }
          }
        },
@@ -1526,14 +1641,17 @@ index 5cc1512..8e7f7cf 100644
 +            ]
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          }
 +        }
 +      },
        "PlaceSummary": {
          "type": "object",
          "required": [
-@@ -887,6 +1130,21 @@
+@@ -887,6 +1133,24 @@
            }
          }
        },
@@ -1548,14 +1666,17 @@ index 5cc1512..8e7f7cf 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          }
 +        }
 +      },
        "RoomBathroom": {
          "type": "object",
          "required": [
-@@ -926,6 +1184,36 @@
+@@ -926,16 +1190,56 @@
            }
          }
        },
@@ -1579,7 +1700,10 @@ index 5cc1512..8e7f7cf 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -1592,7 +1716,24 @@ index 5cc1512..8e7f7cf 100644
        "RoomBathroomSummary": {
          "type": "object",
          "required": [
-@@ -991,6 +1279,39 @@
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "enum": [
+@@ -984,16 +1288,59 @@
            }
          }
        },
@@ -1619,7 +1760,10 @@ index 5cc1512..8e7f7cf 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -1632,7 +1776,24 @@ index 5cc1512..8e7f7cf 100644
        "RoomBedroomSummary": {
          "type": "object",
          "required": [
-@@ -1041,6 +1362,32 @@
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "enum": [
+@@ -1027,16 +1374,52 @@
            }
          }
        },
@@ -1652,7 +1813,10 @@ index 5cc1512..8e7f7cf 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -1665,7 +1829,24 @@ index 5cc1512..8e7f7cf 100644
        "RoomDenSummary": {
          "type": "object",
          "required": [
-@@ -1104,6 +1451,39 @@
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "enum": [
+@@ -1083,16 +1466,59 @@
            }
          }
        },
@@ -1692,7 +1873,10 @@ index 5cc1512..8e7f7cf 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -1705,7 +1889,24 @@ index 5cc1512..8e7f7cf 100644
        "RoomKitchenSummary": {
          "type": "object",
          "required": [
-@@ -1154,6 +1534,32 @@
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "enum": [
+@@ -1126,16 +1552,52 @@
            }
          }
        },
@@ -1725,7 +1926,10 @@ index 5cc1512..8e7f7cf 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -1738,8 +1942,25 @@ index 5cc1512..8e7f7cf 100644
        "RoomLivingRoomSummary": {
          "type": "object",
          "required": [
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "enum": [
 diff --git a/api/src/openapi/tests.openapi.json b/api/src/openapi/tests.openapi.json
-index 02dd314..070b864 100644
+index e57825d..700c4c4 100644
 --- a/api/src/openapi/tests.openapi.json
 +++ b/api/src/openapi/tests.openapi.json
 @@ -781,10 +781,194 @@
@@ -1747,7 +1968,7 @@ index 02dd314..070b864 100644
          }
        }
 +    },
-+    "/v1/visitor/places": {
++    "/v1/places": {
 +      "parameters": [
 +        {
 +          "in": "query",
@@ -1818,7 +2039,7 @@ index 02dd314..070b864 100644
 +        }
 +      }
 +    },
-+    "/v1/visitor/places/{id}": {
++    "/v1/places/{id}": {
 +      "parameters": [
 +        {
 +          "in": "path",
@@ -1937,7 +2158,7 @@ index 02dd314..070b864 100644
        "OpenapiValidationErrors": {
          "type": "object",
          "required": [
-@@ -872,6 +1056,65 @@
+@@ -872,6 +1056,68 @@
            }
          }
        },
@@ -1996,14 +2217,17 @@ index 02dd314..070b864 100644
 +            ]
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          }
 +        }
 +      },
        "PlaceSummary": {
          "type": "object",
          "required": [
-@@ -887,6 +1130,21 @@
+@@ -887,6 +1133,24 @@
            }
          }
        },
@@ -2018,14 +2242,17 @@ index 02dd314..070b864 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          }
 +        }
 +      },
        "RoomBathroom": {
          "type": "object",
          "required": [
-@@ -926,6 +1184,36 @@
+@@ -926,16 +1190,56 @@
            }
          }
        },
@@ -2049,7 +2276,10 @@ index 02dd314..070b864 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -2062,7 +2292,24 @@ index 02dd314..070b864 100644
        "RoomBathroomSummary": {
          "type": "object",
          "required": [
-@@ -991,6 +1279,39 @@
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "enum": [
+@@ -984,16 +1288,59 @@
            }
          }
        },
@@ -2089,7 +2336,10 @@ index 02dd314..070b864 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -2102,7 +2352,24 @@ index 02dd314..070b864 100644
        "RoomBedroomSummary": {
          "type": "object",
          "required": [
-@@ -1041,6 +1362,32 @@
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "enum": [
+@@ -1027,16 +1374,52 @@
            }
          }
        },
@@ -2122,7 +2389,10 @@ index 02dd314..070b864 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -2135,7 +2405,24 @@ index 02dd314..070b864 100644
        "RoomDenSummary": {
          "type": "object",
          "required": [
-@@ -1104,6 +1451,39 @@
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "enum": [
+@@ -1083,16 +1466,59 @@
            }
          }
        },
@@ -2162,7 +2449,10 @@ index 02dd314..070b864 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -2175,7 +2465,24 @@ index 02dd314..070b864 100644
        "RoomKitchenSummary": {
          "type": "object",
          "required": [
-@@ -1154,6 +1534,32 @@
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "enum": [
+@@ -1126,16 +1552,52 @@
            }
          }
        },
@@ -2195,7 +2502,10 @@ index 02dd314..070b864 100644
 +            "type": "string"
 +          },
 +          "title": {
-+            "type": "string"
++            "type": [
++              "string",
++              "null"
++            ]
 +          },
 +          "type": {
 +            "type": "string",
@@ -2208,6 +2518,23 @@ index 02dd314..070b864 100644
        "RoomLivingRoomSummary": {
          "type": "object",
          "required": [
+           "id",
++          "position",
+           "type"
+         ],
+         "properties": {
+           "id": {
+             "type": "string"
+           },
++          "position": {
++            "type": [
++              "integer",
++              "null"
++            ]
++          },
+           "type": {
+             "type": "string",
+             "enum": [
 diff --git a/api/src/types/dream.globals.ts b/api/src/types/dream.globals.ts
 index 0f826c1..f8f3481 100644
 --- a/api/src/types/dream.globals.ts
@@ -2265,14 +2592,14 @@ index d73f541..c881e17 100644
        default: ['dream:STI', 'dream:SoftDelete'],
        named: [],
 diff --git a/api/src/types/openapi/tests.openapi.d.ts b/api/src/types/openapi/tests.openapi.d.ts
-index f619198..82894ca 100644
+index 5447e50..cdcb536 100644
 --- a/api/src/types/openapi/tests.openapi.d.ts
 +++ b/api/src/types/openapi/tests.openapi.d.ts
 @@ -454,10 +454,122 @@ export interface paths {
          };
          trace?: never;
      };
-+    "/v1/visitor/places": {
++    "/v1/places": {
 +        parameters: {
 +            query?: {
 +                /** @description Pagination cursor */
@@ -2323,7 +2650,7 @@ index f619198..82894ca 100644
 +        patch?: never;
 +        trace?: never;
 +    };
-+    "/v1/visitor/places/{id}": {
++    "/v1/places/{id}": {
 +        parameters: {
 +            query?: never;
 +            header?: never;
@@ -2402,7 +2729,7 @@ index f619198..82894ca 100644
 +            sleeps: number;
 +            /** @enum {string} */
 +            style: "cabin" | "cave" | "cottage" | "dump" | "lean_to" | "tent" | "treehouse";
-+            title: string;
++            title: string | null;
 +        };
          PlaceSummary: {
              id: string;
@@ -2410,12 +2737,12 @@ index f619198..82894ca 100644
          };
 +        PlaceSummaryForVisitors: {
 +            id: string;
-+            title: string;
++            title: string | null;
 +        };
          RoomBathroom: {
              /** @enum {string|null} */
              bathOrShowerStyle: "bath" | "bath_and_shower" | "none" | "shower" | null;
-@@ -490,6 +615,14 @@ export interface components {
+@@ -490,8 +615,17 @@ export interface components {
              /** @enum {string} */
              type: "Bathroom";
          };
@@ -2423,14 +2750,17 @@ index f619198..82894ca 100644
 +            bathOrShowerStyle: components["schemas"]["BathOrShowerStyle"];
 +            displayType: string;
 +            id: string;
-+            title: string;
++            title: string | null;
 +            /** @enum {string} */
 +            type: "Bathroom";
 +        };
          RoomBathroomSummary: {
              id: string;
-             position: number | null;
-@@ -503,6 +636,14 @@ export interface components {
++            position: number | null;
+             /** @enum {string} */
+             type: "Bathroom";
+         };
+@@ -502,8 +636,17 @@ export interface components {
              /** @enum {string} */
              type: "Bedroom";
          };
@@ -2438,28 +2768,34 @@ index f619198..82894ca 100644
 +            bedTypes: components["schemas"]["BedType"][];
 +            displayType: string;
 +            id: string;
-+            title: string;
++            title: string | null;
 +            /** @enum {string} */
 +            type: "Bedroom";
 +        };
          RoomBedroomSummary: {
              id: string;
-             position: number | null;
-@@ -515,6 +656,13 @@ export interface components {
++            position: number | null;
+             /** @enum {string} */
+             type: "Bedroom";
+         };
+@@ -513,8 +656,16 @@ export interface components {
              /** @enum {string} */
              type: "Den";
          };
 +        RoomDenForVisitors: {
 +            displayType: string;
 +            id: string;
-+            title: string;
++            title: string | null;
 +            /** @enum {string} */
 +            type: "Den";
 +        };
          RoomDenSummary: {
              id: string;
-             position: number | null;
-@@ -528,6 +676,14 @@ export interface components {
++            position: number | null;
+             /** @enum {string} */
+             type: "Den";
+         };
+@@ -525,8 +676,17 @@ export interface components {
              /** @enum {string} */
              type: "Kitchen";
          };
@@ -2467,41 +2803,59 @@ index f619198..82894ca 100644
 +            appliances: components["schemas"]["Appliance"][];
 +            displayType: string;
 +            id: string;
-+            title: string;
++            title: string | null;
 +            /** @enum {string} */
 +            type: "Kitchen";
 +        };
          RoomKitchenSummary: {
              id: string;
-             position: number | null;
-@@ -540,6 +696,13 @@ export interface components {
++            position: number | null;
+             /** @enum {string} */
+             type: "Kitchen";
+         };
+@@ -536,8 +696,16 @@ export interface components {
              /** @enum {string} */
              type: "LivingRoom";
          };
 +        RoomLivingRoomForVisitors: {
 +            displayType: string;
 +            id: string;
-+            title: string;
++            title: string | null;
 +            /** @enum {string} */
 +            type: "LivingRoom";
 +        };
          RoomLivingRoomSummary: {
              id: string;
-             position: number | null;
++            position: number | null;
+             /** @enum {string} */
+             type: "LivingRoom";
+         };
 diff --git a/api/src/utils/i18n.ts b/api/src/utils/i18n.ts
-index c99a20e..b5ec778 100644
+index c52c0e5..40b8871 100644
 --- a/api/src/utils/i18n.ts
 +++ b/api/src/utils/i18n.ts
-@@ -1,9 +1,9 @@
- import locales from '@conf/locales/index.js'
+@@ -1,15 +1,15 @@
+ import locales from '#conf/locales/index.js'
  import { I18nProvider } from '@rvoh/psychic/system'
-+import { LocalesEnumValues } from '@src/types/db.js'
++import { LocalesEnumValues } from '#src/types/db.js'
  
--const SUPPORTED_LOCALES = ['en-US']
+-// The request language tags the app accepts. ApplicationController's locale
+-// getter picks the one a request's Accept-Language header prefers. Each is
+-// served by its language's locale file ('en-US' by 'en'). An app with a
+-// database enum of locales returns that enum's values here instead (Dream's
+-// src/types/db.ts exports them, as in LocalesEnumValues). Their order does
+-// not matter: Dream lists an enum's values alphabetically
+-const SUPPORTED_LOCALES = ['en-US'] as const
++// The request language tags the app accepts: the database enum of locales
++// (src/types/db.ts), so the supported locales are defined once, in the
++// migration. ApplicationController's locale getter picks the one a request's
++// Accept-Language header prefers. Each is served by its language's locale file
++// ('en-US' by 'en', 'es-ES' by 'es'). Their order does not matter: Dream lists
++// an enum's values alphabetically
  export function supportedLocales() {
 -  return SUPPORTED_LOCALES
 +  return LocalesEnumValues
  }
  
- export default I18nProvider.provide(locales, 'en')
+ // The supported locale a request gets when its Accept-Language header is
 ``````
