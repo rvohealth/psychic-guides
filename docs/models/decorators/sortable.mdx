@@ -1,5 +1,5 @@
 ---
-ai_summary: "The @deco.Sortable decorator enables automatic sorting on a particular field. Typically used with a scope to apply sorting only to records matching the scope. Requires deferrable unique constraint (not unique index) for the sortable column."
+ai_summary: "The @deco.Sortable decorator enables automatic sorting on a particular field. Typically used with a scope to apply sorting only to records matching the scope. Requires deferrable unique constraint (not unique index) for the sortable column. Inside a transaction, bind every sortable write with .txn(txn); each sort scope written holds an advisory lock until commit."
 ---
 # @deco.Sortable
 
@@ -51,4 +51,6 @@ If a `@deco.Sortable` model is also decorated with `@SoftDelete()`, the position
 
 ## Inside a transaction, always bind with `.txn(txn)`
 
-A sortable write computes its position under a lock on its sort scope. If a write against a `@deco.Sortable` model happens inside a transaction without being bound via `.txn(txn)`, it opens a second transaction on another connection and waits on a lock the enclosing transaction is holding — since only one side is waiting, Postgres's deadlock detector never sees it, and the call hangs until `sortableScopeLockTimeout` expires and throws `SortableScopeLockWaitTimedOut`. That error advises retrying, but a retry can't help here; the fix is adding the missing `.txn(txn)`. See the [transactions guide](/docs/models/transactions).
+A sortable write computes its position under a lock on its sort scope. If a write against a `@deco.Sortable` model happens inside a transaction that has already created, moved, or destroyed a record in the same scope, without being bound via `.txn(txn)`, it opens a second transaction on another connection and waits on a lock the enclosing transaction is holding — since only one side is waiting, Postgres's deadlock detector never sees it, and the call hangs until `sortableScopeLockTimeout` expires and throws `SortableScopeLockWaitTimedOut`. That error advises retrying, but a retry can't help here; the fix is adding the missing `.txn(txn)`. See the [transactions guide](/docs/models/transactions).
+
+The scope lock is a Postgres advisory lock held until the transaction commits, so a transaction that writes sortable records across many scopes holds one lock per scope at once. Advisory locks come from a lock table the whole Postgres cluster shares; keep a transaction that writes sortable records to the writes that must land together. See [sortable writes hold their scope locks until commit](/docs/models/transactions#sortable-writes-hold-their-scope-locks-until-commit).

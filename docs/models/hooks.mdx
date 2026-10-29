@@ -1,6 +1,6 @@
 ---
 sidebar_position: 7
-ai_summary: "Dream lifecycle hooks include BeforeCreate, BeforeUpdate, BeforeSave, AfterCreate, AfterUpdate, AfterSave, AfterCreateCommit, AfterSaveCommit, AfterUpdateCommit, AfterDestroy, AfterDestroyCommit. Use before hooks to change the record being persisted. Use commit hooks for any hook that queues background work. Non-commit hooks receive a DreamTransaction<Dream> | null argument to pass through to services. dependent: 'destroy' cascades run after BeforeDestroy and before AfterDestroy; undestroy() restores children before parents."
+ai_summary: "Dream lifecycle hooks include BeforeCreate, BeforeUpdate, BeforeSave, AfterCreate, AfterUpdate, AfterSave, AfterCreateCommit, AfterSaveCommit, AfterUpdateCommit, AfterDestroy, AfterDestroyCommit. Use before hooks to change the record being persisted. Use commit hooks for any hook that queues background work. Non-commit hooks receive a DreamTransaction<Dream> | null argument (null unless the write runs inside a transaction) to pass through to services and bind writes with this.txn(txn). ifChanging/ifChanged gate hooks on a column change, counting only assigned columns on create. A commit hook that throws rejects its writer after the commit, with nothing rolled back. dependent: 'destroy' cascades run after BeforeDestroy and before AfterDestroy; undestroy() restores children before parents."
 ---
 
 # lifecycle hooks
@@ -10,10 +10,13 @@ ai_summary: "Dream lifecycle hooks include BeforeCreate, BeforeUpdate, BeforeSav
 `BeforeCreate` hooks are run whenever a new record is being saved to the database. A decorator pattern is leveraged, so no arguments need to be passed to the hook, it simply needs to live above the property, like so:
 
 ```ts
+// src/app/models/User.ts
+import argon2 from 'argon2'
+
 export default class User extends ApplicationModel {
   @deco.BeforeCreate()
   public async hashPassword() {
-    if (this.password) this.passwordDigest = await Hash.gen(this.password)
+    if (this.password) this.passwordDigest = await argon2.hash(this.password)
     this.password = undefined
   }
 }
@@ -96,17 +99,18 @@ export default class Post extends ApplicationModel {
 AfterCreate hooks are run after a new record is saved to the database. A decorator pattern is leveraged, so no arguments need to be passed to the hook, it simply needs to live above the property, like so:
 
 ```ts
+// src/app/models/Post.ts
 export default class Post extends ApplicationModel {
   ...
 
   @deco.AfterCreate()
-  public async hashPassword() {
-    if (this.password)
-      this.password_digest = await Hash.gen(this.password)
-    this.password = undefined
+  public async createDefaultComment(this: Post, txn: DreamTransaction<Dream> | null) {
+    await this.txn(txn).createAssociation('comments', { body: 'Welcome!' })
   }
 }
 ```
+
+Changing the record itself belongs in a before hook; by the time an after hook runs, the row is already written.
 
 ## after update
 
@@ -182,11 +186,24 @@ export default class SeedDefaultComments {
 }
 ```
 
-`txn` is `null` unless the caller explicitly started a transaction — Dream does not automatically wrap `Model.create()` in one. `Model.txn(null).create(...)` is a no-op variant, so the same service can be called from a hook (with `txn` possibly null) or from a controller (with `null`) using one code path.
+A create or update hook's `txn` is `null` unless the write runs inside a transaction — one the caller started with `ApplicationModel.transaction(...)`, or the per-batch transaction of a [`{ lock: true }`](/docs/models/locking) query update. Dream opens no transaction around `Model.create()` or an instance `update()` for its hooks. `Model.txn(null).create(...)` is a no-op variant, so the same service can be called from a hook (with `txn` possibly null) or from a controller (with `null`) using one code path.
+
+An after hook that writes an association of the record binds the write the same way:
+
+```ts
+@deco.AfterCreate()
+public async createDefaults(this: Host, txn: DreamTransaction<Dream> | null) {
+  await this.txn(txn).createAssociation('profile', {})
+}
+```
 
 Commit hooks (below) do not receive a `txn` argument, because the transaction has already committed by the time they run.
 
-**Gating on an encrypted field.** When the gated field is an [`@deco.Encrypted`](/docs/models/decorators/encrypted) field, list the persisted column name `encrypted<Name>` in `ifChanged`/`ifChanging` (e.g. `ifChanged: ['encryptedPhone']`), not the plaintext virtual (`phone`) — change detection runs over the real persisted columns, and setting the virtual marks the underlying `encrypted<Name>` column dirty.
+## Gating hooks on a change
+
+`ifChanging` (on `BeforeCreate`, `BeforeUpdate`, and `BeforeSave`) runs the hook only when the save is changing one of the listed columns; `ifChanged` (on `AfterCreate`, `AfterUpdate`, `AfterSave`, and their commit variants) runs it only when the save changed one. On a create, both count only the columns that were assigned, not the database defaults and `null`s the insert returns. See [dirty tracking in hooks](/docs/models/dirty#dirty-tracking-in-hooks-and-validations) for reading the change itself inside a hook.
+
+**Gating on an encrypted field.** When the gated field is an [`@deco.Encrypted`](/docs/models/decorators/encrypted) field, list the persisted column name `encrypted<Name>` in `ifChanged`/`ifChanging` (e.g. `ifChanged: ['encryptedPhone']`), not the plaintext virtual (`phone`) — change detection runs over the real persisted columns, and changing the virtual marks the underlying `encrypted<Name>` column dirty.
 
 ## Hook order around a `dependent: 'destroy'` cascade
 
@@ -198,7 +215,9 @@ A destroy runs the record's own `BeforeDestroy` hooks **first**, then the `depen
 
 In contrast to ordinary after hooks (like AfterCreate, AfterUpdate, etc...), we have commit variants. The implementation is similar to the approach taken by Ruby on Rails, whereby commit hooks are bound to an existing transaction if it exists, and will wait until after the commit has been made at the transaction level to run your callback.
 
-IMPORTANT: any lifecycle hook that queues background work must use a commit hook, whether it calls a backgrounded service, calls `this.background(...)` on a backgrounded model, or delegates to another method that queues the job. This ensures the row exists after create and the latest persisted data are visible after update by the time the worker loads the record. Otherwise, the worker can race the transaction and either miss the row or read stale data.
+IMPORTANT: any lifecycle hook that queues background work must use a commit hook, whether it calls a backgrounded service, calls `this.background(...)` on a backgrounded model, or delegates to another method that queues the job. Regular hooks run before an enclosing transaction commits, so a job queued from one can run before the commit and either miss a newly-created row or read stale data after an update. A commit hook ensures the row exists after create and the latest persisted data are visible after update by the time the worker loads the record.
+
+A commit hook that throws rejects its writer after the write has committed. The `create`, `update` or `destroy` — or the enclosing `ApplicationModel.transaction(...)` — rejects, the code after it and any later commit hooks are skipped, and nothing rolls back. A failed `background(...)` call in a `Booking` `@deco.AfterUpdateCommit` leaves the booking confirmed with nothing enqueued. For work that must not be lost, see [work that must not be lost after a commit](/docs/plugins/workers/services#work-that-must-not-be-lost-after-a-commit).
 
 ### after create commit
 

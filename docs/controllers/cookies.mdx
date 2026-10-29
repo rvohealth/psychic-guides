@@ -1,6 +1,6 @@
 ---
 sidebar_position: 3
-ai_summary: "Psychic provides cookie and session support with symmetric encryption. setCookie/getCookie always encrypt/decrypt; startSession/endSession set/clear the session cookie, with no server-side revocation short of rotating the encryption key. Configuration done in conf/app.ts via cookie and encryption options; key rotation uses a current/legacy pair."
+ai_summary: "Psychic provides cookie and session support with symmetric encryption. setCookie/getCookie always encrypt/decrypt and default to httpOnly, SameSite=Strict, and Secure in production; per-cookie options override them. startSession stores { id, modelKey } in the session cookie and endSession clears it, with no server-side revocation short of replacing the encryption key. getCookie reads a cookie no configured key opens as absent; middleware outside a controller reads cookies with PsychicSession. Configuration in conf/app.ts via the cookie (maxAge) and encryption options; key rotation uses a current/legacy pair."
 ---
 
 # cookies
@@ -14,15 +14,15 @@ Psychic leverages symmetric encryption whenever creating or reading cookies on y
 Since setting cookies is something that is request-driven, it can only be done within your controllers. Helpful methods are attached to your controller to utilize your cookie configurations, like so:
 
 ```ts
-// app/controllers/MyController.ts
+// app/controllers/PreferencesController.ts
 
-  public async login() {
+  public async update() {
     ...
-    this.setCookie('authToken', user.primaryKeyValue)
+    this.setCookie('theme', 'dark', { maxAge: { days: 365 } })
   }
 ```
 
-Cookies attached using this process will automatically be `httpOnly`, and will inherit the configuration provided in your `conf/app.ts` file for expiration.
+The value is a string. Cookies attached using this process are `httpOnly`, `SameSite=Strict`, and, in production, `Secure`; the options passed to `this.setCookie()` override any of these for that one cookie. The cookie lasts for the `maxAge` passed, else until the `expires` passed, else for the app's `cookie` `maxAge` from `conf/app.ts`.
 
 `this.setCookie()` also **always encrypts** the cookie value — there is no option to disable this. That's the correct behavior for cookies your app both writes and reads back (session data, preferences), since `this.getCookie()` automatically decrypts. If you need to set a cookie for a *different* service to consume, see [Setting cookies for external services](#setting-cookies-for-external-services-bypassing-encryption) below.
 
@@ -31,12 +31,14 @@ Cookies attached using this process will automatically be `httpOnly`, and will i
 To retrieve cookies that have already been set, you can leverage the `getCookie` method provided on Psychic controllers, like so:
 
 ```ts
-// app/controllers/AuthedController
-  public async authenticate() {
+// app/controllers/PreferencesController.ts
+  public async show() {
     ...
-    const authToken = this.getCookie('authToken')
+    const theme = this.getCookie<string>('theme')
   }
 ```
+
+`getCookie` returns the string that was set, or `null` when the request carries no such cookie.
 
 ## Sessions
 
@@ -48,19 +50,15 @@ this.startSession(user)
 this.endSession()
 ```
 
-`startSession` creates no server-side session record — the encrypted cookie itself is the entire credential. It takes no options and always uses the app's default `maxAge`; for a shorter-lived session, lower the default instead (this changes it for every cookie the app sets, not just sessions):
+`startSession` creates no server-side session record — the encrypted session cookie, whose payload is `{ id, modelKey }` (the user's primary key and model name), is the entire credential. It takes no options and uses the app's default `maxAge`, which the generated `conf/app.ts` sets to 14 days (31 days when the app sets none). For a shorter-lived session, lower it there (this changes it for every cookie the app sets, not just sessions):
 
 ```ts
 psy.set('cookie', { maxAge: { hours: 12 } })
 ```
 
-`endSession` only clears the cookie on the client — a cookie already captured elsewhere (a compromised device, a logged request) stays valid until it expires, regardless of "logout." **There is no per-session or per-user revocation.** The only framework lever to invalidate outstanding sessions is rotating the cookie encryption key (see [Cookie encryption](#cookie-encryption) below), which logs out *every* user, not just one. If you need to revoke a single compromised session or a single user's sessions without logging everyone out, track that state yourself — for example a `sessionsInvalidatedAt` column on the user, checked against a timestamp embedded in the session payload — rather than assuming `endSession` accomplishes it server-side.
+`endSession` only clears the cookie on the client, and `maxAge` only tells the browser when to discard its copy. A cookie value captured elsewhere (a compromised device, a logged request) stays valid for as long as the key that encrypted it is configured as `current` or `legacy`, regardless of "logout." **There is no per-session or per-user revocation.** The only framework lever is replacing the cookie encryption key without keeping the old one as `legacy` (see [Cookie encryption](#cookie-encryption) below), which invalidates *every* user's session, not just one. If you need to revoke a single compromised session or a single user's sessions, track that state yourself rather than assuming `endSession` accomplishes it server-side.
 
-Session cookies default to `SameSite=Strict`: the browser won't send them on any cross-origin request, including link-click navigations from another site, which blocks classical CSRF without needing a CSRF token. Only relax this for a legitimate cross-site link-follow flow that needs to preserve auth — rare for a JSON API:
-
-```ts
-psy.set('cookie', { sameSite: 'lax' })
-```
+Cookies Psychic sets default to `SameSite=Strict`: the browser never sends them on a cross-site request, including a link-click navigation from another site, which blocks classical CSRF without needing a CSRF token. A client on another origin of the same site (`app.example.com` calling `api.example.com`) still sends them. `startSession` always uses `Strict`; `this.setCookie()`'s options can override it for a single cookie.
 
 ## Cookie encryption
 
@@ -81,7 +79,7 @@ psy.set('encryption', {
 })
 ```
 
-The optional `legacy` key enables seamless key rotation: `getCookie()` first tries the `current` key, and if decryption fails, retries with `legacy`.
+The optional `legacy` key enables seamless key rotation: `getCookie()` first tries the `current` key, and if decryption fails, retries with `legacy`. A cookie neither key opens (forged, garbled, or issued under a key that is no longer configured) reads as `null`, the same as a missing cookie, and nothing is logged. A `DecryptionParseError`, or a configured key of the wrong length, still throws: those point at an app or configuration bug, not at the value sent.
 
 ### Rotating the cookie encryption key
 
@@ -105,7 +103,7 @@ pnpm psy g:encryption-key --algorithm aes-128-gcm
 
 ```ts
 // Programmatic equivalent — useful in tests, fixtures, or one-off scripts.
-import { Encrypt } from '@rvoh/dream'
+import { Encrypt } from '@rvoh/dream/utils'
 
 const key = Encrypt.generateKey('aes-256-gcm')
 ```
@@ -114,61 +112,55 @@ Never hand-type encryption keys. Use one of these helpers and feed the result th
 
 ## Decrypting cookies outside a controller
 
-Koa middleware that runs outside Psychic's controller layer (e.g., protecting a Bull Board dashboard) can't use `this.getCookie()`. To decrypt a Psychic-encrypted cookie in plain middleware, use `Encrypt` from Dream directly:
+Koa middleware that runs outside Psychic's controller layer (e.g., protecting a Bull Board dashboard) has no `this.getCookie()`. Read the cookie through `PsychicSession`, the class `this.getCookie()` calls, which decrypts with the same keys:
 
 ```ts
-import { PsychicApp } from '@rvoh/psychic'
-import { Encrypt } from '@rvoh/dream'
-import { DecryptionError, DecryptionRotationError } from '@rvoh/dream/errors'
+import { PsychicApp, PsychicSession } from '@rvoh/psychic'
+import type Koa from 'koa'
 
-const encrypted = ctx.cookies.get('cookie_name')
-if (encrypted) {
-  let decrypted: { userId: string } | null
-  try {
-    // Three-arg (rotation) form: current key, with legacy fallback.
-    decrypted = Encrypt.decrypt<{ userId: string }>(
-      encrypted,
-      { algorithm: 'aes-256-gcm', key: AppEnv.string('APP_ENCRYPTION_KEY') },
-      { algorithm: 'aes-256-gcm', key: AppEnv.string('APP_LEGACY_ENCRYPTION_KEY') },
-    )
-  } catch (err) {
-    if (err instanceof DecryptionRotationError) {
-      // Both the current AND legacy keys failed. Do NOT swallow this as an
-      // auth failure — rethrow so a misconfigured rotation (wrong legacy
-      // key, legacy dropped too early) fails the FIRST request, caught by
-      // smoke tests / health checks at deploy time rather than discovered
-      // later while every user is silently being logged out.
-      throw err
-    }
-    if (err instanceof DecryptionError) {
-      // Wrong/tampered/stale-key ciphertext. Expected at low volume (old
-      // cookies, forgery attempts); worth a warn for incident correlation.
-      PsychicApp.logWithLevel('warn', 'cookie decryption failed', { reason: err.message })
-      return // treat this request as unauthenticated
-    }
-    // DecryptionParseError: the key was correct and the ciphertext intact,
-    // but the decrypted plaintext wasn't valid JSON — a format/contract
-    // mismatch, not tampering and not a wrong key. Never an auth outcome;
-    // let it propagate to the error handler (500) so the mismatch is visible.
-    throw err
-  }
-  // ...use decrypted (already the parsed object, not a JSON string)
+// the session cookie's { id, modelKey }, or null for a logged-out request
+export default function readSessionCookie(ctx: Koa.Context): { id: string; modelKey: string } | null {
+  const payload = new PsychicSession(ctx).getCookie(PsychicApp.getOrFail().sessionCookieName) as string | null
+
+  // startSession stores the JSON string of { id, modelKey }
+  return payload ? (JSON.parse(payload) as { id: string; modelKey: string }) : null
 }
 ```
 
-The `catch` exists to convert an untrusted-input failure into an auth decision **and emit the security signal** — not to silently swallow it. A bare `catch { return unauthenticated }` conflates an attacker attempting forgery with the cookie simply never having been set, and hides a broken key rotation behind the same code path.
+`PsychicSession#getCookie` reads a cookie no configured key opens — forged, or from a retired key — as absent, exactly as `this.getCookie()` does: it returns `null` and logs nothing.
 
-`Encrypt.decrypt` throws on failure rather than silently returning null, and the three error classes below export from `@rvoh/dream/errors` (not the `@rvoh/dream` root):
+## Decrypting a value yourself
 
-- `decrypt` returns the **already-`JSON.parse`d** value, not a string — don't `JSON.parse` the result again.
+When the app decrypts user-supplied ciphertext with `Encrypt.decrypt` itself — a bearer token from the `Authorization` header, for example, as the generated `resolveCurrentUser` helper does — `decrypt` throws on failure rather than returning `null`. The three error classes export from `@rvoh/dream/errors` (not the `@rvoh/dream` root), and `Encrypt` from `@rvoh/dream/utils`:
+
+- `decrypt` returns what was encrypted, `JSON.parse`d once. `setCookie` encrypts a string, so a Psychic cookie decrypts to a string; for the session cookie, that string is the JSON of `{ id, modelKey }`.
 - `null` / `undefined` ciphertext returns `null` (no throw). A missing key throws `MissingEncryptionKey`.
-- **`DecryptionError`** — the cipher op / auth-tag / payload shape was invalid: the ciphertext was tampered with, corrupted, or encrypted with a different key. This is the untrusted-input signal, and the legitimate "treat as unauthenticated" case for a user-controlled ciphertext like a session cookie.
+- **`DecryptionError`** — the cipher op / auth-tag / payload shape was invalid: the ciphertext was tampered with, corrupted, or encrypted with a different key.
 - **`DecryptionParseError`** — the cipher and auth tag validated (correct key, untampered ciphertext), but `JSON.parse` of the decrypted plaintext threw. This is strictly a format/contract mismatch, never tampering and never a wrong key — with a shared key from another service, it usually means their payload doesn't match the JSON-wrapped shape `Encrypt` expects.
 - **Three-argument form** `decrypt(ciphertext, currentOpts, legacyOpts)` tries the current key and, on `DecryptionError` only, falls back to the legacy key. If both fail with `DecryptionError`, it throws **`DecryptionRotationError`** carrying `.currentKeyError` and `.legacyKeyError`. A `DecryptionParseError` from the current key is not retried against the legacy key — the cipher already matched, so it propagates directly.
 
-`DecryptionRotationError` defaults to **rethrow**, not log-and-continue — a broken rotation is a configuration defect that should fail loudly at deploy, not be absorbed per-request as an auth outcome. Only downgrade it to log-at-error + unauthenticated as a conscious, reversible decision once a rotation has run cleanly in production for a prolonged window (so genuinely expired ciphertext mid-rotation isn't a hard failure) — never as the starting posture. If you do adopt that downgrade, treat a rising rate of `DecryptionRotationError` as a rotation-misconfiguration alarm.
+For user-supplied ciphertext, catch exactly `DecryptionError` and `DecryptionRotationError`, treat the request as unauthenticated, and rethrow anything else. `DecryptionRotationError` does not extend `DecryptionError`, so catch both:
 
-`DecryptionError` (the single-key, no-rotation path) is the normal stale-or-forged-cookie case: log at `warn` and treat as unauthenticated. `DecryptionParseError` is always a format/contract mismatch and should never be treated as an auth outcome. This asymmetry applies to **user-controlled ciphertext** only — a session cookie, a token from a header. System-controlled ciphertext, like an `@Encrypted` model column, should propagate any decryption error untouched: keys and ciphertext there are both system-controlled, so a decryption failure is a corrupted column or a broken rotation, not untrusted input, and it should fail loudly rather than be caught and nulled.
+```ts
+import { DecryptionError, DecryptionRotationError } from '@rvoh/dream/errors'
+import { Encrypt } from '@rvoh/dream/utils'
+
+let payload: { userId?: string } | null
+try {
+  payload = Encrypt.decrypt<{ userId?: string }>(token, {
+    algorithm: 'aes-256-gcm',
+    key: AppEnv.string('APP_ENCRYPTION_KEY'),
+  })
+} catch (error) {
+  // no configured key opens this token: signed out, as getCookie treats a cookie it can't open
+  if (error instanceof DecryptionError || error instanceof DecryptionRotationError) return null
+  throw error
+}
+```
+
+The class says only whether a legacy key was passed. With one, every value no key opens is a `DecryptionRotationError`; without one, every such value is a `DecryptionError`, including one encrypted under a key that was dropped too early. `DecryptionParseError` and `MissingEncryptionKey` propagate (a 500): the first is an app bug and the second a configuration error.
+
+This applies to **user-controlled ciphertext** only — a session cookie, a token from a header. System-controlled ciphertext, like an `@Encrypted` model column, should propagate any decryption error untouched: keys and ciphertext there are both system-controlled, so a decryption failure is a corrupted column or a broken rotation, not untrusted input, and it should fail loudly rather than be caught and nulled.
 
 ## Setting cookies for external services (bypassing encryption)
 
@@ -190,7 +182,7 @@ Use `ctx.append` (not `ctx.set`) so multiple `Set-Cookie` headers don't overwrit
 
 ## Proxy configuration for secure cookies
 
-When the app runs behind a reverse proxy that terminates TLS (a load balancer, Cloud Run, Cloudflare Tunnel, a dev tunnel like ngrok), the Koa server receives plain HTTP and rejects `secure: true` cookies with "Cannot send secure cookie over unencrypted connection." Set `app.proxy = true` in `conf/app.ts` to trust `X-Forwarded-Proto` headers from the proxy:
+Psychic marks the cookies it sets `Secure` in production. When the app runs behind a reverse proxy that terminates TLS (a load balancer, Cloud Run, Cloudflare Tunnel, a dev tunnel like ngrok) and forwards plain HTTP, the Koa server rejects those cookies with "Cannot send secure cookie over unencrypted connection", so `startSession` and `setCookie` answer 500. Setting `app.proxy = true` in `conf/app.ts` makes Koa trust the proxy's `X-Forwarded-Proto` header:
 
 ```ts
 psy.on('server:init:after-middleware', psychicServer => {
@@ -198,4 +190,4 @@ psy.on('server:init:after-middleware', psychicServer => {
 })
 ```
 
-This may be necessary during development with tunneling tools, or in an environment where TLS is terminated at the proxy without re-encryption to the container. Re-encrypting traffic between the proxy and the application is still recommended — and required by frameworks like HIPAA that mandate encryption in transit — so prefer configuring TLS on the application itself over enabling `app.proxy` where you can.
+`app.proxy` trusts `X-Forwarded-Proto` from *any* upstream, so reserve it for a dev tunnel, or for a proxy that forwards plain HTTP to a container only it can reach. Otherwise, re-encrypt traffic between the proxy and the application and configure TLS on the application itself (see [TLS behind a reverse proxy](/docs/deployment/server/overview#tls-behind-a-reverse-proxy)) — frameworks like HIPAA that mandate encryption in transit require it.

@@ -30,6 +30,8 @@ src/app/serializers/
 
 Keep every serializer variant for a model in that model's file (or subdirectory, for STI children) rather than scattering them — the `summary` → `default` → other-key composition chain reads best when the whole family is in one place.
 
+The strings in a model's `serializers` getter are the global names Dream registers for each exported serializer. At the root of `serializers/` that is the export name, whatever the file is called: `PlaceSummarySerializer` in `PlaceSerializer.ts` registers as `'PlaceSummarySerializer'`. In a subdirectory it is the directory plus the export name, minus a leading prefix that repeats the directory: `RoomBedroomSerializer` in `serializers/Room/BedroomSerializer.ts` registers as `'Room/BedroomSerializer'`. Two exports that resolve to the same global name fail at boot with `SerializerNameConflict`.
+
 ## action-specific serializer keys
 
 Some virtual attributes only make sense in the context of one action — an upload URL and headers that are populated during creation, for example, but never present when the record is later loaded from the database. Don't add those attributes to the general-purpose serializer; an unrelated action (`show`, `index`) that returns the record without them would then fail OpenAPI response validation.

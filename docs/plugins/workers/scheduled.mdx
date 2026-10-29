@@ -1,7 +1,7 @@
 ---
 sidebar_position: 5
 title: scheduled
-ai_summary: "ApplicationScheduledService enables cron-driven scheduled jobs. Use schedule('cron expression', 'methodName') to schedule recurring jobs. Nothing calls scheduleAllJobs() automatically — call it from db/seed.ts. schedule() keys by class+method only, not args, so looping calls with different args silently overwrites all but the last. Uses BullMQ for scheduling."
+ai_summary: "ApplicationScheduledService enables cron-driven scheduled jobs. Use schedule('cron expression', 'methodName') to schedule recurring jobs. Nothing calls scheduleAllJobs() automatically — call it from db/seed.ts. A scheduled method only enqueues its work, calling entry points on backgrounded services, so one throw cannot skip the rest of a run. schedule() keys by class+method only, not args, so looping calls with different args silently overwrites all but the last. Uses BullMQ for scheduling."
 ---
 
 # Scheduled Services
@@ -9,8 +9,8 @@ ai_summary: "ApplicationScheduledService enables cron-driven scheduled jobs. Use
 In your application, you may find yourself needing to run hourly, weekly, daily jobs, etc... In these contexts, you can leverage your `ApplicationScheduledService` class to schedule using a beautiful, cron-driven api, courtesy of bullmq under the hood.
 
 ```ts
-import ApplicationScheduledService from '../ApplicationScheduledService'
-import HourProcessor from './HourProcessor'
+import ApplicationScheduledService from '#services/ApplicationScheduledService.js'
+import HourProcessor from '#services/HourProcessor.js'
 
 export default class ScheduledJobs extends ApplicationScheduledService {
   public static async scheduleAllJobs() {
@@ -18,7 +18,7 @@ export default class ScheduledJobs extends ApplicationScheduledService {
   }
 
   public static async processHour() {
-    await HourProcessor.process(DateTime.now())
+    await HourProcessor.process(DateTime.now()) // enqueues and returns
   }
 }
 ```
@@ -29,7 +29,7 @@ Nothing registers your schedules for you. A service that defines `scheduleAllJob
 
 ```ts
 // db/seed.ts
-import ScheduledJobs from '@services/ScheduledJobs.js'
+import ScheduledJobs from '#services/ScheduledJobs.js'
 
 export default async function seed() {
   if (AppEnv.isTest) return
@@ -41,9 +41,9 @@ export default async function seed() {
 
 ## Scheduled services are thin orchestrators, not workers
 
-A service class should be either scheduled or backgrounded, not both — `ApplicationScheduledService` exposes `schedule()` but not `background()`, and `ApplicationBackgroundedService` exposes `background()` but not `schedule()`. This is a hard architectural constraint, not a style choice: to fan out, the scheduled (orchestrator) service calls the public entry method of a *separate* backgrounded (worker) service. Import direction is one-way — the orchestrator imports the worker, never the reverse; a mutual import is a cycle and risks class-init / `globalName`-registration ordering problems.
+A service class should be either scheduled or backgrounded, not both — `ApplicationScheduledService` exposes `schedule()` but not `background()`, and `ApplicationBackgroundedService` exposes `background()` but not `schedule()`. This is a hard architectural constraint, not a style choice: to fan out, the scheduled (orchestrator) service calls the public entry method of a *separate* backgrounded (worker) service. Import direction is one-way — the orchestrator imports the worker, never the reverse.
 
-A scheduled method should do almost nothing itself: select what needs to happen now and fan out to backgrounded services that do the real work. Heavy lifting inside a scheduled method is a design smell. The goal is to keep the number of permanently-registered schedulers small and fixed — typically just `hourly`, `daily`, and `weekly` — each of which kicks off whatever backgrounded jobs that cadence requires, rather than a sprawling list of per-task schedulers.
+A scheduled method only enqueues its work and returns. It calls entry points on backgrounded services that do nothing but `background(...)`, and every query, selection, and write runs in those jobs. Work done inside the scheduled call ties the failure of one scheduled job to the failure of all: one throw skips everything after it in that run. The goal is to keep the number of permanently-registered schedulers small and fixed — typically just `hourly`, `daily`, and `weekly` — each of which kicks off whatever backgrounded jobs that cadence requires, rather than a sprawling list of per-task schedulers.
 
 ```ts
 // app/services/ScheduledJobs.ts
@@ -53,7 +53,11 @@ export default class ScheduledJobs extends ApplicationScheduledService {
   }
 
   public static async processHour() {
-    await ReconcileService.reconcileAll() // delegate to a backgrounded service
+    await ReconcileService.reconcileAll() // enqueues and returns
+  }
+
+  public static async reconcileForms() {
+    await ReconcileService.reconcileAll() // enqueues and returns
   }
 }
 ```
@@ -62,10 +66,14 @@ export default class ScheduledJobs extends ApplicationScheduledService {
 // app/services/ReconcileService.ts
 export default class ReconcileService extends ApplicationBackgroundedService {
   public static async reconcileAll() {
-    const userIds = await User.where({ syncEnabled: true }).pluck('id')
-    for (const userId of userIds) {
-      await IntercomSync.syncUser(userId) // one job per item
-    }
+    await this.background('_reconcileAll')
+  }
+
+  // the selection runs here, inside the job
+  public static async _reconcileAll() {
+    await User.where({ syncEnabled: true }).findEach(async user => {
+      await IntercomSync.syncUser(user) // one job per item
+    })
   }
 }
 ```
@@ -77,24 +85,25 @@ export default class ReconcileService extends ApplicationBackgroundedService {
 ```ts
 // WRONG — registers exactly ONE scheduler (for FORM_CONFIGS[last]); the rest silently never run
 for (const config of FORM_CONFIGS) {
-  await ReconcileService.schedule('0 13 * * *', 'reconcileForm', config.key)
+  await ScheduledJobs.schedule('0 13 * * *', 'reconcileForm', config.key)
 }
 ```
 
-This fails silently — no error, no warning, the worker boots clean — and surfaces only when N−1 of N jobs never happened in production. To schedule N variants, either register N distinct `(class, method)` pairs, or — the idiomatic fix — schedule one method once that fans out at runtime:
+This fails silently — no error, no warning, the worker boots clean — and surfaces only when N−1 of N jobs never happened in production. To schedule N variants, either register N distinct `(class, method)` pairs, or — the idiomatic fix — schedule one method once whose backgrounded job fans out at runtime:
 
 ```ts
-// RIGHT — schedule the fan-out method ONCE; it loops at run time, not at schedule time
-await ReconcileService.schedule('0 13 * * *', 'reconcileAll')
+// RIGHT — schedule one method ONCE; the backgrounded job it enqueues loops at run time
+// (reconcileForms calls ReconcileService.reconcileAll(), whose _reconcileAll job does the looping)
+await ScheduledJobs.schedule('0 13 * * *', 'reconcileForms')
 ```
 
 ## Per-user cadence across time zones
 
-"Daily" and "weekly" work for users spread across time zones isn't a daily/weekly cron. Register the orchestrator on an **hourly** cron and have each run select the users whose *local* end-of-day (or end-of-week) falls in the current hour, then fan out one backgrounded job per selected user. Bake the time zone — and any end-of-week preference — into the query so the database returns just the relevant user IDs, rather than loading all users and filtering in code:
+"Daily" and "weekly" work for users spread across time zones isn't a daily/weekly cron. Register the orchestrator on an **hourly** cron and have each run enqueue a job that selects the users whose *local* end-of-day (or end-of-week) falls in the current hour, then fans out one backgrounded job per selected user. Bake the time zone — and any end-of-week preference — into the query so the database returns just the relevant user IDs, rather than loading all users and filtering in code:
 
 ```ts
 // app/services/ScheduledJobs.ts
-// Orchestrator — runs every hour; figures out whose local end-of-day this hour is
+// Orchestrator — runs every hour; enqueues the work for this hour and returns
 export default class ScheduledJobs extends ApplicationScheduledService {
   public static async scheduleAllJobs() {
     await this.schedule('0 * * * *', 'endOfDayFanOut') // hourly, despite being "daily" work
@@ -111,7 +120,15 @@ export default class ScheduledJobs extends ApplicationScheduledService {
 // Worker — selects matching users by time zone, enqueues one job each
 export default class EndOfDayService extends ApplicationBackgroundedService {
   public static async fanOut(now: DateTime) {
-    await User.where({ endOfDayHourUtc: now.hour }).pluckEach('id', async (id: string) => {
+    await this.background('_fanOut', now.toISO())
+  }
+
+  public static async _fanOut(nowIso: string) {
+    // timeZonesAtLocalHour is an app helper returning the time zones whose
+    // local hour at this instant is END_OF_DAY_HOUR. Selecting IDs only,
+    // never hydrating full records.
+    const timeZones = timeZonesAtLocalHour(DateTime.fromISO(nowIso), END_OF_DAY_HOUR)
+    await User.where({ timeZone: timeZones }).pluckEach('id', async (id: string) => {
       await this.background('_runEndOfDay', id)
     })
   }

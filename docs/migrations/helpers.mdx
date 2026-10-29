@@ -1,7 +1,7 @@
 ---
 sidebar_position: 7
 pagination_next: null
-ai_summary: "DreamMigrationHelpers provides migration utilities including renameTable (renames table and sequence), addDeferrableUniqueConstraint (for @Sortable decorator), dropConstraint, and other helper methods for common migration operations."
+ai_summary: "DreamMigrationHelpers provides migration utilities including renameTable (renames the table, its _pkey index, and its _id_seq sequence), addDeferrableUniqueConstraint (for @Sortable decorator), dropConstraint, enum helpers (addEnumValue, dropEnumValue and what blocks it), encryptColumn/decryptColumn, extensions, GIN indexes, and newTransaction (detected by a substring search of up/down)."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -13,7 +13,7 @@ Dream provides a set of migration utilities through the `DreamMigrationHelpers` 
 
 ## renameTable
 
-The `renameTable` helper automatically renames both the table and its associated sequence (for tables with serial primary keys):
+Use `renameTable` instead of Kysely's `alterTable(...).renameTo(...)`. Along with the table, it renames `<table>_pkey` and, for an identity or serial primary key, `<table>_id_seq`, which Postgres would otherwise leave under the old table's name:
 
 ```ts
 import { DreamMigrationHelpers } from '@rvoh/dream/db'
@@ -191,9 +191,9 @@ export async function down(db: Kysely<any>): Promise<void> {
 }
 ```
 
-Dream detects the transaction boundary with a plain string search for `DreamMigrationHelpers.dropEnumValue` or `DreamMigrationHelpers.newTransaction()` in the migration file's contents — it isn't parsing the AST. Don't rename the import (e.g. `import { DreamMigrationHelpers as DMH } from '@rvoh/dream/db'`), or Dream won't detect the boundary and the migration runs in the shared transaction anyway.
+Dream detects the transaction boundary with a plain substring search for `DreamMigrationHelpers.dropEnumValue` or `DreamMigrationHelpers.newTransaction` in the source of the migration's `up` and `down` functions — it isn't parsing the AST. A call made from a helper function defined outside `up`/`down`, or through a renamed import (e.g. `import { DreamMigrationHelpers as DMH } from '@rvoh/dream/db'`), isn't detected, and the migration runs in the shared transaction anyway.
 
-**A column `DEFAULT` or a check constraint referencing the enum blocks `dropEnumValue`.** Internally it retypes each replacement column to `text`, drops and re-creates the enum type, then retypes back with `USING column::enum`. A `DEFAULT` on that column fails the retype-to-text step, and a check constraint comparing against the enum's values fails the same way (a type-agnostic check such as `column IS NOT NULL` doesn't block it). Drop the default before the first `dropEnumValue` and re-establish it after; drop each value-comparing check constraint with [`dropConstraint`](#dropconstraint) before the first `dropEnumValue`, re-adding whichever should survive.
+**Anything stored against a replacement column that the retype has to re-derive — a check constraint, a partial-index predicate, an expression index, a `DEFAULT` — can block `dropEnumValue`.** Internally it retypes each replacement column to `text`, re-creates the enum type, then retypes back. When that fails, the error names the column, lists its check constraints with a ready-to-paste `DreamMigrationHelpers.dropConstraint(...)` call for each, and names the other candidates. Drop the blocker before the first `dropEnumValue` (check constraints with [`dropConstraint`](#dropconstraint)) and re-add whatever should survive afterward. A type-agnostic check such as `column IS NOT NULL` doesn't block it.
 
 **A fully-restoring rollback must be split across the pair, exactly like the forward pass.** The minimal `down()` shown above only re-adds the dropped value, which is safe on its own. But a `down()` that also maps rows back with `dropEnumValue` can't `addEnumValue` and `dropEnumValue` in the same file — same one-transaction constraint as the forward pass. Mirror the split: put the re-`addEnumValue` calls in the second migration's `down()`, and the row-mapping `dropEnumValue` calls in the first migration's `down()`. The pair then rolls back together with `db:rollback --steps 2`.
 
@@ -226,13 +226,15 @@ export async function down(db: Kysely<any>): Promise<void> {
 
 The helper:
 
-1. Renames `column` to `encrypted_<column>` (or a custom name via `encryptedColumnName`)
+1. Renames `column` to the backing column `@deco.Encrypted` reads (`encrypted_secret` for `secret`, `encrypted_ssn_last4` for `ssn_last_4`), or a custom name via `encryptedColumnName`
 2. Widens the column type to `text`
 3. Rewrites every non-null row's value as AES-GCM ciphertext using the same path the `@Encrypted` decorator uses
 
+It encrypts with the same `encryption.columns` keys the `@deco.Encrypted` getter and setter use — the scaffold's `conf/dream.ts` sets them from `COLUMN_ENCRYPTION_KEY` — and throws `MissingColumnEncryptionOpts` when they aren't configured. The `psy sync` run after adding the decorator lists the plaintext property (`secret`) among the model's virtual columns in the generated types.
+
 ### decryptColumn
 
-The exact inverse of `encryptColumn`. Decrypts each non-null value (trying the `current` key first, then `legacy`) and renames the column back. The optional `columnType` argument restores the original column type; it defaults to `text` if omitted.
+The exact inverse of `encryptColumn`. Decrypts each non-null value (trying the `current` key first, then `legacy`) and renames the column back. It needs the same column-encryption keys and throws `MissingColumnEncryptionOpts` without them. The optional `columnType` argument restores the original column type; it defaults to `text` if omitted.
 
 **Caveats:**
 
@@ -378,7 +380,7 @@ GIN indexes dramatically improve performance for similarity searches using `ops.
 
 ### newTransaction
 
-All new migration files are generally run in a single transaction. `newTransaction` commits the migration transaction and starts a new one between the previous migration file and the migration file containing `DreamMigrationHelpers.newTransaction()`.
+All pending migration files are run in a single transaction by default. `newTransaction` commits the migration transaction and starts a new one between the previous migration file and the migration file containing `DreamMigrationHelpers.newTransaction()`; the migrations after that file share the new transaction until the next file containing `newTransaction()` or `dropEnumValue`.
 
 This is necessary, for example, when check constraints are added that reference enum values also being added.
 

@@ -13,9 +13,9 @@ Alongside `background`, classes extending `ApplicationBackgroundedService` or `A
 
 ```ts
 class ImageProcessingService extends ApplicationBackgroundedService {
-  public static async processUpload(uploadId: string) {
+  public static async processUpload(upload: Upload) {
     // Wait for the S3 upload to propagate before processing
-    await this.backgroundWith({ delay: { seconds: 15 } }, '_processUpload', uploadId)
+    await this.backgroundWith({ delay: { seconds: 15 } }, '_processUpload', upload.id)
   }
 
   public static async _processUpload(uploadId: string) {
@@ -56,6 +56,6 @@ What debounce guarantees is that the job runs **at least** once, at or after the
 
 The debounce delay must be at least 3 seconds; a shorter one throws.
 
-When the work must happen only once, record that it happened — a boolean or a `DateTime` column on the model — and return early when a later run finds it set. Under that pattern a run that fires while a new event re-arms the timer is not a problem: the second run reads the flag and does nothing. When the timing itself is what matters rather than the collapsing, reach for a [scheduled job](./scheduled) with a datetime check on the model instead.
+When the timing itself is what matters rather than the collapsing, reach for a [scheduled job](./scheduled) with a datetime check on the model instead.
 
 See https://docs.bullmq.io/guide/jobs/deduplication#debounce-mode for implementation details.

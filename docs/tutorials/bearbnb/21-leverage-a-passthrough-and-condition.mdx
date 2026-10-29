@@ -21,13 +21,16 @@ pnpm uspec spec/unit/models/Place.spec.ts
 pnpm uspec spec/unit/models/Room.spec.ts
 pnpm uspec
 ```
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UqRHFQRjCHrGh9xPhFnGUR
 ``````
 
 ## Changes
 
 ``````
 diff --git a/api/spec/unit/models/Host.spec.ts b/api/spec/unit/models/Host.spec.ts
-index cdcb8d6..79b1487 100644
+index 6648798..c617d51 100644
 --- a/api/spec/unit/models/Host.spec.ts
 +++ b/api/spec/unit/models/Host.spec.ts
 @@ -28,4 +28,13 @@ describe('Host', () => {
@@ -45,7 +48,7 @@ index cdcb8d6..79b1487 100644
 +  })
  })
 diff --git a/api/spec/unit/models/Place.spec.ts b/api/spec/unit/models/Place.spec.ts
-index 7399652..c4f54f5 100644
+index 6aa9bb6..41fa65d 100644
 --- a/api/spec/unit/models/Place.spec.ts
 +++ b/api/spec/unit/models/Place.spec.ts
 @@ -29,4 +29,13 @@ describe('Place', () => {
@@ -63,7 +66,7 @@ index 7399652..c4f54f5 100644
 +  })
  })
 diff --git a/api/spec/unit/models/Room.spec.ts b/api/spec/unit/models/Room.spec.ts
-index d888641..2e966a8 100644
+index 021a823..cba31fa 100644
 --- a/api/spec/unit/models/Room.spec.ts
 +++ b/api/spec/unit/models/Room.spec.ts
 @@ -18,4 +18,13 @@ describe('Room', () => {
@@ -81,18 +84,18 @@ index d888641..2e966a8 100644
 +  })
  })
 diff --git a/api/src/app/models/Host.ts b/api/src/app/models/Host.ts
-index 7e4b6b4..075e112 100644
+index 5cb2091..306f6bc 100644
 --- a/api/src/app/models/Host.ts
 +++ b/api/src/app/models/Host.ts
 @@ -1,4 +1,4 @@
--import { Decorators, SoftDelete } from '@rvoh/dream'
-+import { Decorators, DreamConst, SoftDelete } from '@rvoh/dream'
+-import { Decorators, Dream, DreamTransaction, SoftDelete } from '@rvoh/dream'
++import { Decorators, Dream, DreamConst, DreamTransaction, SoftDelete } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- import ApplicationModel from '@models/ApplicationModel.js'
- import HostPlace from '@models/HostPlace.js'
+ import ApplicationModel from '#models/ApplicationModel.js'
+ import HostPlace from '#models/HostPlace.js'
 @@ -43,4 +43,11 @@ export default class Host extends ApplicationModel {
-   public async createDefaultLocalizedText(this: Host) {
-     await this.createAssociation('localizedTexts', { locale: 'en-US' })
+   public async createDefaultLocalizedText(this: Host, txn: DreamTransaction<Dream> | null) {
+     await this.txn(txn).createAssociation('localizedTexts', { locale: 'en-US' })
    }
 +
 +  @deco.HasOne('LocalizedText', {
@@ -103,18 +106,18 @@ index 7e4b6b4..075e112 100644
 +  public currentLocalizedText: LocalizedText
  }
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index 0715f2c..a1be52d 100644
+index 20b369a..c063540 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
 @@ -1,4 +1,4 @@
--import { Decorators, SoftDelete } from '@rvoh/dream'
-+import { Decorators, DreamConst, SoftDelete } from '@rvoh/dream'
+-import { Decorators, Dream, DreamTransaction, SoftDelete } from '@rvoh/dream'
++import { Decorators, Dream, DreamConst, DreamTransaction, SoftDelete } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- import ApplicationModel from '@models/ApplicationModel.js'
- import Host from '@models/Host.js'
+ import ApplicationModel from '#models/ApplicationModel.js'
+ import Host from '#models/Host.js'
 @@ -45,4 +45,11 @@ export default class Place extends ApplicationModel {
-   public async createDefaultLocalizedText(this: Place) {
-     await this.createAssociation('localizedTexts', { locale: 'en-US', title: `My ${this.style}` })
+   public async createDefaultLocalizedText(this: Place, txn: DreamTransaction<Dream> | null) {
+     await this.txn(txn).createAssociation('localizedTexts', { locale: 'en-US', title: `My ${this.style}` })
    }
 +
 +  @deco.HasOne('LocalizedText', {
@@ -125,18 +128,18 @@ index 0715f2c..a1be52d 100644
 +  public currentLocalizedText: LocalizedText
  }
 diff --git a/api/src/app/models/Room.ts b/api/src/app/models/Room.ts
-index 9e90a30..2b15ff5 100644
+index b8565d9..4a48792 100644
 --- a/api/src/app/models/Room.ts
 +++ b/api/src/app/models/Room.ts
 @@ -1,4 +1,4 @@
--import { Decorators, SoftDelete } from '@rvoh/dream'
-+import { Decorators, DreamConst, SoftDelete } from '@rvoh/dream'
+-import { Decorators, Dream, DreamTransaction, SoftDelete } from '@rvoh/dream'
++import { Decorators, Dream, DreamConst, DreamTransaction, SoftDelete } from '@rvoh/dream'
  import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
- import ApplicationModel from '@models/ApplicationModel.js'
- import LocalizedText from '@models/LocalizedText.js'
+ import ApplicationModel from '#models/ApplicationModel.js'
+ import LocalizedText from '#models/LocalizedText.js'
 @@ -37,4 +37,11 @@ export default class Room extends ApplicationModel {
-   public async createDefaultLocalizedText(this: Room) {
-     await this.createAssociation('localizedTexts', { locale: 'en-US' })
+   public async createDefaultLocalizedText(this: Room, txn: DreamTransaction<Dream> | null) {
+     await this.txn(txn).createAssociation('localizedTexts', { locale: 'en-US' })
    }
 +
 +  @deco.HasOne('LocalizedText', {

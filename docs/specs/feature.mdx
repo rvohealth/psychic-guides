@@ -2,7 +2,7 @@
 sidebar_position: 2
 title: feature
 pagination_next: null
-ai_summary: "Feature specs (end-to-end/e2e) test interactions outside backend using headless browser (Puppeteer). Written from backend context but drive frontend client. Uses Vitest. Configuration in spec/features/vite.config.ts. Launches Vite dev server for client. Programmatically starts/stops Psychic server in-process, so vi.spyOn stubs the backend boundary directly (vi.mock is unreliable due to boot-time controller loading). Covers organizing specs by actor/scenario, visual debugging, native date inputs, and waiting on network idle / DB polling instead of relying on toHavePath alone."
+ai_summary: "Feature specs (end-to-end/e2e) test interactions outside backend using headless browser (Puppeteer). Written from backend context but drive frontend client. Uses Vitest. Configuration in spec/features/vite.config.ts. Launches Vite dev server for client. Programmatically starts the Psychic server in-process, so vi.spyOn stubs the backend boundary directly (vi.mock is unreliable due to boot-time controller loading). Lists the matchers (including toHaveSelected/toHaveUnselected for select menus) and global helpers, which act on the shared page global; text matchers skip CSS-hidden content. Covers organizing specs by actor/scenario, visual debugging, native date inputs, and waiting on network idle / DB polling instead of relying on toHavePath alone."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -37,9 +37,9 @@ The configuration entry point is found at `spec/features/vite.config.ts`. This f
   code={`
 // spec/features/setup/globalSetup.ts
 
-import '../../../src/conf/global.js'
+import '#conf/loadEnv.js'
 
-import { PsychicDevtools } from '@rvoh/psychic'
+import { PsychicDevtools } from '@rvoh/psychic/system'
 
 export async function setup() {
   await PsychicDevtools.launchDevServer('client', {
@@ -55,30 +55,39 @@ export function teardown() {
   language='ts'
 />
 
-The second point of departure from unit specs can be found at `spec/features/setup/hooks.ts`. Here you will see that we additionally start and stop a Psychic server programmatically. Doing so enables us to spy on backend modules, which is extremely important for end-to-end tests.
+The second point of departure from unit specs can be found at `spec/features/setup/hooks.ts`. Here you will see that we additionally start a Psychic server programmatically and launch the browser, whose page every spec reaches through the `page` global. Doing so enables us to spy on backend modules, which is extremely important for end-to-end tests.
 
 ```ts
 // spec/features/setup/hooks.ts
 
 import { DreamApp } from '@rvoh/dream'
+import { cleanTestDb } from '@rvoh/dream-spec-helpers'
 import { PsychicServer } from '@rvoh/psychic'
-import { truncate } from '@rvoh/dream-spec-helpers'
-import AppEnv from '../../../../src/conf/AppEnv.js'
-import initializePsychicApp from '../../../../src/app/helpers/initializePsychicApp'
+import { resetBrowserState } from '@rvoh/psychic-spec-helpers'
+import AppEnv from '#conf/AppEnv.js'
+import initializePsychicApp from '#conf/system/initializePsychicApp.js'
+import getPage from '#spec/features/setup/getPage.js'
 
 let server: PsychicServer
 
-beforeEach(async () => {
+beforeAll(async () => {
   await initializePsychicApp()
 
   server = new PsychicServer()
   await server.start(AppEnv.integer('DEV_SERVER_PORT', { optional: true }) || 7778)
 
-  await truncate(DreamApp)
+  if (!(global as any).page) {
+    ;(global as any).page = await getPage()
+  }
+})
+
+beforeEach(async () => {
+  await cleanTestDb(DreamApp)
 })
 
 afterEach(async () => {
-  await server.stop({ bypassClosingDbConnections: true })
+  // clears localStorage and cookies between specs
+  await resetBrowserState()
 })
 ```
 
@@ -93,7 +102,7 @@ To run feature specs, Psychic automatically provides a script in your package.js
 
 ## The API server runs in-process
 
-Feature specs start the `PsychicServer` inside the same Vitest worker as the test (the generated `spec/features/setup/hooks.ts` calls `server.start(...)` in `beforeEach`, then the browser is launched). The browser talks to that server over `localhost:<port>`, but the server runs the *same module instances* the spec can see. So `vi.spyOn(SomeService, 'method')` on backend modules intercepts server-side code that runs while the browser drives the front end — exactly as in a unit or controller spec. There's no separate process and no IPC barrier.
+Feature specs start the `PsychicServer` inside the same Vitest worker as the test (the generated `spec/features/setup/hooks.ts` calls `server.start(...)` in `beforeAll`, then the browser is launched). The browser talks to that server over `localhost:<port>`, but the server runs the *same module instances* the spec can see. So `vi.spyOn(SomeService, 'method')` on backend modules intercepts server-side code that runs while the browser drives the front end — exactly as in a unit or controller spec. There's no separate process and no IPC barrier.
 
 `vi.mock` is the exception. The setup file's static import of the app config pulls in `conf/routes.ts` and every controller a route file names as an argument (`r.get('/places', PlacesController, 'show')`), loading them before a spec's mock registry exists — so the mock is silently ignored and you end up spying on the runtime object instead. A controller only the boot-time loader reaches later does get mocked, which is why the same `vi.mock` can be live on one route namespace and inert on another.
 
@@ -105,7 +114,7 @@ For a spy shared across specs (a `let` assigned in `beforeEach`, restored in `af
 
 ### Running a real external service
 
-Occasionally a feature spec needs a real external dependency running rather than a stub — most often an emulator the front end and API both talk to (for example, a Firebase Auth emulator). The harness assumes any such dependency is already listening: `globalSetup` launches the front-end dev servers, then `hooks.ts`'s `beforeEach` starts the in-process `PsychicServer` and the browser. None of that starts external services, and all of it may depend on them being up.
+Occasionally a feature spec needs a real external dependency running rather than a stub — most often an emulator the front end and API both talk to (for example, a Firebase Auth emulator). The harness assumes any such dependency is already listening: `globalSetup` launches the front-end dev servers, then `hooks.ts`'s `beforeAll` starts the in-process `PsychicServer` and the browser. None of that starts external services, and all of it may depend on them being up.
 
 Supply the service from outside the harness by wrapping the existing spec command with the service's own runner, rather than editing `globalSetup` / `hooks.ts`. Prefer an `exec`-style launcher — one that starts the service, runs the wrapped command to completion, then tears it down — over a long-running "start" command, so each run owns a fresh instance and nothing leaks between runs:
 
@@ -121,6 +130,7 @@ Leave `uspec` unwrapped — unit specs don't drive the browser or the dev server
 Psychic doesn't know much about your UI, so the assertion helpers it provides out of the box are fairly basic. That being said, this suite of tools is generally enough to get the job done for most apps.
 
 ```ts
+import AppEnv from '#conf/AppEnv.js'
 import { visit } from '@rvoh/psychic-spec-helpers'
 
 describe('places index page', () => {
@@ -130,11 +140,13 @@ describe('places index page', () => {
   })
 
   it('accepts the request', async () => {
-    const page = await visit('/places')
+    await visit('/places', { baseUrl: AppEnv.string('CLIENT_APP_HOST') })
     await expect(page).toMatchTextContent('Mountain Cabin')
   })
 })
 ```
+
+`visit` navigates the shared `page` and returns nothing; `baseUrl` names the client app to open the path on, defaulting to `http://localhost:3000`.
 
 Psychic provides the following helpers:
 
@@ -147,20 +159,22 @@ Additionally, Psychic provides the following assertion helpers:
 - `toCheck` - attempts to check a checkbox
 - `toClick` - attempts to click an element on the page with the specified text
 - `toClickButton` - attempts to click a button on the page with the specified text
-- `toClickButton` - attempts to click an anchor tag on the page with the specified text
+- `toClickLink` - attempts to click an anchor tag on the page with the specified text
 - `toClickSelector` - attempts to click an element on the page with the specified css selector
 - `toFill` - attempts to fill in the value for a text field
 - `toHaveChecked` - expects the page to have a checked element with the specified text value
 - `toHaveLink` - expects the page to have a link with the specified text value
 - `toHavePath` - expects the page to have the specified path
+- `toHaveSelected` - expects the `<select>` matching a css selector to have the option with the given value selected (`toHaveSelected('#style', 'cabin')`)
 - `toHaveSelector` - expects the page to have the specified css selector
 - `toHaveUnchecked` - expects the page to have an unchecked checkbox with the provided text value
+- `toHaveUnselected` - expects the `<select>` matching a css selector to have an option with the given value that is not selected
 - `toHaveUrl` - expects the page to have the provided url
 - `toMatchTextContent` - expects the page to have the provided text or match the provided `RegExp`
 - `toNotHaveSelector` - expects the page to not have the provided css selector
 - `toNotMatchTextContent` - expects the page to not match the provided text content or `RegExp`
 - `toUncheck` - attempts to uncheck a checkbox with the provided text value
-- `toSelect` - attempts to select the option from the provided css selector
+- `toSelect` - attempts to select the option with the given value from the `<select>` matching the provided css selector
 
 To utilize these assertion matchers, you can tap into them via expect chaining, like so:
 
@@ -193,6 +207,7 @@ the global helpers available to you are:
 - check
 - click
 - clickButton
+- clickLink
 - clickSelector
 - fillIn
 - uncheck
@@ -201,7 +216,7 @@ the global helpers available to you are:
 
 ### What the text matchers actually read
 
-`toMatchTextContent` / `toNotMatchTextContent` assert on what the page **renders**, not its DOM source. They collect each element's `innerText` (joined with spaces, with `input`/`textarea` values included), so they see CSS `text-transform`, visibility, and other rendered output. Two consequences follow.
+`toMatchTextContent` / `toNotMatchTextContent` assert on what the page **renders**, not its DOM source. They collect each element's `innerText` and each displayed `input`/`textarea` value, joined with spaces, so they see CSS `text-transform` and skip CSS-hidden content (`display: none`, `visibility: hidden`) and `<select>` menus; `opacity: 0` and offscreen text still match. Assert on a `<select>` with `toHaveSelected` / `toHaveUnselected`. Two consequences follow.
 
 **Default to a case-insensitive regex for text content.** A label whose source is `5 out of 5` but is rendered with an `uppercase` class matches as `5 OUT OF 5`. The literal string fails, and hardcoding `'5 OUT OF 5'` couples the spec to cosmetic styling. Match on meaning instead:
 
@@ -214,7 +229,7 @@ Case carries no meaning in rendered copy, so this is the outcomes-not-implementa
 
 Keep this separate from **specificity**. Case-insensitivity does not make a match looser on its own; an over-broad pattern does — `/error/i` also matches `no errors found`. Choose a pattern specific enough to avoid accidental substring hits, independent of case.
 
-**Split label/value markup matches contiguously.** Because per-element text is joined with spaces, `<dt>Sleeps</dt><dd>4</dd>` lands in the matched string as `Sleeps 4`, so `toMatchTextContent('Sleeps 4')` matches a label/value split with no `page.$eval` workaround. A more complex layout — a flex container around the `<dt>`/`<dd>` pair, for instance — can break that contiguity, landing extra whitespace between what look like adjacent elements in the source. If a literal contiguous match fails unexpectedly on markup that looks equivalent, fall back to a whitespace-tolerant regex (`/Sleeps\s+4/`).
+**Split label/value markup matches contiguously.** Because per-element text is joined with spaces, `<dt>Sleeps</dt><dd>4</dd>` lands in the matched string as `Sleeps 4`, so `toMatchTextContent('Sleeps 4')` matches a label/value split with no `page.$eval` workaround. Contiguity holds between separate elements. A label and value inside one element that a line break separates — a `<br>`, a block child, or a flex item (`<p>Sleeps<br>4</p>`) — land as `Sleeps\n4`; match those with a whitespace-tolerant regex (`/Sleeps\s+4/`).
 
 ### What the selector matchers actually assert
 
@@ -222,22 +237,23 @@ Keep this separate from **specificity**. Case-insensitivity does not make a matc
 
 `toNotHaveSelector` requires true DOM absence. A present-but-hidden element — still in the DOM but invisible via CSS — **fails** `toNotHaveSelector`; only an element that's actually unmounted or never rendered passes it.
 
-The rest of the matcher set is presence/interaction-only — `toCheck`, `toClick`/`toClickButton`/`toClickLink`/`toClickSelector`, `toFill`, `toHaveChecked`, `toHaveLink`, `toHavePath`, `toHaveSelector`, `toHaveUnchecked`, `toHaveUrl`, `toNotHaveSelector`, `toSelect`, `toUncheck` — none of these assert visibility directly. `toMatchTextContent`/`toNotMatchTextContent` are the exception: as covered above, they read rendered `innerText`, so they're visibility-sensitive by construction.
+The rest of the matcher set is presence/interaction-only — `toCheck`, `toClick`/`toClickButton`/`toClickLink`/`toClickSelector`, `toFill`, `toHaveChecked`, `toHaveLink`, `toHavePath`, `toHaveSelected`, `toHaveSelector`, `toHaveUnchecked`, `toHaveUnselected`, `toHaveUrl`, `toNotHaveSelector`, `toSelect`, `toUncheck` — none of these assert visibility directly. `toMatchTextContent`/`toNotMatchTextContent` are the exception: as covered above, they skip CSS-hidden text.
 
-When a spec genuinely needs to distinguish hidden-but-mounted from truly absent, assert the mechanism that hides the element rather than reaching for a visibility matcher that doesn't exist. If a booking confirmation banner is toggled with an `invisible` CSS class instead of being unmounted, assert the class directly:
+To tell hidden-but-mounted from absent, pair the presence check with a text check scoped to the element. A booking confirmation banner toggled with an `invisible` class (`visibility: hidden`) instead of being unmounted stays in the DOM but shows no text:
 
 ```ts
-await expect(page).toHaveSelector('.booking-confirmation')                 // still mounted either way
-const classAttr = await page.$eval('.booking-confirmation', el => el.className)
-expect(classAttr).toMatch(/\binvisible\b/)                                 // actually hidden
+await expect(page).toHaveSelector('.booking-confirmation')        // still mounted
+await expect(page).toNotMatchTextContent(/booking confirmed/i, {
+  selector: '.booking-confirmation',
+})                                                                // but not shown
 ```
 
 ### Full example
 
 ```ts
-import City from '@models/City.js'
-import createAdminUser from '@spec/factories/AdminUserFactory.js'
-import adminSignIn from '@spec/features/helpers/adminSignIn.js'
+import City from '#models/City.js'
+import createAdminUser from '#spec/factories/AdminUserFactory.js'
+import adminSignIn from '#spec/features/helpers/adminSignIn.js'
 
 describe('Cities create', () => {
   it('allows an admin to create a new city from the index', async () => {
@@ -322,11 +338,11 @@ The test process and the browser run concurrently. Before asserting on the datab
 
 ```ts
 // After sign-in or navigation — wait for React hydration before interacting
-await hostSignIn(page, user)
+await hostSignIn(user)
 await page.waitForNetworkIdle({ idleTime: 500 })
 
 // After a browser action that triggers an API call — wait before asserting on the database
-await clickButton(page, 'Add Comment')
+await clickButton('Add Comment')
 await page.waitForNetworkIdle({ idleTime: 500 })
 const comment = await post.associationQuery('comments').firstOrFail()
 expect(comment.body).toEqual('Great post!')
@@ -335,7 +351,7 @@ expect(comment.body).toEqual('Great post!')
 When the UI visibly changes after the API call (for example, navigation to a new path), waiting on that UI change is a cleaner signal:
 
 ```ts
-await clickButton(page, 'Create Place')
+await clickButton('Create Place')
 await expect(page).toHavePath('/places')        // proves the response completed
 const place = await Place.firstOrFail()          // safe to query now
 ```
@@ -346,7 +362,7 @@ const place = await Place.firstOrFail()          // safe to query now
 When the path doesn't change, wait on the eventual state instead. Poll the database for the actual outcome:
 
 ```ts
-await clickButton(page, 'Delete')
+await clickButton('Delete')
 await expect
   .poll(async () => await Place.find(place.id))
   .toBeNull()                                   // waits for the delete to land
@@ -357,18 +373,18 @@ Or wait on a UI signal genuinely tied to the mutation finishing (a removed row, 
 
 ## Cleanup
 
-Between each spec run, the database will be truncated to ensure a clean slate. Similar to unit specs, this is set up in the `spec/features/setup/hooks.ts` file:
+Before each spec, the database is emptied to ensure a clean slate. Similar to unit specs, this is set up in the `spec/features/setup/hooks.ts` file:
 
 ```ts
 // api/spec/features/setup/hooks.ts
 
 import { DreamApp } from '@rvoh/dream'
-import { truncate } from '@rvoh/dream-spec-helpers'
+import { cleanTestDb } from '@rvoh/dream-spec-helpers'
 
 ...
 
 beforeEach(async () => {
-  await truncate(DreamApp)
+  await cleanTestDb(DreamApp)
 })
 ```
 

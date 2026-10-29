@@ -1,5 +1,5 @@
 ---
-ai_summary: "query.update() writes every matched record. By default it iterates with findEach and calls instance update() on each — running hooks and validations — and its return value is the number of records visited and written. Pass { skipHooks: true } for a single bulk UPDATE statement with no hooks or validations. { lock: true } keeps the lifecycle while safely reading-then-writing under a per-row lock."
+ai_summary: "query.update() writes every matched record. By default it iterates with findEach and calls instance update() on each — running hooks and validations — and its return value is the number of records visited and written. Pass { skipHooks: true } for a single bulk UPDATE statement with no hooks or validations. { lock: true } keeps the lifecycle while safely reading-then-writing under a per-row lock. A limit or offset on the query throws."
 ---
 # update
 
@@ -17,9 +17,11 @@ Because it goes through `findEach`, a default (non-`skipHooks`) query update alw
 
 `update` resolves to the number of records it wrote. In the default form that's how many records it visited and wrote through — one already holding the incoming values still counts.
 
+A query that carries a `limit` or `offset` throws `BatchingIncompatibleWithLimitOrOffset` in every form of `update`: a batched run would re-apply either inside each batch rather than bounding the run as a whole, and a single `UPDATE ... WHERE` statement can't express them.
+
 ## Skipping hooks
 
-Pass `{ skipHooks: true }` to suppress the callback lifecycle and issue a single `UPDATE ... WHERE` statement instead — no model instantiated, no hooks, no validations:
+Pass `{ skipHooks: true }` to suppress the callback lifecycle and issue a single `UPDATE ... WHERE` statement instead — no model instantiated, no hooks, no validations, no custom setters. The statement is still filtered by the query's `where` and the model's default scopes:
 
 ```ts
 // One UPDATE ... WHERE statement — no hooks, no validations
@@ -30,4 +32,4 @@ await LocalizedText.where({ localizable: host, locale: 'en-US' }).update({ title
 
 ## Claiming a record safely: `{ lock: true }`
 
-When the value you're writing depends on a value you just read — claiming a record out of a state, where a concurrent writer must not clobber the result — reach for `{ lock: true }` instead of `skipHooks`. It's a compare-and-set that keeps the lifecycle: hooks are skipped, but custom setters still run. The single-statement `{ skipHooks: true }` form is also a compare-and-set — its one `UPDATE ... WHERE` re-checks the conditions under each row's lock — but choosing it means skipping the hooks, per the rule above.
+When the value you're writing depends on a value you just read — claiming a record out of a state, where a concurrent writer must not clobber the result — use `{ lock: true }`. It re-checks the query's `where` under a row lock before writing each record, and hooks and validations still run. See the [locking guide](/docs/models/locking).

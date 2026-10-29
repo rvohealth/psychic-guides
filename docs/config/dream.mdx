@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-ai_summary: 'Dream configuration is done in conf/dream.ts. Configures database connections (primary and replica), supports multiple database connections, primary key types, pagination page size, and other Dream-specific settings.'
+ai_summary: 'Dream configuration is done in conf/dream.ts. Configures database connections (primary, plus a replica when REPLICA_DB_HOST is set), the required ssl directive, password providers for short-lived tokens, multiple database connections, primary key types, parallelTests (the test-database pool), and other Dream-specific settings.'
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -18,12 +18,14 @@ A configuration file is used to configure Dream, and can be found at the `conf/d
 In order for Dream to connect to your database, you need to provide it with explicit credentials. Dream supports both primary and replica DB connections, and configuration for both can be provided.
 
 :::tip
-Always use `AppEnv` (defined in `src/conf/AppEnv.ts`) to access environment variables — never `process.env` directly. `AppEnv` validates that required variables are present at boot time and produces a clear error message when one is missing. For variables that are only present in some environments, use `AppEnv.string(name, { optional: true })`, which returns `string | undefined` instead of throwing.
+Always use `AppEnv` (defined in `src/conf/AppEnv.ts`) to access environment variables — never `process.env` directly. Reading a required variable that is unset throws `MissingRequiredEnvironmentVariable`, naming the variable, and since `conf/dream.ts` runs at boot, a missing database variable stops the app from starting. For variables that are only present in some environments, use `AppEnv.string(name, { optional: true })`, which returns `string | undefined` instead of throwing.
 :::
+
+The generated `conf/dream.ts` sets the connection up like this:
 
 ```ts
 export default async function (dreamApp: DreamApp) {
-  // Use verified TLS by default; set DB_NO_SSL=true to disable (local dev only)
+  // Use verified TLS by default; set DB_NO_SSL=1 to disable (local dev and CI only)
   const dbSsl: { rejectUnauthorized: true } | false = AppEnv.boolean('DB_NO_SSL')
     ? false
     : { rejectUnauthorized: true }
@@ -31,26 +33,30 @@ export default async function (dreamApp: DreamApp) {
   dreamApp.set('db', {
     primary: {
       user: AppEnv.string('DB_USER'),
-      password: AppEnv.string('DB_PASSWORD'),
-      host: AppEnv.string('PRIMARY_DB_HOST'),
-      name: AppEnv.string('PRIMARY_DB_NAME'),
+      password: AppEnv.string('DB_PASSWORD', { optional: !AppEnv.isProduction }),
+      host: AppEnv.string('DB_HOST'),
+      name: AppEnv.string('DB_NAME'),
       port: AppEnv.integer('DB_PORT'),
       ssl: dbSsl,
     },
-    replica: {
-      user: AppEnv.string('DB_USER'),
-      password: AppEnv.string('DB_PASSWORD'),
-      host: AppEnv.string('REPLICA_DB_HOST'),
-      name: AppEnv.string('REPLICA_DB_NAME'),
-      port: AppEnv.integer('DB_PORT'),
-      ssl: dbSsl,
-    },
-  }),
+    replica: AppEnv.string('REPLICA_DB_HOST', { optional: true })
+      ? {
+          user: AppEnv.string('DB_USER'),
+          password: AppEnv.string('DB_PASSWORD', { optional: !AppEnv.isProduction }),
+          host: AppEnv.string('REPLICA_DB_HOST'),
+          name: AppEnv.string('DB_NAME'),
+          port: AppEnv.integer('REPLICA_DB_PORT', { optional: true }) || AppEnv.integer('DB_PORT'),
+          ssl: dbSsl,
+        }
+      : undefined,
+  })
   ...
 }
 ```
 
-The `ssl` field accepts `{ rejectUnauthorized: true }` (verified TLS, the default), `{ rejectUnauthorized: false }` (unverified TLS, for providers that don't serve a public-CA-signed certificate), or `false` (TLS off, for local development without TLS).
+The `replica` credential is passed only when `REPLICA_DB_HOST` is set; see [read replicas](/docs/deployment/server/overview#read-replicas) for which queries use it.
+
+The `ssl` field is required on every credential: `app.set('db', ...)` throws `MissingDbSslDirective` when a credential does not set `ssl`. It accepts `{ rejectUnauthorized: true }` (verified TLS, the default), `{ rejectUnauthorized: false }` (unverified TLS, for providers that don't serve a public-CA-signed certificate), or `false` (TLS off, for local development without TLS).
 
 Most managed Postgres providers (Supabase, Neon, Render, Azure Database for PostgreSQL Flexible Server) present a public-CA-signed certificate and work with the default. Providers that require a pinned CA certificate (AWS RDS, GCP Cloud SQL) need an additional `ca` field:
 
@@ -60,6 +66,8 @@ ssl: {
   ca: AppEnv.string('PG_CA_CERT'),
 }
 ```
+
+`password` takes either a string or a function returning the password (or a promise of it). With Dream's built-in Postgres driver, the function is called each time a new physical connection authenticates; connections already in the pool keep their credential. Use the function form for short-lived passwords such as AWS RDS IAM auth tokens, so each connection gets a fresh token; see [short-lived passwords](/docs/deployment/server/overview#short-lived-passwords).
 
 #### Multiple database connections
 
@@ -83,8 +91,8 @@ Be sure to add any new environment variables to your .env and .env.test files.
 // app/models/MyAlternateConnectionApplicationModel.ts
 
 import Dream from '../../../src/Dream.js'
-import { DBClass } from '../../types/db.alternateConnection.js'
-import { globalSchema, schema } from '../../types/dream.alternateConnection.js'
+import { DBClass } from '#src/types/db.alternateConnection.js'
+import { globalSchema, schema } from '#src/types/dream.alternateConnection.js'
 
 export default class MyAlternateConnectionApplicationModel extends Dream {
   declare public DB: DBClass
@@ -194,7 +202,7 @@ export default async function (dreamApp: DreamApp) {
 Provide inflections to your dream application to inform the dream cli generators how to generate pluralized version of singulars.
 
 ```ts
-import inflections from './inflections'
+import inflections from '#conf/inflections.js'
 
 export default async function (dreamApp: DreamApp) {
   dreamApp.set('inflections', inflections)
@@ -227,7 +235,7 @@ export default async function (dreamApp: DreamApp) {
 ```
 
 :::warning
-Never use `console.log` in application code. `console.log` is blocking, bypasses the configured logger, and pollutes production logs with unstructured strings. Use `PsychicApp.log(message, ...meta)` for general output and `PsychicApp.logWithLevel(level, message, ...meta)` when you need a specific level (`'debug' | 'info' | 'warn' | 'error'`). These route through the configured logger so output respects log level, transports, and structured format. REPL / `psy console` sessions are exempt — interactive output to stdout is the point. If no logger is configured, Dream falls back to `console.log`, which is why configuring one is recommended.
+Never use `console.log` in application code. `console.log` is blocking, bypasses the configured logger, and pollutes production logs with unstructured strings. Use `PsychicApp.log(...args)` for general output and `PsychicApp.logWithLevel(level, ...args)` when you need a specific level (`'debug' | 'info' | 'warn' | 'error'`). These route through the configured logger so output respects log level, transports, and structured format. REPL / `psy console` sessions are exempt — interactive output to stdout is the point. If no logger is configured, Dream falls back to `console.log`, which is why configuring one is recommended; a new app's `conf/app.ts` sets a Winston logger for you (`psy.set('logger', winstonLogger(apiRoot))`).
 :::
 
 ### paths
@@ -263,7 +271,7 @@ export default async function (dreamApp: DreamApp) {
 }
 ```
 
-The value provided to `parallelTests` needs to be an integer, and will be used to determine how many copies of your database to make. It will then ensure that each test run gets a unique database which will be left untampered by other parallel test runs.
+The value provided to `parallelTests` needs to be an integer: the number of spec workers you run at once. `db:migrate` and `db:reset` copy your test database into a pool sized for that many workers, and each spec worker claims a free copy for as long as its process runs, so its database is left untampered by other parallel workers.
 
 ### ApplicationModel
 
@@ -271,9 +279,9 @@ A base model (called `ApplicationModel`) is pre-established for you which contai
 
 ```ts
 import { Dream } from '@rvoh/dream'
-import { DB } from '../../types/db.js'
-import { connectionTypeConfig, schema } from '../../types/dream.js'
-import { globalTypeConfig } from '../../types/dream.globals.js'
+import { DB } from '#src/types/db.js'
+import { connectionTypeConfig, schema } from '#src/types/dream.js'
+import { globalTypeConfig } from '#src/types/dream.globals.js'
 
 export default class ApplicationModel extends Dream {
   declare public DB: DB

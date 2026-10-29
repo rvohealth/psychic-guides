@@ -66,7 +66,7 @@ The generator includes `id`, `created_at`, `updated_at`, `deleted_at`, and `@Sof
 - `--no-serializer`: Do not generate a serializer for the model.
 - `--no-soft-delete`: Skip the default `@SoftDelete()` decorator and `deleted_at` column, so `destroy()` permanently removes rows instead of marking them removed.
 - `--connection-name <connectionName>`: The db connection you want this attached to (defaults to the default db connection) (default: "default").
-- `--sti-base-serializer`: Generate a base serializer for STI.
+- `--sti-base-serializer`: Generate generically typed base serializers for the parent of an STI hierarchy (summary and default, plus each admin and internal pair requested). They accept the STI child class as a parameter, and when a `type` column is given, each summary serializer renders `type` right after `id` with an OpenAPI enum holding only the child's class name, which the default serializer inherits. Generate each child afterward with [`g:sti-child`](./sti-child.mdx).
 - `--table-name <tableName>`: Explicit table name to use instead of the auto-generated one (useful when model namespaces produce long names).
 - `--model-name <modelName>`: Explicit model class name to use instead of the auto-generated one (e.g. `--model-name=Kitchen` for `Room/Kitchen`).
 - `--admin-serializers`: Generate admin serializer variants (`AdminSerializer` and `AdminSummarySerializer`) in addition to the default serializers.

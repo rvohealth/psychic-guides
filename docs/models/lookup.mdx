@@ -9,7 +9,7 @@ In Node.js, there are limitations that prevent you from circular importing, i.e.
 
 ```ts
 // LogEntry/Base.ts
-import SleepLogEntry from './Sleep.js'
+import SleepLogEntry from '#models/LogEntry/Sleep.js'
 
 export default class BaseLogEntry extends ApplicationModel {
   public static thisWillBreakThings() {
@@ -19,7 +19,7 @@ export default class BaseLogEntry extends ApplicationModel {
 }
 
 // LogEntry/Sleep.ts
-import BaseLogEntry from './Base.js'
+import BaseLogEntry from '#models/LogEntry/Base.js'
 
 export default class SleepLogEntry extends BaseLogEntry {}
 ```
@@ -34,7 +34,7 @@ Dream leverages inversion of control (IoC) to ingest your models, and exposes a 
 
 ```ts
 // LogEntry/Base.ts
-import UnsafeSleepLogEntry from './Sleep.js'
+import UnsafeSleepLogEntry from '#models/LogEntry/Sleep.js'
 
 // using the ioc provided by dream, we can safely
 // sidestep circular import issues without any cost
@@ -67,7 +67,7 @@ The `lookup` method provided by Dream enables us to import models or serializers
 Top-level usage of the `lookup` method is not safe, and will cause mysterious exceptions in your app during syncing. To avoid this, make sure to wrap any top-level usage in a callback function, like so:
 
 ```ts
-import UnsafeSleepLogEntry from './Sleep.js'
+import UnsafeSleepLogEntry from '#models/LogEntry/Sleep.js'
 
 // this is BAD at the top level
 const SleepLogEntry = ApplicationModel.lookup('LogEntry/Sleep') as UnsafeSleepLogEntry

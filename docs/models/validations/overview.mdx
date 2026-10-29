@@ -1,7 +1,7 @@
 ---
 sidebar_position: 0
 pagination_prev: null
-ai_summary: "Dream validations prevent invalid records from being saved. Use isValid/isInvalid to check validity. Validation decorators include contains, length, numericality, presence, and custom validators. Failed validations raise exceptions that Psychic converts to 400 errors with errors payload."
+ai_summary: "Dream validations prevent invalid records from being saved. Use isValid/isInvalid to check validity; errors holds the failed validation names keyed by column, and several Validates decorators can stack on one property. Validation decorators include contains, length, numericality, presence, and custom validators. A failed save raises an exception that Psychic answers with a bare 400 and no body; to show field-level errors to the client, check isInvalid and call this.badRequest({ errors: record.errors })."
 ---
 
 # overview
@@ -26,7 +26,17 @@ console.log(user.isValid) // true
 console.log(user.isInvalid) // false
 ```
 
-If a `save` is attempted against a record, each of its validations will be called. If any of the validations fail, an exception will raise which prevents the record from being saved. When Psychic intercepts this error, it will automatically trigger a `400` error code, delivering an `errors` payload describing the list of validation failures.
+A failed validation is recorded in the record's `errors`, keyed by column, under the name of the validation that failed:
+
+```ts
+const user = User.new({ email: 'invalid-email' })
+user.isInvalid // true
+user.errors.email // ['contains']
+```
+
+Several `@deco.Validates` decorators can be stacked on one property, and each one that fails adds its name. A [custom validator](/docs/models/validations/custom) adds the message it passes to `addError`.
+
+If a `save` is attempted against a record, each of its validations will be called. If any of the validations fail, an exception will raise which prevents the record from being saved. When Psychic intercepts this error, it responds with a bare `400` and no body. To show the field-level errors to the client, check `isInvalid` before saving and return them yourself with `this.badRequest({ errors: record.errors })` — see [Surfacing field-level validation errors](/docs/controllers/exception-handling#surfacing-field-level-validation-errors).
 
 ## Built-in validators
 

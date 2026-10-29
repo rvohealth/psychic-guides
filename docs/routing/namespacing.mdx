@@ -90,15 +90,15 @@ Controller directories don't only exist to name a URL segment — a directory br
 Rather than using `r.namespace('visitor', ...)` — which would enforce both the folder *and* the URL segment — pass the controller class explicitly to `resources`/`resource`/a verb method, inside a namespace that only covers the URL segments you actually want:
 
 ```ts
-// BAD — "visitor" leaks into the URL: /v1/visitor/places
-r.namespace('v1', r => {
-  r.namespace('visitor', r => {
+// BAD — "visitor" leaks into the URL: /visitor/v1/places
+r.namespace('visitor', r => {
+  r.namespace('v1', r => {
     r.resources('places', { only: ['index', 'show'] })
   })
 })
 
 // GOOD — clean URL: /v1/places; controller comes from the auth-context directory
-import VisitorV1PlacesController from '@controllers/Visitor/V1/PlacesController.js'
+import VisitorV1PlacesController from '#controllers/Visitor/V1/PlacesController.js'
 
 r.namespace('v1', r => {
   r.resources('places', { only: ['index', 'show'], controller: VisitorV1PlacesController })

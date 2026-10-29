@@ -132,7 +132,7 @@ export default function inflections() {
 }
 
 // conf/app.ts
-import inflections from './inflections'
+import inflections from '#conf/inflections.js'
 
 export default (psy: PsychicApp) => {
   psy.set('inflections', inflections)
@@ -151,7 +151,7 @@ export default function routes(r: PsychicRouter) {
 }
 
 // conf/app.ts
-import routes from './routes'
+import routes from '#conf/routes.js'
 
 export default (psy: PsychicApp) => {
   psy.set('routes', routes)
@@ -204,6 +204,8 @@ export default (psy: PsychicApp) => {
   }
 }
 ```
+
+The generated `conf/app.ts` includes this block, so in production the web and websocket servers listen with HTTPS and boot throws unless both `SSL_KEY_PATH` and `SSL_CERT_PATH` are set. If your proxy forwards plain HTTP to the container instead, delete the block; see [TLS behind a reverse proxy](/docs/deployment/server/overview#tls-behind-a-reverse-proxy) for what else that changes.
 
 ### encryption
 

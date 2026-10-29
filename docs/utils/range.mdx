@@ -1,6 +1,6 @@
 ---
 sidebar_position: 7
-ai_summary: "range is used with where and and clauses for range queries. Supports start, end, or both. Works with CalendarDate, DateTime, ClockTime, and number values. Can be used in association declaration and statements."
+ai_summary: "range(begin, end?, excludeEnd?) is used with where and and clauses for range queries. Supports start, end, or both, and an exclusive end. Works with CalendarDate, DateTime, ClockTime, and number values. Can be used in association declaration and statements."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
@@ -22,12 +22,18 @@ await Place.where({ sleeps: range(null, 2) }).count()
 
 // search Places that sleep between 2 and 4 people, inclusive
 await Place.where({ sleeps: range(2, 4) }).count()
+
+// search Places that sleep at least 2 and fewer than 4 people
+await Place.where({ sleeps: range(2, 4, true) }).count()
 ```
+
+The signature is `range(begin, end?, excludeEnd?)`. Pass `null` for `begin` to leave the range open at the start, and omit `end` to leave it open at the end; passing `true` as `excludeEnd` leaves `end` itself out of the range.
 
 ## range supports CalendarDate, DateTime, ClockTime, and number values
 
 ```ts
-import { CalendarDate, ClockTime, DateTime, range } from '@rvoh/dream/utils'
+import { range } from '@rvoh/dream/utils'
+import { CalendarDate, ClockTime, DateTime } from '@rvoh/dream'
 
 await user
   .associationQuery('pets')

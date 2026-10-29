@@ -109,7 +109,7 @@ defaultBullMQQueueOptions: {
 
 What that means in practice:
 
-- A job that throws is retried up to **20 times** with exponential backoff (`2 ^ (n-1) * 1000ms`), totaling roughly 6.1 days of retry surface for a single job.
+- A job that throws gets up to **20 attempts** with exponential backoff (`2 ^ (n-1) * 1000ms`) between them, totaling roughly 6.1 days of retry surface for a single job.
 - After the final attempt, the job moves to the queue's `failed` set, where it remains for inspection until evicted by the retention cap (`removeOnFail: 20000` keeps the most recent 20,000 failed jobs).
 - BullMQ exposes the failed set via `Queue.getFailed()` / `Queue.getFailedCount()` and the [bull-board](https://github.com/felixmosh/bull-board) UI, so terminally-poisoned jobs are visible to oncall.
 

@@ -17,21 +17,21 @@ export const RoomWithPlaceSerializer = (room: Room) =>
 
 ### rendersOne.optional
 
-Pass `optional: true` when the association can be `null` at render time — but only when there's no other way for `rendersOne` to know that. For a `BelongsTo` association, the model's own `@deco.BelongsTo('User', { optional: true })` declaration is already the canonical source of truth for nullability, and `rendersOne` auto-infers the same `anyOf: [{ $ref: ... }, { type: 'null' }]` OpenAPI shape from it:
+Pass `optional: true` when the association can be `null` at render time — but only when there's no other way for `rendersOne` to know that. For a `BelongsTo` association, the model's own `@deco.BelongsTo('City', { optional: true })` declaration is already the canonical source of truth for nullability, and `rendersOne` auto-infers the same `anyOf: [{ $ref: ... }, { type: 'null' }]` OpenAPI shape from it:
 
 ```ts
 // Model
-@deco.BelongsTo('User', { optional: true })
-public approver: User | null
+@deco.BelongsTo('City', { optional: true })
+public city: City | null
 
 // Serializer — no `optional` needed; auto-inferred from the BelongsTo declaration.
-.rendersOne('approver')
+.rendersOne('city')
 ```
 
 Don't restate `optional: true` on a `rendersOne` for a `BelongsTo` — it duplicates the model's declaration, and changing it (passing `optional: true` when the `BelongsTo` isn't optional, or vice versa) is almost always a mistake, since the model governs what can actually be `null` at runtime. Reach for explicit `optional: true` only when the association isn't a `BelongsTo` — a `HasOne` that may be absent, for example — where there's no model-side nullability for `rendersOne` to infer:
 
 ```ts
-.rendersOne('approver', { optional: true })
+.rendersOne('currentLocalizedText', { optional: true })
 ```
 
 `optional` is purely an OpenAPI nullability marker — the key is always rendered, and `rendersOne` has no `required: false` counterpart. If you need the key omitted entirely, reshape the serializer (a `customAttribute`, or a different serializer variant) instead. `optional: true` also has no effect on an association that was never loaded: rendering a `NonLoadedAssociation` still throws regardless of `optional`, so load it with [`preloadFor`](/docs/models/querying/preloadFor) or [`loadFor`](/docs/models/querying/loadFor) either way. See [the BelongsTo `optional` contract](/docs/models/associations/belongs-to#optional) for the model-side rules this defers to.
@@ -44,7 +44,7 @@ Use `.rendersMany()` to include an array of associated models:
 export const PlaceForGuestsSerializer = (place: Place) =>
   DreamSerializer(Place, place)
     .attribute('id')
-    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
+    .delegatedAttribute('currentLocalizedText', 'title')
     .rendersMany('rooms', { serializerKey: 'forGuests' })
 ```
 
@@ -95,8 +95,8 @@ Similarly, you can use `rendersOne` with a serializer function for single values
 
 ```ts
 import { ObjectSerializer } from '@rvoh/dream'
-import { LocalesEnum, BathOrShowerStylesEnum, BathOrShowerStylesEnumValues } from '@src/types/db.js'
-import i18n from '@src/utils/i18n.js'
+import { LocalesEnum, BathOrShowerStylesEnum, BathOrShowerStylesEnumValues } from '#src/types/db.js'
+import i18n from '#src/utils/i18n.js'
 
 export const BathOrShowerStyleSerializer = (
   bathOrShowerStyle: BathOrShowerStylesEnum,
@@ -158,7 +158,7 @@ When you only need a property or two from an association, a [delegatedAttribute]
 
 ### attribute shadowing
 
-Flattening merges the associated record's attributes directly into the parent response. When the flattened association has an attribute with the same name as one on the parent serializer, **the flattened association's attribute wins** — it overwrites the parent's. The most common collision is `id`: both the parent and the flattened association typically have one, and the flattened one takes over.
+Flattening merges the associated record's attributes directly into the parent response. Attributes fold in declaration order, so when the flattened association has an attribute with the same name as one the parent declares **before** the `rendersOne`, the flattened association's attribute wins — it overwrites the parent's. The most common collision is `id`: the parent declares its `id` first, so the flattened association's `id` takes over.
 
 This shows up as the API response returning the associated record's `id` instead of the parent's, frontend routing or specs picking up the wrong identity, or other same-named attributes (`name`, `createdAt`, …) having unexpected values.
 
@@ -197,10 +197,10 @@ When a serializer flattens, write controller specs against the serialized API co
 
 ## rendersOne, rendersMany, and STI
 
-A serializer built for an [STI](/docs/models/sti) base class typically takes the STI child class as a generic type parameter, so it can resolve the correct schema per child. When a child serializer extends that base and calls `rendersOne`, `rendersMany`, or [`delegatedAttribute`](./attributes#delegatedattribute), pass the STI child class explicitly as the generic parameter — without it, TypeScript can't resolve the association's types, because the base serializer's generic context is lost at the call site:
+A serializer built for an [STI](/docs/models/sti) base class typically takes the STI child class as a generic type parameter, so it can resolve the correct schema per child. When a child serializer calls `rendersOne`, `rendersMany`, or [`delegatedAttribute`](./attributes#delegatedattribute) on a property the **child** declares, pass the child class as the generic parameter: these three resolve names against the class type the base serializer hands `DreamSerializer` (`typeof Room`), so a child-only property isn't found without it. Associations are declared on the base and need no generic:
 
 ```ts
-// Correct — <Bedroom> lets rendersMany resolve Bedroom's associations
+// Correct — <Bedroom> lets rendersMany resolve the Bedroom-only `bedTypes`
 export const RoomBedroomForGuestsSerializer = (bedroom: Bedroom, passthrough: { locale: LocalesEnum }) =>
   RoomForGuestsSerializer(Bedroom, bedroom, passthrough).rendersMany<Bedroom>('bedTypes', {
     serializer: BedTypeSerializer,
@@ -210,7 +210,7 @@ export const RoomBedroomForGuestsSerializer = (bedroom: Bedroom, passthrough: { 
   .rendersMany('bedTypes', { serializer: BedTypeSerializer })
 ```
 
-`.attribute()` infers its type without a generic argument, and `.customAttribute()` doesn't do type inference at all, so neither one needs this. See [single table inheritance](/docs/models/sti) for the base/child serializer pattern itself.
+`.attribute()` resolves names against the record's own type, and `.customAttribute()` doesn't do type inference at all, so neither one needs this. See [single table inheritance](/docs/models/sti) for the base/child serializer pattern itself.
 
 ## loading associations
 

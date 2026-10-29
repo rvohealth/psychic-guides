@@ -33,8 +33,8 @@ FROM $NODE_IMAGE AS base
 ENV NODE_ENV=production
 ENV NODE_DEBUG=bull
 ENV PSYCHIC_LOG_PATH=/dev/shm
-ENV PSYCHIC_SSL_CERT_PATH=/home/node/app/cert/psychic-selfsigned.crt
-ENV PSYCHIC_SSL_KEY_PATH=/home/node/app/cert/psychic-selfsigned.key
+ENV SSL_CERT_PATH=/home/node/app/cert/psychic-selfsigned.crt
+ENV SSL_KEY_PATH=/home/node/app/cert/psychic-selfsigned.key
 ENV PNPM_VERSION=10.24.0
 ENV COREPACK_HOME=/home/node/bin
 ENV APP_NAME=YOUR_APP_NAME_HERE

@@ -2,7 +2,7 @@
 sidebar_position: 2
 title: usage
 pagination_next: null
-ai_summary: "Use I18nProvider.provide() to create curried i18n function with type completion. Call i18n('locale', 'key.path'). Recommended for use in serializer layer. Validate Accept-Language against supportedLocales() in a controller getter, then pass the resolved locale through both query passthrough and serializerPassthrough."
+ai_summary: "Use I18nProvider.provide(locales, BASE_LOCALE) to create a curried i18n function with type completion. Call i18n('locale', 'key.path'). An unmatched locale, or a key missing from the matched file, falls back to the base locale's text; a key missing there too returns the dotted key. Recommended for use in serializer layer. The scaffold's ApplicationController locale getter negotiates Accept-Language with ctx.acceptsLanguages against supportedLocales(), else DEFAULT_LOCALE; pass it through serializerPassthrough (serializers) and .passthrough() (queries)."
 ---
 
 # i18n - usage
@@ -12,18 +12,22 @@ Within `src/utils/i18n.ts`, you will find some boilerplate code provided for you
 ```ts
 // src/utils/i18n.ts
 
-import locales from '@conf/locales/index.js'
+import locales from '#conf/locales/index.js'
 import { I18nProvider } from '@rvoh/psychic/system'
-import { LocalesEnumValues } from '@src/types/db.js'
+import { LocalesEnumValues } from '#src/types/db.js'
 
 export function supportedLocales() {
   return LocalesEnumValues
 }
 
-export default I18nProvider.provide(locales, 'en')
+export const DEFAULT_LOCALE: ReturnType<typeof supportedLocales>[number] = 'en-US'
+
+export const BASE_LOCALE = 'en'
+
+export default I18nProvider.provide(locales, BASE_LOCALE)
 ```
 
-When calling `I18nProvider.provide`, the first argument will be the entire payload of locales from your application config, and the second argument will be the specific locale that you are treating as your base locale. This is used to provide type completion as you use the i18n helper — `i18n()` only accepts dotted keys that exist in that base locale file, so pass the most complete one. At call time, the locale you pass is matched to a locale key by its language prefix (`'en-US'` matches the `en` locale file), and anything unmatched falls back to the base locale.
+When calling `I18nProvider.provide`, the first argument will be the entire payload of locales from your application config, and the second argument, `BASE_LOCALE`, names the locale you are treating as your base locale. Its file's shape provides type completion as you use the i18n helper — `i18n()` only accepts dotted keys that exist in that base locale file, so pass the most complete one. At call time, the locale you pass is matched to a locale file by its language prefix (`'en-US'` matches the `en` locale file). An unmatched locale, or a key missing from the matched file, falls back to the base locale's text; a key missing there too returns the dotted key itself. To catch those gaps before a user sees them, see [catch missing translations in a spec](/docs/utils/i18n/config#catch-missing-translations-in-a-spec).
 
 ```ts
 // elsewhere, in your app
@@ -37,8 +41,8 @@ See the [passthrough setting documentation](/docs/serializers/render#serializer-
 
 ```ts
 import { DreamSerializer } from '@rvoh/dream'
-import { LocalesEnum } from '@src/types/db.js'
-import i18n from '@src/utils/i18n.js'
+import { LocalesEnum } from '#src/types/db.js'
+import i18n from '#src/utils/i18n.js'
 
 export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
   PlaceSummaryForGuestsSerializer(place)
@@ -53,24 +57,33 @@ This is **code-driven** i18n: translating static values — enum labels, UI stri
 
 ## Passing locale from controllers
 
-Read the `Accept-Language` header once, validate it against your supported locales, and fall back to a default when the header is missing or unsupported. A getter on a shared base controller is a convenient place for this:
+The generated `ApplicationController` reads the `Accept-Language` header with a `locale` getter. It lets Koa's `ctx.acceptsLanguages` pick the supported locale the header prefers — weighing q-values and matching a bare `es` to `es-ES` — and falls back to `DEFAULT_LOCALE` when the header is missing or accepts none of them:
 
 ```ts
+// app/controllers/ApplicationController.ts
+
+export default class ApplicationController extends PsychicController {
+  protected get locale() {
+    // Koa answers a missing or `*` header with the first locale it is given,
+    // so DEFAULT_LOCALE goes first
+    const locales = [DEFAULT_LOCALE, ...supportedLocales().filter(locale => locale !== DEFAULT_LOCALE)]
+    return (this.ctx.acceptsLanguages(...locales) || DEFAULT_LOCALE) as (typeof locales)[number]
+  }
+}
+```
+
+Pass it to `serializerPassthrough` in a base controller, so every serializer rendered beneath it receives the locale:
+
+```ts
+// app/controllers/AuthedController.ts
+
 export default class AuthedController extends ApplicationController {
   @BeforeAction()
   public configureSerializers() {
     this.serializerPassthrough({ locale: this.locale })
   }
-
-  protected get locale() {
-    const locale = this.header('Accept-Language')
-    const locales = supportedLocales()
-    return locales.includes(locale as (typeof locales)[number]) ? locale : 'en-US'
-  }
 }
 ```
-
-`this.header(...)` reads a request header — it isn't a `castParam` concern, since `castParam` casts and validates route, query, and body params, not headers.
 
 When querying models that use passthrough-conditioned associations (like `currentLocalizedText`), pass the same resolved locale on the query, in addition to `serializerPassthrough`:
 

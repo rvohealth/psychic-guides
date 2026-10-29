@@ -48,8 +48,9 @@ Every `psy` command supports `--help`, which prints its full list of flags, e.g.
 
 ### Setup Commands
 
-- `setup:sync:enums [options] <outfile>` - Generates an initializer in your app for syncing enums to a particular path.
+- `setup:sync:enums [options]` - Generates an initializer that writes the enums one of your OpenAPI specs renders to a TypeScript file (`--output-file`) on every sync.
 - `setup:sync:openapi-redux [options]` - Generates openapi redux bindings to connect one of your openapi files to one of your clients.
+- `setup:sync:openapi-zustand [options]` - Generates an initializer that builds typed API functions and Zustand stores from one of your openapi files on every sync, for Zustand, Jotai, or other non-Redux clients. See [client generators](/docs/cli/generators/client#setupsyncopenapi-zustand).
 - `setup:sync:openapi-typescript [options] <openapiFilepath> <outfile>` - Generates an initializer in your app for converting one of your openapi files to typescript.
 
 ### Sync Commands

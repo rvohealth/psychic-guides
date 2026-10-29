@@ -1,5 +1,5 @@
 ---
-ai_summary: "Attribute methods for accessing and setting model attributes. Bypassing methods (getAttributes, getAttribute, setAttributes, setAttribute) bypass custom getters/setters. Non-bypassing methods (assignAttributes, assignAttribute) use custom setters. Decimal columns return JavaScript number. Use serializer precision option for decimal places."
+ai_summary: "Attribute methods for accessing and setting model attributes. Bypassing methods (getAttributes, getAttribute, setAttributes, setAttribute) bypass custom getters/setters. Non-bypassing methods (assignAttributes, assignAttribute) use custom setters; setAttributes still runs the setter of a non-column key or a json/jsonb column, and an Encrypted backing column accepts only decryptable ciphertext or null. Decimal columns return JavaScript number. The serializer precision option rounds the rendered number (OpenAPI shape unchanged)."
 ---
 # attributes
 
@@ -9,7 +9,7 @@ Attributes are usually set as part of [`create`](./creating) or [`update`](./upd
 
 PostgreSQL `numeric`/`decimal` columns return JavaScript `number` — not `string` or a `Decimal` wrapper. Dream's type-sync converts these to TypeScript `number`, so `DreamColumn<Place, 'latitude'>` resolves to `number | null` (or `number` if NOT NULL). No `Number(value)` coercion is needed when reading.
 
-To control how many decimal places appear in a response, use the `precision` option on the serializer attribute rather than rounding in application code. This keeps the OpenAPI shape and rendered output consistent:
+To control how many decimal places appear in a response, use the `precision` option on the serializer attribute rather than rounding in application code. It rounds the rendered number to that many decimal places:
 
 ```ts
 // In your serializer
@@ -19,7 +19,7 @@ To control how many decimal places appear in a response, use the `precision` opt
 .delegatedAttribute('place', 'latitude', { precision: 7 })
 ```
 
-This handles the common floating-point quirk where `1.1 + 2.2` becomes `3.3000000000000003` — a value that rounds cleanly to `3.30` at the precision the schema actually cares about.
+This handles the common floating-point quirk where `1.1 + 2.2` becomes `3.3000000000000003`: at `precision: 2`, it renders as `3.3`. `precision` changes only the rendered value; the OpenAPI shape is unchanged.
 
 ## Branching on enum values
 
@@ -111,11 +111,13 @@ user.assignAttribute('email', 'sally@gmail.com')
 Dream splits attribute assignment into two paths:
 
 - `create()`, `update()`, `assignAttribute`/`assignAttributes`, and a plain `this.email = ...` **run** your custom setter.
-- `setAttribute`/`setAttributes` **bypass** custom setters and write the attribute bag directly — use these when you deliberately want the untransformed value, and inside a setter's own body (to avoid re-entering the setter and recursing infinitely).
+- `setAttribute`/`setAttributes` **bypass** custom setters and write the attribute bag directly — use these when you deliberately want the untransformed value, and `setAttribute` inside a setter's own body (to avoid re-entering the setter and recursing infinitely). `setAttributes` still runs the setter of a key that is not a column, and of a `json`/`jsonb` column.
 
-So input arriving through `create`/`update`/extracted params is transformed, while internal hydration (loading a row from the database) writes raw and is never double-transformed.
+So input arriving through `create`/`update`/extracted params is transformed, while internal hydration (loading a row from the database) writes raw and is never double-transformed, `json`/`jsonb` columns aside.
 
-A `{ skipHooks: true }` **query** update — `Booking.where(...).update(attrs, { skipHooks: true })` — never instantiates a model, so no setter runs at all: the attribute names go into the `UPDATE` as given and any transform is silently skipped. Naming an [`@deco.Encrypted`](/docs/models/decorators/encrypted) column's backing column this way throws unless the value is `null`. To update an encrypted column, use a path that instantiates the model — a plain instance update, or a query update with `{ lock: true }` — and write through the plaintext property. The instance form, `instance.update(attrs, { skipHooks: true })`, is unaffected by this distinction — it still assigns through `assignAttributes`, so custom setters still run; `skipHooks` there means lifecycle hooks, not setters.
+An [`@deco.Encrypted`](/docs/models/decorators/encrypted) property is still encrypted by `setAttributes`, and its backing `encrypted<Name>` column accepts only decryptable ciphertext or `null` from `setAttribute`/`setAttributes`, throwing `DoNotSetEncryptedFieldsDirectly` otherwise.
+
+A `{ skipHooks: true }` **query** update — `Booking.where(...).update(attrs, { skipHooks: true })` — never instantiates a model, so no setter runs at all: the attribute names go into the `UPDATE` as given and any transform is silently skipped. Naming an [`@deco.Encrypted`](/docs/models/decorators/encrypted) column's backing column this way throws unless the value is `null`. To update an encrypted column, use a path that instantiates the model — an instance update, a query update without `skipHooks`, or a query update with `{ lock: true }` (with or without `skipHooks`) — and write through the plaintext property. The instance form, `instance.update(attrs, { skipHooks: true })`, is unaffected by this distinction — it still assigns through `assignAttributes`, so custom setters still run; `skipHooks` there means lifecycle hooks, not setters.
 
 ## Transforming a column on write
 

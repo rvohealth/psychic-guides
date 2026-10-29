@@ -1,7 +1,7 @@
 ---
 sidebar_position: 4
 title: services
-ai_summary: "Classes extending ApplicationBackgroundedService provide background and backgroundWith methods. Background methods by calling this.background('_methodName', args). Keep job arguments to IDs/scalars — including composed strings that embed a secret — look records up with find, use commit hooks when enqueueing from model lifecycle hooks, and never catch-and-continue inside a backgrounded method. backgroundJobConfig is class-level, governing every method on the service, and only priority is overridable per call. Every dispatch appends the BullMQ Job as a final argument, so no parameter of a backgrounded method may carry a default or a ?."
+ai_summary: "Classes extending ApplicationBackgroundedService provide background and backgroundWith methods. Background methods by calling this.background('_methodName', args). Keep job arguments to IDs/scalars — including composed strings that embed a secret — look records up with find, use commit hooks when enqueueing from model lifecycle hooks, hold follow-on work that must not be lost in two timestamps swept by a scheduled job, and never catch-and-continue inside a backgrounded method. backgroundJobConfig is class-level, governing every method on the service, and only priority is overridable per call. Every dispatch appends the BullMQ Job as a final argument, so no parameter of a backgrounded method may carry a default or a ?."
 ---
 
 # Services
@@ -64,6 +64,72 @@ class BookingMailerService extends ApplicationBackgroundedService {
 
 If you enqueue from model hooks, use an after-commit hook such as `@deco.AfterCreateCommit`, `@deco.AfterUpdateCommit`, or `@deco.AfterSaveCommit`. This applies to any enqueue path: calling a backgrounded service, calling `this.background(...)` on a backgrounded model, or calling a helper that queues the job. Do not enqueue from inside an open transaction; the worker can race the commit and either look up a record before it exists or read stale persisted data after an update. A service that takes a `txn` parameter and also calls `background(...)` in its body is almost always this bug — enqueue after the transaction resolves instead, or let a commit hook do it.
 
+## Work that must not be lost after a commit
+
+A commit hook runs after its write has committed, so an enqueue that fails inside it leaves the write in place with nothing queued (see [after commit hooks](/docs/models/hooks#after-commit-hooks)), and a deploy or crash can land between a commit and the job meant to follow it. When losing that follow-on work costs something real, such as the charge for a confirmed booking, let two timestamps hold it: the confirming write sets `chargeInitiatedAt`, the job sets `chargeCompletedAt` after the gateway call, and a booking with the first and not the second is owed, whatever became of its job. The commit hook is the fast path; a scheduled sweep that re-enqueues every owed booking is the guarantee.
+
+The confirming write claims the booking with a [locked update](/docs/models/locking), and the model's commit hook hands it to the service:
+
+```ts
+await Booking.where({ id: booking.id, status: 'pending' }).update(
+  { status: 'confirmed', chargeInitiatedAt: DateTime.now() },
+  { lock: true },
+)
+```
+
+```ts
+// app/models/Booking.ts
+@deco.AfterUpdateCommit({ ifChanged: ['chargeInitiatedAt'] })
+public async chargeGuest(this: Booking) {
+  if (this.chargeInitiatedAt) await BookingChargeService.charge(this)
+}
+```
+
+```ts
+// app/services/BookingChargeService.ts
+import { range } from '@rvoh/dream/utils'
+import { DateTime } from '@rvoh/dream'
+
+// the gateway keeps an idempotency key for 24 hours; stay inside that
+const keyWindowStart = () => DateTime.now().minus({ hours: 20 })
+
+export default class BookingChargeService extends ApplicationBackgroundedService {
+  public static async charge(booking: Booking) {
+    await this.background('_charge', booking.id)
+  }
+
+  public static async _charge(bookingId: string) {
+    const booking = await Booking.findBy({
+      id: bookingId,
+      chargeInitiatedAt: range(keyWindowStart()),
+      chargeCompletedAt: null,
+    })
+    if (!booking) return
+    await PaymentGateway.charge(booking, { idempotencyKey: `booking-charge-${booking.id}` })
+    await booking.update({ chargeCompletedAt: DateTime.now() })
+  }
+
+  // called every minute by a scheduled service
+  public static async chargeOwed() {
+    await this.background('_chargeOwed')
+  }
+
+  public static async _chargeOwed() {
+    await Booking.where({
+      // leave the last two minutes to the commit hook's fast path
+      chargeInitiatedAt: range(keyWindowStart(), DateTime.now().minus({ minutes: 2 })),
+      chargeCompletedAt: null,
+    }).findEach(async booking => {
+      await this.charge(booking)
+    })
+  }
+}
+```
+
+The lookup in `_charge` only skips work that is no longer owed. Two overlapping runs both pass it, and a charge can succeed before `chargeCompletedAt` is saved, so the idempotency key is what makes a repeat harmless. It does so only while the gateway keeps the key, commonly 24 hours; past that, a repeat is a new charge, which is why the job and the sweep both stop at 20 hours. Report anything owed beyond that window for a person to reconcile against the gateway, from its own scheduled task with a cutoff an hour past the window, so it never reports a booking a job may still charge.
+
+A write that ends the obligation, such as a cancellation, clears `chargeInitiatedAt` in the same write, so neither the job nor the sweep picks the booking up. When adding the two columns to a table that already holds charged bookings, backfill `chargeCompletedAt` beside any `chargeInitiatedAt` you backfill, so only new confirmations read as owed.
+
 ## Every dispatch appends the `Job`, so no parameter may be optional
 
 Psychic appends the BullMQ `Job` as a final argument to every dispatched method; `this.background(...)` and `this.backgroundWith(...)` pass only the arguments before it. A method that wants the `Job` declares it as a final parameter (see [Logging in background jobs](./overview#logging-in-background-jobs)).
@@ -92,20 +158,27 @@ The bar for adding a `try/catch` inside a class extending `ApplicationBackground
 
 ```ts
 // WRONG — log-and-continue inside a backgrounded service
-private static async _importAll(records: Record[]) {
-  for (const record of records) {
+public static async _importAll(placeIds: string[]) {
+  for (const placeId of placeIds) {
     try {
-      await this.importOne(record)
+      await this.importOne(placeId)
     } catch (error) {
       console.error('Failed:', error) // BullMQ never sees this; job marks success
     }
   }
 }
 
+// RIGHT — let the first failure propagate, and let BullMQ retry the whole job
+public static async _importAll(placeIds: string[]) {
+  for (const placeId of placeIds) {
+    await this.importOne(placeId)
+  }
+}
+
 // ALSO RIGHT — fan out to per-record jobs, each retried independently by BullMQ
-public static async importAll(records: Record[]) {
-  for (const record of records) {
-    await this.background('_importOne', record.id)
+public static async importAll(places: Place[]) {
+  for (const place of places) {
+    await this.background('_importOne', place.id)
   }
 }
 ```

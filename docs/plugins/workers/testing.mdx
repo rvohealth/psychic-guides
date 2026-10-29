@@ -5,7 +5,9 @@ ai_summary: >-
   Backgrounded methods invoked immediately during tests by default. Set
   testInvocation to 'manual' to push jobs into BullMQ queues. Use
   WorkerTestUtils.clean() to reset Redis between tests. Use
-  WorkerTestUtils.work() to manually work off jobs.
+  WorkerTestUtils.work() to manually work off jobs. WorkerTestUtils comes from
+  @rvoh/psychic-workers/utils. WorkerTestUtils.workScheduled() runs a
+  scheduled job's pending occurrence under either testInvocation mode.
 pagination_next: null
 ---
 
@@ -48,7 +50,7 @@ Always switch back to `automatic` in cleanup when you enable manual mode inside 
 Between test runs, it is important to reset redis, similar to the need to reset a database between runs. Each run should have a pristine copy of redis to manipulate. We export a special util to help make this easy for you, which you can use like so:
 
 ```ts
-import { WorkerTestUtils } from '@rvoh/psychic-workers'
+import { WorkerTestUtils } from '@rvoh/psychic-workers/utils'
 
 beforeEach(async () => {
   await WorkerTestUtils.clean()
@@ -72,7 +74,7 @@ it('does a thing', async () => {
 })
 ```
 
-You may also have scheduled jobs in the mix. For this, we provide a special `workScheduled` method, which can target specific queues and classes.
+You may also have scheduled jobs in the mix. For this, we provide a special `workScheduled` method, which can target specific queues and classes. It works under either `testInvocation` mode: `schedule(...)` registers a real BullMQ job scheduler even under the default `automatic` mode, and nothing runs until `workScheduled` works off its pending occurrence. That makes it the way to exercise a scheduled method in a spec without switching to manual mode.
 
 ```ts
 // manually invokes all delayed jobs right now

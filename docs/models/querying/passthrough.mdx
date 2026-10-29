@@ -42,7 +42,7 @@ export default class Place extends ApplicationModel {
   })
   public currentLocalizedText: LocalizedText
 
-  // HasOne fixed to the always-present default locale, used as a fallback
+  // HasOne fixed to the default locale, used as a fallback
   // when the requested locale has no LocalizedText row
   @deco.HasOne('LocalizedText', {
     polymorphic: true,
@@ -53,25 +53,28 @@ export default class Place extends ApplicationModel {
 }
 ```
 
-Guarantee the fallback row exists by creating it whenever the parent record is created:
+Guarantee the fallback row exists by creating it whenever the parent record is created. Binding the create to the hook's `txn` keeps it inside the parent's transaction when there is one:
 
 ```ts
 @deco.AfterCreate()
-public async createDefaultLocalizedText(this: Place) {
-  await this.createAssociation('localizedTexts', { locale: 'en-US', title: `My ${this.style}` })
+public async createDefaultLocalizedText(this: Place, txn: DreamTransaction<Dream> | null) {
+  await this.txn(txn).createAssociation('localizedTexts', { locale: 'en-US', title: `My ${this.style}` })
 }
 ```
 
 On the serializer side, layer a `delegatedAttribute('fallbackCurrentLocalizedText', ...)` under a `delegatedAttribute('currentLocalizedText', ...)` so a record with no translation for the requested locale still renders the default-locale value instead of going blank. See [serializers — layering two `delegatedAttribute`s onto the same key](/docs/serializers/attributes#layering-two-delegatedattributes-onto-the-same-key) for that pattern, and [preloadFor](/docs/models/querying/preloadFor) for how both associations get loaded automatically.
 
-A unique index on the polymorphic + locale columns keeps this one-row-per-locale invariant enforced at the database level:
+A unique index on the polymorphic + locale columns keeps this one-row-per-locale invariant enforced at the database level. `LocalizedText` carries `@SoftDelete()` because it sits in its parent's `dependent: 'destroy'` chain, so the index covers only live rows — otherwise a deleted translation could never be re-added:
 
 ```ts
+import { sql, SqlBool } from 'kysely'
+
 await db.schema
   .createIndex('localized_texts_localizable_for_locale')
   .on('localized_texts')
   .columns(['localizable_type', 'localizable_id', 'locale'])
   .unique()
+  .where(sql<SqlBool>`deleted_at IS NULL`)
   .execute()
 ```
 

@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-ai_summary: "Encrypt.encrypt() and Encrypt.decrypt() provide simple encryption/decryption. Must match algorithm and key for encryption and decryption. Recommended to abstract into helper functions. Supports key rotation with current/legacy keys."
+ai_summary: "Encrypt (from @rvoh/dream/utils) .encrypt() and .decrypt() provide simple encryption/decryption; decrypt returns what was encrypted, JSON-parsed. Must match algorithm and key for encryption and decryption. Recommended to abstract into helper functions. Decryption failures throw DecryptionError, DecryptionRotationError (when a legacy key was passed and neither key opens the value) or DecryptionParseError, from @rvoh/dream/errors; catch exactly DecryptionError and DecryptionRotationError for user-supplied ciphertext. Supports key rotation with current/legacy keys, onLegacyKeyUsed, and Encrypt.reencrypt for re-encrypting a stored value under the current key."
 ---
 
 # Encrypting and decrypting
@@ -8,6 +8,8 @@ ai_summary: "Encrypt.encrypt() and Encrypt.decrypt() provide simple encryption/d
 Encrypting and decrypting are very simple using the Encrypt class, provided you have the correct keys generated for your given algorithms. This is usually simple, since most applications will only use one algorithm and one key throughout their application, but if you are using multiple different encryption algorithms in different scenarios, you need to make sure to always match up the correct encryption keys with the correct encryption algorithms. Additionally, anything encrypted with a given algorithm _must_ be decrypted using that same algorithm and key, or else it will fail. This may be obvious to you, but to many this can be an easy and confusing mis-step when building encryption for their application.
 
 ```ts
+import { Encrypt } from '@rvoh/dream/utils'
+
 const encrypted = Encrypt.encrypt('helloworld', {
   algorithm: 'aes-256-gcm',
   key: AppEnv.string('APP_ENCRYPTION_KEY'),
@@ -21,6 +23,8 @@ const decrypted = Encrypt.decrypt(encrypted, {
 console.log(decrypted)
 // 'helloworld'
 ```
+
+`Encrypt.encrypt` serializes the value it is given as JSON before encrypting it, and `Encrypt.decrypt` parses it back, so decrypt returns what was encrypted — a string stays a string, and an object passed to `encrypt` comes back from `decrypt` as an object.
 
 ## Abstracting
 
@@ -75,5 +79,40 @@ export default function decrypt<RetType>(val: any) {
       key: AppEnv.string('APP_LEGACY_ENCRYPTION_KEY'),
     }
   )
+}
+```
+
+To find the values that still need the legacy key, pass `onLegacyKeyUsed` as a fourth argument. It is called, with no arguments, just before a call returns a value only the legacy key opened:
+
+```ts
+Encrypt.decrypt<RetType>(val, currentOpts, legacyOpts, {
+  onLegacyKeyUsed: () => PsychicApp.logWithLevel('warn', 'value is still encrypted with the legacy key'),
+})
+```
+
+`Encrypt.reencrypt(value, current, legacy)` opens a stored value with either key and returns it encrypted under `current`, so reading it no longer needs the legacy key. Use it for values you store yourself; for `@deco.Encrypted` columns, see [rotating column encryption keys](/docs/utils/encryption/internal#rotating-column-encryption-keys).
+
+## Decryption errors
+
+`Encrypt.decrypt` returns `null` for a `null` or `undefined` input. Otherwise it throws rather than returning `null` when it can't open a value, and its error classes export from `@rvoh/dream/errors`:
+
+- `DecryptionError` — the key does not open the value: it was tampered with, corrupted, or encrypted under a different key. Thrown when no legacy key is passed.
+- `DecryptionRotationError` — thrown instead when a legacy key is passed and neither key opens the value. Neither class extends the other.
+- `DecryptionParseError` — the key opened the value, but its contents aren't valid JSON. This points at an app bug, so it is not retried with the legacy key.
+
+The class tells you only whether a legacy key was passed, not what went wrong: with one, every value no key opens is a `DecryptionRotationError`; without one, every such value is a `DecryptionError`, including one encrypted under a key that was dropped too early.
+
+When the app decrypts user-supplied ciphertext itself, such as a bearer token, catch exactly `DecryptionError` and `DecryptionRotationError`, treat the request as unauthenticated, and let anything else propagate:
+
+```ts
+import { DecryptionError, DecryptionRotationError } from '@rvoh/dream/errors'
+
+function userIdFromToken(token: string): string | null {
+  try {
+    return decrypt<{ userId: string }>(token)?.userId ?? null
+  } catch (err) {
+    if (err instanceof DecryptionError || err instanceof DecryptionRotationError) return null
+    throw err
+  }
 }
 ```

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: config
-ai_summary: "i18n configuration lives in src/conf/locales/. Locale files export the same payload shape; src/conf/locales/index.ts maps locale keys to files. Tie supported locales to a generated database enum rather than a hand-written union type, so locales are defined in one place. Supports regional locale resolution (en-US, en-UK)."
+ai_summary: "i18n configuration: add a locale file per language in src/conf/locales/ (same payload shape in each), register each in src/conf/locales/index.ts, and point src/utils/i18n.ts (supportedLocales, DEFAULT_LOCALE, BASE_LOCALE) at the supported locales. Tie supported locales to a generated database enum rather than a hand-written union type. A locale resolves to its language file by prefix (en-US to en). A spec asserting I18nProvider.localeDifferences(locales, BASE_LOCALE) is empty catches untranslated keys and mismatched placeholders."
 ---
 
 # i18n - config
 
-Locale files for a Psychic app live in `src/conf/locales/`. By default, an English translation file is set up for you, but any other languages you wish to support can be provided as well.
+Locale files for a Psychic app live in `src/conf/locales/`. By default, an English translation file is set up for you; add a locale file for each other language you wish to support.
 
 ```ts
 // src/conf/locales/en.ts
@@ -32,13 +32,13 @@ export default {
 
 Within each translation file, you will want to make sure to provide the same payload shape, so that translations can be correctly resolved in all locales.
 
-Map the locale keys to their files in `src/conf/locales/index.ts`:
+Register each locale file in `src/conf/locales/index.ts`, keyed by its language:
 
 ```ts
 // src/conf/locales/index.ts
 
-import en from './en.js'
-import es from './es.js'
+import en from '#conf/locales/en.js'
+import es from '#conf/locales/es.js'
 
 export default {
   en,
@@ -50,38 +50,50 @@ export default {
 
 Resist the urge to hand-write a union type for your supported locales (`type SupportedLocales = 'en' | 'es'`) alongside this file. Instead, back your locale column with a database enum in a migration, and let the generated `LocalesEnum` / `LocalesEnumValues` types (in `@src/types/db.js`) be the single source of truth. That way the list of supported locales is defined in exactly one place — the migration — and flows through the type system from there, instead of drifting out of sync with a manually maintained type.
 
-Expose the supported locales for runtime validation (for example, when checking an incoming `Accept-Language` header) from the same file that builds your `i18n` function:
+Then point the i18n utility, `src/utils/i18n.ts`, at your supported locales. It exposes them for picking the locale a request asks for (from its `Accept-Language` header), and builds your `i18n` function:
 
 ```ts
 // src/utils/i18n.ts
 
-import locales from '@conf/locales/index.js'
+import locales from '#conf/locales/index.js'
 import { I18nProvider } from '@rvoh/psychic/system'
-import { LocalesEnumValues } from '@src/types/db.js'
+import { LocalesEnumValues } from '#src/types/db.js'
 
 export function supportedLocales() {
   return LocalesEnumValues
 }
 
-export default I18nProvider.provide(locales, 'en')
+// the locale a request gets when its Accept-Language header is missing, is `*`,
+// or accepts none of the supported locales. LocalesEnumValues is alphabetical,
+// so the default is named rather than taken from the list
+export const DEFAULT_LOCALE: ReturnType<typeof supportedLocales>[number] = 'en-US'
+
+// the base locale: i18n falls back to it for a key the requested locale is missing
+export const BASE_LOCALE = 'en'
+
+export default I18nProvider.provide(locales, BASE_LOCALE)
 ```
 
-See [usage](/docs/utils/i18n/usage) for how `I18nProvider.provide` uses these locale files, and for using `supportedLocales()` to validate the locale a request asks for.
+See [usage](/docs/utils/i18n/usage) for how `I18nProvider.provide` uses these locale files, and for how a controller picks the locale a request asks for.
 
-## Regional locale resolution
+## Catch missing translations in a spec
 
-While configurations demonstrate base locales like `en` and `es`, Psychic also supports more specific locale resolutions, such as `en-US` vs `en-UK`. To create locales which can resolve to these specific regions, you can simply provide direct overrides for each region, like so:
+At runtime, a key missing from a locale quietly falls back to the base locale's text, so a missing translation would otherwise only show up as untranslated text in front of a user. `I18nProvider.localeDifferences` compares every locale with the base locale and returns one readable line per difference: a key the locale is missing, a key the base locale doesn't have, a string where the base has nested translations (or the reverse), or different `%{…}` placeholders than the base's text for that key. Assert that the list is empty:
 
 ```ts
-// src/conf/locales/index.ts
+// spec/unit/conf/locales.spec.ts
 
-import en from './en.js'
-import enUk from './en-UK.js'
+import locales from '#conf/locales/index.js'
+import { BASE_LOCALE } from '#src/utils/i18n.js'
+import { I18nProvider } from '@rvoh/psychic/system'
 
-export default {
-  en,
-  ['en-UK']: enUk,
-}
+describe('locales', () => {
+  it('match the base locale key for key and placeholder for placeholder', () => {
+    expect(I18nProvider.localeDifferences(locales, BASE_LOCALE)).toEqual([])
+  })
+})
 ```
 
-With this in place, Psychic will carefully resolve the `en-UK` locale to the provided override. Any other `en-*` locale value is matched by its language prefix and resolved to the base `en` file — for example, a request with locale `en-AU` resolves to `en`, not `en-UK`.
+## How a locale resolves to a file
+
+A locale is matched to a locale file by its language prefix alone: `en-US`, `en-GB` and `en-AU` all resolve to the `en` file, and `es-ES` to `es`. A locale whose language has no file uses the base locale's file.

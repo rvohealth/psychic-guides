@@ -17,28 +17,29 @@ re-sorting transaction, the position may temporarily collide.
 
 ```console
 pnpm psy g:migration --help
-pnpm psy g:migration add-deferrable-unique-constraint-to-rooms
+pnpm psy g:migration add-deferrable-unique-constraint-on-rooms
 pnpm psy db:migrate
-# After the requested git reset, local test DB migration history still referenced the old discarded migration filename; reset the test DB before verifying this replayed commit.
-pnpm psy db:reset
 pnpm uspec spec/unit/models/Room.spec.ts
 pnpm uspec
 ```
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UqRHFQRjCHrGh9xPhFnGUR
 ``````
 
 ## Changes
 
 ``````
 diff --git a/api/spec/unit/models/Room.spec.ts b/api/spec/unit/models/Room.spec.ts
-index 2e966a8..591ac33 100644
+index cba31fa..1bfa16f 100644
 --- a/api/spec/unit/models/Room.spec.ts
 +++ b/api/spec/unit/models/Room.spec.ts
 @@ -1,5 +1,8 @@
- import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
-+import createPlace from '@spec/factories/PlaceFactory.js'
-+import createBedroom from '@spec/factories/Room/BedroomFactory.js'
- import createDen from '@spec/factories/Room/DenFactory.js'
-+import createKitchen from '@spec/factories/Room/KitchenFactory.js'
+ import createLocalizedText from '#spec/factories/LocalizedTextFactory.js'
++import createPlace from '#spec/factories/PlaceFactory.js'
++import createBedroom from '#spec/factories/Room/BedroomFactory.js'
+ import createDen from '#spec/factories/Room/DenFactory.js'
++import createKitchen from '#spec/factories/Room/KitchenFactory.js'
  
  describe('Room', () => {
    it('has many LocalizedTexts', async () => {
@@ -61,7 +62,7 @@ index 2e966a8..591ac33 100644
 +  })
  })
 diff --git a/api/src/app/models/Place.ts b/api/src/app/models/Place.ts
-index 4d3cb29..d06535b 100644
+index 3ed5fa2..3d52828 100644
 --- a/api/src/app/models/Place.ts
 +++ b/api/src/app/models/Place.ts
 @@ -37,7 +37,7 @@ export default class Place extends ApplicationModel {
@@ -74,7 +75,7 @@ index 4d3cb29..d06535b 100644
  
    @deco.HasMany('LocalizedText', { polymorphic: true, on: 'localizableId', dependent: 'destroy' })
 diff --git a/api/src/app/models/Room.ts b/api/src/app/models/Room.ts
-index 2b15ff5..4c952fb 100644
+index 4a48792..95ea1d7 100644
 --- a/api/src/app/models/Room.ts
 +++ b/api/src/app/models/Room.ts
 @@ -21,7 +21,10 @@ export default class Room extends ApplicationModel {
@@ -88,11 +89,11 @@ index 2b15ff5..4c952fb 100644
    public createdAt: DreamColumn<Room, 'createdAt'>
    public updatedAt: DreamColumn<Room, 'updatedAt'>
    public deletedAt: DreamColumn<Room, 'deletedAt'>
-diff --git a/api/src/db/migrations/1782926679181-add-deferrable-unique-constraint-to-rooms.ts b/api/src/db/migrations/1782926679181-add-deferrable-unique-constraint-to-rooms.ts
+diff --git a/api/src/db/migrations/1793241030653-add-deferrable-unique-constraint-on-rooms.ts b/api/src/db/migrations/1793241030653-add-deferrable-unique-constraint-on-rooms.ts
 new file mode 100644
 index 0000000..556bb0a
 --- /dev/null
-+++ b/api/src/db/migrations/1782926679181-add-deferrable-unique-constraint-to-rooms.ts
++++ b/api/src/db/migrations/1793241030653-add-deferrable-unique-constraint-on-rooms.ts
 @@ -0,0 +1,19 @@
 +import { DreamMigrationHelpers } from '@rvoh/dream/db'
 +import { Kysely } from 'kysely'

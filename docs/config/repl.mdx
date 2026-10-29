@@ -15,11 +15,11 @@ The `conf/repl.ts` file is used for bootstrapping the REPL (which happens when y
 ```ts
 // conf/repl.ts
 
-import './loadEnv.js'
+import '#conf/loadEnv.js'
 
 import * as repl from 'node:repl'
 import { DreamCLI } from '@rvoh/dream/system'
-import initializePsychicApp from './system/initializePsychicApp.js'
+import initializePsychicApp from '#conf/system/initializePsychicApp.js'
 
 const replServer = repl.start('> ')
 
@@ -29,14 +29,14 @@ export default (async function () {
 })()
 ```
 
-The boot order matters: env is loaded first (the `import './loadEnv.js'` side effect), then the Psychic app is initialized, and only then does `DreamCLI.loadRepl` — imported from `@rvoh/dream/system` — populate the REPL's global context. `DreamCLI.loadRepl` is what automatically loads all models and services to the global context (though beware, the names of the classes will shift in this context to be based around file path, rather than the name of the class itself).
+The boot order matters: env is loaded first (the `import '#conf/loadEnv.js'` side effect), then the Psychic app is initialized, and only then does `DreamCLI.loadRepl` — imported from `@rvoh/dream/system` — populate the REPL's global context. `DreamCLI.loadRepl` is what automatically loads your models (those with a table) and the default export of each services file to the global context, along with some Dream utilities (though beware, the names of the classes will shift in this context to be based around file path, rather than the name of the class itself). See [the repl CLI guide](/docs/cli/repl) for the naming rules.
 
 ## Adding custom globals
 
 If you need to bind anything else to the global context, you can simply attach it to `replServer.context`, like so:
 
 ```ts
-import MyCustomClass from '../services/MyCustomClass'
+import MyCustomClass from '#services/MyCustomClass.js'
 
 export default (async function () {
   await initializePsychicApp()
@@ -54,8 +54,8 @@ NODE_ENV=development pnpm console
 
 ## Dynamically importing files
 
-When in the REPL, you may find you need to import something into the REPL context that doesn't exist. For example, a helper function within your app somewhere. In this case, you can use the `dynamic import` syntax to bring those files in dynamically, like so:
+When in the REPL, you may find you need to import something into the REPL context that doesn't exist. For example, a named export from a helper file within your app somewhere. In this case, you can use the `dynamic import` syntax to bring those files in dynamically, with a path from `api/` (under the compiled `console:js`, the same file is at `./dist/src/...`):
 
 ```ts
-myHelper = (await import('./src/app/services/Host/pricingHelpers.js')).default
+let { cleaningFee, formatNightly } = await import('./src/app/services/Booking/fees.js')
 ```

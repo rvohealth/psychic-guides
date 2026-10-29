@@ -1,13 +1,13 @@
 ---
 sidebar_position: 7
-ai_summary: "compact returns a copy of an object or array with null and undefined values removed."
+ai_summary: "compact returns a copy of an object or array with null and undefined values removed; other falsy values (false, 0, empty string) are kept."
 ---
 
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
 # compact
 
-Returns a copy of an object or array, with `null` and `undefined` values removed.
+Returns a copy of an object or array, with `null` and `undefined` values removed. Other falsy values — `false`, `0` and `''` — are kept.
 
 ```ts
 import { compact } from '@rvoh/dream/utils'
@@ -17,4 +17,7 @@ compact(['hello', null, undefined, 'world'])
 
 compact({ hello: 'world', goodbye: null })
 // { hello: 'world' }
+
+compact([0, false, '', null])
+// [0, false, '']
 ```

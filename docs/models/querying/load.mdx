@@ -41,7 +41,7 @@ You can chain multiple `load` calls to load several associations at once, or eve
 let user = await User.firstOrFail() // Fetches a user without posts or pets
 
 // Load 'posts' (where body is null) and 'pets'
-user = await user.load('posts', { body: null }).load('pets').execute()
+user = await user.load('posts', { and: { body: null } }).load('pets').execute()
 
 console.log(user.posts) // [Post{ body: null }, Post{ body: null }, ...]
 console.log(user.pets) // [Cat{}, Dog{}]
@@ -59,7 +59,7 @@ user = await user.load('posts', 'comments').execute()
 - **[`preload`](./preload.mdx)**: Used when initially fetching model(s) from the database. It loads the primary model(s) _and_ their specified associations in an optimized way (typically fewer queries). Use this when you know upfront what associated data you'll need.
 - **`load`**: Used on an _existing model instance_ to fetch additional associations. It always returns a new instance of the model. Use this when you already have a model instance and subsequently realize you need more of its associations.
 
-Both methods can take similar arguments for specifying which associations to load and any conditions for those associations.
+Both methods can take similar arguments for specifying which associations to load and any conditions for those associations. Conditions go under `and`, `andNot`, or `andAny`, as in `user.load('posts', { and: { body: null } })`.
 
 ## Checking if an Association is Loaded: `Dream#loaded()`
 

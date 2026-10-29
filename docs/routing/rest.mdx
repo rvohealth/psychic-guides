@@ -11,7 +11,7 @@ You can add routes using the standard HTTP methods, such as `GET`, `POST`, `PUT`
 
 ```ts // conf/routes.ts
 import { PsychicRouter } from '@rvoh/psychic'
-import PingController from '../app/controllers/PingController'
+import PingController from '#controllers/PingController.js'
 
 export default (r: PsychicRouter) => {
   r.get('/ping', PingController, 'ping')

@@ -71,7 +71,7 @@ Since `ObjectSerializer` doesn't have access to any database schema, you'll need
 
 When one serializer passes an `ObjectSerializer` function to another serializer's `rendersOne` or `rendersMany` (via the `serializer` option), export that `ObjectSerializer` function. Exported serializers register as named OpenAPI schemas; a local, non-exported nested serializer can generate an anonymous `Unnamed` schema instead, and multiple anonymous shapes can collapse into the same anonymous type — which causes generated clients to silently lose fields.
 
-Runtime serializer global names are built from the file path plus the export name, so the same exported function name in two different directories doesn't by itself cause a naming conflict at runtime. OpenAPI component names for named exports, though, are based on the export name alone, so two OpenAPI-visible serializers sharing an export name can still collide in the generated schema. When a view-model or computed-shape serializer's export name overlaps a Dream model serializer's domain noun, give it a distinct name — a `ViewSerializer` suffix is a reasonable convention.
+Runtime serializer global names are built from the directory plus the export name, so the same exported function name in two different directories doesn't by itself cause a naming conflict at runtime. OpenAPI component names for named exports, though, are based on the export name alone, so two OpenAPI-visible serializers sharing an export name can still collide in the generated schema. When a view-model or computed-shape serializer's export name overlaps a Dream model serializer's domain noun, give it a distinct name — a `ViewSerializer` suffix is a reasonable convention.
 
 ## a compound response is still one serializer
 
@@ -106,3 +106,5 @@ this.ok(place)
 ```
 
 `optional: true` keeps actions that leave the property unassigned from failing response validation. Export the nested `ObjectSerializer` so it registers as a named OpenAPI component, per the rule above. Either way, don't hand-write the `openapi` shape for the nested object — build it as an `ObjectSerializer` instead.
+
+To keep the shape off the model when rendering a single `Place`, hand it in with `this.serializerPassthrough({ availabilitySummary })` and render it with a [`customAttribute` returning its serializer](./attributes#customattribute-returning-a-serializer). Passthrough is one value for the whole render, so a collection takes the declared property instead. Every action rendering that serializer must then supply the value, or the field renders `null` and fails response validation.

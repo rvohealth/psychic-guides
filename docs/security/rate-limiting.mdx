@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Rate Limiting
-ai_summary: "Psychic's framework posture on rate-limiting: edge-tier protection first (WAF, CDN, reverse proxy, API gateway), app-tier middleware second for fine-grained per-route/per-user limits the edge cannot express. Mount via psy.use() or @BeforeAction. Do not hand-roll a Map-based limiter; use a Redis-backed package for multi-node deployments."
+ai_summary: "Psychic's framework posture on rate-limiting: edge-tier protection first (WAF, CDN, reverse proxy, API gateway), app-tier middleware second for fine-grained per-route/per-user limits the edge cannot express. Mount via psy.use() in an initializer (keeping the middleware module outside src/conf/initializers, which Psychic loads recursively as initializers) or @BeforeAction. Do not hand-roll a Map-based limiter; use a Redis-backed package for multi-node deployments."
 ---
 
 # Rate Limiting
@@ -45,11 +45,12 @@ App-tier rate limits are for the rules that need application knowledge: "login: 
 
 ### Mounting in Psychic
 
-Mount a rate-limiting middleware app-wide through `psy.use(...)` for a baseline per-IP cap, typically in an initializer:
+Mount a rate-limiting middleware app-wide through `psy.use(...)` for a baseline per-IP cap, typically in an initializer. Here `src/conf/system/rateLimit.ts` default-exports the Koa middleware your chosen package builds, next to the scaffold's own `requestLogger.ts`. Keep it outside `src/conf/initializers`: Psychic loads every file under that directory, subdirectories included, as an initializer and calls its default export with `psy`.
 
 ```ts
+// src/conf/initializers/rateLimit.ts
+import rateLimit from '#conf/system/rateLimit.js'
 import { PsychicApp } from '@rvoh/psychic'
-import { rateLimit } from './middleware/rateLimit.js'
 
 export default (psy: PsychicApp) => {
   psy.use(rateLimit)
@@ -59,9 +60,10 @@ export default (psy: PsychicApp) => {
 Or apply it per-endpoint with `@BeforeAction` on a specific controller when you need a tighter rule on a sensitive path:
 
 ```ts
+// src/app/controllers/SessionsController.ts
+import AuthedController from '#controllers/AuthedController.js'
 import { BeforeAction } from '@rvoh/psychic'
 import { HttpStatusTooManyRequests } from '@rvoh/psychic/errors'
-import AuthedController from './AuthedController.js'
 
 export default class SessionsController extends AuthedController {
   @BeforeAction({ only: ['create'] })

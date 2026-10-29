@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-ai_summary: "Psychic automatically uses serializers when rendering Dream instances. Supports implicit serializer lookup (default), explicit serializerKey option, and direct serializer instances. SerializerKey must match keys in model's serializers getter."
+ai_summary: "Psychic automatically uses serializers when rendering Dream instances. Supports implicit serializer lookup (default), explicit serializerKey option, and direct serializer instances. SerializerKey must match keys in model's serializers getter, whose values are the global names Dream registers for exported serializers. serializerPassthrough hands data to serializers; a query's .passthrough() only scopes DreamConst.passthrough associations."
 ---
 
 # serialization
@@ -52,6 +52,8 @@ class Place extends ApplicationModel {
 }
 ```
 
+Each value is the global name Dream registers for an exported serializer — the export name for a file at the root of `serializers/` (see [serializer file organization](/docs/serializers/generating#file-organization) for files in a subdirectory).
+
 ## Adding New Serializers
 
 When you need to add a new serializer for a model, follow these steps:
@@ -62,7 +64,7 @@ When you need to add a new serializer for a model, follow these steps:
 export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
   DreamSerializer(Place, place)
     .attribute('id')
-    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
+    .delegatedAttribute('currentLocalizedText', 'title')
     .customAttribute('displayStyle', () => i18n(passthrough.locale, `places.style.${place.style}`), {
       openapi: 'string',
     })
@@ -119,7 +121,19 @@ export default class PlacesController extends PsychicController {
 
 ## passthrough
 
-In some cases, you may need to send passthrough data to your serializers. This is useful, for example, if you have top level variables that you need to expose to all serializers, such as the locale for the current user.
+In some cases, you may need to send passthrough data to your serializers. This is useful, for example, if you have top level variables that you need to expose to all serializers, such as the locale for the current user. Set it with `this.serializerPassthrough(...)`, typically in a `@BeforeAction` on a base controller (see [serializer passthrough data](/docs/serializers/render#serializer-passthrough-data)); every serializer the response renders receives it as its second argument.
+
+A query's `.passthrough()` is a separate channel: it scopes associations declared with `DreamConst.passthrough`, such as `currentLocalizedText`, and never reaches a serializer. The example below uses both — the query passthrough so `currentLocalizedText` loads the text for the request's locale, and the serializer passthrough so `PlaceForGuestsSerializer` can translate `style`:
+
+```ts
+// src/app/controllers/V1/Guest/BaseController.ts
+export default class V1GuestBaseController extends V1BaseController {
+  @BeforeAction()
+  public configureSerializers() {
+    this.serializerPassthrough({ locale: this.locale })
+  }
+}
+```
 
 ```ts
 // src/app/controllers/V1/Guest/PlacesController.ts
@@ -178,7 +192,7 @@ export default class Place extends ApplicationModel {
 export const PlaceSummaryForGuestsSerializer = (place: Place) =>
   DreamSerializer(Place, place)
     .attribute('id')
-    .delegatedAttribute('currentLocalizedText', 'title', { openapi: 'string' })
+    .delegatedAttribute('currentLocalizedText', 'title')
 
 export const PlaceForGuestsSerializer = (place: Place, passthrough: { locale: LocalesEnum }) =>
   PlaceSummaryForGuestsSerializer(place)

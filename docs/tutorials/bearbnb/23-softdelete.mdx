@@ -23,25 +23,35 @@ pnpm psy g:migration add-deleted-at-to-rooms deleted_at:datetime:optional
 ```
 
 To cascade deletion (regular or soft), add `dependent: 'destroy'` to the relevant association declarations.
+
+A soft-deleted row stays in its table, so a plain unique constraint on a natural key would keep reserving it. The unique constraints on `users.email`, `guests.user_id` and `hosts.user_id` are replaced with unique indexes that only constrain live rows (`WHERE deleted_at IS NULL`), so, for example, a new User can reuse the email address of a destroyed User:
+
+```console
+pnpm psy g:migration make-natural-key-unique-indexes-partial
+pnpm psy db:migrate
+```
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UqRHFQRjCHrGh9xPhFnGUR
 ``````
 
 ## Changes
 
 ``````
 diff --git a/api/spec/unit/models/Place.spec.ts b/api/spec/unit/models/Place.spec.ts
-index c4f54f5..6185ecc 100644
+index 41fa65d..d047aa1 100644
 --- a/api/spec/unit/models/Place.spec.ts
 +++ b/api/spec/unit/models/Place.spec.ts
 @@ -1,7 +1,12 @@
-+import HostPlace from '@models/HostPlace.js'
-+import LocalizedText from '@models/LocalizedText.js'
-+import Place from '@models/Place.js'
-+import Room from '@models/Room.js'
- import createHost from '@spec/factories/HostFactory.js'
- import createHostPlace from '@spec/factories/HostPlaceFactory.js'
- import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
- import createPlace from '@spec/factories/PlaceFactory.js'
-+import createKitchen from '@spec/factories/Room/KitchenFactory.js'
++import HostPlace from '#models/HostPlace.js'
++import LocalizedText from '#models/LocalizedText.js'
++import Place from '#models/Place.js'
++import Room from '#models/Room.js'
+ import createHost from '#spec/factories/HostFactory.js'
+ import createHostPlace from '#spec/factories/HostPlaceFactory.js'
+ import createLocalizedText from '#spec/factories/LocalizedTextFactory.js'
+ import createPlace from '#spec/factories/PlaceFactory.js'
++import createKitchen from '#spec/factories/Room/KitchenFactory.js'
  
  describe('Place', () => {
    it('has many Hosts (through hostPlaces)', async () => {
@@ -88,4 +98,68 @@ index c4f54f5..6185ecc 100644
 +    })
 +  })
  })
+diff --git a/api/spec/unit/models/User.spec.ts b/api/spec/unit/models/User.spec.ts
+index d3421d3..0e07941 100644
+--- a/api/spec/unit/models/User.spec.ts
++++ b/api/spec/unit/models/User.spec.ts
+@@ -11,4 +11,15 @@ describe('User', () => {
+       expect(guest instanceof Guest).toBe(true)
+     })
+   })
++
++  context('upon destruction', () => {
++    it('frees the email address for a new User', async () => {
++      const user = await createUser({ email: 'baloo@example.com' })
++      await user.destroy()
++
++      const newUser = await createUser({ email: 'baloo@example.com' })
++
++      expect(newUser.email).toEqual('baloo@example.com')
++    })
++  })
+ })
+diff --git a/api/src/db/migrations/1793240977579-make-natural-key-unique-indexes-partial.ts b/api/src/db/migrations/1793240977579-make-natural-key-unique-indexes-partial.ts
+new file mode 100644
+index 0000000..9396462
+--- /dev/null
++++ b/api/src/db/migrations/1793240977579-make-natural-key-unique-indexes-partial.ts
+@@ -0,0 +1,38 @@
++import { DreamMigrationHelpers } from '@rvoh/dream/db'
++import { Kysely, sql, type SqlBool } from 'kysely'
++
++// Users, Guests and Hosts are soft-deleted, which leaves their rows in the table.
++// A plain unique constraint would keep reserving a soft-deleted row's email or
++// user, so each is replaced by a unique index that only constrains live rows.
++const NATURAL_KEYS = [
++  { table: 'users', column: 'email', constraint: 'users_email_key', index: 'users_email_unique' },
++  { table: 'guests', column: 'user_id', constraint: 'guests_user_id_key', index: 'guests_user_id_unique' },
++  { table: 'hosts', column: 'user_id', constraint: 'hosts_user_id_key', index: 'hosts_user_id_unique' },
++] as const
++
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export async function up(db: Kysely<any>): Promise<void> {
++  for (const { table, column, constraint, index } of NATURAL_KEYS) {
++    await DreamMigrationHelpers.dropConstraint(db, constraint, { table })
++
++    await db.schema
++      .createIndex(index)
++      .on(table)
++      .column(column)
++      .unique()
++      .where(sql<SqlBool>`deleted_at IS NULL`)
++      .execute()
++  }
++}
++
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export async function down(db: Kysely<any>): Promise<void> {
++  for (const { table, column, constraint, index } of NATURAL_KEYS) {
++    await db.schema.dropIndex(index).execute()
++
++    await db.schema
++      .alterTable(table)
++      .addUniqueConstraint(constraint, [column])
++      .execute()
++  }
++}
 ``````

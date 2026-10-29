@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: resource
-ai_summary: "The generate:resource command creates a complete resource with model, migration, serializer, controller, and specs. Supports nested paths, column types (uuid, citext, encrypted, string, text, date, datetime, time, timetz, integer, decimal, enum, belongs_to), optional columns, and options like --only, --singular, --owning-model, --model-name, and --sti-base-serializer."
+ai_summary: "The generate:resource command creates a complete resource with model, migration, serializer, controller, and specs. Supports nested paths, column types (uuid, citext, encrypted, string, text, date, datetime, time, timetz, integer, decimal, enum, belongs_to), optional columns, and options like --only, --singular, --owning-model, --table-name, --model-name, and --sti-base-serializer."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -62,11 +62,11 @@ See the [resource generator documentation](/docs/controllers/generating) for det
 The generator includes `id`, `created_at`, `updated_at`, `deleted_at`, and `@SoftDelete()` by default. Use `--no-soft-delete` only when hard deletion is an intentional part of the model design.
 
 :::caution
-Nested resources — any `<path>` containing a `{}` parent-id placeholder — **must** pass `--owning-model` set to the fully-qualified parent model name (e.g. `--owning-model=Post` for `v1/posts/{}/comments`). This makes the generated controller scope every query and write through `associationQuery`/`createAssociation` on the owning model, and scaffolds the parent correctly throughout, including the generated controller spec. Omitting it produces a controller that doesn't scope to the parent, and a spec that references an unconstructed parent path param — the symptom is a spec that 404s on the missing parent instead of exercising the action. For `admin`/`internal` paths, which drop `currentUser` scoping, `--owning-model` is also how you reintroduce ownership scoping.
+Nested resources — any `<path>` containing a `{}` parent-id placeholder — **must** pass `--owning-model` set to the fully-qualified parent model name (e.g. `--owning-model=Place` for `v1/host/places/{}/rooms`). This makes the generated controller scope every query and write through `associationQuery`/`createAssociation` on the owning model, and scaffolds the parent correctly throughout, including the generated controller spec. Omitting it produces a controller that doesn't scope to the parent, and a spec that references a parent it never declares (`placeId: place.id` with no `place`). On `admin` paths, which drop owner scoping, `--owning-model` is also how you reintroduce it.
 :::
 
 :::caution
-`g:resource` unconditionally regenerates the model file, unit spec, factory, and serializer for the given model name — it does not check whether those files already exist, and there is no flag to skip them (`--only` controls which controller actions are scaffolded, not which files are written). Running `g:resource` for a model name that already has hand-edited associations, hooks, validations, or serializer fields will silently discard those edits. To add a controller and routes to a model that already exists, commit your work first, so you can review the regenerated model, spec, factory, and serializer and discard those changes.
+`g:resource` unconditionally regenerates the model file, unit spec, factory, and serializer for the given model name — it does not check whether those files already exist, and there is no flag to skip them (`--only` controls which controller actions are scaffolded, not which files are written). Running `g:resource` for a model name that already has hand-edited associations, hooks, validations, or serializer fields will silently discard those edits. To add a controller and routes to a model that already exists, commit your work first, so you can discard the regenerated model, spec, factory, and serializer, keep only the new controller, controller spec, and route entry, and delete the generated `create-…` migration (the table already exists).
 :::
 
 ### Options
@@ -77,11 +77,12 @@ Nested resources — any `<path>` containing a `{}` parent-id placeholder — **
   - `create`
   - `show`
   - `update`
-  - `delete`
+  - `destroy`
 - `--sti-base-serializer`: Generates an STI-aware base serializer that child serializers can extend. Use this when the generated model is an STI parent.
-- `--owning-model <modelName>`: The model class of the object that `associationQuery`/`createAssociation` will be performed on in the created controller and spec (e.g., "Host", "Guest", "Ticketing/Ticket"). Defaults to the current user for non-admin/internal namespaced controllers. For admin/internal namespaced controllers, this defaults to null, meaning every admin/internal user can access the model. Required for nested resources — see the caution above.
+- `--owning-model <modelName>`: The model class of the object that `associationQuery`/`createAssociation` will be performed on in the created controller and spec (e.g., "Host", "Guest", "Ticketing/Ticket"). Defaults to `this.currentUser`, and to `this.currentInternalUser` for paths beginning with `internal`. For paths beginning with `admin`, there is no default: the generated controller queries the model directly, so every admin user can access it. Required for nested resources — see the caution above.
 - `--no-soft-delete`: Skip the default `@SoftDelete()` decorator and `deleted_at` column, so `destroy()` permanently removes rows instead of marking them removed.
 - `--connection-name <connectionName>`: The name of the db connection you would like to use for your model. Defaults to "default" (default: "default").
+- `--table-name <tableName>`: Explicit table name to use instead of the auto-generated one, for when model namespaces produce long or awkward table names (e.g. `--table-name=notif_prefs`).
 - `--model-name <modelName>`: Explicit model class name to use instead of the auto-generated one (e.g. `--model-name=Kitchen` for `Room/Kitchen`).
 - `-h, --help`: Display help for command.
 
@@ -90,4 +91,4 @@ Nested resources — any `<path>` containing a `{}` parent-id placeholder — **
 Once the resource is generated:
 
 1. Update the migration file as needed (e.g., add `unique()` to a column), then run `pnpm psy db:migrate`.
-2. Update the generated controller spec first, then the corresponding generated controller — controller specs will hang if there is no response within a controller action, since generated action code starts commented out.
+2. Update the generated controller spec first, then the corresponding generated controller. Generated action bodies start commented out, and an action that sends no response returns 404 — so a generated spec that expects success fails with 404 until its action is filled in.

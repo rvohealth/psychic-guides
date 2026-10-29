@@ -16,6 +16,9 @@ pnpm psy g:resource --only=update,destroy v1/host/localized-texts LocalizedText 
 ```
 
 Leverages `--only=update,destroy` to only generate the update and destroy actions. Each polymorphically associated model's controller will have an action for creating an associated LocalizedText model, and Host-facing serializers can display LocalizedTexts, but the actions for maintaining all LocalizedText will be centralized in the LocalizedText controller.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UqRHFQRjCHrGh9xPhFnGUR
 ``````
 
 ## Changes
@@ -23,12 +26,12 @@ Leverages `--only=update,destroy` to only generate the update and destroy action
 ``````
 diff --git a/api/spec/factories/LocalizedTextFactory.ts b/api/spec/factories/LocalizedTextFactory.ts
 new file mode 100644
-index 0000000..0df341b
+index 0000000..7847e79
 --- /dev/null
 +++ b/api/spec/factories/LocalizedTextFactory.ts
 @@ -0,0 +1,13 @@
 +import { UpdateableProperties } from '@rvoh/dream/types'
-+import LocalizedText from '@models/LocalizedText.js'
++import LocalizedText from '#models/LocalizedText.js'
 +
 +let counter = 0
 +
@@ -42,15 +45,15 @@ index 0000000..0df341b
 +}
 diff --git a/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts b/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
 new file mode 100644
-index 0000000..c550e8f
+index 0000000..301c8e5
 --- /dev/null
 +++ b/api/spec/unit/controllers/V1/Host/LocalizedTextsController.spec.ts
 @@ -0,0 +1,89 @@
-+import LocalizedText from '@models/LocalizedText.js'
-+import User from '@models/User.js'
-+import createLocalizedText from '@spec/factories/LocalizedTextFactory.js'
-+import createUser from '@spec/factories/UserFactory.js'
-+import { RequestBody, session, SpecRequestType } from '@spec/unit/helpers/authentication.js'
++import LocalizedText from '#models/LocalizedText.js'
++import User from '#models/User.js'
++import createLocalizedText from '#spec/factories/LocalizedTextFactory.js'
++import createUser from '#spec/factories/UserFactory.js'
++import { RequestBody, session, SpecRequestType } from '#spec/unit/helpers/authentication.js'
 +
 +describe('V1/Host/LocalizedTextsController', () => {
 +  let request: SpecRequestType
@@ -146,14 +149,14 @@ index 0000000..132b046
 +})
 diff --git a/api/src/app/controllers/V1/Host/LocalizedTextsController.ts b/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
 new file mode 100644
-index 0000000..770f3aa
+index 0000000..222ee8f
 --- /dev/null
 +++ b/api/src/app/controllers/V1/Host/LocalizedTextsController.ts
 @@ -0,0 +1,43 @@
 +import { OpenAPI } from '@rvoh/psychic'
 +import { DreamParamSafeColumnNames } from '@rvoh/dream/types'
 +import V1HostBaseController from './BaseController.js'
-+import LocalizedText from '@models/LocalizedText.js'
++import LocalizedText from '#models/LocalizedText.js'
 +
 +const openApiTags = ['localized-texts']
 +
@@ -190,18 +193,18 @@ index 0000000..770f3aa
 +  private async localizedText() {
 +    // return await this.currentUser.associationQuery('localizedTexts')
 +    //   .preloadFor('default')
-+    //   .findOrFail(this.castParam('id', 'string'))
++    //   .findOrFail(this.castParam('id', 'uuid'))
 +  }
 +}
 diff --git a/api/src/app/models/LocalizedText.ts b/api/src/app/models/LocalizedText.ts
 new file mode 100644
-index 0000000..e0d99f2
+index 0000000..e9c9ef8
 --- /dev/null
 +++ b/api/src/app/models/LocalizedText.ts
 @@ -0,0 +1,31 @@
 +import { SoftDelete } from '@rvoh/dream'
 +import { DreamColumn, DreamSerializers } from '@rvoh/dream/types'
-+import ApplicationModel from '@models/ApplicationModel.js'
++import ApplicationModel from '#models/ApplicationModel.js'
 +
 +// Uncomment when adding decorators (@deco.BelongsTo, @deco.Validates, etc.):
 +// import { Decorators } from '@rvoh/dream'
@@ -232,12 +235,12 @@ index 0000000..e0d99f2
 +}
 diff --git a/api/src/app/serializers/LocalizedTextSerializer.ts b/api/src/app/serializers/LocalizedTextSerializer.ts
 new file mode 100644
-index 0000000..f8969ab
+index 0000000..3e0771d
 --- /dev/null
 +++ b/api/src/app/serializers/LocalizedTextSerializer.ts
 @@ -0,0 +1,14 @@
 +import { DreamSerializer } from '@rvoh/dream'
-+import LocalizedText from '@models/LocalizedText.js'
++import LocalizedText from '#models/LocalizedText.js'
 +
 +export const LocalizedTextSummarySerializer = (localizedText: LocalizedText) =>
 +  DreamSerializer(LocalizedText, localizedText)
@@ -251,7 +254,7 @@ index 0000000..f8969ab
 +    .attribute('title')
 +    .attribute('markdown')
 diff --git a/api/src/conf/routes.ts b/api/src/conf/routes.ts
-index 0c5dc6a..ff6749b 100644
+index a84ce45..013a229 100644
 --- a/api/src/conf/routes.ts
 +++ b/api/src/conf/routes.ts
 @@ -5,6 +5,8 @@ import { PsychicRouter } from '@rvoh/psychic'
@@ -263,12 +266,12 @@ index 0c5dc6a..ff6749b 100644
        r.resources('places', r => {
          r.resources('rooms')
  
-diff --git a/api/src/db/migrations/1782926483300-create-localized-text.ts b/api/src/db/migrations/1782926483300-create-localized-text.ts
+diff --git a/api/src/db/migrations/1793240746772-create-localized-text.ts b/api/src/db/migrations/1793240746772-create-localized-text.ts
 new file mode 100644
-index 0000000..1e455cd
+index 0000000..978878c
 --- /dev/null
-+++ b/api/src/db/migrations/1782926483300-create-localized-text.ts
-@@ -0,0 +1,52 @@
++++ b/api/src/db/migrations/1793240746772-create-localized-text.ts
+@@ -0,0 +1,46 @@
 +import { Kysely, sql } from 'kysely'
 +
 +// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -305,12 +308,6 @@ index 0000000..1e455cd
 +    .addColumn('created_at', 'timestamp', col => col.notNull())
 +    .addColumn('updated_at', 'timestamp', col => col.notNull())
 +    .addColumn('deleted_at', 'timestamp')
-+    .execute()
-+
-+  await db.schema
-+    .createIndex('localized_texts_deleted_at')
-+    .on('localized_texts')
-+    .column('deleted_at')
 +    .execute()
 +}
 +

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 0
 pagination_prev: null
-ai_summary: "Migrations are always generated, never hand-written; never edit a merged migration, but freely edit and db:reset an unmerged one. Covers NOT NULL defaults/backfills, primary keys, foreign keys, indexes, alter table, the two-deploy ignoredColumns column-drop pattern, enum types, extensions, polymorphic and STI columns, soft delete and sortable columns, raw Kysely queries, and forcing a new transaction. Uses Kysely under the hood; supports many PostgreSQL column types including bigint, bigserial, boolean, date, timestamp, json, jsonb, arrays, and more."
+ai_summary: "Migrations are always generated, never hand-written; never edit a merged migration, but freely edit and db:reset an unmerged one. Covers NOT NULL defaults/backfills, primary keys, foreign keys, indexes, alter table, the two-deploy ignoredColumns column-drop pattern, enum types, extensions, polymorphic and STI columns, soft delete and sortable columns, raw Kysely queries (camelCase builder identifiers, snake_case sql templates), forcing a new transaction, and the corrupted migrations error. Uses Kysely under the hood; supports many PostgreSQL column types including bigint, bigserial, boolean, date, timestamp, json, jsonb, arrays, and more."
 ---
 
 import PackageManagerTabs from '@site/src/components/ui/package-manager-tabs'
@@ -60,6 +60,8 @@ NODE_ENV=test {{PM}} psy db:migrate`}
 
 See [migrate/rollback](/docs/cli/migrate) for the full set of database commands and how `NODE_ENV` affects type syncing.
 
+Migrations that `main` brings in may sort between your branch's own; `db:migrate` still runs every pending one, whatever its timestamp. Never rename a migration to reorder it: a database that already ran it — your development database, a deployed branch — keeps the old name recorded and fails `db:migrate` with `corrupted migrations`. That error means the database recorded a migration whose file is missing, usually after switching branches; on the test database, the fix is `db:reset`.
+
 ## Adding columns to an existing table
 
 For schema changes that just add columns — or a foreign key — to an existing table, `g:migration` accepts the same [column shorthand](/docs/cli/generators/migration#arguments) as `g:model` and `g:resource`, including `Model:belongs_to` and `:optional`. Hand-edit the generated migration only when the change isn't expressible as shorthand.
@@ -84,7 +86,7 @@ await db.schema
   .execute()
 ```
 
-The temporary default backfills existing rows; dropping it afterward keeps the "no silent default in caller code" guarantee for everything written from here on. If a permanent default genuinely fits the domain, keep it and skip the drop. The generator's column shorthand omits the default by design — it can't know whether the table already has rows — so this is expected generate-then-edit territory, not a generator gap.
+The temporary default backfills existing rows; dropping it afterward keeps the "no silent default in caller code" guarantee for everything written from here on. If a permanent default genuinely fits the domain, keep it and skip the drop. Column shorthand supplies a default on its own only for non-optional `boolean` (`false`), array (`'{}'`), and `json`/`jsonb` (`'{}'`) columns, so adding any other `NOT NULL` column to a populated table means hand-editing the generated migration as above.
 
 ## Supported column types
 
@@ -169,12 +171,13 @@ await db.schema
   .column('host_id')
   .execute()
 
-// Multi-column, unique
+// Multi-column, unique among the live rows of a soft-deleted table
 await db.schema
   .createIndex('localized_texts_localizable_for_locale')
   .on('localized_texts')
   .columns(['localizable_type', 'localizable_id', 'locale'])
   .unique()
+  .where(sql<SqlBool>`deleted_at IS NULL`)
   .execute()
 ```
 
@@ -281,12 +284,12 @@ await db.schema
 .addColumn('bed_types', sql`bed_types_enum[]`, col => col.notNull().defaultTo('{}'))
 ```
 
-Array columns (enum arrays, `text[]`, `integer[]`, etc.) work seamlessly with Dream — set and read them as regular arrays. **In-place mutations (`.push()`, etc.) are not detected by dirty tracking**, since the check compares array identity, not contents. Always reassign the whole array to trigger an update:
+Array columns (enum arrays, `text[]`, `integer[]`, etc.) work seamlessly with Dream — set and read them as regular arrays. **Never mutate an array column in place** (`.push()`, `.splice()`, index assignment): the instance's snapshot from its last load or save holds the same array object, so the mutation changes the snapshot too and the save writes nothing — even if you then assign the mutated array or a copy of it. Build the new array from the old one instead:
 
 ```ts
 const kitchen = await Kitchen.findOrFail(id)
 
-// Creates a new array, so dirty tracking sees the change:
+// Builds a new array from the old one, so dirty tracking sees the change:
 await kitchen.update({ appliances: [...kitchen.appliances, 'dishwasher'] })
 ```
 
@@ -306,7 +309,7 @@ See [migration helpers](/docs/migrations/helpers#extensions) for `createExtensio
 
 ### Polymorphic association columns
 
-A polymorphic `BelongsTo` needs a type column (enum) and an ID column:
+A polymorphic `BelongsTo` needs a type column (here an enum of the target model names) and an ID column:
 
 ```ts
 await db.schema
@@ -321,22 +324,25 @@ await db.schema
   .addColumn('localizable_id', 'uuid', col => col.notNull())
   .addColumn('locale', sql`locales_enum`, col => col.notNull())
   .addColumn('title', 'varchar')
+  .addColumn('markdown', 'text')
   .addColumn('created_at', 'timestamp', col => col.notNull())
   .addColumn('updated_at', 'timestamp', col => col.notNull())
+  .addColumn('deleted_at', 'timestamp')
   .execute()
 
-// Index for polymorphic lookup
+// Polymorphic lookup, one live row per locale
 await db.schema
   .createIndex('localized_texts_localizable_for_locale')
   .on('localized_texts')
   .columns(['localizable_type', 'localizable_id', 'locale'])
   .unique()
+  .where(sql<SqlBool>`deleted_at IS NULL`)
   .execute()
 ```
 
 ### STI columns
 
-Single Table Inheritance uses a `type` column (varchar, stores the child class name) plus child-specific columns backed by check constraints:
+Single Table Inheritance uses a `type` enum column, whose values are the child class names, plus child-specific columns backed by check constraints:
 
 ```ts
 // Base table with type column
@@ -390,7 +396,7 @@ See [`addDeferrableUniqueConstraint`](/docs/migrations/helpers#adddeferrableuniq
 
 ### Raw Kysely data queries in migrations
 
-A migration's `db` handle is the same Kysely instance Dream builds everywhere else, with `CamelCasePlugin` applied — write table and column identifiers in camelCase, and Kysely translates them to the real snake_case columns on the way out and camelCases every result key on the way back, unconditionally. This is easy to get wrong in a migration file because the rest of the file — DDL, `DreamMigrationHelpers` calls — is written in snake_case, so a raw data query reads like it should be too:
+A migration's `db` handle is the same Kysely instance Dream builds everywhere else, with `CamelCasePlugin` applied: query-builder identifiers are snake-cased on the way out, and every result key is camelCased on the way back, unconditionally. The rest of a migration file — DDL, `DreamMigrationHelpers` calls — is written in snake_case, but rows are not: select `host_id` and the value is at `row.hostId`, while `row.host_id` is `undefined`, and `Kysely<any>` won't flag it. Write query-builder identifiers in camelCase so they match the keys you read back:
 
 ```ts
 export async function up(db: Kysely<any>): Promise<void> {
@@ -409,9 +415,19 @@ export async function up(db: Kysely<any>): Promise<void> {
 }
 ```
 
+A `sql` tagged template is the one exception: its text reaches Postgres verbatim, so it names the real snake_case columns. Its rows still come back camelCased, though, and `sql<T>` checks nothing, so write `T` in camelCase — a snake_case `T` compiles, and every underscored key reads `undefined`:
+
+```ts
+const { rows } = await sql<{ id: string; hostId: string }>`
+  SELECT id, host_id FROM rooms WHERE host_id IS NOT NULL
+`.execute(db)
+
+rows[0].hostId // the value of host_id
+```
+
 ### Forcing a new transaction in migrations
 
-Dream runs all pending migrations in a single transaction by default. If a migration file contains the literal string `DreamMigrationHelpers.dropEnumValue` or `DreamMigrationHelpers.newTransaction()`, Dream runs that file in its own transaction, separate from the migrations before and after it:
+Dream runs all pending migrations in a single transaction by default. When a migration's `up` or `down` contains `DreamMigrationHelpers.dropEnumValue` or `DreamMigrationHelpers.newTransaction()`, Dream commits everything before it and starts a new transaction there; the migrations after it share that transaction until the next such migration:
 
 ```ts
 export async function up(db: Kysely<any>): Promise<void> {
@@ -421,7 +437,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 }
 ```
 
-This detection is a naive string search on the file contents, not AST analysis — see the caveat in [migration helpers](/docs/migrations/helpers#addenumvalue) about renaming the `DreamMigrationHelpers` import.
+The check is a plain substring search of the `up`/`down` function source, not AST analysis, so a call made from a helper function outside them, or through a renamed import (`import { DreamMigrationHelpers as DMH }`), is not detected.
 
 Along with migrations, Psychic provides additional cli commands for governing migrations:
 
@@ -437,7 +453,7 @@ Dream runs Kysely migrations with `allowUnorderedMigrations: true`, which facili
 
 > The migration methods use a lock on the database level and parallel calls are executed serially. This means that you can safely call migrateToLatest and other migration methods from multiple server instances simultaneously and the migrations are guaranteed to only be executed once. The locks are also automatically released if the migration process crashes or the connection to the database fails.
 
-Also, since Dream currently only supports Postgres, and Kysely runs all migrations in a transaction on Postgres, Dream migrations are run in a transaction. This means that if multiple migration files are being migrated, and the last one fails, all of them will be rolled back. This is a powerful guarantee since it always leaves the database in a known state: If a final migration file adds a unique index that cannot be applied to the database due to existing records, then the code can safely be rolled back to the previous version while a fix is implemented, and the database schema will be in the state that that previous code version defined and is known to work with.
+Also, since Dream currently only supports Postgres, and Kysely runs all migrations in a transaction on Postgres, Dream migrations are run in a transaction. This means that if multiple migration files are being migrated, and the last one fails, all of them will be rolled back (back to the last [forced transaction boundary](#forcing-a-new-transaction-in-migrations), if any). This is a powerful guarantee since it always leaves the database in a known state: If a final migration file adds a unique index that cannot be applied to the database due to existing records, then the code can safely be rolled back to the previous version while a fix is implemented, and the database schema will be in the state that that previous code version defined and is known to work with.
 
 ## Migration Helpers
 

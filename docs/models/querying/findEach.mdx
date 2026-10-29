@@ -1,5 +1,5 @@
 ---
-ai_summary: "The findEach method processes records in batches (default 1000, customizable via batchSize option) and calls a callback function for each record. Useful for processing large datasets without loading all records into memory. Can be chained with query building methods."
+ai_summary: "The findEach method processes records in batches (default 1000, customizable via batchSize option) and calls a callback function for each record. Useful for processing large datasets without loading all records into memory. Can be chained with query building methods. Visits each row all() would return exactly once, in ascending primary-key order, so a joined query visits a record once per joined row; a limit or offset throws."
 ---
 import RoutesOutput from '@site/src/components/ui/routes-output'
 
@@ -29,6 +29,10 @@ await User.whereNot({ email: null }).findEach(async (user) => {
   if (user.email.includes('burpcollaborator')) await user.destroy()
 })
 ```
+
+`findEach` visits each row that `all()` would return exactly once. On a query that joins a `HasMany`, that is once per joined row, so `Place.innerJoin('rooms').findEach(...)` visits each place once per room.
+
+A query that carries a `limit` or `offset` throws `BatchingIncompatibleWithLimitOrOffset`, since batching would re-apply either inside every batch rather than bounding the run as a whole.
 
 :::tip
 Because it processes records in batches by primary key, `findEach` always visits matched records in ascending primary-key order and ignores any `order` applied to the query. This is also why a default (non-`skipHooks`) [`query.update`](/docs/models/querying/update) call — which goes through `findEach` internally — can't honor an arbitrary order either.

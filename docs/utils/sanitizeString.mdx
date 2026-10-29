@@ -1,11 +1,11 @@
 ---
 sidebar_position: 6
-ai_summary: "sanitizeString escapes potentially dangerous characters in a string by replacing them with Unicode escape sequences."
+ai_summary: "sanitizeString escapes the characters < > & quote apostrophe slash and backslash in a string, writing each as its literal Unicode escape text (for example u003c for <); null and undefined pass through unchanged."
 ---
 
 # sanitizeString
 
-Escapes potentially dangerous characters (`\`, `/`, `<`, `>`, `&`, `'`, `"`) in a string by replacing them with Unicode escape sequences. Returns `null` or `undefined` unchanged if that's what was passed in.
+Escapes potentially dangerous characters (`\`, `/`, `<`, `>`, `&`, `'`, `"`) in a string by replacing each with its Unicode escape written out as literal text: `<` becomes the six characters `\u003c`. Returns `null` or `undefined` unchanged if that's what was passed in.
 
 ```ts
 import { sanitizeString } from '@rvoh/dream/utils'

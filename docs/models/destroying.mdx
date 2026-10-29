@@ -199,4 +199,4 @@ await place.reallyDestroyAssociation('rooms')
 await place.reallyDestroyAssociation('rooms', { and: { name: 'my room' } })
 ```
 
-`destroy()` and `reallyDestroy()` both accept `{ lock: true }`, which makes the destroy a guarded (compare-and-set) removal. That's a concurrency concern rather than a soft-delete one; see the [locking guide](/docs/models/locking).
+The query forms of `destroy()` and `reallyDestroy()` (`Place.where({ ... }).destroy(...)`) accept `{ lock: true }`, which makes the destroy a guarded (compare-and-set) removal. That's a concurrency concern rather than a soft-delete one; see the [locking guide](/docs/models/locking).

@@ -29,7 +29,7 @@ Type sync only runs when `NODE_ENV=test` — generated types (`src/types/db.ts`,
 
 ## db\:rollback
 
-Rolls back the specified number of migration steps (defaults to 1):
+Rolls back the specified number of migration steps (defaults to 1). Migrations are undone in the reverse of the order this database ran them, not in filename order, so a migration from `main` that ran after your branch's own — after merging `main`, say — is undone first:
 
 <PackageManagerTabs code={`NODE_ENV=test {{PM}} psy db:rollback`} />
 
@@ -107,6 +107,6 @@ Fails if migrations need to be run.
 
 ## Troubleshooting
 
-**"Corrupted migrations" error**: switching between branches with different migrations can leave the migration table out of sync with the files on disk, and `db:migrate` fails with a "corrupted migrations" error. Fix it with `db:reset`.
+**"Corrupted migrations" error**: the database has recorded a migration whose file is missing — usually after switching between branches with different migrations, or after renaming a migration file that already ran. On the test database, fix it with `db:reset`. Never rename a migration to reorder it; `db:migrate` already runs every pending migration, including ones that sort between migrations that have already run.
 
 For full details, see the [migration documentation](/docs/migrations/overview)

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: config
-ai_summary: 'Workers configuration uses BullMQ, configured in conf/initializers/workers.ts. Two mutually exclusive modes: simple (workstream) mode, which Psychic scans on sync to capture workstream names for types, or native BullMQ mode for raw per-queue BullMQ options. Extend ApplicationBackgroundedService and ApplicationScheduledService. Workstreams are groups containing a queue and workers. Multiple workstreams useful for rate-limited APIs. Named workstreams can carry a rateLimit, and transitional workstreams cover Redis migrations. workerCount is how many Worker objects the process builds, all sharing one event loop; its product with concurrency bounds in-flight jobs.'
+ai_summary: 'Workers configuration uses BullMQ, configured in conf/initializers/workers.ts. Two mutually exclusive modes: simple (workstream) mode, which Psychic scans on sync to capture workstream names for types, or native BullMQ mode for raw per-queue BullMQ options. Extend ApplicationBackgroundedService and ApplicationScheduledService. Workstreams are groups containing a queue and workers. Multiple workstreams useful for rate-limited APIs. Named workstreams can carry a rateLimit, and transitional workstreams cover Redis migrations. workerCount is how many Worker objects the process builds, all sharing one event loop; its product with concurrency bounds one workstream''s in-flight jobs, and a worker process runs every workstream it builds. In native mode, worker connections go on the queue options as workerConnection, never on worker options. WorkerTestUtils comes from @rvoh/psychic-workers/utils.'
 ---
 
 # Workers - config
@@ -19,11 +19,11 @@ Configuration lives in `conf/initializers/workers.ts`, which is auto-loaded and 
 
 `pnpm psy sync` generates the routing union (`workstream` vs. `queue`) from whichever mode is configured, so the mode decides which key a service can use. `priority` is legal in both modes.
 
-Most apps only need simple mode. Reach for native mode when you need per-queue BullMQ options simple mode doesn't expose — a distinct Redis instance or cluster node per queue, or BullMQ Pro group settings — see [Native BullMQ mode](#native-bullmq-mode) below.
+Most apps only need simple mode. Reach for native mode when you need per-queue BullMQ options simple mode doesn't expose — a queue's own `defaultJobOptions`, worker options such as `lockDuration`, or BullMQ Pro group settings — see [Native BullMQ mode](#native-bullmq-mode) below.
 
 ## Types
 
-Psychic scans your worker config whenever you run `pnpm psy sync`, capturing the workstream names you have configured for use when configuring your app. In order for these types to flow throughout your system, we recommend you add a few files to your file system.
+Psychic scans your worker config whenever you run `pnpm psy sync`, capturing the workstream names you have configured into `types/workers.ts` for use when configuring your app. In order for these types to flow throughout your system, we recommend you add a few files to your file system.
 
 > If you selected "yes" to background workers during the cli prompt, these files will already exist in your system.
 
@@ -31,11 +31,11 @@ Psychic scans your worker config whenever you run `pnpm psy sync`, capturing the
 // app/services/ApplicationBackgroundedService.ts
 
 import { BaseBackgroundedService } from '@rvoh/psychic-workers'
-import psychicTypes from '../../types/psychic'
+import psychicWorkerTypes from '#src/types/workers.js'
 
 export default class ApplicationBackgroundedService extends BaseBackgroundedService {
-  public get psychicTypes() {
-    return psychicTypes
+  public override get psychicWorkerTypes() {
+    return psychicWorkerTypes
   }
 }
 ```
@@ -44,11 +44,11 @@ export default class ApplicationBackgroundedService extends BaseBackgroundedServ
 // app/services/ApplicationScheduledService.ts
 
 import { BaseScheduledService } from '@rvoh/psychic-workers'
-import psychicTypes from '../../types/psychic'
+import psychicWorkerTypes from '#src/types/workers.js'
 
 export default class ApplicationScheduledService extends BaseScheduledService {
-  public get psychicTypes() {
-    return psychicTypes
+  public override get psychicWorkerTypes() {
+    return psychicWorkerTypes
   }
 }
 ```
@@ -202,9 +202,9 @@ What the two options control:
 - **`workerCount`** is how many BullMQ [`Worker`](https://api.docs.bullmq.io/classes/v5.Worker.html) objects this process builds. They are constructed in the same Node process, so each one opens its own blocking Redis connection and all of them share the one event loop.
 - **`concurrency`** is how many fetched jobs a single `Worker` runs at once.
 
-Their product bounds how many jobs are in flight in the process, so size it against the database pool rather than against the CPU. Raising `workerCount` cannot make CPU-bound JavaScript use additional cores — every inline handler still runs on the same event loop — so CPU parallelism comes from running more worker processes. See BullMQ's [parallelism and concurrency](https://docs.bullmq.io/guide/parallelism-and-concurrency) guide for the underlying model.
+Their product bounds how many of one workstream's jobs are in flight. A worker process runs every workstream it builds, so size the sum across workstreams against the database pool rather than against the CPU. Raising `workerCount` cannot make CPU-bound JavaScript use additional cores — every inline handler still runs on the same event loop — so CPU parallelism comes from running more worker processes. See BullMQ's [parallelism and concurrency](https://docs.bullmq.io/guide/parallelism-and-concurrency) guide for the underlying model.
 
-`defaultBullMQWorkerOptions` — the worker-side counterpart to `defaultBullMQQueueOptions` — also belongs in this block. In simple mode, a `concurrency` or `connection` placed inside it is always overwritten by the workstream's own value, so set concurrency on the workstream itself rather than here.
+`defaultBullMQWorkerOptions` — the worker-side counterpart to `defaultBullMQQueueOptions` — also belongs in this block. It takes no `connection`; workers use the worker connections configured beside it. In simple mode, a `concurrency` placed inside it is always overwritten by the workstream's own value, so set concurrency on the workstream itself rather than here.
 
 ### Redis TLS
 
@@ -232,7 +232,7 @@ See the [ioredis README](https://github.com/redis/ioredis) and Node's [`tls.conn
 
 ## Native BullMQ mode
 
-Native mode is for apps that need to hand BullMQ its own options per queue — a distinct Redis instance or cluster node per queue, or BullMQ Pro group settings the workstream shape above doesn't express. Queues are declared by name, and workers are declared separately against those names:
+Native mode is for apps that need to hand BullMQ its own options per queue — a queue's own `defaultJobOptions`, worker options such as `lockDuration`, or BullMQ Pro group settings — which the workstream shape above doesn't express. (A separate Redis per queue does not need native mode: a [named workstream](./named-workstreams#per-workstream-connections) can carry its own connections.) Queues are declared by name, and workers are declared separately against those names:
 
 ```ts
 workersApp.set('background', {
@@ -264,7 +264,7 @@ Run `pnpm psy sync` after changing the queue names, then route a service to one 
 
 ```ts
 export class BookingNotificationService extends ApplicationBackgroundedService {
-  public static get backgroundJobConfig(): BackgroundJobConfig<ApplicationBackgroundedService> {
+  public static override get backgroundJobConfig(): BackgroundJobConfig<ApplicationBackgroundedService> {
     return { queue: 'BookingNotifications' }
   }
 }
@@ -275,7 +275,7 @@ A few sharp edges specific to this mode:
 - **A queue in `namedQueueOptions` with no matching key in `namedQueueWorkers` gets zero workers.** The queue is created and accepts jobs; nothing ever works them. There is no warning and no error — jobs simply accumulate in Redis. Give every named queue an entry in both maps.
 - **A named queue's `defaultJobOptions` replaces the app-wide bag rather than merging with it.** The two option objects are combined with one shallow spread, so a queue that sets `defaultJobOptions: { attempts: 3 }` drops the app-wide `backoff`, `removeOnComplete`, and `removeOnFail` entirely. Restate every key you still want.
 - **There is no concurrency default here.** Simple mode always writes the workstream's `concurrency` (10 when the workstream omits it), which is why it overrides `defaultBullMQWorkerOptions`. Native mode writes none, so BullMQ's own default applies unless you set it.
-- **A named queue's worker connection goes on its `namedQueueOptions` entry, not its `namedQueueWorkers` entry.** A `connection` set on the worker entry typechecks (it's a plain `WorkerOptions` key) but is ignored. Each connection falls back to `nativeBullMQ.defaultQueueOptions`/`defaultWorkerOptions` and then to the app-wide default. Because `pnpm psy sync` connects to background to generate types, a missing *queue* connection surfaces at sync time, not only at boot.
+- **A queue's worker connection goes on its queue options as `workerConnection`, never on a worker-options entry.** `defaultWorkerOptions` and `namedQueueWorkers` entries take no `connection`; Psychic writes the resolved one onto every worker last. A named queue falls back to `nativeBullMQ.defaultQueueOptions.queueConnection`/`.workerConnection`, then to the app-wide `defaultQueueConnection`/`defaultWorkerConnection`. Because `pnpm psy sync` connects to background to generate types, a missing *queue* connection surfaces at sync time, not only at boot.
 
 See the [BullMQ Queue](https://api.docs.bullmq.io/classes/v5.Queue.html) and [Worker](https://api.docs.bullmq.io/classes/v5.Worker.html) option references for the full shape of `QueueOptions` and `WorkerOptions` — native mode passes these through largely unmodified.
 
@@ -297,7 +297,9 @@ workersApp.set('background', {
 })
 ```
 
-Workers attach to the legacy queues and work them down, while enqueueing reaches only the top-level workstreams, so every new job lands on the new instance. The old side can only drain, never be added to, which is what makes the cutover finish. Delete the `transitionalWorkstreams` key once those queues are empty.
+Workers attach to the legacy queues and work them down, while enqueueing reaches only the top-level workstreams, so every new job lands on the new instance. The old side can only drain, never be added to, which is what makes the cutover finish.
+
+A job scheduler registered on the legacy instance is the exception: working an occurrence mints the next one there, so each cron job fires on both instances. In the deploy that adds the `transitionalWorkstreams` key, have `db/seed.ts` remove each scheduler with [`unschedule`](./named-workstreams#retiring-a-named-workstream) ahead of `scheduleAllJobs()`; `unschedule` sweeps transitional queues too, and `scheduleAllJobs()` then registers each scheduler on the new instance only. Delete the `transitionalWorkstreams` key once the legacy queues are empty.
 
 ## Named workstreams
 
@@ -320,7 +322,7 @@ With a named workstream added to your config, re-run `pnpm psy sync` to compile 
 
 ```ts
 export default class FileImporter extends ApplicationBackgroundedService {
-  public static get backgroundJobConfig(): BackgroundJobConfig<ApplicationBackgroundedService> {
+  public static override get backgroundJobConfig(): BackgroundJobConfig<ApplicationBackgroundedService> {
     return { priority: 'not_urgent', workstream: 'FileImport' }
   }
 
@@ -356,4 +358,4 @@ To enable this behavior, you must set the `testInvocation` to `manual`, like so:
 workersApp.set('testInvocation', 'manual')
 ```
 
-Now you will be able to manually work off your queues using the `WorkerTestUtils`, exported from this package. For more information on testing with workers, see the [testing guides](/docs/plugins/workers/testing).
+Now you will be able to manually work off your queues using `WorkerTestUtils`, exported from `@rvoh/psychic-workers/utils`. For more information on testing with workers, see the [testing guides](/docs/plugins/workers/testing).
